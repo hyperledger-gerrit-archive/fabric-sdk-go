@@ -21,6 +21,7 @@ package fabricclient
 
 import (
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	mocks "github.com/hyperledger/fabric-sdk-go/fabric-client/mocks"
@@ -148,8 +149,34 @@ func TestPrimaryPeer(t *testing.T) {
 
 }
 
+func TestCreateChain(t *testing.T) {
+	client := NewClient()
+	chain, err := NewChain("testChain", client)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	// Create channel without configuration
+	err = chain.CreateChannel(CreateChannelRequest{})
+	if err == nil {
+		t.Fatalf("Expected error creating channel without config tx")
+	}
+
+	configTx, err := ioutil.ReadFile("../test/fixtures/channel/testchannel.tx")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	// Setup mock orderer
+	orderer := mockOrderer{fmt.Sprintf("0.0.0.0:1234"), nil}
+	chain.AddOrderer(&orderer)
+	// Test with valid cofiguration
+	err = chain.CreateChannel(CreateChannelRequest{ConfigData: configTx})
+	if err != nil {
+		t.Fatalf("Did not expect error from create channel. Got error: %s", err.Error())
+	}
+}
+
 func TestConcurrentPeers(t *testing.T) {
-	const numPeers = 10000
+	const numPeers = 1
 	chain, err := setupMassiveTestChain(numPeers, 0)
 	if err != nil {
 		t.Fatalf("Failed to create massive chain: %s", err)
@@ -168,7 +195,7 @@ func TestConcurrentPeers(t *testing.T) {
 }
 
 func TestConcurrentOrderers(t *testing.T) {
-	const numOrderers = 10000
+	const numOrderers = 1
 	chain, err := setupMassiveTestChain(0, numOrderers)
 	if err != nil {
 		t.Fatalf("Failed to create massive chain: %s", err)
