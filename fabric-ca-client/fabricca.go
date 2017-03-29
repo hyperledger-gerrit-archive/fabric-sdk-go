@@ -44,6 +44,7 @@ type services struct {
 	fabricCAClient *fabric_ca.Client
 }
 
+// RegistrationRequest ...
 // RegistrationRequest defines the attributes required to register a user with the CA
 type RegistrationRequest struct {
 	// Name is the unique name of the identity
@@ -59,6 +60,7 @@ type RegistrationRequest struct {
 	Attributes []Attribute
 }
 
+// RevocationRequest ...
 // RevocationRequest defines the attributes required to revoke credentials with the CA
 type RevocationRequest struct {
 	// Name of the identity whose certificates should be revoked
@@ -74,6 +76,7 @@ type RevocationRequest struct {
 	Reason int
 }
 
+// Attribute ...
 // Attribute defines additional attributes that may be passed along during registration
 type Attribute struct {
 	Key   string
