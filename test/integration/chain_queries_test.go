@@ -20,8 +20,12 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
+
+	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
+	"github.com/hyperledger/fabric-sdk-go/fabric-client/events"
 )
 
 func TestChainQueries(t *testing.T) {
@@ -52,31 +56,11 @@ func TestChainQueries(t *testing.T) {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
-	// Start transaction that will change block state
-	value, err := testSetup.GetQueryValue(t, chain)
+	// Invoke transaction that changes block state
+	txID, err := changeBlockState(testSetup, chain, eventHub)
 	if err != nil {
-		t.Fatalf("getQueryValue return error: %v", err)
+		t.Fatalf("Failed to change block state (invoke transaction). Return error: %v", err)
 	}
-
-	txID, err := testSetup.Invoke(chain, eventHub)
-	if err != nil {
-		t.Fatalf("invoke return error: %v", err)
-	}
-
-	valueAfterInvoke, err := testSetup.GetQueryValue(t, chain)
-	if err != nil {
-		t.Fatalf("getQueryValue return error: %v", err)
-	}
-
-	// Verify that transaction changed block state
-	valueInt, _ := strconv.Atoi(value)
-	valueInt = valueInt + 1
-	valueAfterInvokeInt, _ := strconv.Atoi(valueAfterInvoke)
-	if valueInt != valueAfterInvokeInt {
-		t.Fatalf("SendTransaction didn't change the QueryValue %s", value)
-	}
-
-	// End transaction that changed block state
 
 	// Test Query Info - retrieve values after transaction
 	bciAfterTx, err := chain.QueryInfo()
@@ -89,7 +73,51 @@ func TestChainQueries(t *testing.T) {
 		t.Fatalf("Block size did not increase after transaction")
 	}
 
-	// Test Query Transaction -- verify that transaction has been processed
+	testQueryTransaction(t, chain, txID)
+
+	testQueryBlock(t, chain)
+
+	testQueryChannels(t, chain)
+
+	testInstalledChaincodes(t, chain)
+
+	// TODO: Synch with test in node SDK when it becomes available
+	// testInstantiatedChaincodes(t, chain)
+
+}
+
+func changeBlockState(testSetup BaseSetupImpl, chain fabricClient.Chain, eventHub events.EventHub) (string, error) {
+
+	value, err := testSetup.GetQueryValue(chain)
+	if err != nil {
+		return "", fmt.Errorf("getQueryValue return error: %v", err)
+	}
+
+	// Start transaction that will change block state
+	txID, err := testSetup.Invoke(chain, eventHub)
+	if err != nil {
+		return "", fmt.Errorf("invoke return error: %v", err)
+	}
+
+	valueAfterInvoke, err := testSetup.GetQueryValue(chain)
+	if err != nil {
+		return "", fmt.Errorf("getQueryValue return error: %v", err)
+	}
+
+	// Verify that transaction changed block state
+	valueInt, _ := strconv.Atoi(value)
+	valueInt = valueInt + 1
+	valueAfterInvokeInt, _ := strconv.Atoi(valueAfterInvoke)
+	if valueInt != valueAfterInvokeInt {
+		return "", fmt.Errorf("SendTransaction didn't change the QueryValue %s", value)
+	}
+
+	return txID, nil
+}
+
+func testQueryTransaction(t *testing.T, chain fabricClient.Chain, txID string) {
+
+	// Test Query Transaction -- verify that valid transaction has been processed
 	processedTransaction, err := chain.QueryTransaction(txID)
 	if err != nil {
 		t.Fatalf("QueryTransaction return error: %v", err)
@@ -104,9 +132,18 @@ func TestChainQueries(t *testing.T) {
 	if err == nil {
 		t.Fatalf("QueryTransaction non-existing didn't return an error")
 	}
+}
+
+func testQueryBlock(t *testing.T, chain fabricClient.Chain) {
+
+	// Retrieve current blockchain info
+	bci, err := chain.QueryInfo()
+	if err != nil {
+		t.Fatalf("QueryInfo return error: %v", err)
+	}
 
 	// Test Query Block by Hash - retrieve current block by hash
-	block, err := chain.QueryBlockByHash(bciAfterTx.CurrentBlockHash)
+	block, err := chain.QueryBlockByHash(bci.CurrentBlockHash)
 	if err != nil {
 		t.Fatalf("QueryBlockByHash return error: %v", err)
 	}
@@ -136,4 +173,62 @@ func TestChainQueries(t *testing.T) {
 	if err == nil {
 		t.Fatalf("QueryBlock non-existent didn't return an error")
 	}
+
+}
+
+func testQueryChannels(t *testing.T, chain fabricClient.Chain) {
+
+	// Our target will be primary peer on this channel
+	target := chain.GetPrimaryPeer()
+
+	fmt.Printf("****QueryChannels for %s\n", target.GetURL())
+
+	// Test Query Channels for target
+	channelQueryResponse, err := chain.QueryChannels(target)
+	if err != nil {
+		t.Fatalf("QueryChannels return error: %v", err)
+	}
+
+	for _, channel := range channelQueryResponse.Channels {
+		fmt.Printf("**Channel: %s\n", channel)
+	}
+
+}
+
+func testInstalledChaincodes(t *testing.T, chain fabricClient.Chain) {
+
+	// Our target will be primary peer on this channel
+	target := chain.GetPrimaryPeer()
+
+	fmt.Printf("****QueryInstalledChaincodes for %s\n", target.GetURL())
+
+	// Test Query Installed chaincodes for target (primary)
+	chaincodeQueryResponse, err := chain.QueryInstalledChaincodes(target)
+	if err != nil {
+		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
+	}
+
+	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+		fmt.Printf("**InstalledCC: %s\n", chaincode)
+	}
+
+}
+
+func testInstantiatedChaincodes(t *testing.T, chain fabricClient.Chain) {
+
+	// Our target will indirectly be primary peer on this channel
+	target := chain.GetPrimaryPeer()
+
+	fmt.Printf("QueryInstantiatedChaincodes for primary %s\n", target.GetURL())
+
+	// Test Query Instantiated chaincodes
+	chaincodeQueryResponse, err := chain.QueryInstantiatedChaincodes()
+	if err != nil {
+		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
+	}
+
+	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+		fmt.Printf("**InstantiatedCC: %s\n", chaincode)
+	}
+
 }
