@@ -20,14 +20,17 @@ limitations under the License.
 package fabricca
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/config"
 	"github.com/hyperledger/fabric-sdk-go/fabric-ca-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/fabric-client"
 )
 
 func TestEnrollWithMissingParameters(t *testing.T) {
+	InitConfig()
 	fabricCAClient, err := NewFabricCAClient()
 	if err != nil {
 		t.Fatalf("NewFabricCAClient return error: %v", err)
@@ -49,6 +52,7 @@ func TestEnrollWithMissingParameters(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
+	InitConfig()
 	fabricCAClient, err := NewFabricCAClient()
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
@@ -94,6 +98,7 @@ func TestRegister(t *testing.T) {
 }
 
 func TestRevoke(t *testing.T) {
+	InitConfig()
 	fabricCAClient, err := NewFabricCAClient()
 	if err != nil {
 		t.Fatalf("NewFabricCAClient returned error: %v", err)
@@ -126,3 +131,13 @@ func readCert(t *testing.T) []byte {
 	}
 	return cert
 }
+
+// InitConfig ...
+func InitConfig() {
+	err := config.InitConfig("../test/integration/fixtures/config/config_test.yaml")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+}
+InitConfig
