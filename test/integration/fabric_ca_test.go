@@ -140,11 +140,31 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 	fmt.Printf("Registered User: %s, Secret: %s\n", userName, enrolmentSecret)
 	// Enrol the previously registered user
-	_, _, err = caClient.Enroll(userName, enrolmentSecret)
-
+	ekey, ecert, err := caClient.Enroll(userName, enrolmentSecret)
 	if err != nil {
 		t.Fatalf("Error enroling user: %s", err.Error())
 	}
+	//re-enroll
+	fmt.Printf("** Attempt to re-enrolled user:  '%s'\n", userName)
+	keyPem, _ := pem.Decode(ekey)
+	if err != nil {
+		t.Fatalf("pem Decode return error: %v", err)
+	}
+	//convert key to bccsp
+	k, err := client.GetCryptoSuite().KeyImport(keyPem.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: false})
+	if err != nil {
+		t.Fatalf("KeyImport return error: %v", err)
+	}
+	//create new user object and set certificate and private key of the previously enrolled user
+	enrolleduser := fabricClient.NewUser(userName)
+	enrolleduser.SetEnrollmentCertificate(ecert)
+	enrolleduser.SetPrivateKey(k)
+	//reenroll
+	_, _, err = caClient.Reenroll(enrolleduser)
+	if err != nil {
+		t.Fatalf("Error RE-enroling user: %s", err.Error())
+	}
+	fmt.Printf("** User '%s' was re-enrolled \n", userName)
 
 	revokeRequest := fabricCAClient.RevocationRequest{Name: userName}
 	err = caClient.Revoke(adminUser, &revokeRequest)
