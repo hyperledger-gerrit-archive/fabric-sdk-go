@@ -33,12 +33,12 @@ type KeyValueStore interface {
 	 * @param {string} name of the key
 	 * @returns {[]byte}
 	 */
-	GetValue(key string) ([]byte, error)
+	LoadUserFromStateStore(key string) ([]byte, error)
 
 	/**
 	 * Set the value associated with name.
 	 * @param {string} name of the key to save
 	 * @param {[]byte} value to save
 	 */
-	SetValue(key string, value []byte) error
+	SaveUserToStateStore(key string, value []byte) error
 }
