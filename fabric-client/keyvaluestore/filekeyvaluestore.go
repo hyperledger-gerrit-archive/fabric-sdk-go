@@ -46,13 +46,13 @@ func CreateNewFileKeyValueStore(path string) (*FileKeyValueStore, error) {
 	return &FileKeyValueStore{path: path}, nil
 }
 
-// GetValue ...
+// LoadUserFromStateStore GetValue ...
 /**
  * Get the value associated with name.
  * @param {string} name
  * @returns []byte for the value
  */
-func (fkvs *FileKeyValueStore) GetValue(key string) ([]byte, error) {
+func (fkvs *FileKeyValueStore) LoadUserFromStateStore(key string) ([]byte, error) {
 	file := path.Join(fkvs.path, key+".json")
 	value, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -61,13 +61,13 @@ func (fkvs *FileKeyValueStore) GetValue(key string) ([]byte, error) {
 	return value, nil
 }
 
-// SetValue ...
+// SaveUserToStateStore SetValue ...
 /**
  * Set the value associated with name.
  * @param {string} name of the key to save
  * @param {[]byte} value to save
  */
-func (fkvs *FileKeyValueStore) SetValue(key string, value []byte) error {
+func (fkvs *FileKeyValueStore) SaveUserToStateStore(key string, value []byte) error {
 	file := path.Join(fkvs.path, key+".json")
 	err := ioutil.WriteFile(file, value, 0600)
 	if err != nil {

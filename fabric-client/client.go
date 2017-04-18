@@ -195,9 +195,9 @@ func (c *client) SetUserContext(user User, skipPersistence bool) error {
 		if err != nil {
 			return fmt.Errorf("Marshal json return error: %v", err)
 		}
-		err = c.stateStore.SetValue(user.GetName(), data)
+		err = c.stateStore.SaveUserToStateStore(user.GetName(), data)
 		if err != nil {
-			return fmt.Errorf("stateStore SetValue return error: %v", err)
+			return fmt.Errorf("stateStore SaveUserToStateStore return error: %v", err)
 		}
 	}
 	return nil
@@ -225,7 +225,7 @@ func (c *client) GetUserContext(name string) (User, error) {
 	if c.cryptoSuite == nil {
 		return nil, fmt.Errorf("cryptoSuite is nil")
 	}
-	value, err := c.stateStore.GetValue(name)
+	value, err := c.stateStore.LoadUserFromStateStore(name)
 	if err != nil {
 		return nil, nil
 	}

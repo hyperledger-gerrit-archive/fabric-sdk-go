@@ -28,13 +28,13 @@ func TestFKVSMethods(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
-	stateStore.SetValue("testvalue", []byte("data"))
-	value, err := stateStore.GetValue("testvalue")
+	stateStore.SaveUserToStateStore("testvalue", []byte("data"))
+	value, err := stateStore.LoadUserFromStateStore("testvalue")
 	if err != nil {
-		t.Fatalf("stateStore.SetValue return error[%s]", err)
+		t.Fatalf("stateStore.SaveUserToStateStore return error[%s]", err)
 	}
 	if string(value) != "data" {
-		t.Fatalf("stateStore.GetValue didn't return the right value")
+		t.Fatalf("stateStore.LoadUserFromStateStore didn't return the right value")
 	}
 
 }

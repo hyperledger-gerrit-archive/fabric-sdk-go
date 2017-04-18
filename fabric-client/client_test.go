@@ -116,13 +116,13 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
 	client.SetStateStore(stateStore)
-	client.GetStateStore().SetValue("testvalue", []byte("data"))
-	value, err := client.GetStateStore().GetValue("testvalue")
+	client.GetStateStore().SaveUserToStateStore("testvalue", []byte("data"))
+	value, err := client.GetStateStore().LoadUserFromStateStore("testvalue")
 	if err != nil {
-		t.Fatalf("client.GetStateStore().GetValue() return error[%s]", err)
+		t.Fatalf("client.GetStateStore().LoadUserFromStateStore() return error[%s]", err)
 	}
 	if string(value) != "data" {
-		t.Fatalf("client.GetStateStore().GetValue() didn't return the right value")
+		t.Fatalf("client.GetStateStore().LoadUserFromStateStore() didn't return the right value")
 	}
 
 }
