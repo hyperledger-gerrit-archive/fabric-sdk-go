@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-03.dtd">
+<coverage line-rate="0" branch-rate="0" version="" timestamp="1492550816552">
+	<packages>
+		<package name="github.com/hyperledger/fabric-sdk-go/test/integration" line-rate="0" branch-rate="0" complexity="0">
+			<classes>
+				<class name="BaseSetupImpl" filename="/home/biljana/go/src/github.com/hyperledger/fabric-sdk-go/test/integration/base_test_setup.go" line-rate="0" branch-rate="0" complexity="0">
+					<methods>
+						<method name="Initialize" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="52" hits="1"></line>
+								<line number="53" hits="0"></line>
+								<line number="57" hits="1"></line>
+								<line number="68" hits="1"></line>
+								<line number="69" hits="0"></line>
+								<line number="72" hits="1"></line>
+								<line number="73" hits="1"></line>
+								<line number="74" hits="0"></line>
+								<line number="76" hits="1"></line>
+								<line number="78" hits="1"></line>
+								<line number="79" hits="1"></line>
+								<line number="80" hits="0"></line>
+								<line number="82" hits="1"></line>
+								<line number="85" hits="1"></line>
+								<line number="86" hits="0"></line>
+								<line number="89" hits="1"></line>
+								<line number="90" hits="1"></line>
+								<line number="91" hits="0"></line>
+								<line number="94" hits="1"></line>
+								<line number="95" hits="1"></line>
+								<line number="96" hits="0"></line>
+								<line number="99" hits="1"></line>
+								<line number="101" hits="1"></line>
+								<line number="103" hits="1"></line>
+							</lines>
+						</method>
+						<method name="InitConfig" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="108" hits="1"></line>
+								<line number="109" hits="0"></line>
+								<line number="111" hits="1"></line>
+							</lines>
+						</method>
+						<method name="InstantiateCC" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="116" hits="1"></line>
+								<line number="117" hits="0"></line>
+								<line number="119" hits="1"></line>
+							</lines>
+						</method>
+						<method name="InstallCC" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="125" hits="1"></line>
+								<line number="126" hits="1"></line>
+								<line number="128" hits="1"></line>
+							</lines>
+						</method>
+						<method name="GetDeployPath" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="133" hits="1"></line>
+								<line number="134" hits="1"></line>
+							</lines>
+						</method>
+						<method name="InstallAndInstantiateExampleCC" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="140" hits="1"></line>
+								<line number="141" hits="1"></line>
+								<line number="143" hits="1"></line>
+								<line number="144" hits="1"></line>
+								<line number="147" hits="1"></line>
+								<line number="148" hits="0"></line>
+								<line number="151" hits="1"></line>
+								<line number="152" hits="1"></line>
+								<line number="153" hits="1"></line>
+								<line number="154" hits="1"></line>
+								<line number="155" hits="1"></line>
+								<line number="156" hits="1"></line>
+								<line number="158" hits="1"></line>
+							</lines>
+						</method>
+						<method name="Query" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="164" hits="1"></line>
+								<line number="165" hits="1"></line>
+								<line number="166" hits="0"></line>
+								<line number="169" hits="1"></line>
+							</lines>
+						</method>
+						<method name="QueryAsset" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="175" hits="1"></line>
+								<line number="176" hits="1"></line>
+								<line number="177" hits="1"></line>
+								<line number="178" hits="1"></line>
+								<line number="180" hits="1"></line>
+							</lines>
+						</method>
+						<method name="MoveFunds" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="186" hits="1"></line>
+								<line number="187" hits="1"></line>
+								<line number="188" hits="1"></line>
+								<line number="189" hits="1"></line>
+								<line number="190" hits="1"></line>
+								<line number="191" hits="1"></line>
+								<line number="193" hits="1"></line>
+								<line number="194" hits="1"></line>
+								<line number="195" hits="0"></line>
+								<line number="199" hits="1"></line>
+								<line number="201" hits="1"></line>
+								<line number="202" hits="1"></line>
+								<line number="203" hits="0"></line>
+								<line number="206" hits="1"></line>
+								<line number="209" hits="0"></line>
+								<line number="211" hits="0"></line>
+								<line number="213" hits="1"></line>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line number="52" hits="1"></line>
+						<line number="53" hits="0"></line>
+						<line number="57" hits="1"></line>
+						<line number="68" hits="1"></line>
+						<line number="69" hits="0"></line>
+						<line number="72" hits="1"></line>
+						<line number="73" hits="1"></line>
+						<line number="74" hits="0"></line>
+						<line number="76" hits="1"></line>
+						<line number="78" hits="1"></line>
+						<line number="79" hits="1"></line>
+						<line number="80" hits="0"></line>
+						<line number="82" hits="1"></line>
+						<line number="85" hits="1"></line>
+						<line number="86" hits="0"></line>
+						<line number="89" hits="1"></line>
+						<line number="90" hits="1"></line>
+						<line number="91" hits="0"></line>
+						<line number="94" hits="1"></line>
+						<line number="95" hits="1"></line>
+						<line number="96" hits="0"></line>
+						<line number="99" hits="1"></line>
+						<line number="101" hits="1"></line>
+						<line number="103" hits="1"></line>
+						<line number="108" hits="1"></line>
+						<line number="109" hits="0"></line>
+						<line number="111" hits="1"></line>
+						<line number="116" hits="1"></line>
+						<line number="117" hits="0"></line>
+						<line number="119" hits="1"></line>
+						<line number="125" hits="1"></line>
+						<line number="126" hits="1"></line>
+						<line number="128" hits="1"></line>
+						<line number="133" hits="1"></line>
+						<line number="134" hits="1"></line>
+						<line number="140" hits="1"></line>
+						<line number="141" hits="1"></line>
+						<line number="143" hits="1"></line>
+						<line number="144" hits="1"></line>
+						<line number="147" hits="1"></line>
+						<line number="148" hits="0"></line>
+						<line number="151" hits="1"></line>
+						<line number="152" hits="1"></line>
+						<line number="153" hits="1"></line>
+						<line number="154" hits="1"></line>
+						<line number="155" hits="1"></line>
+						<line number="156" hits="1"></line>
+						<line number="158" hits="1"></line>
+						<line number="164" hits="1"></line>
+						<line number="165" hits="1"></line>
+						<line number="166" hits="0"></line>
+						<line number="169" hits="1"></line>
+						<line number="175" hits="1"></line>
+						<line number="176" hits="1"></line>
+						<line number="177" hits="1"></line>
+						<line number="178" hits="1"></line>
+						<line number="180" hits="1"></line>
+						<line number="186" hits="1"></line>
+						<line number="187" hits="1"></line>
+						<line number="188" hits="1"></line>
+						<line number="189" hits="1"></line>
+						<line number="190" hits="1"></line>
+						<line number="191" hits="1"></line>
+						<line number="193" hits="1"></line>
+						<line number="194" hits="1"></line>
+						<line number="195" hits="0"></line>
+						<line number="199" hits="1"></line>
+						<line number="201" hits="1"></line>
+						<line number="202" hits="1"></line>
+						<line number="203" hits="0"></line>
+						<line number="206" hits="1"></line>
+						<line number="209" hits="0"></line>
+						<line number="211" hits="0"></line>
+						<line number="213" hits="1"></line>
+					</lines>
+				</class>
+				<class name="-" filename="/home/biljana/go/src/github.com/hyperledger/fabric-sdk-go/test/integration/base_test_setup.go" line-rate="0" branch-rate="0" complexity="0">
+					<methods>
+						<method name="getEventHub" signature="" line-rate="0" branch-rate="0">
+							<lines>
+								<line number="219" hits="1"></line>
+								<line number="220" hits="1"></line>
+								<line number="221" hits="1"></line>
+								<line number="222" hits="1"></line>
+								<line number="223" hits="1"></line>
+								<line number="224" hits="1"></line>
+								<line number="225" hits="1"></line>
+								<line number="226" hits="1"></line>
+								<line number="230" hits="1"></line>
+								<line number="231" hits="0"></line>
+								<line number="234" hits="1"></line>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line number="219" hits="1"></line>
+						<line number="220" hits="1"></line>
+						<line number="221" hits="1"></line>
+						<line number="222" hits="1"></line>
+						<line number="223" hits="1"></line>
+						<line number="224" hits="1"></line>
+						<line number="225" hits="1"></line>
+						<line number="226" hits="1"></line>
+						<line number="230" hits="1"></line>
+						<line number="231" hits="0"></line>
+						<line number="234" hits="1"></line>
+					</lines>
+				</class>
+			</classes>
+		</package>
+	</packages>
+</coverage>
