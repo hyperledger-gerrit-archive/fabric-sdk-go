@@ -88,7 +88,7 @@ type Chain interface {
 	SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
 	SendInstallProposal(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []Peer) ([]*TransactionProposalResponse, string, error)
 	SendInstantiateProposal(chaincodeName string, chainID string, args []string, chaincodePath string, chaincodeVersion string, targets []Peer) ([]*TransactionProposalResponse, string, error)
-
+	GetOrganizationUnits() ([]string, error)
 	QueryExtensionInterface() ChainExtension
 }
 
@@ -422,6 +422,26 @@ func (c *chain) SetMSPManager(mspManager msp.MSPManager) {
 // GetMSPManager returns the MSP Manager for this channel
 func (c *chain) GetMSPManager() msp.MSPManager {
 	return c.mspManager
+}
+
+// GetOrganizationUnits
+func (c *chain) GetOrganizationUnits() ([]string, error) {
+	chainManager := c.GetMSPManager()
+	msps, err := chainManager.GetMSPs()
+	if err != nil {
+		logger.Info("Cannot get channel manager")
+		return nil, fmt.Errorf("Organization uits were not set: %v", err)
+	}
+	var orgIdentifiers []string
+	for k, v := range msps {
+		orgName, err := v.GetIdentifier()
+		if err != nil {
+			logger.Info("Organization does not have an identifier")
+		}
+		orgIdentifiers = append(orgIdentifiers, orgName)
+		fmt.Printf("%s -> %s\n", k, v)
+	}
+	return orgIdentifiers, nil
 }
 
 // Initialize initializes the chain
