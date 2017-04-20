@@ -1,0 +1,9 @@
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Code-Review+1: Karl Einholz <karl.einholz@securekey.com>
+Code-Review+1: Sandra Vrtikapa <sandra.vrtikapa@securekey.com>
+Code-Review+2: Aleksandar Likic <aleksandar.likic@securekey.com>
+Submitted-by: Aleksandar Likic <aleksandar.likic@securekey.com>
+Submitted-at: Thu, 20 Apr 2017 14:18:33 +0000
+Reviewed-on: http://gerrit.hyperledger.org/r/8165
+Project: fabric-sdk-go
+Branch: refs/heads/master
