@@ -23,14 +23,11 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
-	config "github.com/hyperledger/fabric-sdk-go/config"
 	"github.com/hyperledger/fabric/protos/common"
 	ab "github.com/hyperledger/fabric/protos/orderer"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 // Orderer The Orderer class represents a peer in the target blockchain network to which
@@ -44,23 +41,6 @@ type Orderer interface {
 type orderer struct {
 	url            string
 	grpcDialOption []grpc.DialOption
-}
-
-// CreateNewOrderer Returns a Orderer instance
-func CreateNewOrderer(url string, certificate string, serverHostOverride string) (Orderer, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(time.Second*3))
-	if config.IsTLSEnabled() {
-		tlsCaCertPool, err := config.GetTLSCACertPool(certificate)
-		if err != nil {
-			return nil, err
-		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-	}
-	return &orderer{url: url, grpcDialOption: opts}, nil
 }
 
 // GetURL Get the Orderer url. Required property for the instance objects.
