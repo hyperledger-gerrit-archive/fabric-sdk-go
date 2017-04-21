@@ -44,17 +44,17 @@ func GetChain(client fabricClient.Client, chainID string) (fabricClient.Chain, e
 	if err != nil {
 		return nil, fmt.Errorf("NewChain return error: %v", err)
 	}
-	orderer, err := fabricClient.CreateNewOrderer(fmt.Sprintf("%s:%s", config.GetOrdererHost(), config.GetOrdererPort()),
+	orderer, err := fabricClient.NewOrderer(fmt.Sprintf("%s:%s", config.GetOrdererHost(), config.GetOrdererPort()),
 		config.GetOrdererTLSCertificate(), config.GetOrdererTLSServerHostOverride())
 	if err != nil {
-		return nil, fmt.Errorf("CreateNewOrderer return error: %v", err)
+		return nil, fmt.Errorf("NewOrderer return error: %v", err)
 	}
 	chain.AddOrderer(orderer)
 
 	for _, p := range config.GetPeersConfig() {
-		endorser, err := fabricClient.CreateNewPeer(fmt.Sprintf("%s:%s", p.Host, p.Port), p.TLSCertificate, p.TLSServerHostOverride)
+		endorser, err := fabricClient.NewPeer(fmt.Sprintf("%s:%s", p.Host, p.Port), p.TLSCertificate, p.TLSServerHostOverride)
 		if err != nil {
-			return nil, fmt.Errorf("CreateNewPeer return error: %v", err)
+			return nil, fmt.Errorf("NewPeer return error: %v", err)
 		}
 		chain.AddPeer(endorser)
 		if p.Primary {
@@ -66,15 +66,13 @@ func GetChain(client fabricClient.Client, chainID string) (fabricClient.Chain, e
 }
 
 // SendInstallCC  Sends an install proposal to one or more endorsing peers.
-func SendInstallCC(chain fabricClient.Chain, chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte, targets []fabricClient.Peer, deployPath string) error {
+func SendInstallCC(client fabricClient.Client, chain fabricClient.Chain, chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte, targets []fabricClient.Peer, deployPath string) error {
 	ChangeGOPATHToDeploy(deployPath)
-	transactionProposalResponse, _, err := chain.SendInstallProposal(chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, targets)
+	transactionProposalResponse, _, err := client.SendInstallProposal(chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, targets)
 	ResetGOPATH()
-
 	if err != nil {
 		return fmt.Errorf("SendInstallProposal return error: %v", err)
 	}
-
 	for _, v := range transactionProposalResponse {
 		if v.Err != nil {
 			return fmt.Errorf("SendInstallProposal Endorser %s return error: %v", v.Endorser, v.Err)
@@ -121,12 +119,10 @@ func SendInstantiateCC(chain fabricClient.Chain, chainCodeID string, chainID str
 
 // CreateAndJoinChannel creates the channel represented by this chain
 // and makes the primary peer join it. It reads channel configuration from tx channelConfig file
-func CreateAndJoinChannel(client fabricClient.Client, chain fabricClient.Chain, channelConfig string) error {
-
-	// Check if primary peer has joined this channel
+func CreateAndJoinChannel(client fabricClient.Client, chain fabricClient.Chain, channelConfig string) error { // Check if primary peer has joined this channel
 	var foundChannel bool
 	primaryPeer := chain.GetPrimaryPeer()
-	response, err := chain.QueryChannels(primaryPeer)
+	response, err := client.QueryChannels(primaryPeer)
 	if err != nil {
 		return fmt.Errorf("Error querying channels for primary peer: %s", err)
 	}
