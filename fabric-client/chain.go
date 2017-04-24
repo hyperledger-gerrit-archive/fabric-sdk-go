@@ -33,7 +33,6 @@ import (
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
 
-	google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 	protos_utils "github.com/hyperledger/fabric/protos/utils"
 	"github.com/op/go-logging"
 
@@ -78,15 +77,12 @@ type Chain interface {
 	QueryBlock(blockNumber int) (*common.Block, error)
 	QueryBlockByHash(blockHash []byte) (*common.Block, error)
 	QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error)
-	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
 	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
-	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 	QueryByChaincode(chaincodeName string, args []string, targets []Peer) ([][]byte, error)
 	CreateTransactionProposal(chaincodeName string, chainID string, args []string, sign bool, transientData map[string][]byte) (*TransactionProposal, error)
 	SendTransactionProposal(proposal *TransactionProposal, retry int, targets []Peer) ([]*TransactionProposalResponse, error)
 	CreateTransaction(resps []*TransactionProposalResponse) (*Transaction, error)
 	SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
-	SendInstallProposal(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []Peer) ([]*TransactionProposalResponse, string, error)
 	SendInstantiateProposal(chaincodeName string, chainID string, args []string, chaincodePath string, chaincodeVersion string, targets []Peer) ([]*TransactionProposalResponse, string, error)
 	GetOrganizationUnits() ([]string, error)
 	QueryExtensionInterface() ChainExtension
@@ -523,8 +519,8 @@ func (c *chain) JoinChannel(request *JoinChannelRequest) error {
 		return err
 	}
 	// Sign join proposal
-	signature, err := c.signObjectWithKey(proposalBytes, user.GetPrivateKey(),
-		&bccsp.SHAOpts{}, nil)
+	signature, err := signObjectWithKey(proposalBytes, user.GetPrivateKey(),
+		&bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
 	if err != nil {
 		return err
 	}
@@ -592,7 +588,7 @@ func (c *chain) QueryInfo() (*common.BlockchainInfo, error) {
 	args = append(args, "GetChainInfo")
 	args = append(args, c.GetName())
 
-	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	payload, err := c.QueryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetChainInfo return error: %v", err)
 	}
@@ -625,7 +621,7 @@ func (c *chain) QueryBlock(blockNumber int) (*common.Block, error) {
 	args = append(args, c.GetName())
 	args = append(args, strconv.Itoa(blockNumber))
 
-	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	payload, err := c.QueryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetBlockByNumber return error: %v", err)
 	}
@@ -658,7 +654,7 @@ func (c *chain) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 	args = append(args, c.GetName())
 	args = append(args, string(blockHash[:len(blockHash)]))
 
-	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	payload, err := c.QueryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetBlockByHash return error: %v", err)
 	}
@@ -687,7 +683,7 @@ func (c *chain) QueryTransaction(transactionID string) (*pb.ProcessedTransaction
 	args = append(args, c.GetName())
 	args = append(args, transactionID)
 
-	payload, err := c.queryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
+	payload, err := c.QueryByChaincodeByTarget("qscc", args, c.GetPrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke qscc GetBlockByNumber return error: %v", err)
 	}
@@ -701,30 +697,6 @@ func (c *chain) QueryTransaction(transactionID string) (*pb.ProcessedTransaction
 	return transaction, nil
 }
 
-//QueryInstalledChaincodes
-/**
- * Queries the installed chaincodes on a peer
- * Returning the details of all chaincodes installed on a peer.
- * @param {Peer} peer
- * @returns {object} ChaincodeQueryResponse proto
- */
-
-func (c *chain) QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error) {
-
-	payload, err := c.queryByChaincodeByTarget("lccc", []string{"getinstalledchaincodes"}, peer)
-	if err != nil {
-		return nil, fmt.Errorf("Invoke lccc getinstalledchaincodes return error: %v", err)
-	}
-
-	response := new(pb.ChaincodeQueryResponse)
-	err = proto.Unmarshal(payload, response)
-	if err != nil {
-		return nil, fmt.Errorf("Unmarshal ChaincodeQueryResponse return error: %v", err)
-	}
-
-	return response, nil
-}
-
 //QueryInstantiatedChaincodes
 /**
  * Queries the instantiated chaincodes on this channel.
@@ -733,7 +705,7 @@ func (c *chain) QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse,
  */
 func (c *chain) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
 
-	payload, err := c.queryByChaincodeByTarget("lccc", []string{"getchaincodes"}, c.GetPrimaryPeer())
+	payload, err := c.QueryByChaincodeByTarget("lccc", []string{"getchaincodes"}, c.GetPrimaryPeer())
 	if err != nil {
 		return nil, fmt.Errorf("Invoke lccc getchaincodes return error: %v", err)
 	}
@@ -747,30 +719,6 @@ func (c *chain) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error
 	return response, nil
 }
 
-//QueryChannels
-/**
- * Queries the names of all the channels that a
- * peer has joined.
- * @param {Peer} peer
- * @returns {object} ChannelQueryResponse proto
- */
-
-func (c *chain) QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error) {
-
-	payload, err := c.queryByChaincodeByTarget("cscc", []string{"GetChannels"}, peer)
-	if err != nil {
-		return nil, fmt.Errorf("Invoke cscc GetChannels return error: %v", err)
-	}
-
-	response := new(pb.ChannelQueryResponse)
-	err = proto.Unmarshal(payload, response)
-	if err != nil {
-		return nil, fmt.Errorf("Unmarshal ChannelQueryResponse return error: %v", err)
-	}
-
-	return response, nil
-}
-
 /**
  * Generic helper for query functionality for chain
  * This query will be made to one target peer and will return one result only.
@@ -779,7 +727,7 @@ func (c *chain) QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error) {
  * @param {Peer} target peer
  * @returns {[]byte} payload
  */
-func (c *chain) queryByChaincodeByTarget(chaincodeName string, args []string, target Peer) ([]byte, error) {
+func (c *chain) QueryByChaincodeByTarget(chaincodeName string, args []string, target Peer) ([]byte, error) {
 
 	queryResponses, err := c.QueryByChaincode(chaincodeName, args, []Peer{target})
 	if err != nil {
@@ -823,7 +771,7 @@ func (c *chain) QueryByChaincode(chaincodeName string, args []string, targets []
 
 	logger.Debugf("Calling %s function %v on targets: %s\n", chaincodeName, args[0], targets)
 
-	signedProposal, err := c.CreateTransactionProposal(chaincodeName, "", args, true, nil)
+	signedProposal, err := CreateTransactionProposal(chaincodeName, "", args, true, nil, c.clientContext)
 	if err != nil {
 		return nil, fmt.Errorf("CreateTransactionProposal return error: %v", err)
 	}
@@ -858,6 +806,12 @@ func (c *chain) QueryByChaincode(chaincodeName string, args []string, targets []
  */
 func (c *chain) CreateTransactionProposal(chaincodeName string, chainID string,
 	args []string, sign bool, transientData map[string][]byte) (*TransactionProposal, error) {
+	return CreateTransactionProposal(chaincodeName, chainID, args, sign, transientData, c.clientContext)
+}
+
+//CreateTransactionProposal  ...
+func CreateTransactionProposal(chaincodeName string, chainID string,
+	args []string, sign bool, transientData map[string][]byte, clientContext Client) (*TransactionProposal, error) {
 
 	argsArray := make([][]byte, len(args))
 	for i, arg := range args {
@@ -867,7 +821,7 @@ func (c *chain) CreateTransactionProposal(chaincodeName string, chainID string,
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	user, err := c.clientContext.LoadUserFromStateStore("")
+	user, err := clientContext.LoadUserFromStateStore("")
 	if err != nil {
 		return nil, fmt.Errorf("LoadUserFromStateStore return error: %s", err)
 	}
@@ -887,8 +841,8 @@ func (c *chain) CreateTransactionProposal(chaincodeName string, chainID string,
 		return nil, err
 	}
 
-	signature, err := c.signObjectWithKey(proposalBytes, user.GetPrivateKey(),
-		&bccsp.SHAOpts{}, nil)
+	signature, err := signObjectWithKey(proposalBytes, user.GetPrivateKey(),
+		&bccsp.SHAOpts{}, nil, clientContext.GetCryptoSuite())
 	if err != nil {
 		return nil, err
 	}
@@ -898,6 +852,7 @@ func (c *chain) CreateTransactionProposal(chaincodeName string, chainID string,
 		signedProposal: signedProposal,
 		proposal:       proposal,
 	}, nil
+
 }
 
 // SendTransactionProposal ...
@@ -913,6 +868,24 @@ func (c *chain) SendTransactionProposal(proposal *TransactionProposal, retry int
 	targetPeers, err := c.getTargetPeers(targets)
 	if err != nil {
 		return nil, fmt.Errorf("GetTargetPeers return error: %s", err)
+	}
+	if len(targetPeers) < 1 {
+		return nil, fmt.Errorf("Missing peer objects for sending transaction proposal")
+	}
+
+	transactionProposalResponses, err := SendTransactionProposal(proposal, retry, targetPeers)
+	if err != nil {
+		return nil, fmt.Errorf("GetTargetPeers return error: %s", err)
+	}
+	return transactionProposalResponses, nil
+
+}
+
+//SendTransactionProposal ...
+func SendTransactionProposal(proposal *TransactionProposal, retry int, targetPeers []Peer) ([]*TransactionProposalResponse, error) {
+
+	if proposal == nil || proposal.signedProposal == nil {
+		return nil, fmt.Errorf("signedProposal is nil")
 	}
 
 	if len(targetPeers) < 1 {
@@ -1094,77 +1067,6 @@ func (c *chain) SendTransaction(tx *Transaction) ([]*TransactionResponse, error)
 	return transactionResponses, nil
 }
 
-// SendInstallProposal ...
-/**
-* Sends an install proposal to one or more endorsing peers.
-* @param {string} chaincodeName: required - The name of the chaincode.
-* @param {[]string} chaincodePath: required - string of the path to the location of the source code of the chaincode
-* @param {[]string} chaincodeVersion: required - string of the version of the chaincode
-* @param {[]string} chaincodeVersion: optional - Array of byte the chaincodePackage
- */
-func (c *chain) SendInstallProposal(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []Peer) ([]*TransactionProposalResponse, string, error) {
-
-	if chaincodeName == "" {
-		return nil, "", fmt.Errorf("Missing 'chaincodeName' parameter")
-	}
-	if chaincodePath == "" {
-		return nil, "", fmt.Errorf("Missing 'chaincodePath' parameter")
-	}
-	if chaincodeVersion == "" {
-		return nil, "", fmt.Errorf("Missing 'chaincodeVersion' parameter")
-	}
-
-	if chaincodePackage == nil {
-		var err error
-		chaincodePackage, err = PackageCC(chaincodePath, "")
-		if err != nil {
-			return nil, "", fmt.Errorf("PackageCC return error: %s", err)
-		}
-	}
-
-	targetPeers, err := c.getTargetPeers(targets)
-	if err != nil {
-		return nil, "", fmt.Errorf("Invalid target peers return error: %s", err)
-	}
-
-	if len(targetPeers) < 1 {
-		return nil, "", fmt.Errorf("Missing peer objects for install CC proposal")
-	}
-
-	now := time.Now()
-	cds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
-		CodePackage: chaincodePackage, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
-
-	user, err := c.clientContext.LoadUserFromStateStore("")
-	if err != nil {
-		return nil, "", fmt.Errorf("LoadUserFromStateStore return error: %s", err)
-	}
-
-	creatorID, err := getSerializedIdentity(user.GetEnrollmentCertificate())
-	if err != nil {
-		return nil, "", err
-	}
-
-	// create an install from a chaincodeDeploymentSpec
-	proposal, txID, err := protos_utils.CreateInstallProposalFromCDS(cds, creatorID)
-	if err != nil {
-		return nil, "", fmt.Errorf("Could not create chaincode Deploy proposal, err %s", err)
-	}
-
-	signedProposal, err := c.signProposal(proposal)
-	if err != nil {
-		return nil, "", err
-	}
-
-	transactionProposalResponse, err := c.SendTransactionProposal(&TransactionProposal{
-		signedProposal: signedProposal,
-		proposal:       proposal,
-		TransactionID:  txID,
-	}, 0, targetPeers)
-	return transactionProposalResponse, txID, err
-}
-
 // SendInstantiateProposal ...
 /**
 * Sends an instantiate proposal to one or more endorsing peers.
@@ -1187,6 +1089,7 @@ func (c *chain) SendInstantiateProposal(chaincodeName string, chainID string,
 		return nil, "", fmt.Errorf("Missing 'chaincodePath' parameter")
 	}
 	if chaincodeVersion == "" {
+
 		return nil, "", fmt.Errorf("Missing 'chaincodeVersion' parameter")
 	}
 
@@ -1252,8 +1155,8 @@ func (c *chain) SignPayload(payload []byte) (*SignedEnvelope, error) {
 		return nil, fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
 	}
 
-	signature, err := c.signObjectWithKey(payload, user.GetPrivateKey(),
-		&bccsp.SHAOpts{}, nil)
+	signature, err := signObjectWithKey(payload, user.GetPrivateKey(),
+		&bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
 	if err != nil {
 		return nil, err
 	}
@@ -1365,9 +1268,8 @@ func (c *chain) SendEnvelope(envelope *SignedEnvelope) (*common.Block, error) {
 
 // signObjectWithKey will sign the given object with the given key,
 // hashOpts and signerOpts
-func (c *chain) signObjectWithKey(object []byte, key bccsp.Key,
-	hashOpts bccsp.HashOpts, signerOpts bccsp.SignerOpts) ([]byte, error) {
-	cryptoSuite := c.clientContext.GetCryptoSuite()
+func signObjectWithKey(object []byte, key bccsp.Key,
+	hashOpts bccsp.HashOpts, signerOpts bccsp.SignerOpts, cryptoSuite bccsp.BCCSP) ([]byte, error) {
 	digest, err := cryptoSuite.Hash(object, hashOpts)
 	if err != nil {
 		return nil, err
@@ -1391,7 +1293,7 @@ func (c *chain) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error) 
 		return nil, err
 	}
 
-	signature, err := c.signObjectWithKey(proposalBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil)
+	signature, err := signObjectWithKey(proposalBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
 	if err != nil {
 		return nil, err
 	}
