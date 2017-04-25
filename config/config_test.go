@@ -78,6 +78,25 @@ func TestMultipleVipers(t *testing.T) {
 	}
 }
 
+func TestEnvironmentVariables(t *testing.T) {
+	err := os.Setenv("SDK_ENV_TEST", "123")
+	defer os.Unsetenv("SDK_ENV_TEST")
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	err = InitConfig("../test/fixtures/config/config_test.yaml")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	testValue := myViper.GetString("env.test")
+	if testValue != "123" {
+		t.Fatalf("Expected environment variable value but got: %s", testValue)
+	}
+}
+
 func TestMain(m *testing.M) {
 	err := InitConfig("../test/fixtures/config/config_test.yaml")
 	if err != nil {
