@@ -159,12 +159,10 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 
 // Query ...
 func (setup *BaseSetupImpl) Query(chainID string, chainCodeID string, args []string) (string, error) {
-
-	transactionProposalResponses, _, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, chainCodeID, chainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()})
+	transactionProposalResponses, _, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, chainCodeID, chainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
-
 	return string(transactionProposalResponses[0].GetResponsePayload()), nil
 }
 
@@ -175,7 +173,6 @@ func (setup *BaseSetupImpl) QueryAsset() (string, error) {
 	args = append(args, "invoke")
 	args = append(args, "query")
 	args = append(args, "b")
-
 	return setup.Query(setup.ChainID, setup.ChainCodeID, args)
 }
 
@@ -189,19 +186,21 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 	args = append(args, "b")
 	args = append(args, "1")
 
-	transactionProposalResponse, txID, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()})
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte("Transient data in move funds...")
+
+	transactionProposalResponse, txID, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
-
 	// Register for commit event
 	done, fail := fcUtil.RegisterTxEvent(txID, setup.EventHub)
 
-	_, err = fcUtil.CreateAndSendTransaction(setup.Chain, transactionProposalResponse)
+	txResponse, err := fcUtil.CreateAndSendTransaction(setup.Chain, transactionProposalResponse)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransaction return error: %v", err)
 	}
-
+	fmt.Println(txResponse)
 	select {
 	case <-done:
 	case <-fail:
@@ -211,6 +210,48 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 	}
 	return txID, nil
 
+}
+
+// TestTransient ...
+func (setup *BaseSetupImpl) TestTransient() error {
+
+	var args []string
+	args = append(args, "invoke")
+	args = append(args, "move")
+	args = append(args, "a")
+	args = append(args, "b")
+	args = append(args, "0")
+	transientData := "Transient data test..."
+
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte(transientData)
+
+	transactionProposalResponse, _, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, transientDataMap)
+	if err != nil {
+		return fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
+	}
+	strResponse := string(transactionProposalResponse[0].GetResponsePayload())
+	//validate transient data exists in proposal
+	if len(strResponse) == 0 {
+		return fmt.Errorf("Transient data does not exist: expected %s", transientData)
+	}
+	//verify transient data content
+	if strResponse != transientData {
+		return fmt.Errorf("Expected '%s' in transient data field. Received '%s' ", transientData, strResponse)
+	}
+	//transient data null
+	transientDataMap["result"] = []byte{}
+	transactionProposalResponse, _, err = fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, transientDataMap)
+	if err != nil {
+		return fmt.Errorf("CreateAndSendTransactionProposal with empty transient data return an error: %v", err)
+	}
+	//validate that transient data does not exist in proposal
+	strResponse = string(transactionProposalResponse[0].GetResponsePayload())
+	if len(strResponse) != 0 {
+		return fmt.Errorf("Transient data validation has failed. An empty transient data was expected but %s was returned", strResponse)
+	}
+
+	return nil
 }
 
 // getEventHub initilizes the event hub
