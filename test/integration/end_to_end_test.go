@@ -82,7 +82,10 @@ func TestChainCodeInvoke(t *testing.T) {
 	valueAfterInvokeInt, _ := strconv.Atoi(valueAfterInvoke)
 	if valueInt != valueAfterInvokeInt {
 		t.Fatalf("SendTransaction didn't change the QueryValue")
-
 	}
-
+	fmt.Print("*** Test Transient Data \n")
+	err = testSetup.TestTransient()
+	if err != nil {
+		fmt.Printf("*** Transient data error:  %s\n", err)
+	}
 }
