@@ -159,12 +159,10 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 
 // Query ...
 func (setup *BaseSetupImpl) Query(chainID string, chainCodeID string, args []string) (string, error) {
-
-	transactionProposalResponses, _, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, chainCodeID, chainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()})
+	transactionProposalResponses, _, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, chainCodeID, chainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
-
 	return string(transactionProposalResponses[0].GetResponsePayload()), nil
 }
 
@@ -189,19 +187,21 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 	args = append(args, "b")
 	args = append(args, "1")
 
-	transactionProposalResponse, txID, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()})
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte("Transient data in move funds...")
+
+	transactionProposalResponse, txID, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
-
 	// Register for commit event
 	done, fail := fcUtil.RegisterTxEvent(txID, setup.EventHub)
 
-	_, err = fcUtil.CreateAndSendTransaction(setup.Chain, transactionProposalResponse)
+	txResponse, err := fcUtil.CreateAndSendTransaction(setup.Chain, transactionProposalResponse)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransaction return error: %v", err)
 	}
-
+	fmt.Println(txResponse)
 	select {
 	case <-done:
 	case <-fail:
@@ -211,6 +211,49 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 	}
 	return txID, nil
 
+}
+
+// TestTransient ...
+func (setup *BaseSetupImpl) TestTransient() error {
+
+	var args []string
+	args = append(args, "invoke")
+	args = append(args, "move")
+	args = append(args, "a")
+	args = append(args, "b")
+	args = append(args, "0")
+	TransientData := "Transient data test..."
+
+	transientDataMap := make(map[string][]byte)
+	transientDataMap["result"] = []byte(TransientData)
+
+	transactionProposalResponse, _, err := fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, transientDataMap)
+	if err != nil {
+		return fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
+	}
+	strResponse := string(transactionProposalResponse[0].GetResponsePayload())
+	//validate transient data exists in proposal
+	fmt.Printf("Retrieved transient data from transaction proposal: %v\n", string(transactionProposalResponse[0].GetResponsePayload()))
+	if len(strResponse) == 0 {
+		return fmt.Errorf("CreateAndSendTransaction return error: %v", err)
+	}
+	//verify transient data content
+	if strResponse != TransientData {
+		return fmt.Errorf("Expected '%v' in transient data field: ", TransientData)
+	}
+	//transient data null
+	transientDataMap["result"] = []byte{}
+	transactionProposalResponse, _, err = fcUtil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, transientDataMap)
+	if err != nil {
+		return fmt.Errorf("TestTransient data return error: %v", err)
+	}
+	//validate that transient data does not exist in proposal
+	strResponse = string(transactionProposalResponse[0].GetResponsePayload())
+	if len(strResponse) != 0 {
+		return fmt.Errorf("TestTransient data return error: %v", err)
+	}
+
+	return nil
 }
 
 // getEventHub initilizes the event hub
