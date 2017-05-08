@@ -82,7 +82,7 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
 
-	tpResponses2, tx2, err := fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses2, tx2, err := fcUtil.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()})
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
