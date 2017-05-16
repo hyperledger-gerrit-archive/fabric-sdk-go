@@ -474,8 +474,8 @@ func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 	}
 
 	transactionProposalResponse, err := SendTransactionProposal(&TransactionProposal{
-		signedProposal: signedProposal,
-		proposal:       proposal,
+		SignedProposal: signedProposal,
+		Proposal:       proposal,
 		TransactionID:  txID,
 	}, 0, targets)
 
