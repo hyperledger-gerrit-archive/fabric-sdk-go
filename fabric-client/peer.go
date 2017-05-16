@@ -203,7 +203,7 @@ func (p *peer) SendProposal(proposal *TransactionProposal) (*TransactionProposal
 	}
 	defer conn.Close()
 	endorserClient := pb.NewEndorserClient(conn)
-	proposalResponse, err := endorserClient.ProcessProposal(context.Background(), proposal.signedProposal)
+	proposalResponse, err := endorserClient.ProcessProposal(context.Background(), proposal.SignedProposal)
 	if err != nil {
 		return nil, err
 	}
