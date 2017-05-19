@@ -19,7 +19,7 @@
 #
 
 # Packages to exclude
-PKGS=`go list github.com/hyperledger/fabric-sdk-go/test/... 2> /dev/null | \
+PKGS=`go list github.com/hyperledger/fabric-sdk-go/test/integration/... 2> /dev/null | \
                                                   grep -v /vendor/`
 
 # Detect Hyperledger CI environment
