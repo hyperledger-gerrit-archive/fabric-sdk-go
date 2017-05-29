@@ -18,12 +18,13 @@ go get -u github.com/hyperledger/fabric-sdk-go/fabric-client
 go get -u github.com/hyperledger/fabric-sdk-go/fabric-ca-client
 ```
 
-You're good to go, happy coding! Check out the samples for a usage demonstration.
+You're good to go, happy coding! Check out the examples for usage demonstrations.
 
-### Samples
+### Examples
 
 - [E2E Test](test/integration/end_to_end_test.go) and [Base Test](test/integration/base_test_setup.go)
-- More samples needed!
+- [Fabric CLI](https://github.com/securekey/fabric-examples/tree/master/fabric-cli/)
+- More examples needed!
 
 ### Community
 
