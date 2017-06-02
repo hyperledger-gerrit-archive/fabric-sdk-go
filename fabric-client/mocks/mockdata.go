@@ -47,6 +47,7 @@ type MockConfigGroupBuilder struct {
 	ModPolicy      string
 	OrdererAddress string
 	MSPNames       []string
+	RootCA         string
 }
 
 // MockConfigBlockBuilder is used to build a mock Chain configuration block
@@ -260,13 +261,13 @@ func (b *MockConfigGroupBuilder) buildfabricMSPConfig(name string) *mb.FabricMSP
 		IntermediateCerts:             [][]byte{},
 		OrganizationalUnitIdentifiers: []*mb.FabricOUIdentifier{},
 		RevocationList:                [][]byte{},
-		RootCerts:                     [][]byte{b.buildRootCertBytes()},
+		RootCerts:                     [][]byte{[]byte(b.RootCA)},
 		SigningIdentity:               nil,
 	}
 }
 
 func (b *MockConfigGroupBuilder) buildRootCertBytes() []byte {
-	pem, err := ioutil.ReadFile("../test/fixtures/root.pem")
+	pem, err := ioutil.ReadFile(b.RootCA)
 	if err != nil {
 		log.Fatal(err)
 	}
