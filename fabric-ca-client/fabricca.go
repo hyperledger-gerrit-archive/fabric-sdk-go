@@ -21,7 +21,6 @@ package fabricca
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/hyperledger/fabric-ca/api"
 	fabric_ca "github.com/hyperledger/fabric-ca/lib"
@@ -30,6 +29,7 @@ import (
 
 	"io/ioutil"
 
+	"github.com/hyperledger/fabric/bccsp"
 	"github.com/op/go-logging"
 )
 
@@ -37,9 +37,10 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 
 // Services ...
 type Services interface {
-	Enroll(enrollmentID string, enrollmentSecret string) ([]byte, []byte, error)
+	GetCAName() string
+	Enroll(enrollmentID string, enrollmentSecret string) (bccsp.Key, []byte, error)
 	//reenroll  to renew user's enrollment certificate
-	Reenroll(user fabricclient.User) ([]byte, []byte, error)
+	Reenroll(user fabricclient.User) (bccsp.Key, []byte, error)
 	Register(registrar fabricclient.User, request *RegistrationRequest) (string, error)
 	Revoke(registrar fabricclient.User, request *RevocationRequest) error
 }
@@ -61,6 +62,8 @@ type RegistrationRequest struct {
 	Affiliation string
 	// Optional attributes associated with this identity
 	Attributes []Attribute
+	// CAName is the name of the CA to connect to
+	CAName string
 }
 
 // RevocationRequest defines the attributes required to revoke credentials with the CA
@@ -75,7 +78,9 @@ type RevocationRequest struct {
 	AKI string
 	// Reason is the reason for revocation. See https://godoc.org/golang.org/x/crypto/ocsp
 	// for valid values. The default value is 0 (ocsp.Unspecified).
-	Reason int
+	Reason string
+	// CAName is the name of the CA to connect to
+	CAName string
 }
 
 // Attribute defines additional attributes that may be passed along during registration
@@ -91,21 +96,20 @@ type Attribute struct {
 func NewFabricCAClient() (Services, error) {
 
 	// Create new Fabric-ca client without configs
-	c, err := fabric_ca.NewClient("")
-	if err != nil {
-		return nil, fmt.Errorf("New fabricCAClient failed: %s", err)
+	c := &fabric_ca.Client{
+		Config: &fabric_ca.ClientConfig{},
 	}
 
 	certFile := config.GetFabricCAClientCertFile()
 	keyFile := config.GetFabricCAClientKeyFile()
 	serverCertFiles := config.GetServerCertFiles()
 
+	//set server CAName
+	c.Config.CAName = config.GetFabricCAName()
 	//set server URL
 	c.Config.URL = config.GetServerURL()
 	//certs file list
-	c.Config.TLS.CertFilesList = serverCertFiles
-	//concat cert files
-	c.Config.TLS.CertFiles = strings.Join(serverCertFiles[:], ",")
+	c.Config.TLS.CertFiles = serverCertFiles
 	//set cert file into TLS context
 	file, err := ioutil.ReadFile(certFile)
 	if err != nil {
@@ -126,7 +130,18 @@ func NewFabricCAClient() (Services, error) {
 	fabricCAClient := &services{fabricCAClient: c}
 	logger.Infof("Constructed fabricCAClient instance: %v", fabricCAClient)
 
+	c.Config.CSP = config.GetCSPConfig()
+
+	err = c.Init()
+	if err != nil {
+		return nil, fmt.Errorf("New fabricCAClient failed: %s", err)
+	}
+
 	return fabricCAClient, nil
+}
+
+func (fabricCAServices *services) GetCAName() string {
+	return fabricCAServices.fabricCAClient.Config.CAName
 }
 
 // Enroll ...
@@ -137,7 +152,7 @@ func NewFabricCAClient() (Services, error) {
  * @returns {[]byte} X509 certificate
  * @returns {[]byte} private key
  */
-func (fabricCAServices *services) Enroll(enrollmentID string, enrollmentSecret string) ([]byte, []byte, error) {
+func (fabricCAServices *services) Enroll(enrollmentID string, enrollmentSecret string) (bccsp.Key, []byte, error) {
 	if enrollmentID == "" {
 		return nil, nil, fmt.Errorf("enrollmentID is empty")
 	}
@@ -145,6 +160,7 @@ func (fabricCAServices *services) Enroll(enrollmentID string, enrollmentSecret s
 		return nil, nil, fmt.Errorf("enrollmentSecret is empty")
 	}
 	req := &api.EnrollmentRequest{
+		CAName: fabricCAServices.fabricCAClient.Config.CAName,
 		Name:   enrollmentID,
 		Secret: enrollmentSecret,
 	}
@@ -161,7 +177,7 @@ func (fabricCAServices *services) Enroll(enrollmentID string, enrollmentSecret s
  * @returns {[]byte} X509 certificate
  * @returns {[]byte} private key
  */
-func (fabricCAServices *services) Reenroll(user fabricclient.User) ([]byte, []byte, error) {
+func (fabricCAServices *services) Reenroll(user fabricclient.User) (bccsp.Key, []byte, error) {
 	if user == nil {
 		return nil, nil, fmt.Errorf("User does not exist")
 	}
@@ -169,7 +185,9 @@ func (fabricCAServices *services) Reenroll(user fabricclient.User) ([]byte, []by
 		logger.Infof("Invalid re-enroll request, missing argument user")
 		return nil, nil, fmt.Errorf("User is empty")
 	}
-	req := &api.ReenrollmentRequest{}
+	req := &api.ReenrollmentRequest{
+		CAName: fabricCAServices.fabricCAClient.Config.CAName,
+	}
 	// Create signing identity
 	identity, err := fabricCAServices.createSigningIdentity(user)
 	if err != nil {
@@ -212,6 +230,7 @@ func (fabricCAServices *services) Register(registrar fabricclient.User,
 			Attributes[i].Key, Value: request.Attributes[i].Value})
 	}
 	var req = api.RegistrationRequest{
+		CAName:         request.CAName,
 		Name:           request.Name,
 		Type:           request.Type,
 		MaxEnrollments: request.MaxEnrollments,
@@ -243,6 +262,7 @@ func (fabricCAServices *services) Revoke(registrar fabricclient.User,
 	}
 	// Create revocation request
 	var req = api.RevocationRequest{
+		CAName: request.CAName,
 		Name:   request.Name,
 		Serial: request.Serial,
 		AKI:    request.AKI,
@@ -264,12 +284,5 @@ func (fabricCAServices *services) createSigningIdentity(user fabricclient.
 		return nil, fmt.Errorf(
 			"Unable to read user enrolment information to create signing identity")
 	}
-	// TODO: Right now this reads the key from a default BCCSP implementation using the SKI
-	// this method signature will change to accepting a BCCSP key soon.
-	// Track changes here: https://gerrit.hyperledger.org/r/#/c/6727/
-	ski := key.SKI()
-	if ski == nil {
-		return nil, fmt.Errorf("Unable to read private key SKI")
-	}
-	return fabricCAServices.fabricCAClient.NewIdentity(ski, cert)
+	return fabricCAServices.fabricCAClient.NewIdentity(key, cert)
 }
