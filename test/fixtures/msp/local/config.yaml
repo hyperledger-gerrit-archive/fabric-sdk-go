@@ -1,0 +1,3 @@
+OrganizationalUnitIdentifiers:
+  - Certificate: "cacerts/org1.example.com-cert.pem"
+    OrganizationalUnitIdentifier: "Org1MSP"
