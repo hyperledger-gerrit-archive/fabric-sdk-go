@@ -12,9 +12,11 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/hyperledger/fabric-sdk-go/api"
 	"github.com/hyperledger/fabric-sdk-go/config"
-	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	consumer "github.com/hyperledger/fabric-sdk-go/fabric-client/events/consumer"
+	client "github.com/hyperledger/fabric-sdk-go/fabric-client/client"
+	internal "github.com/hyperledger/fabric-sdk-go/internal"
+
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
@@ -45,7 +47,7 @@ type mockEventClientFactory struct {
 	clients []*mockEventClient
 }
 
-func (mecf *mockEventClientFactory) newEventsClient(client fabricClient.Client, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (consumer.EventsClient, error) {
+func (mecf *mockEventClientFactory) newEventsClient(client api.Client, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (api.EventsClient, error) {
 	mec := &mockEventClient{
 		PeerAddress: peerAddress,
 		RegTimeout:  regTimeout,
@@ -113,7 +115,7 @@ func createMockedEventHub(t *testing.T) (*eventHub, *mockEventClientFactory) {
 	if err != nil {
 		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
-	eh, err := NewEventHub(fabricClient.NewClient())
+	eh, err := NewEventHub(client.NewClient())
 	if err != nil {
 		t.Fatalf("Error creating event hub: %v", err)
 	}
@@ -166,7 +168,7 @@ func (b *MockTxEventBuilder) Build() *pb.Event_Block {
 			Header:   &common.BlockHeader{},
 			Metadata: b.buildBlockMetadata(),
 			Data: &common.BlockData{
-				Data: [][]byte{fabricClient.MarshalOrPanic(b.buildEnvelope())},
+				Data: [][]byte{internal.MarshalOrPanic(b.buildEnvelope())},
 			},
 		},
 	}
@@ -200,14 +202,14 @@ func (b *MockCCEventBuilder) Build() *pb.Event_ChaincodeEvent {
 
 func (b *MockTxEventBuilder) buildEnvelope() *common.Envelope {
 	return &common.Envelope{
-		Payload: fabricClient.MarshalOrPanic(b.buildPayload()),
+		Payload: internal.MarshalOrPanic(b.buildPayload()),
 	}
 }
 
 func (b *MockTxEventBuilder) buildPayload() *common.Payload {
 	return &common.Payload{
 		Header: &common.Header{
-			ChannelHeader: fabricClient.MarshalOrPanic(b.buildChannelHeader()),
+			ChannelHeader: internal.MarshalOrPanic(b.buildChannelHeader()),
 		},
 	}
 }
@@ -226,7 +228,7 @@ func (b *MockCCBlockEventBuilder) Build() *pb.Event_Block {
 			Header:   &common.BlockHeader{},
 			Metadata: b.buildBlockMetadata(),
 			Data: &common.BlockData{
-				Data: [][]byte{fabricClient.MarshalOrPanic(b.buildEnvelope())},
+				Data: [][]byte{internal.MarshalOrPanic(b.buildEnvelope())},
 			},
 		},
 	}
@@ -245,7 +247,7 @@ func (b *MockCCBlockEventBuilder) buildBlockMetadata() *common.BlockMetadata {
 
 func (b *MockCCBlockEventBuilder) buildEnvelope() *common.Envelope {
 	return &common.Envelope{
-		Payload: fabricClient.MarshalOrPanic(b.buildPayload()),
+		Payload: internal.MarshalOrPanic(b.buildPayload()),
 	}
 }
 
@@ -257,9 +259,9 @@ func (b *MockCCBlockEventBuilder) buildPayload() *common.Payload {
 	fmt.Printf("MockCCBlockEventBuilder.buildPayload\n")
 	return &common.Payload{
 		Header: &common.Header{
-			ChannelHeader: fabricClient.MarshalOrPanic(b.buildChannelHeader()),
+			ChannelHeader: internal.MarshalOrPanic(b.buildChannelHeader()),
 		},
-		Data: fabricClient.MarshalOrPanic(b.buildTransaction()),
+		Data: internal.MarshalOrPanic(b.buildTransaction()),
 	}
 }
 
@@ -280,7 +282,7 @@ func (b *MockCCBlockEventBuilder) buildTransaction() *pb.Transaction {
 func (b *MockCCBlockEventBuilder) buildTransactionAction() *pb.TransactionAction {
 	return &pb.TransactionAction{
 		Header:  []byte{},
-		Payload: fabricClient.MarshalOrPanic(b.buildChaincodeActionPayload()),
+		Payload: internal.MarshalOrPanic(b.buildChaincodeActionPayload()),
 	}
 }
 
@@ -293,7 +295,7 @@ func (b *MockCCBlockEventBuilder) buildChaincodeActionPayload() *pb.ChaincodeAct
 
 func (b *MockCCBlockEventBuilder) buildChaincodeEndorsedAction() *pb.ChaincodeEndorsedAction {
 	return &pb.ChaincodeEndorsedAction{
-		ProposalResponsePayload: fabricClient.MarshalOrPanic(b.buildProposalResponsePayload()),
+		ProposalResponsePayload: internal.MarshalOrPanic(b.buildProposalResponsePayload()),
 		Endorsements:            []*pb.Endorsement{},
 	}
 }
@@ -301,13 +303,13 @@ func (b *MockCCBlockEventBuilder) buildChaincodeEndorsedAction() *pb.ChaincodeEn
 func (b *MockCCBlockEventBuilder) buildProposalResponsePayload() *pb.ProposalResponsePayload {
 	return &pb.ProposalResponsePayload{
 		ProposalHash: []byte("somehash"),
-		Extension:    fabricClient.MarshalOrPanic(b.buildChaincodeAction()),
+		Extension:    internal.MarshalOrPanic(b.buildChaincodeAction()),
 	}
 }
 
 func (b *MockCCBlockEventBuilder) buildChaincodeAction() *pb.ChaincodeAction {
 	return &pb.ChaincodeAction{
-		Events: fabricClient.MarshalOrPanic(b.buildChaincodeEvent()),
+		Events: internal.MarshalOrPanic(b.buildChaincodeEvent()),
 	}
 }
 
@@ -321,7 +323,7 @@ func (b *MockCCBlockEventBuilder) buildChaincodeEvent() *pb.ChaincodeEvent {
 }
 
 func generateTxID() string {
-	nonce, err := fabricClient.GenerateRandomNonce()
+	nonce, err := internal.GenerateRandomNonce()
 	if err != nil {
 		panic(fmt.Errorf("error generating nonce: %v", err))
 	}

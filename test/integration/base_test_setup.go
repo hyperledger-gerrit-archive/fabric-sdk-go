@@ -15,17 +15,18 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/config"
 	"github.com/hyperledger/fabric-sdk-go/fabric-client/events"
 
-	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	fcutil "github.com/hyperledger/fabric-sdk-go/fabric-client/util"
+	api "github.com/hyperledger/fabric-sdk-go/api"
+
+	fcutil "github.com/hyperledger/fabric-sdk-go/util"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	Client             fabricClient.Client
-	OrdererAdminClient fabricClient.Client
-	Chain              fabricClient.Chain
-	EventHub           events.EventHub
+	Client             api.Client
+	OrdererAdminClient api.Client
+	Chain              api.Chain
+	EventHub           api.EventHub
 	ConnectEventHub    bool
 	ConfigFile         string
 	ChainID            string
@@ -86,7 +87,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 	return nil
 }
 
-func (setup *BaseSetupImpl) setupEventHub(client fabricClient.Client) error {
+func (setup *BaseSetupImpl) setupEventHub(client api.Client) error {
 	eventHub, err := getEventHub(client)
 	if err != nil {
 		return err
@@ -112,7 +113,7 @@ func (setup *BaseSetupImpl) InitConfig() error {
 
 // InstantiateCC ...
 func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainID string, chainCodePath string, chainCodeVersion string, args []string) error {
-	if err := fcutil.SendInstantiateCC(setup.Chain, chainCodeID, chainID, args, chainCodePath, chainCodeVersion, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, setup.EventHub); err != nil {
+	if err := fcutil.SendInstantiateCC(setup.Chain, chainCodeID, chainID, args, chainCodePath, chainCodeVersion, []api.Peer{setup.Chain.GetPrimaryPeer()}, setup.EventHub); err != nil {
 		return err
 	}
 	return nil
@@ -158,11 +159,11 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 
 // Query ...
 func (setup *BaseSetupImpl) Query(chainID string, chainCodeID string, args []string) (string, error) {
-	transactionProposalResponses, _, err := fcutil.CreateAndSendTransactionProposal(setup.Chain, chainCodeID, chainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, nil)
+	transactionProposalResponses, _, err := fcutil.CreateAndSendTransactionProposal(setup.Chain, chainCodeID, chainID, args, []api.Peer{setup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
-	return string(transactionProposalResponses[0].GetResponsePayload()), nil
+	return string(transactionProposalResponses[0].ProposalResponse.GetResponse().Payload), nil
 }
 
 // QueryAsset ...
@@ -188,7 +189,7 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	transactionProposalResponse, txID, err := fcutil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []fabricClient.Peer{setup.Chain.GetPrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, txID, err := fcutil.CreateAndSendTransactionProposal(setup.Chain, setup.ChainCodeID, setup.ChainID, args, []api.Peer{setup.Chain.GetPrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", fmt.Errorf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -212,7 +213,7 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 }
 
 // getEventHub initilizes the event hub
-func getEventHub(client fabricClient.Client) (events.EventHub, error) {
+func getEventHub(client api.Client) (api.EventHub, error) {
 	eventHub, err := events.NewEventHub(client)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating new event hub: %v", err)

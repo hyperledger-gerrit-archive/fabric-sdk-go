@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
+	packager "github.com/hyperledger/fabric-sdk-go/fabric-client/pkg/packager"
+	"github.com/hyperledger/fabric-sdk-go/util"
 )
 
 const (
@@ -82,7 +82,7 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *BaseSetu
 
 	chainCodeVersion := getRandomCCVersion()
 	util.ChangeGOPATHToDeploy(testSetup.GetDeployPath())
-	chaincodePackage, err := fabricClient.PackageCC(chainCodePath, "")
+	chaincodePackage, err := packager.PackageCC(chainCodePath, "")
 	util.ResetGOPATH()
 	if err != nil {
 		t.Fatalf("PackageCC return error: %s", err)

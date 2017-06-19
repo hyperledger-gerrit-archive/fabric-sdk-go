@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
-	"github.com/hyperledger/fabric-sdk-go/fabric-client/util"
+	api "github.com/hyperledger/fabric-sdk-go/api"
+
+	"github.com/hyperledger/fabric-sdk-go/util"
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
@@ -58,12 +59,12 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 	args = append(args, "invoke")
 	args = append(args, "SEVERE")
 
-	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []api.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
 
-	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []api.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
@@ -109,12 +110,12 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 	args = append(args, "invoke")
 	args = append(args, "SEVERE")
 
-	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []api.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
 
-	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []api.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
 	}
@@ -206,7 +207,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 		test <- true
 	})
 
-	tpResponses, tx, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []fabricClient.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
+	tpResponses, tx, err := util.CreateAndSendTransactionProposal(testSetup.Chain, testSetup.ChainCodeID, testSetup.ChainID, args, []api.Peer{testSetup.Chain.GetPrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal returned error: %v \n", err)
 	}

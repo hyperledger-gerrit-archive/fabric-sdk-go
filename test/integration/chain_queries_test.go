@@ -11,7 +11,8 @@ import (
 	"strconv"
 	"testing"
 
-	fabricClient "github.com/hyperledger/fabric-sdk-go/fabric-client"
+	api "github.com/hyperledger/fabric-sdk-go/api"
+	peer "github.com/hyperledger/fabric-sdk-go/fabric-client/peer"
 )
 
 func TestChainQueries(t *testing.T) {
@@ -101,7 +102,7 @@ func changeBlockState(testSetup *BaseSetupImpl) (string, error) {
 	return txID, nil
 }
 
-func testQueryTransaction(t *testing.T, chain fabricClient.Chain, txID string) {
+func testQueryTransaction(t *testing.T, chain api.Chain, txID string) {
 
 	// Test Query Transaction -- verify that valid transaction has been processed
 	processedTransaction, err := chain.QueryTransaction(txID)
@@ -121,7 +122,7 @@ func testQueryTransaction(t *testing.T, chain fabricClient.Chain, txID string) {
 
 }
 
-func testQueryBlock(t *testing.T, chain fabricClient.Chain) {
+func testQueryBlock(t *testing.T, chain api.Chain) {
 
 	// Retrieve current blockchain info
 	bci, err := chain.QueryInfo()
@@ -163,7 +164,7 @@ func testQueryBlock(t *testing.T, chain fabricClient.Chain) {
 
 }
 
-func testQueryChannels(t *testing.T, chain fabricClient.Chain, client fabricClient.Client) {
+func testQueryChannels(t *testing.T, chain api.Chain, client api.Client) {
 
 	// Our target will be primary peer on this channel
 	target := chain.GetPrimaryPeer()
@@ -179,7 +180,7 @@ func testQueryChannels(t *testing.T, chain fabricClient.Chain, client fabricClie
 
 }
 
-func testInstalledChaincodes(t *testing.T, chain fabricClient.Chain, client fabricClient.Client) {
+func testInstalledChaincodes(t *testing.T, chain api.Chain, client api.Client) {
 
 	// Our target will be primary peer on this channel
 	target := chain.GetPrimaryPeer()
@@ -197,7 +198,7 @@ func testInstalledChaincodes(t *testing.T, chain fabricClient.Chain, client fabr
 
 }
 
-func testInstantiatedChaincodes(t *testing.T, chain fabricClient.Chain) {
+func testInstantiatedChaincodes(t *testing.T, chain api.Chain) {
 
 	// Our target will indirectly be primary peer on this channel
 	target := chain.GetPrimaryPeer()
@@ -216,7 +217,7 @@ func testInstantiatedChaincodes(t *testing.T, chain fabricClient.Chain) {
 
 }
 
-func testQueryByChaincode(t *testing.T, chain fabricClient.Chain) {
+func testQueryByChaincode(t *testing.T, chain api.Chain) {
 
 	// Test valid targets
 	targets := chain.GetPeers()
@@ -232,13 +233,13 @@ func testQueryByChaincode(t *testing.T, chain fabricClient.Chain) {
 	}
 
 	// Create invalid target
-	firstInvalidTarget, err := fabricClient.NewPeer("test:1111", "", "")
+	firstInvalidTarget, err := peer.NewPeer("test:1111", "", "")
 	if err != nil {
 		t.Fatalf("Create NewPeer error(%v)", err)
 	}
 
 	// Create second invalid target
-	secondInvalidTarget, err := fabricClient.NewPeer("test:2222", "", "")
+	secondInvalidTarget, err := peer.NewPeer("test:2222", "", "")
 	if err != nil {
 		t.Fatalf("Create NewPeer error(%v)", err)
 	}

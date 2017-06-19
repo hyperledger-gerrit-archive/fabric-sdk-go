@@ -13,8 +13,9 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	api "github.com/hyperledger/fabric-sdk-go/api"
 	config "github.com/hyperledger/fabric-sdk-go/config"
-	fc "github.com/hyperledger/fabric-sdk-go/fabric-client"
+	fc "github.com/hyperledger/fabric-sdk-go/internal"
 	"github.com/hyperledger/fabric/bccsp"
 	consumer "github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric/protos/peer"
@@ -29,16 +30,6 @@ var logger = logging.MustGetLogger("fabric_sdk_go")
 
 const defaultTimeout = time.Second * 3
 
-//EventsClient holds the stream and adapter for consumer to work with
-type EventsClient interface {
-	RegisterAsync(ies []*ehpb.Interest) error
-	UnregisterAsync(ies []*ehpb.Interest) error
-	Unregister(ies []*ehpb.Interest) error
-	Recv() (*ehpb.Event, error)
-	Start() error
-	Stop() error
-}
-
 type eventsClient struct {
 	sync.RWMutex
 	peerAddress           string
@@ -48,11 +39,11 @@ type eventsClient struct {
 	TLSCertificate        string
 	TLSServerHostOverride string
 	clientConn            *grpc.ClientConn
-	client                fc.Client
+	client                api.Client
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(client fc.Client, peerAddress string, certificate string, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (EventsClient, error) {
+func NewEventsClient(client api.Client, peerAddress string, certificate string, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (api.EventsClient, error) {
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
