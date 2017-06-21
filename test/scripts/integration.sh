@@ -5,12 +5,14 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+export ARCH=`uname -m`
+
 # Packages to include in test run
 PKGS=`go list github.com/hyperledger/fabric-sdk-go/test/integration/... 2> /dev/null | \
                                                   grep -v /vendor/`
 
 # Detect Hyperledger CI environment
-if [ "$JENKINS_URL" == "https://jenkins.hyperledger.org/" ] && [ "$USE_PREBUILT_IMAGES" == true ]
+if [ "$JENKINS_URL" == "https://jenkins.hyperledger.org/" ] && [ "$USE_PREBUILT_IMAGES" == false ]
 then
   echo "In Hyperledger CI - Setting docker integration fixture tags to latest and using pre-built images..."
   source ./test/fixtures/latest-env.sh
