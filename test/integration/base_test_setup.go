@@ -205,7 +205,7 @@ func (setup *BaseSetupImpl) MoveFunds() (string, error) {
 	case <-done:
 	case <-fail:
 		return "", fmt.Errorf("invoke Error received from eventhub for txid(%s) error(%v)", txID, fail)
-	case <-time.After(time.Second * 30):
+	case <-time.After(time.Second * 60):
 		return "", fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
 	}
 	return txID, nil

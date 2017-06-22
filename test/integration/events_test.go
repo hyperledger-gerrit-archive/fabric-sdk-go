@@ -97,7 +97,7 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 		case <-fail2:
 			// success
 			return
-		case <-time.After(time.Second * 30):
+		case <-time.After(time.Second * 60):
 			t.Fatalf("invoke Didn't receive block event for txid1(%s) or txid1(%s)", tx1, tx2)
 		}
 	}
@@ -173,7 +173,7 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 				t.Fatalf("Expected error code MVCC_READ_CONFLICT")
 			}
 			return
-		case <-time.After(time.Second * 30):
+		case <-time.After(time.Second * 60):
 			t.Fatalf("invoke Didn't receive block event for txid1(%s) or txid1(%s)", tx1, tx2)
 		}
 	}
@@ -226,7 +226,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 		case <-done:
 		case <-fail:
 		case <-test:
-		case <-time.After(time.Second * 30):
+		case <-time.After(time.Second * 60):
 			t.Fatalf("Didn't receive test callback event")
 		}
 	}
