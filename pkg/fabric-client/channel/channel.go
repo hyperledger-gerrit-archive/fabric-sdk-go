@@ -31,6 +31,7 @@ import (
 	fabric_config "github.com/hyperledger/fabric/common/config"
 	mb "github.com/hyperledger/fabric/protos/msp"
 	ab "github.com/hyperledger/fabric/protos/orderer"
+	"net/http"
 )
 
 var logger = logging.MustGetLogger("fabric_sdk_go")
@@ -420,42 +421,42 @@ func (c *channel) GetGenesisBlock(request *api.GenesisBlockRequest) (*common.Blo
  * @returns {Promise} A Promise for a `ProposalResponse`
  * @see /protos/peer/proposal_response.proto
  */
-func (c *channel) JoinChannel(request *api.JoinChannelRequest) ([]*api.TransactionProposalResponse, error) {
+func (c *channel) JoinChannel(request *api.JoinChannelRequest) error {
 	logger.Debug("joinChannel - start")
 
 	// verify that we have targets (Peers) to join this channel
 	// defined by the caller
 	if request == nil {
-		return nil, fmt.Errorf("JoinChannel - error: Missing all required input request parameters")
+		return fmt.Errorf("JoinChannel - error: Missing all required input request parameters")
 	}
 
 	// verify that a Peer(s) has been selected to join this channel
 	if request.Targets == nil {
-		return nil, fmt.Errorf("JoinChannel - error: Missing targets input parameter with the peer objects for the join channel proposal")
+		return fmt.Errorf("JoinChannel - error: Missing targets input parameter with the peer objects for the join channel proposal")
 	}
 
 	// verify that we have transaction id
 	if request.TxID == "" {
-		return nil, fmt.Errorf("JoinChannel - error: Missing txId input parameter with the required transaction identifier")
+		return fmt.Errorf("JoinChannel - error: Missing txId input parameter with the required transaction identifier")
 	}
 
 	// verify that we have the nonce
 	if request.Nonce == nil {
-		return nil, fmt.Errorf("JoinChannel - error: Missing nonce input parameter with the required single use number")
+		return fmt.Errorf("JoinChannel - error: Missing nonce input parameter with the required single use number")
 	}
 
 	if request.GenesisBlock == nil {
-		return nil, fmt.Errorf("JoinChannel - error: Missing block input parameter with the required genesis block")
+		return fmt.Errorf("JoinChannel - error: Missing block input parameter with the required genesis block")
 	}
 
 	creator, err := c.clientContext.GetIdentity()
 	if err != nil {
-		return nil, fmt.Errorf("Error getting creator ID: %v", err)
+		return fmt.Errorf("Error getting creator ID: %v", err)
 	}
 
 	genesisBlockBytes, err := proto.Marshal(request.GenesisBlock)
 	if err != nil {
-		return nil, fmt.Errorf("Error marshalling genesis block: %v", err)
+		return fmt.Errorf("Error marshalling genesis block: %v", err)
 	}
 
 	// Create join channel transaction proposal for target peers
@@ -474,11 +475,11 @@ func (c *channel) JoinChannel(request *api.JoinChannelRequest) ([]*api.Transacti
 
 	proposal, txID, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(request.TxID, common.HeaderType_ENDORSER_TRANSACTION, "", cciSpec, request.Nonce, creator, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Error building proposal: %v", err)
+		return fmt.Errorf("Error building proposal: %v", err)
 	}
 	signedProposal, err := c.signProposal(proposal)
 	if err != nil {
-		return nil, fmt.Errorf("Error signing proposal: %v", err)
+		return fmt.Errorf("Error signing proposal: %v", err)
 	}
 	transactionProposal := &api.TransactionProposal{
 		TransactionID:  txID,
@@ -489,9 +490,28 @@ func (c *channel) JoinChannel(request *api.JoinChannelRequest) ([]*api.Transacti
 	// Send join proposal
 	proposalResponses, err := c.SendTransactionProposal(transactionProposal, 0, request.Targets)
 	if err != nil {
-		return nil, fmt.Errorf("Error sending join transaction proposal: %s", err)
+		return fmt.Errorf("Error sending join transaction proposal: %s", err)
 	}
-	return proposalResponses, nil
+	// Check responses from target peers for success/failure and join all errors
+	var joinError string
+	for _, response := range proposalResponses {
+		if response.Err != nil {
+			joinError = joinError +
+				fmt.Sprintf("Join channel proposal response error: %s \n",
+					response.Err.Error())
+		} else if response.Status != http.StatusOK {
+			joinError = joinError +
+				fmt.Sprintf("Join channel proposal HTTP response error: %s \n",
+					response.Err.Error())
+		}
+	}
+
+
+	if joinError != "" {
+		return fmt.Errorf(joinError)
+	}
+
+	return nil
 }
 
 /**
