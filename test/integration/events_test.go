@@ -68,12 +68,12 @@ func testFailedTx(t *testing.T, testSetup BaseSetupImpl) {
 
 	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
+		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
 	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
+		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
 	// Register tx1 and tx2 for commit/block event(s)
@@ -139,14 +139,15 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 	args = append(args, "invoke")
 	args = append(args, "SEVERE")
 
+	testSetup.Client.SetUserContext(testSetup.AdminUser)
 	tpResponses1, tx1, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
+		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
 	tpResponses2, tx2, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal return error: %v \n", err)
+		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
 	done := make(chan bool)
@@ -174,6 +175,7 @@ func testFailedTxErrorCode(t *testing.T, testSetup BaseSetupImpl) {
 	})
 
 	defer testSetup.EventHub.UnregisterTxEvent(tx2)
+	defer testSetup.Client.SetUserContext(testSetup.NormalUser)
 
 	// Setup monitoring of events
 	var wg sync.WaitGroup
@@ -256,7 +258,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup BaseSetupImpl) {
 
 	tpResponses, tx, err := util.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, testSetup.ChannelID, args, []api.Peer{testSetup.Channel.GetPrimaryPeer()}, nil)
 	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal returned error: %v \n", err)
+		t.Fatalf("CreateAndSendTransactionProposal returned error: %v", err)
 	}
 
 	// Register tx for commit/block event(s)

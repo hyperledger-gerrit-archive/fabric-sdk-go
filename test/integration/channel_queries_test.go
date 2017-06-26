@@ -64,9 +64,9 @@ func TestChannelQueries(t *testing.T) {
 
 	testQueryChannels(t, channel, client)
 
-	testInstalledChaincodes(t, channel, client)
+	testInstalledChaincodes(t, channel, client, testSetup)
 
-	testQueryByChaincode(t, channel, client.GetConfig())
+	testQueryByChaincode(t, channel, client.GetConfig(), testSetup)
 
 	// TODO: Synch with test in node SDK when it becomes available
 	// testInstantiatedChaincodes(t, channel)
@@ -180,16 +180,20 @@ func testQueryChannels(t *testing.T, channel api.Channel, client api.FabricClien
 
 }
 
-func testInstalledChaincodes(t *testing.T, channel api.Channel, client api.FabricClient) {
+func testInstalledChaincodes(t *testing.T, channel api.Channel, client api.FabricClient, testSetup *BaseSetupImpl) {
 
 	// Our target will be primary peer on this channel
 	target := channel.GetPrimaryPeer()
 
 	fmt.Printf("****QueryInstalledChaincodes for %s\n", target.GetURL())
 	// Test Query Installed chaincodes for target (primary)
+	// set Client User Context to Admin first
+	testSetup.Client.SetUserContext(testSetup.AdminUser)
+	defer testSetup.Client.SetUserContext(testSetup.NormalUser)
+
 	chaincodeQueryResponse, err := client.QueryInstalledChaincodes(target)
 	if err != nil {
-		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
+		t.Fatalf("QueryInstalledChaincodes return error: %v\n", err)
 	}
 
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
@@ -208,7 +212,7 @@ func testInstantiatedChaincodes(t *testing.T, channel api.Channel) {
 	// Test Query Instantiated chaincodes
 	chaincodeQueryResponse, err := channel.QueryInstantiatedChaincodes()
 	if err != nil {
-		t.Fatalf("QueryInstantiatedChaincodes return error: %v", err)
+		t.Fatalf("QueryInstantiatedChaincodes return error: %v\n", err)
 	}
 
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
@@ -217,31 +221,33 @@ func testInstantiatedChaincodes(t *testing.T, channel api.Channel) {
 
 }
 
-func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config) {
+func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config, testSetup *BaseSetupImpl) {
 
 	// Test valid targets
 	targets := channel.GetPeers()
 
+	// set Client User Context to Admin before calling QueryByChaincode
+	testSetup.Client.SetUserContext(testSetup.AdminUser)
 	queryResponses, err := channel.QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, targets)
 	if err != nil {
-		t.Fatalf("QueryByChaincode failed %s", err)
+		t.Fatalf("QueryByChaincode failed %s\n", err)
 	}
 
 	// Number of responses should be the same as number of targets
 	if len(queryResponses) != len(targets) {
-		t.Fatalf("QueryByChaincode number of results mismatch. Expected: %d Got: %d", len(targets), len(queryResponses))
+		t.Fatalf("QueryByChaincode number of results mismatch. Expected: %d Got: %d\n", len(targets), len(queryResponses))
 	}
 
 	// Create invalid target
 	firstInvalidTarget, err := peer.NewPeer("test:1111", "", "", config)
 	if err != nil {
-		t.Fatalf("Create NewPeer error(%v)", err)
+		t.Fatalf("Create NewPeer error(%v)\n", err)
 	}
 
 	// Create second invalid target
 	secondInvalidTarget, err := peer.NewPeer("test:2222", "", "", config)
 	if err != nil {
-		t.Fatalf("Create NewPeer error(%v)", err)
+		t.Fatalf("Create NewPeer error(%v)\n", err)
 	}
 
 	// Add invalid targets to targets
@@ -251,24 +257,25 @@ func testQueryByChaincode(t *testing.T, channel api.Channel, config api.Config) 
 	// Add invalid targets to channel otherwise validation will fail
 	err = channel.AddPeer(firstInvalidTarget)
 	if err != nil {
-		t.Fatalf("Error adding peer: %v", err)
+		t.Fatalf("Error adding peer: %v\n", err)
 	}
 	err = channel.AddPeer(secondInvalidTarget)
 	if err != nil {
-		t.Fatalf("Error adding peer: %v", err)
+		t.Fatalf("Error adding peer: %v\n", err)
 	}
 
 	// Test valid + invalid targets
 	queryResponses, err = channel.QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, invalidTargets)
 	if err == nil {
-		t.Fatalf("QueryByChaincode failed to return error for non-existing target")
+		t.Fatalf("QueryByChaincode failed to return error for non-existing target\n")
 	}
 
 	// Verify that valid targets returned response
 	if len(queryResponses) != len(targets) {
-		t.Fatalf("QueryByChaincode number of results mismatch. Expected: %d Got: %d", len(targets), len(queryResponses))
+		t.Fatalf("QueryByChaincode number of results mismatch. Expected: %d Got: %d\n", len(targets), len(queryResponses))
 	}
 
+	testSetup.Client.SetUserContext(testSetup.NormalUser)
 	channel.RemovePeer(firstInvalidTarget)
 	channel.RemovePeer(secondInvalidTarget)
 }
