@@ -23,37 +23,57 @@ type services struct {
 	fabricCAClient *fabric_ca.Client
 }
 
-// NewFabricCAClient ...
-/**
- * @param {string} clientConfigFile for fabric-ca services"
- */
-func NewFabricCAClient(config sdkApi.Config) (sdkApi.Services, error) {
+// NewFabricCAClient creates a new fabric-ca client
+// @param {api.Config} client config for fabric-ca services
+// @param {string} organization for this CA
+// @returns {api.FabricCAClient} FabricCAClient implementation
+// @returns {error} error, if any
+func NewFabricCAClient(config sdkApi.Config, org string) (sdkApi.FabricCAClient,
+	error) {
+	if org == "" {
+		return nil, fmt.Errorf("Organization is required to load CA config")
+	}
 
 	// Create new Fabric-ca client without configs
 	c := &fabric_ca.Client{
 		Config: &fabric_ca.ClientConfig{},
 	}
 
+	conf, err := config.GetCAConfig(org)
+	if err != nil {
+		return nil, err
+	}
+
 	//set server CAName
-	c.Config.CAName = config.GetFabricCAName()
+	c.Config.CAName = conf.Name
 	//set server URL
-	c.Config.URL = config.GetServerURL()
+	c.Config.URL = conf.ServerURL
 	//certs file list
-	c.Config.TLS.CertFiles = config.GetServerCertFiles()
+	c.Config.TLS.CertFiles, err = config.GetCAServerCertFiles(org)
+	if err != nil {
+		return nil, err
+	}
 
 	// set key file and cert file
-	c.Config.TLS.Client.CertFile = string(config.GetFabricCAClientCertFile())
-	c.Config.TLS.Client.KeyFile = string(config.GetFabricCAClientKeyFile())
+	c.Config.TLS.Client.CertFile, err = config.GetCAClientCertFile(org)
+	if err != nil {
+		return nil, err
+	}
 
-	//TLS falg enabled/disabled
-	c.Config.TLS.Enabled = config.GetFabricCATLSEnabledFlag()
-	fabricCAClient := &services{fabricCAClient: c}
-	logger.Infof("Constructed fabricCAClient instance: %v", fabricCAClient)
-	c.HomeDir = config.GetFabricCAHomeDir()
-	c.Config.MSPDir = config.GetFabricCAMspDir()
+	c.Config.TLS.Client.KeyFile, err = config.GetCAClientKeyFile(org)
+	if err != nil {
+		return nil, err
+	}
+
+	//TLS flag enabled/disabled
+	c.Config.TLS.Enabled = conf.TLSEnabled
+	c.Config.MSPDir = config.GetCAKeyStorePath()
 	c.Config.CSP = config.GetCSPConfig()
 
-	err := c.Init()
+	fabricCAClient := &services{fabricCAClient: c}
+	logger.Infof("Constructed fabricCAClient instance: %v", fabricCAClient)
+
+	err = c.Init()
 	if err != nil {
 		return nil, fmt.Errorf("New fabricCAClient failed: %s", err)
 	}
