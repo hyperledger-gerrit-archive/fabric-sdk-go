@@ -17,9 +17,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	fabricTxn "github.com/hyperledger/fabric-sdk-go/fabric-txn"
-	admin "github.com/hyperledger/fabric-sdk-go/fabric-txn/admin"
-	defaultImpl "github.com/hyperledger/fabric-sdk-go/fabric-txn/defaultImpl"
+	defaultImpl "github.com/hyperledger/fabric-sdk-go/def/fabric"
+	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
+	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )

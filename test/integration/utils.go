@@ -14,7 +14,7 @@ import (
 	"time"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	defaultImpl "github.com/hyperledger/fabric-sdk-go/fabric-txn/defaultImpl"
+	defaultImpl "github.com/hyperledger/fabric-sdk-go/def/fabric"
 )
 
 // GetOrdererAdmin returns a pre-enrolled orderer admin user
