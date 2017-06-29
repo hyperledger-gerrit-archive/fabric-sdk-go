@@ -185,6 +185,19 @@ func (_mr *MockConfigMockRecorder) GetOrdererConfig(arg0 interface{}) *gomock.Ca
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetOrdererConfig", arg0)
 }
 
+// GetOrderersConfig mocks base method
+func (_m *MockConfig) GetOrderersConfig() ([]api.OrdererConfig, error) {
+	ret := _m.ctrl.Call(_m, "GetOrderersConfig")
+	ret0, _ := ret[0].([]api.OrdererConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrderersConfig indicates an expected call of GetOrderersConfig
+func (_mr *MockConfigMockRecorder) GetOrderersConfig() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "GetOrderersConfig")
+}
+
 // GetPeersConfig mocks base method
 func (_m *MockConfig) GetPeersConfig(_param0 string) ([]api.PeerConfig, error) {
 	ret := _m.ctrl.Call(_m, "GetPeersConfig", _param0)
