@@ -45,3 +45,13 @@ type Peer interface {
 	SetRoles(roles []string)
 	URL() string
 }
+
+// PeersToTxnProcessors converts a slice of Peers to a slice of TxnProposalProcessors
+func PeersToTxnProcessors(peers []Peer) []txnapi.TxnProposalProcessor {
+	tpp := make([]txnapi.TxnProposalProcessor, len(peers))
+
+	for i := range peers {
+		tpp[i] = peers[i]
+	}
+	return tpp
+}

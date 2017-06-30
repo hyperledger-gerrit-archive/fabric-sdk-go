@@ -169,7 +169,7 @@ func TestConcurrentOrderers(t *testing.T) {
 		t.Fatalf("Failed to create massive channel: %s", err)
 	}
 
-	txn := api.Transaction{
+	txn := txnapi.Transaction{
 		Proposal: &txnapi.TransactionProposal{
 			Proposal: &pb.Proposal{},
 		},
