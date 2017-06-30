@@ -1,0 +1,8 @@
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Code-Review+1: Bob Stasyszyn <bob.stasyszyn@securekey.com>
+Code-Review+2: Troy Ronda <troy@troyronda.com>
+Submitted-by: Firas Qutishat <firas.qutishat@securekey.com>
+Submitted-at: Fri, 30 Jun 2017 15:42:30 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/11309
+Project: fabric-sdk-go
+Branch: refs/heads/master
