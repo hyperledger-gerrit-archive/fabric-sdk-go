@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	api "github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	txnapi "github.com/hyperledger/fabric-sdk-go/api/txn"
 
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/protos/common"

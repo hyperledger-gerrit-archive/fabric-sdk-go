@@ -15,8 +15,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi/mocks"
+	txnapi "github.com/hyperledger/fabric-sdk-go/api/txn"
+	"github.com/hyperledger/fabric-sdk-go/api/txn/mocks"
 )
 
 // TestNewPeerWithCertNoTLS tests that a peer can be constructed without using a cert
@@ -170,7 +170,7 @@ func TestNames(t *testing.T) {
 func TestProposalProcessorSendProposal(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_txnapi.NewMockTxnProposalProcessor(mockCtrl)
+	proc := mock_txn.NewMockProposalProcessor(mockCtrl)
 
 	tp := mockTransactionProposal()
 	tpr := txnapi.TransactionProposalResult{Endorser: "example.com", Status: 99, Proposal: tp, ProposalResponse: nil}

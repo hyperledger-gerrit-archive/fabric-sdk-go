@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	txnapi "github.com/hyperledger/fabric-sdk-go/api/txn"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"

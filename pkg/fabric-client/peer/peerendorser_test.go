@@ -18,7 +18,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	txnapi "github.com/hyperledger/fabric-sdk-go/api/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )

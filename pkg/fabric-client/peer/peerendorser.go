@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api"
-	"github.com/hyperledger/fabric-sdk-go/api/txnapi"
+	txnapi "github.com/hyperledger/fabric-sdk-go/api/txn"
 	pb "github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
