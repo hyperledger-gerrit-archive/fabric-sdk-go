@@ -30,6 +30,10 @@ func NewMockUser(name string) api.User {
 	return &MockUser{name: name}
 }
 
+func NewMockUserWithMSPID(name string, mspid string) api.User {
+	return &MockUser{name: name, mspID: mspid}
+}
+
 // GetName ...
 /**
  * Get the user name.

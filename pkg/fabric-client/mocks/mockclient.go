@@ -23,6 +23,7 @@ type MockClient struct {
 	stateStore  api.KeyValueStore
 	userContext api.User
 	config      api.Config
+	errorScenario bool
 }
 
 // NewMockClient ...
@@ -34,6 +35,16 @@ func NewMockClient() api.FabricClient {
 	c := &MockClient{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: NewMockConfig()}
 	return c
 }
+
+/*
+ * Returns new FabricClient with error flag on used to test invalid scenarios
+ */
+func NewMockInvalidClient() api.FabricClient {
+	channels := make(map[string]api.Channel)
+	c := &MockClient{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: NewMockConfig(), errorScenario:true}
+	return c
+}
+
 
 // NewChannel ...
 func (c *MockClient) NewChannel(name string) (api.Channel, error) {
@@ -83,6 +94,9 @@ func (c *MockClient) SaveUserToStateStore(user api.User, skipPersistence bool) e
 
 // LoadUserFromStateStore ...
 func (c *MockClient) LoadUserFromStateStore(name string) (api.User, error) {
+	if c.errorScenario {
+		return nil, fmt.Errorf("just to test error scenario")
+	}
 	return NewMockUser("test"), nil
 }
 
