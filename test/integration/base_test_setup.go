@@ -158,7 +158,7 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, channelID string, 
 	// must reset client user context to normal user once done with Admin privilieges
 	defer setup.Client.SetUserContext(setup.NormalUser)
 
-	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, channelID, args, chainCodePath, chainCodeVersion, []api.Peer{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
+	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, channelID, args, chainCodePath, chainCodeVersion, []txnapi.TxnProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
 		return err
 	}
 	return nil
@@ -274,7 +274,7 @@ func (setup *BaseSetupImpl) GetChannel(client api.FabricClient, channelID string
 
 // CreateAndSendTransactionProposal ...
 func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel api.Channel, chainCodeID string, channelID string,
-	args []string, targets []api.Peer, transientData map[string][]byte) ([]*txnapi.TransactionProposalResponse, string, error) {
+	args []string, targets []txnapi.TxnProposalProcessor, transientData map[string][]byte) ([]*txnapi.TransactionProposalResponse, string, error) {
 
 	signedProposal, err := channel.CreateTransactionProposal(chainCodeID, channelID, args, true, transientData)
 	if err != nil {
@@ -297,7 +297,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel api.Channel
 }
 
 // CreateAndSendTransaction ...
-func (setup *BaseSetupImpl) CreateAndSendTransaction(channel api.Channel, resps []*txnapi.TransactionProposalResponse) ([]*api.TransactionResponse, error) {
+func (setup *BaseSetupImpl) CreateAndSendTransaction(channel api.Channel, resps []*txnapi.TransactionProposalResponse) ([]*txnapi.TransactionResponse, error) {
 
 	tx, err := channel.CreateTransaction(resps)
 	if err != nil {

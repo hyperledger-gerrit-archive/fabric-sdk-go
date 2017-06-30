@@ -441,7 +441,7 @@ func (c *client) QueryChannels(peer api.Peer) (*pb.ChannelQueryResponse, error) 
 		return nil, fmt.Errorf("QueryChannels requires peer")
 	}
 
-	responses, err := channel.QueryByChaincode("cscc", []string{"GetChannels"}, []api.Peer{peer}, c)
+	responses, err := channel.QueryByChaincode("cscc", []string{"GetChannels"}, []txnapi.TxnProposalProcessor{peer}, c)
 	if err != nil {
 		return nil, fmt.Errorf("QueryByChaincode return error: %v", err)
 	}
@@ -467,7 +467,7 @@ func (c *client) QueryInstalledChaincodes(peer api.Peer) (*pb.ChaincodeQueryResp
 	if peer == nil {
 		return nil, fmt.Errorf("To query installed chaincdes you need to pass peer")
 	}
-	responses, err := channel.QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, []api.Peer{peer}, c)
+	responses, err := channel.QueryByChaincode("lscc", []string{"getinstalledchaincodes"}, []txnapi.TxnProposalProcessor{peer}, c)
 	if err != nil {
 		return nil, fmt.Errorf("Invoke lscc getinstalledchaincodes return error: %v", err)
 	}
@@ -547,7 +547,7 @@ func (c *client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TransactionID:  txID,
-	}, 0, targets)
+	}, 0, api.PeersToTxnProcessors(targets))
 
 	return transactionProposalResponse, txID, err
 }
