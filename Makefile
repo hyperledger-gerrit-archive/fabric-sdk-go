@@ -9,6 +9,7 @@
 # depend: installs test dependencies
 # unit-test: runs all the unit tests
 # integration-test: runs all the integration tests
+# race-test: runs tests with race detector 
 # checks: runs all check conditions (license, spelling, linting)
 # clean: stops docker conatainers used for integration testing
 # mock-gen: generate mocks needed for testing (using mockgen)
@@ -44,10 +45,13 @@ integration-test: clean depend
 
 integration-tests: integration-test
 
+race-test:
+	@test/scripts/racedetector.sh
+
 mock-gen:
 	go get -u github.com/golang/mock/gomock
 	go get -u github.com/golang/mock/mockgen
-	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/txnapi TxnProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/txnapi/mocks/mocktxnapi.gen.go
+	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apitxn/mocks/mockapitxn.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/mocks/mockconfig.gen.go
 
 clean:
