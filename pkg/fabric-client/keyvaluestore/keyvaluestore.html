@@ -1,0 +1,159 @@
+
+<html>
+    <head>
+        <title>Coverage Report</title>
+        
+        <style type="text/css">
+            body { background-color: #fff; }
+            table {
+                margin-left: 10px;
+                border-collapse: collapse;
+            }
+            td { 
+                background-color: #fff; 
+                padding: 2px;
+            }
+            table.overview td {
+                padding-right: 20px;
+            }
+            td.percent, td.linecount { text-align: right; }
+            div.package, #totalcov { 
+                color: #fff;
+                background-color: #375eab; 
+                font-size: 16px;
+                font-weight: bold;
+                padding: 10px;
+                border-radius: 5px 5px 5px 5px;
+            }
+            div.package, #totalcov { 
+                float: right; 
+                right: 10px;
+            }
+            #totalcov { 
+                top: 10px;
+                position: relative;
+                background-color: #fff;
+                color: #000;
+                border: 1px solid #375eab;
+                clear: both;
+            }
+            #summaryWrapper {
+                position: fixed;
+                top: 10px;
+                float: right;
+                right: 10px;
+
+            }
+            span.packageTotal {
+                float: right;
+                color: #000;
+            }
+            #doctitle { 
+                background-color: #fff; 
+                font-size: 24px;
+                margin-top: 20px;
+                margin-left: 10px;
+                color: #375eab;
+                font-weight: bold;
+            }
+            #about {
+                margin-left: 18px;
+                font-size: 10px;
+            }
+            table tr:last-child td {
+                font-weight: bold;
+            }
+            .functitle, .funcname { 
+                text-align: center; 
+                font-size: 20px; 
+                font-weight: bold; 
+                color: 375eab; 
+            }
+            .funcname {
+                text-align: left;
+                margin-top: 20px;
+                margin-left: 10px;
+                margin-bottom: 20px;
+                padding: 2px 5px 5px;
+                background-color: #e0ebf5;
+            }
+            table.listing {
+                margin-left: 10px;
+            }
+            table.listing td {
+                padding: 0px;
+                font-size: 12px;
+                background-color: #eee; 
+                vertical-align: top;
+                padding-left: 10px;
+                border-bottom: 1px solid #fff;
+            }
+            table.listing td:first-child {
+                text-align: right;
+                font-weight: bold;
+                vertical-align: center;
+            }
+            table.listing tr.miss td {
+                background-color: #FFBBB8;
+            }
+            table.listing tr:last-child td {
+                font-weight: normal;
+                color: #000;
+            }
+            table.listing tr:last-child td:first-child {
+                font-weight: bold;
+            }
+            .info {
+                margin-left: 10px;
+            }
+            .info code {
+            }
+            pre { margin: 1px; }
+            pre.cmd { 
+                background-color: #e9e9e9;
+                border-radius: 5px 5px 5px 5px;
+                padding: 10px;
+                margin: 20px;
+                line-height: 18px;
+                font-size; 14px;
+            }
+            a { 
+                text-decoration: none; 
+                color: #375eab;
+            }
+            a:hover { text-decoration: underline; }
+            p { margin-left: 10px; }
+        </style>
+        
+    </head>
+    <body>
+        <div id="doctitle">Coverage Report</div>
+    <div id="about">Generated on 04 Jul 17 14:40 -0400 with <a href="https://github.com/matm/gocov-html">gocov-html</a></div><div id="pkg_github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore" class="funcname">Package Overview: github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore <span class="packageTotal">84.21%</span></div><p>This is a coverage report created after analysis of the <code>github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore</code> package. It 
+        has been generated with the following command:</p><pre class="cmd">gocov test github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore | gocov-html</pre>        <p>Here are the stats. Please select a function name to view its implementation and see what's left for testing.</p><table class="overview">
+<tr id="s_fn_createDirIfNotExists"><td><code><a href="#fn_createDirIfNotExists">createDirIfNotExists(...)</a></code></td><td><code>github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore/filekeyvaluestore.go</code></td><td class="percent"><code>100.00%</code></td><td class="linecount"><code>5/5</code></td></tr>
+<tr id="s_fn_FileKeyValueStore.GetValue"><td><code><a href="#fn_FileKeyValueStore.GetValue">FileKeyValueStore.GetValue(...)</a></code></td><td><code>github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore/filekeyvaluestore.go</code></td><td class="percent"><code>80.00%</code></td><td class="linecount"><code>4/5</code></td></tr>
+<tr id="s_fn_FileKeyValueStore.SetValue"><td><code><a href="#fn_FileKeyValueStore.SetValue">FileKeyValueStore.SetValue(...)</a></code></td><td><code>github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore/filekeyvaluestore.go</code></td><td class="percent"><code>80.00%</code></td><td class="linecount"><code>4/5</code></td></tr>
+<tr id="s_fn_CreateNewFileKeyValueStore"><td><code><a href="#fn_CreateNewFileKeyValueStore">CreateNewFileKeyValueStore(...)</a></code></td><td><code>github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore/filekeyvaluestore.go</code></td><td class="percent"><code>75.00%</code></td><td class="linecount"><code>3/4</code></td></tr>
+<tr><td colspan="2"><code>github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore</code></td><td class="percent"><code>84.21%</code></td><td class="linecount"><code>16/19</code></td></tr>
+</table>
+
+<div class="funcname" id="fn_createDirIfNotExists">func createDirIfNotExists</div><div class="info"><a href="#s_fn_createDirIfNotExists">Back</a><p>In <code>/Users/baha.shaaban/work/go-workspace/src/github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore/filekeyvaluestore.go</code>:</p></div><table class="listing">
+<tr><td>67</td><td><code><pre>func createDirIfNotExists(path string) error {</pre></code></td></tr><tr><td>68</td><td><code><pre>        missing, err := utils.DirMissingOrEmpty(path)</pre></code></td></tr><tr><td>69</td><td><code><pre>        logger.Infof(&#34;KeyStore path [%s] missing [%t]: [%s]&#34;, path, missing, err)</pre></code></td></tr><tr><td>70</td><td><code><pre></pre></code></td></tr><tr><td>71</td><td><code><pre>        if missing {</pre></code></td></tr><tr><td>72</td><td><code><pre>                os.MkdirAll(path, 0755)</pre></code></td></tr><tr><td>73</td><td><code><pre>        }</pre></code></td></tr><tr><td>74</td><td><code><pre></pre></code></td></tr><tr><td>75</td><td><code><pre>        return nil</pre></code></td></tr><tr><td>76</td><td><code><pre>}</pre></code></td></tr></table>
+
+<div class="funcname" id="fn_FileKeyValueStore.GetValue">func FileKeyValueStore.GetValue</div><div class="info"><a href="#s_fn_FileKeyValueStore.GetValue">Back</a><p>In <code>/Users/baha.shaaban/work/go-workspace/src/github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore/filekeyvaluestore.go</code>:</p></div><table class="listing">
+<tr><td>42</td><td><code><pre>func (fkvs *FileKeyValueStore) GetValue(key string) ([]byte, error) {</pre></code></td></tr><tr><td>43</td><td><code><pre>        file := path.Join(fkvs.path, key+&#34;.json&#34;)</pre></code></td></tr><tr><td>44</td><td><code><pre>        value, err := ioutil.ReadFile(file)</pre></code></td></tr><tr><td>45</td><td><code><pre>        if err != nil {</pre></code></td></tr><tr class="miss"><td>46</td><td><code><pre>                return nil, err</pre></code></td></tr><tr><td>47</td><td><code><pre>        }</pre></code></td></tr><tr><td>48</td><td><code><pre>        return value, nil</pre></code></td></tr><tr><td>49</td><td><code><pre>}</pre></code></td></tr></table>
+
+<div class="funcname" id="fn_FileKeyValueStore.SetValue">func FileKeyValueStore.SetValue</div><div class="info"><a href="#s_fn_FileKeyValueStore.SetValue">Back</a><p>In <code>/Users/baha.shaaban/work/go-workspace/src/github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore/filekeyvaluestore.go</code>:</p></div><table class="listing">
+<tr><td>57</td><td><code><pre>func (fkvs *FileKeyValueStore) SetValue(key string, value []byte) error {</pre></code></td></tr><tr><td>58</td><td><code><pre>        file := path.Join(fkvs.path, key+&#34;.json&#34;)</pre></code></td></tr><tr><td>59</td><td><code><pre>        err := ioutil.WriteFile(file, value, 0600)</pre></code></td></tr><tr><td>60</td><td><code><pre>        if err != nil {</pre></code></td></tr><tr class="miss"><td>61</td><td><code><pre>                return err</pre></code></td></tr><tr><td>62</td><td><code><pre>        }</pre></code></td></tr><tr><td>63</td><td><code><pre>        return nil</pre></code></td></tr><tr><td>64</td><td><code><pre>}</pre></code></td></tr></table>
+
+<div class="funcname" id="fn_CreateNewFileKeyValueStore">func CreateNewFileKeyValueStore</div><div class="info"><a href="#s_fn_CreateNewFileKeyValueStore">Back</a><p>In <code>/Users/baha.shaaban/work/go-workspace/src/github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore/filekeyvaluestore.go</code>:</p></div><table class="listing">
+<tr><td>28</td><td><code><pre>func CreateNewFileKeyValueStore(path string) (*FileKeyValueStore, error) {</pre></code></td></tr><tr><td>29</td><td><code><pre>        if len(path) == 0 {</pre></code></td></tr><tr class="miss"><td>30</td><td><code><pre>                return nil, fmt.Errorf(&#34;FileKeyValueStore path is empty&#34;)</pre></code></td></tr><tr><td>31</td><td><code><pre>        }</pre></code></td></tr><tr><td>32</td><td><code><pre>        createDirIfNotExists(path)</pre></code></td></tr><tr><td>33</td><td><code><pre>        return &amp;FileKeyValueStore{path: path}, nil</pre></code></td></tr><tr><td>34</td><td><code><pre>}</pre></code></td></tr></table>
+
+<!-- Can be parsed by external script
+PACKAGE:github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore DONE:84.21
+-->
+
+<div id="summaryWrapper"><div class="package">github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore</div>
+<div id="totalcov">84.21%</div>
+</div>
+    </body>
