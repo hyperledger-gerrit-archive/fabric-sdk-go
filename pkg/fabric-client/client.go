@@ -197,7 +197,7 @@ func (c *client) LoadUserFromStateStore(name string) (api.User, error) {
 	if c.cryptoSuite == nil {
 		return nil, fmt.Errorf("cryptoSuite is nil")
 	}
-	value, err := c.stateStore.Value(name)
+	value, err := c.stateStore.GetValue(name)
 	if err != nil {
 		return nil, nil
 	}
