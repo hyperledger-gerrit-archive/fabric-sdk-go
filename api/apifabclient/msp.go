@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package api
+package apifabclient
 
 import (
 	"github.com/hyperledger/fabric/bccsp"
@@ -26,17 +26,10 @@ import (
 // have access to the Peer identity’s private key.
 type User interface {
 	GetName() string
-	GetRoles() []string
-	SetRoles([]string)
-	SetMspID(mspID string)
 	GetMspID() string
-
-	// ECerts
 	GetEnrollmentCertificate() []byte
-	SetEnrollmentCertificate(cert []byte)
-	SetPrivateKey(privateKey bccsp.Key)
 	GetPrivateKey() bccsp.Key
-
-	// TCerts
-	GenerateTcerts(count int, attributes []string)
+	GetRoles() []string
 }
+
+// TODO: Fix Getter Names
