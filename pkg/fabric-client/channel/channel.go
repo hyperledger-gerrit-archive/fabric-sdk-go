@@ -981,7 +981,7 @@ func CreateTransactionProposal(chaincodeName string, channelID string,
 		return nil, fmt.Errorf("Error loading user from store: %s", err)
 	}
 
-	signature, err := fc.SignObjectWithKey(proposalBytes, user.GetPrivateKey(),
+	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(),
 		&bccsp.SHAOpts{}, nil, clientContext.GetCryptoSuite())
 	if err != nil {
 		return nil, err
@@ -1239,7 +1239,7 @@ func (c *channel) SendInstantiateProposal(chaincodeName string, channelID string
 	if err != nil {
 		return nil, "", fmt.Errorf("Error getting creator: %v", err)
 	}
-	chaincodePolicy, err := buildChaincodePolicy(c.clientContext.GetUserContext().GetMspID())
+	chaincodePolicy, err := buildChaincodePolicy(c.clientContext.GetUserContext().MspID())
 	if err != nil {
 		return nil, "", err
 	}
@@ -1274,7 +1274,7 @@ func (c *channel) SignPayload(payload []byte) (*api.SignedEnvelope, error) {
 		return nil, fmt.Errorf("LoadUserFromStateStore returned error: %s", err)
 	}
 
-	signature, err := fc.SignObjectWithKey(payload, user.GetPrivateKey(),
+	signature, err := fc.SignObjectWithKey(payload, user.PrivateKey(),
 		&bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
 	if err != nil {
 		return nil, err
@@ -1396,7 +1396,7 @@ func (c *channel) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error
 		return nil, fmt.Errorf("Error mashalling proposal: %s", err)
 	}
 
-	signature, err := fc.SignObjectWithKey(proposalBytes, user.GetPrivateKey(), &bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
+	signature, err := fc.SignObjectWithKey(proposalBytes, user.PrivateKey(), &bccsp.SHAOpts{}, nil, c.clientContext.GetCryptoSuite())
 	if err != nil {
 		return nil, fmt.Errorf("Error signing proposal: %s", err)
 	}

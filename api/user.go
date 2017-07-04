@@ -25,14 +25,14 @@ import (
 // An application cannot use the Peer identity to sign things because the application doesn’t
 // have access to the Peer identity’s private key.
 type User interface {
-	GetName() string
-	GetRoles() []string
+	Name() string
+	Roles() []string
 	SetRoles([]string)
-	GetEnrollmentCertificate() []byte
+	EnrollmentCertificate() []byte
 	SetEnrollmentCertificate(cert []byte)
 	SetPrivateKey(privateKey bccsp.Key)
-	GetPrivateKey() bccsp.Key
+	PrivateKey() bccsp.Key
 	SetMspID(mspID string)
-	GetMspID() string
+	MspID() string
 	GenerateTcerts(count int, attributes []string)
 }
