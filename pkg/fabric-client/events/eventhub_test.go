@@ -17,7 +17,7 @@ import (
 
 	"reflect"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	api "github.com/hyperledger/fabric-sdk-go/api/apievent"
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )

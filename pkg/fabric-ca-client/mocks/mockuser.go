@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	api "github.com/hyperledger/fabric-sdk-go/api"
 	"github.com/hyperledger/fabric/bccsp"
 )
 
@@ -16,7 +15,7 @@ type MockUser struct {
 	name                  string
 	mspID                 string
 	roles                 []string
-	PrivateKey            bccsp.Key // ****This key is temporary We use it to sign transaction until we have tcerts
+	privateKey            bccsp.Key // ****This key is temporary We use it to sign transaction until we have tcerts
 	enrollmentCertificate []byte
 }
 
@@ -26,7 +25,7 @@ type MockUser struct {
  *
  * @param {string} name - The user name
  */
-func NewMockUser(name string) api.User {
+func NewMockUser(name string) *MockUser {
 	return &MockUser{name: name}
 }
 
@@ -78,7 +77,7 @@ func (u *MockUser) SetEnrollmentCertificate(cert []byte) {
  * deprecated.
  */
 func (u *MockUser) SetPrivateKey(privateKey bccsp.Key) {
-	u.PrivateKey = privateKey
+	u.privateKey = privateKey
 }
 
 // GetPrivateKey ...
@@ -86,7 +85,7 @@ func (u *MockUser) SetPrivateKey(privateKey bccsp.Key) {
  * deprecated.
  */
 func (u *MockUser) GetPrivateKey() bccsp.Key {
-	return u.PrivateKey
+	return u.privateKey
 }
 
 // SetMspID sets the MSP for this user

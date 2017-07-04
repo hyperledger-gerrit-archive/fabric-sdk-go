@@ -16,7 +16,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	api "github.com/hyperledger/fabric-sdk-go/api/apievent"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabnet"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
 	cnsmr "github.com/hyperledger/fabric/events/consumer"
 
@@ -53,23 +54,23 @@ type eventHub struct {
 	// Factory that creates EventsClient
 	eventsClientFactory eventClientFactory
 	// FabricClient
-	client api.FabricClient
+	client fab.FabricClient
 }
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(client api.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (api.EventsClient, error)
+	newEventsClient(client fab.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (api.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(client api.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (api.EventsClient, error) {
+func (ccf *consumerClientFactory) newEventsClient(client fab.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (api.EventsClient, error) {
 	return consumer.NewEventsClient(client, peerAddress, certificate, serverHostOverride, regTimeout, adapter)
 }
 
 // NewEventHub ...
-func NewEventHub(client api.FabricClient) (api.EventHub, error) {
+func NewEventHub(client fab.FabricClient) (api.EventHub, error) {
 
 	if client == nil {
 		return nil, fmt.Errorf("Client is nil")

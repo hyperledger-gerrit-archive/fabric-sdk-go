@@ -15,7 +15,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabnet"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -191,7 +191,7 @@ func TestConcurrentOrderers(t *testing.T) {
 }
 
 func TestJoinChannel(t *testing.T) {
-	var peers []api.Peer
+	var peers []fab.Peer
 	endorserServer := startEndorserServer(t)
 	channel, _ := setupTestChannel()
 	peer, _ := peer.NewPeer(testAddress, mocks.NewMockConfig())
@@ -201,7 +201,7 @@ func TestJoinChannel(t *testing.T) {
 	nonce, _ := fc.GenerateRandomNonce()
 	txID, _ := fc.ComputeTxID(nonce, []byte("testID"))
 
-	genesisBlockReqeust := &api.GenesisBlockRequest{
+	genesisBlockReqeust := &fab.GenesisBlockRequest{
 		TxID:  txID,
 		Nonce: nonce,
 	}
@@ -224,7 +224,7 @@ func TestJoinChannel(t *testing.T) {
 		t.Fatalf("Should not have been able to join channel because of missing request parameter")
 	}
 
-	request := &api.JoinChannelRequest{
+	request := &fab.JoinChannelRequest{
 		Targets:      peers,
 		GenesisBlock: genesisBlock,
 		Nonce:        nonce,
@@ -235,7 +235,7 @@ func TestJoinChannel(t *testing.T) {
 		t.Fatalf("Should not have been able to join channel because of missing TxID parameter")
 	}
 
-	request = &api.JoinChannelRequest{
+	request = &fab.JoinChannelRequest{
 		Targets:      peers,
 		GenesisBlock: genesisBlock,
 		//Nonce:        nonce,
@@ -246,7 +246,7 @@ func TestJoinChannel(t *testing.T) {
 		t.Fatalf("Should not have been able to join channel because of missing Nonce parameter")
 	}
 
-	request = &api.JoinChannelRequest{
+	request = &fab.JoinChannelRequest{
 		Targets: peers,
 		//GenesisBlock: genesisBlock,
 		Nonce: nonce,
@@ -257,7 +257,7 @@ func TestJoinChannel(t *testing.T) {
 		t.Fatalf("Should not have been able to join channel because of missing GenesisBlock parameter")
 	}
 
-	request = &api.JoinChannelRequest{
+	request = &fab.JoinChannelRequest{
 		//Targets: peers,
 		GenesisBlock: genesisBlock,
 		Nonce:        nonce,
@@ -268,7 +268,7 @@ func TestJoinChannel(t *testing.T) {
 		t.Fatalf("Should not have been able to join channel because of missing Targets parameter")
 	}
 
-	request = &api.JoinChannelRequest{
+	request = &fab.JoinChannelRequest{
 		Targets:      peers,
 		GenesisBlock: genesisBlock,
 		Nonce:        nonce,
@@ -290,7 +290,7 @@ func TestJoinChannel(t *testing.T) {
 
 	// Test failed proposal error handling
 	endorserServer.ProposalError = fmt.Errorf("Test Error")
-	request = &api.JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: txID}
+	request = &fab.JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: txID}
 	err = channel.JoinChannel(request)
 	if err == nil {
 		t.Fatalf("Expected error")
@@ -439,7 +439,7 @@ func TestChannelInitializeFromUpdate(t *testing.T) {
 	}
 }
 
-func setupTestChannel() (api.Channel, error) {
+func setupTestChannel() (fab.Channel, error) {
 	client := mocks.NewMockClient()
 	user := mocks.NewMockUser("test")
 	cryptoSuite := &mocks.MockCryptoSuite{}
@@ -448,7 +448,7 @@ func setupTestChannel() (api.Channel, error) {
 	return NewChannel("testChannel", client)
 }
 
-func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (api.Channel, error) {
+func setupMassiveTestChannel(numberOfPeers int, numberOfOrderers int) (fab.Channel, error) {
 	channel, error := setupTestChannel()
 	if error != nil {
 		return channel, error

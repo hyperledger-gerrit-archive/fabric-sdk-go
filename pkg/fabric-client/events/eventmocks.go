@@ -12,7 +12,8 @@ import (
 	"testing"
 	"time"
 
-	api "github.com/hyperledger/fabric-sdk-go/api"
+	api "github.com/hyperledger/fabric-sdk-go/api/apievent"
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabnet"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 
@@ -48,7 +49,7 @@ type mockEventClientFactory struct {
 	clients []*mockEventClient
 }
 
-func (mecf *mockEventClientFactory) newEventsClient(client api.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (api.EventsClient, error) {
+func (mecf *mockEventClientFactory) newEventsClient(client fab.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter fcConsumer.EventAdapter) (api.EventsClient, error) {
 	mec := &mockEventClient{
 		PeerAddress: peerAddress,
 		RegTimeout:  regTimeout,
