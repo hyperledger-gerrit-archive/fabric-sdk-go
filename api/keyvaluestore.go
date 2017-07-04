@@ -20,7 +20,7 @@ type KeyValueStore interface {
 	 * @param {string} name of the key
 	 * @returns {[]byte}
 	 */
-	Value(key string) ([]byte, error)
+	GetValue(key string) ([]byte, error)
 
 	/**
 	 * Set the value associated with name.
