@@ -25,6 +25,7 @@ import (
 	"github.com/op/go-logging"
 
 	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/common/crypto"
 	fcutils "github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/protos/common"
 	pb_msp "github.com/hyperledger/fabric/protos/msp"
@@ -428,9 +429,9 @@ func (c *Client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) 
 		return nil, fmt.Errorf("QueryChannels requires peer")
 	}
 
-	payload, err := channel.QueryChaincodeByTarget("cscc", []string{"GetChannels"}, peer, c)
+	payload, err := c.queryBySystemChaincodeByTarget("cscc", "GetChannels", []string{}, peer)
 	if err != nil {
-		return nil, fmt.Errorf("QueryByChaincode return error: %v", err)
+		return nil, fmt.Errorf("QueryBySystemChaincodeByTarget return error: %v", err)
 	}
 
 	response := new(pb.ChannelQueryResponse)
@@ -448,7 +449,7 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 	if peer == nil {
 		return nil, fmt.Errorf("To query installed chaincdes you need to pass peer")
 	}
-	payload, err := channel.QueryChaincodeByTarget("lscc", []string{"getinstalledchaincodes"}, peer, c)
+	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getinstalledchaincodes", []string{}, peer)
 	if err != nil {
 		return nil, fmt.Errorf("Invoke lscc getinstalledchaincodes return error: %v", err)
 	}
@@ -513,11 +514,14 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 
 	signedProposal := &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}
 
-	transactionProposalResponse, err := channel.SendTransactionProposal(&apitxn.TransactionProposal{
+	txnID := apitxn.TransactionID{ID: txID} // Nonce is missing
+
+	// TODO: move channel.SendTransactionProposalToProcessors
+	transactionProposalResponse, err := channel.SendTransactionProposalToProcessors(&apitxn.TransactionProposal{
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
-		TransactionID:  txID,
-	}, 0, peer.PeersToTxnProcessors(targets))
+		TxnID:          txnID,
+	}, peer.PeersToTxnProcessors(targets))
 
 	return transactionProposalResponse, txID, err
 }
@@ -545,4 +549,35 @@ func (c *Client) GetUserContext() fab.User {
 // SetUserContext ...
 func (c *Client) SetUserContext(user fab.User) {
 	c.userContext = user
+}
+
+// NewTxnID computes a TransactionID for the current user context
+func (c *Client) NewTxnID() (apitxn.TransactionID, error) {
+	// generate a random nonce
+	nonce, err := crypto.GetRandomNonce()
+	if err != nil {
+		return apitxn.TransactionID{}, err
+	}
+
+	creator, err := c.GetIdentity()
+	if err != nil {
+		return apitxn.TransactionID{}, err
+	}
+
+	id, err := protos_utils.ComputeProposalTxID(nonce, creator)
+	if err != nil {
+		return apitxn.TransactionID{}, err
+	}
+
+	txnID := apitxn.TransactionID{
+		ID:    id,
+		Nonce: nonce,
+	}
+
+	return txnID, nil
+}
+
+func (c *Client) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args []string, target apitxn.ProposalProcessor) ([]byte, error) {
+	request := channel.NewChaincodeInvokeRequestForTarget(chaincodeID, fcn, args, target)
+	return channel.QueryBySystemChaincodeByTarget(request, c)
 }

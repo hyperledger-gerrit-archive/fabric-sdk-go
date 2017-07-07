@@ -8,6 +8,7 @@ package channel
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
@@ -23,17 +24,30 @@ func TestQueryMethods(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Query hash cannot be nil")
 	}
-	_, err = channel.QueryByChaincode("", []string{"method"}, nil)
+
+	badRequest1 := apitxn.ChaincodeInvokeRequest{
+		Fcn:  "method",
+		Args: []string{"arg"},
+	}
+	_, err = channel.QueryByChaincode(badRequest1)
 	if err == nil {
 		t.Fatalf("QueryByChannelcode: name cannot be empty")
 	}
 
-	_, err = channel.QueryByChaincode("qscc", nil, nil)
+	badRequest2 := apitxn.ChaincodeInvokeRequest{
+		ChaincodeID: "qscc",
+	}
+	_, err = channel.QueryByChaincode(badRequest2)
 	if err == nil {
 		t.Fatalf("QueryByChannelcode: arguments cannot be empty")
 	}
 
-	_, err = channel.QueryByChaincode("qscc", []string{"method"}, nil)
+	badRequest3 := apitxn.ChaincodeInvokeRequest{
+		ChaincodeID: "qscc",
+		Fcn:         "method",
+		Args:        []string{"arg"},
+	}
+	_, err = channel.QueryByChaincode(badRequest3)
 	if err == nil {
 		t.Fatalf("QueryByChannelcode: targets cannot be empty")
 	}
@@ -70,7 +84,7 @@ func TestQueryInstantiatedChaincodes(t *testing.T) {
 	res, err := channel.QueryInstantiatedChaincodes()
 
 	if err != nil || res == nil {
-		t.Fatal("Test QueryInstatiated chaincode failed")
+		t.Fatalf("Test QueryInstatiated chaincode failed: %v", err)
 	}
 
 }
