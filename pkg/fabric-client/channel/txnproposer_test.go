@@ -18,25 +18,30 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/mocks"
-	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 )
 
 func TestCreateTransactionProposal(t *testing.T) {
-
 	channel, _ := setupTestChannel()
 
-	tProposal, err := channel.CreateTransactionProposal("qscc", nil, true, nil)
+	request := apitxn.ChaincodeInvokeRequest{
+		ChaincodeID: "qscc",
+	}
+
+	crequest := channelChaincodeInvokeRequest{
+		ChaincodeInvokeRequest: request,
+	}
+	tProposal, err := newTransactionProposal(crequest, channel.ClientContext())
 
 	if err != nil {
 		t.Fatal("Create Transaction Proposal Failed", err)
 	}
 
-	_, errx := channel.QueryExtensionInterface().ProposalBytes(tProposal)
+	_, errx := channel.ProposalBytes(tProposal)
 
 	if errx != nil {
-		t.Fatal("Call to proposal bytes from channel extension failed")
+		t.Fatalf("Call to proposal bytes failed: %v", errx)
 	}
 
 }
@@ -53,13 +58,19 @@ func TestJoinChannel(t *testing.T) {
 	peers = append(peers, peer)
 	orderer := mocks.NewMockOrderer("", nil)
 	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
-	nonce, _ := fc.GenerateRandomNonce()
-	txID, _ := fc.ComputeTxID(nonce, []byte("testID"))
+	txid, _ := channel.ClientContext().NewTxnID()
+
+	badtxid1, _ := channel.ClientContext().NewTxnID()
+	badtxid2, _ := channel.ClientContext().NewTxnID()
+
+	badtxid1.ID = ""
+	badtxid2.Nonce = nil
 
 	genesisBlockReqeust := &fab.GenesisBlockRequest{
-		TxID:  txID,
-		Nonce: nonce,
+		TxnID: txid,
 	}
+	fmt.Printf("TxnID: %v", txid)
+
 	genesisBlock, err := channel.GenesisBlock(genesisBlockReqeust)
 	if err == nil {
 		t.Fatalf("Should not have been able to get genesis block because of orderer missing")
@@ -82,8 +93,7 @@ func TestJoinChannel(t *testing.T) {
 	request := &fab.JoinChannelRequest{
 		Targets:      peers,
 		GenesisBlock: genesisBlock,
-		Nonce:        nonce,
-		//TxID:         txID,
+		TxnID:        badtxid1,
 	}
 	err = channel.JoinChannel(request)
 	if err == nil {
@@ -93,8 +103,7 @@ func TestJoinChannel(t *testing.T) {
 	request = &fab.JoinChannelRequest{
 		Targets:      peers,
 		GenesisBlock: genesisBlock,
-		//Nonce:        nonce,
-		TxID: txID,
+		TxnID:        badtxid2,
 	}
 	err = channel.JoinChannel(request)
 	if err == nil {
@@ -104,8 +113,7 @@ func TestJoinChannel(t *testing.T) {
 	request = &fab.JoinChannelRequest{
 		Targets: peers,
 		//GenesisBlock: genesisBlock,
-		Nonce: nonce,
-		TxID:  txID,
+		TxnID: txid,
 	}
 	err = channel.JoinChannel(request)
 	if err == nil {
@@ -115,8 +123,7 @@ func TestJoinChannel(t *testing.T) {
 	request = &fab.JoinChannelRequest{
 		//Targets: peers,
 		GenesisBlock: genesisBlock,
-		Nonce:        nonce,
-		TxID:         txID,
+		TxnID:        txid,
 	}
 	err = channel.JoinChannel(request)
 	if err == nil {
@@ -126,8 +133,7 @@ func TestJoinChannel(t *testing.T) {
 	request = &fab.JoinChannelRequest{
 		Targets:      peers,
 		GenesisBlock: genesisBlock,
-		Nonce:        nonce,
-		TxID:         txID,
+		TxnID:        txid,
 	}
 	if err == nil {
 		t.Fatalf("Should not have been able to join channel because of invalid targets")
@@ -145,7 +151,10 @@ func TestJoinChannel(t *testing.T) {
 
 	// Test failed proposal error handling
 	endorserServer.ProposalError = fmt.Errorf("Test Error")
-	request = &fab.JoinChannelRequest{Targets: peers, Nonce: nonce, TxID: txID}
+	request = &fab.JoinChannelRequest{
+		Targets: peers,
+		TxnID:   txid,
+	}
 	err = channel.JoinChannel(request)
 	if err == nil {
 		t.Fatalf("Expected error")
@@ -167,20 +176,20 @@ func TestSendTransactionProposal(t *testing.T) {
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(tpr, nil)
 	targets := []apitxn.ProposalProcessor{proc}
 
-	result, err := channel.SendTransactionProposal(&apitxn.TransactionProposal{
+	result, err := channel.sendTransactionProposalPB(&apitxn.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
-	}, 1, nil)
+	}, nil)
 
-	if result != nil || err == nil || err.Error() != "peers and target peers is nil or empty" {
-		t.Fatal("Test SendTransactionProposal failed, validation on peer is nil is not working as expected")
+	if result != nil || err == nil || err.Error() != "targets were not specified and no peers have been configured" {
+		t.Fatalf("Test SendTransactionProposal failed, validation on peer is nil is not working as expected: %v", err)
 	}
 
-	result, err = SendTransactionProposal(&apitxn.TransactionProposal{
+	result, err = SendTransactionProposalPB(&apitxn.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
-	}, 1, []apitxn.ProposalProcessor{})
+	}, []apitxn.ProposalProcessor{})
 
 	if result != nil || err == nil || err.Error() != "Missing peer objects for sending transaction proposal" {
-		t.Fatal("Test SendTransactionProposal failed, validation on missing peer objects is not working")
+		t.Fatalf("Test SendTransactionProposal failed, validation on missing peer objects is not working: %v", err)
 	}
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
@@ -192,17 +201,9 @@ func TestSendTransactionProposal(t *testing.T) {
 		t.Fatal("Duplicate Peer check is not working as expected")
 	}
 
-	result, err = channel.SendTransactionProposal(&apitxn.TransactionProposal{
+	result, err = channel.sendTransactionProposalPB(&apitxn.TransactionProposal{
 		SignedProposal: nil,
-	}, 1, nil)
-
-	if result != nil || err == nil || err.Error() != "signedProposal is nil" {
-		t.Fatal("Test SendTransactionProposal failed, validation on signedProposal is nil is not working as expected")
-	}
-
-	result, err = SendTransactionProposal(&apitxn.TransactionProposal{
-		SignedProposal: nil,
-	}, 1, nil)
+	}, nil)
 
 	if result != nil || err == nil || err.Error() != "signedProposal is nil" {
 		t.Fatal("Test SendTransactionProposal failed, validation on signedProposal is nil is not working as expected")
@@ -211,9 +212,9 @@ func TestSendTransactionProposal(t *testing.T) {
 	targetPeer := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil}
 
 	channel.AddPeer(&targetPeer)
-	result, err = channel.SendTransactionProposal(&apitxn.TransactionProposal{
+	result, err = channel.sendTransactionProposalPB(&apitxn.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
-	}, 1, targets)
+	}, targets)
 
 	if result == nil || err != nil {
 		t.Fatalf("Test SendTransactionProposal failed, with error '%s'", err.Error())
@@ -228,9 +229,9 @@ func TestConcurrentPeers(t *testing.T) {
 		t.Fatalf("Failed to create massive channel: %s", err)
 	}
 
-	result, err := channel.SendTransactionProposal(&apitxn.TransactionProposal{
+	result, err := channel.sendTransactionProposalPB(&apitxn.TransactionProposal{
 		SignedProposal: &pb.SignedProposal{},
-	}, 1, nil)
+	}, nil)
 	if err != nil {
 		t.Fatalf("SendTransactionProposal return error: %s", err)
 	}
@@ -240,7 +241,7 @@ func TestConcurrentPeers(t *testing.T) {
 	}
 
 	//Negative scenarios
-	_, err = channel.SendTransactionProposal(nil, 1, nil)
+	_, err = channel.sendTransactionProposalPB(nil, nil)
 
 	if err == nil || err.Error() != "signedProposal is nil" {
 		t.Fatal("nil signedProposal validation check not working as expected")
