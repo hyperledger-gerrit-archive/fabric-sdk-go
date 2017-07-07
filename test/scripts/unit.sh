@@ -12,10 +12,16 @@ set -e
 
 REPO="github.com/hyperledger/fabric-sdk-go"
 
-# Packages to exclude
+echo "Running tests..."
+
+PKGS=`go list $REPO/api/... 2> /dev/null`
+go test $GOTESTFLAGS $LDFLAGS $PKGS -p 1 -timeout=5m
+
+
 PKGS=`go list $REPO... 2> /dev/null | \
       grep -v ^$REPO/api/ | \
       grep -v ^$REPO/pkg/fabric-ca-client/mocks | grep -v ^$REPO/pkg/fabric-client/mocks | \
       grep -v ^$REPO/vendor/ | grep -v ^$REPO/test/`
 echo "Running tests..."
 gocov test $GOTESTFLAGS $LDFLAGS $PKGS -p 1 -timeout=5m | gocov-xml > report.xml
+
