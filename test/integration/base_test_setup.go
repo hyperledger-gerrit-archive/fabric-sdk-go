@@ -299,7 +299,7 @@ func (setup *BaseSetupImpl) CreateAndSendTransactionProposal(channel fab.Channel
 }
 
 // CreateAndSendTransaction ...
-func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps []*apitxn.TransactionProposalResponse) ([]*apitxn.TransactionResponse, error) {
+func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps []*apitxn.TransactionProposalResponse) (*apitxn.TransactionResponse, error) {
 
 	tx, err := channel.CreateTransaction(resps)
 	if err != nil {
@@ -311,10 +311,9 @@ func (setup *BaseSetupImpl) CreateAndSendTransaction(channel fab.Channel, resps 
 		return nil, fmt.Errorf("SendTransaction return error: %v", err)
 
 	}
-	for _, v := range transactionResponse {
-		if v.Err != nil {
-			return nil, fmt.Errorf("Orderer %s return error: %v", v.Orderer, v.Err)
-		}
+
+	if transactionResponse.Err != nil {
+		return nil, fmt.Errorf("Orderer %s return error: %v", transactionResponse.Orderer, transactionResponse.Err)
 	}
 
 	return transactionResponse, nil

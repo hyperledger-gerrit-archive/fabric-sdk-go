@@ -7,24 +7,27 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"crypto/rand"
 	"fmt"
 	"sync"
 	"time"
 
+	"math/big"
+
 	"github.com/golang/protobuf/proto"
 	proto_ts "github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/hyperledger/fabric/protos/common"
-
-	"github.com/hyperledger/fabric/bccsp"
-	mspprotos "github.com/hyperledger/fabric/protos/msp"
-	pb "github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric/protos/utils"
-
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/protos/common"
+	mspprotos "github.com/hyperledger/fabric/protos/msp"
+	pb "github.com/hyperledger/fabric/protos/peer"
+	protos_utils "github.com/hyperledger/fabric/protos/utils"
 )
+
+var rng = rand.Reader
 
 // CreateTransaction create a transaction with proposal response, following the endorsement policy.
 func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse) (*apitxn.Transaction, error) {
@@ -109,7 +112,7 @@ func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse)
 }
 
 // SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
-func (c *Channel) SendTransaction(tx *apitxn.Transaction) ([]*apitxn.TransactionResponse, error) {
+func (c *Channel) SendTransaction(tx *apitxn.Transaction) (*apitxn.TransactionResponse, error) {
 	if c.orderers == nil || len(c.orderers) == 0 {
 		return nil, fmt.Errorf("orderers is nil")
 	}
@@ -144,12 +147,12 @@ func (c *Channel) SendTransaction(tx *apitxn.Transaction) ([]*apitxn.Transaction
 		return nil, err
 	}
 
-	transactionResponses, err := c.BroadcastEnvelope(envelope)
+	transactionResponse, err := c.BroadcastEnvelope(envelope)
 	if err != nil {
 		return nil, err
 	}
 
-	return transactionResponses, nil
+	return transactionResponse, nil
 }
 
 // SendInstantiateProposal sends an instantiate proposal to one or more endorsing peers.
@@ -239,41 +242,49 @@ func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 	return &fab.SignedEnvelope{Payload: payload, Signature: signature}, nil
 }
 
-// BroadcastEnvelope will send the given envelope to each orderer
-func (c *Channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) ([]*apitxn.TransactionResponse, error) {
+// BroadcastEnvelope will send the given envelope to some orderer
+func (c *Channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) (*apitxn.TransactionResponse, error) {
 	// Check if orderers are defined
-	if c.orderers == nil || len(c.orderers) == 0 {
+	if len(c.orderers) == 0 {
 		return nil, fmt.Errorf("orderers not set")
 	}
 
-	var responseMtx sync.Mutex
-	var transactionResponses []*apitxn.TransactionResponse
-	var wg sync.WaitGroup
-
-	for _, o := range c.orderers {
-		wg.Add(1)
-		go func(orderer fab.Orderer) {
-			defer wg.Done()
-			var transactionResponse *apitxn.TransactionResponse
-
-			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
-			if _, err := orderer.SendBroadcast(envelope); err != nil {
-				logger.Debugf("Receive Error Response from orderer :%v\n", err)
-				transactionResponse = &apitxn.TransactionResponse{Orderer: orderer.URL(),
-					Err: fmt.Errorf("Error calling orderer '%s':  %s", orderer.URL(), err)}
-			} else {
-				logger.Debugf("Receive Success Response from orderer\n")
-				transactionResponse = &apitxn.TransactionResponse{Orderer: orderer.URL(), Err: nil}
-			}
-
-			responseMtx.Lock()
-			transactionResponses = append(transactionResponses, transactionResponse)
-			responseMtx.Unlock()
-		}(o)
+	// Generate a random orderer index
+	n := big.NewInt(int64(len(c.orderers)))
+	n, err := rand.Int(rng, n)
+	if err != nil {
+		// If we have no entropy, select the first one just in case
+		n = big.NewInt(0)
 	}
-	wg.Wait()
 
-	return transactionResponses, nil
+	// Iterate over the orderers and pick the index
+	var selectedOrderer fab.Orderer
+	i := int64(0)
+	for _, o := range c.orderers {
+		if i == n.Int64() {
+			selectedOrderer = o
+			break
+		}
+		i++
+	}
+
+	if selectedOrderer == nil {
+		return nil, fmt.Errorf("no orderer selected, something went wrong at random selection")
+	}
+
+	var transactionResponse *apitxn.TransactionResponse
+
+	logger.Debugf("Broadcasting envelope to orderer :%s\n", selectedOrderer.URL())
+	if _, err := selectedOrderer.SendBroadcast(envelope); err != nil {
+		logger.Debugf("Receive Error Response from orderer :%v\n", err)
+		transactionResponse = &apitxn.TransactionResponse{Orderer: selectedOrderer.URL(),
+			Err: fmt.Errorf("Error calling orderer '%s':  %s", selectedOrderer.URL(), err)}
+	} else {
+		logger.Debugf("Receive Success Response from orderer\n")
+		transactionResponse = &apitxn.TransactionResponse{Orderer: selectedOrderer.URL(), Err: nil}
+	}
+
+	return transactionResponse, nil
 }
 
 // SendEnvelope sends the given envelope to each orderer and returns a block response

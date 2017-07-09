@@ -12,6 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"crypto/rand"
+	"fmt"
+
 	"github.com/golang/mock/gomock"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
@@ -19,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateTransaction(t *testing.T) {
@@ -181,19 +185,39 @@ func TestSendInstantiateProposal(t *testing.T) {
 	if err == nil || err.Error() != "Missing peer objects for instantiate CC proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
 	}
+}
 
+type mockReader struct {
+	err error
+}
+
+func (r *mockReader) Read(p []byte) (int, error) {
+	if r.err != nil {
+		return 0, r.err
+	}
+	n, _ := rand.Read(p)
+	return n, nil
 }
 
 func TestBroadcastEnvelope(t *testing.T) {
+	originalRNG := rng
+	rng = &mockReader{}
+	defer func() {
+		rng = originalRNG
+	}()
 
 	//Setup channel
 	channel, _ := setupTestChannel()
 
-	//Create mock orderer
-	orderer := mocks.NewMockOrderer("", nil)
+	lsnr1 := make(chan *fab.SignedEnvelope)
+	lsnr2 := make(chan *fab.SignedEnvelope)
+	//Create mock orderers
+	orderer1 := mocks.NewMockOrderer("", lsnr1)
+	orderer2 := mocks.NewMockOrderer("", lsnr2)
 
-	//Add an orderer
-	channel.AddOrderer(orderer)
+	//Add the orderers
+	channel.AddOrderer(orderer1)
+	channel.AddOrderer(orderer2)
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
 	channel.AddPeer(&peer)
@@ -208,11 +232,37 @@ func TestBroadcastEnvelope(t *testing.T) {
 		t.Fatalf("Test Broadcast Envelope Failed, cause %s", err.Error())
 	}
 
-	channel.RemoveOrderer(orderer)
+	// Ensure only 1 orderer was selected for broadcast
+	firstSelected := 0
+	secondSelected := 0
+	for i := 0; i < 2; i++ {
+		select {
+		case <-lsnr1:
+			firstSelected = 1
+		case <-lsnr2:
+			secondSelected = 1
+		case <-time.After(time.Second):
+		}
+	}
+
+	assert.Equal(t, 1, firstSelected+secondSelected, "Both or none orderers were selected for broadcast")
+
+	channel.RemoveOrderer(orderer1)
+	channel.RemoveOrderer(orderer2)
 	_, err = channel.BroadcastEnvelope(sigEnvelope)
 
 	if err == nil || err.Error() != "orderers not set" {
 		t.Fatal("orderers not set validation on broadcast envelope is not working as expected")
+	}
+
+	// Add back an orderer
+	channel.AddOrderer(orderer1)
+	// Make rand.Reader fail
+	rng.(*mockReader).err = fmt.Errorf("Not enough entropy")
+	res, err = channel.BroadcastEnvelope(sigEnvelope)
+
+	if err != nil || res == nil {
+		t.Fatalf("Test Broadcast Envelope Failed, cause %s", err.Error())
 	}
 
 }
