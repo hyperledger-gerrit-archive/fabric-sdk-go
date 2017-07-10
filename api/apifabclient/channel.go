@@ -26,6 +26,7 @@ import (
 type Channel interface {
 	txn.Sender
 	txn.ProposalSender
+	txn.ProposalTester
 
 	Name() string
 	Initialize(data []byte) error

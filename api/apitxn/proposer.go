@@ -21,6 +21,11 @@ type ProposalSender interface {
 	SendTransactionProposal(ChaincodeInvokeRequest) ([]*TransactionProposalResponse, TransactionID, error)
 }
 
+// ProposalTester exposes methods to enable modular unit tests
+type ProposalTester interface {
+	NewTransactionProposal(ChaincodeInvokeRequest) (*TransactionProposal, error)
+}
+
 // TransactionID contains the ID of a Fabric Transaction Proposal
 type TransactionID struct {
 	ID    string

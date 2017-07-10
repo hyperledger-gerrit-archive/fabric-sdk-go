@@ -38,7 +38,7 @@ func (c *Channel) SendTransactionProposal(request apitxn.ChaincodeInvokeRequest)
 // TODO: return the entire request or just the txn ID?
 func sendTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext ClientContext) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 	if err := validateChaincodeInvokeRequest(request); err != nil {
-		return nil, apitxn.TransactionID{}, fmt.Errorf("Required parameters are empty")
+		return nil, apitxn.TransactionID{}, fmt.Errorf("Required parameters are empty: %s", err)
 	}
 
 	request, err := chaincodeInvokeRequestAddTxnID(request, clientContext)
@@ -93,6 +93,12 @@ func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(request apitxn.Chaincode
 		request.Targets = c.txnProcessors()
 	}
 	return request, nil
+}
+
+// NewTransactionProposal exposes the newTransactionProposal method. This is used
+// for testing only
+func (c *Channel) NewTransactionProposal(request apitxn.ChaincodeInvokeRequest) (*apitxn.TransactionProposal, error) {
+	return newTransactionProposal(c.name, request, c.clientContext)
 }
 
 // newTransactionProposal creates a proposal for transaction. This involves assembling the proposal
