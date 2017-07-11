@@ -9,11 +9,16 @@
 # depend: installs test dependencies
 # unit-test: runs all the unit tests
 # integration-test: runs all the integration tests
-# race-test: runs tests with race detector 
+# race-test: runs tests with race detector
 # checks: runs all check conditions (license, spelling, linting)
 # clean: stops docker conatainers used for integration testing
 # mock-gen: generate mocks needed for testing (using mockgen)
 #
+# To generate .tx files to create channels, refer to the fabric instructions:
+# https://github.com/hyperledger/fabric/blob/master/docs/source/configtxgen.rst
+# The tool can be found here:
+# https://nexus.hyperledger.org/content/repositories/releases/org/hyperledger/fabric/hyperledger-fabric/darwin-amd64-1.0.0/
+
 
 export ARCH=$(shell uname -m)
 export LDFLAGS=-ldflags=-s
