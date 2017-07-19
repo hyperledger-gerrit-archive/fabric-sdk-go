@@ -35,17 +35,21 @@ type MockBroadcastServer struct {
 
 // Broadcast mock broadcast
 func (m *MockBroadcastServer) Broadcast(server po.AtomicBroadcast_BroadcastServer) error {
-
+	_, err := server.Recv()
+	if err == io.EOF {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
 	if m.BroadcastError != nil {
 		return m.BroadcastError
 	}
 
 	if m.BroadcastInternalServerError {
-		server.Send(broadcastResponseError)
-		return nil
+		return server.Send(broadcastResponseError)
 	}
-	server.Send(broadcastResponseSuccess)
-	return nil
+	return server.Send(broadcastResponseSuccess)
 }
 
 // Deliver mock deliver
