@@ -150,44 +150,44 @@ func TestSendInstantiateProposal(t *testing.T) {
 	channel.AddPeer(&peer)
 
 	tresponse, txnid, err := channel.SendInstantiateProposal("", nil, "",
-		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+		"", cauthdsl.SignedByMspMember("Org1MSP"), pb.ChaincodeSpec_GOLANG, targets)
 
 	if err == nil || err.Error() != "Missing 'chaincodeName' parameter" {
 		t.Fatal("Validation for chain code name parameter for send Instantiate Proposal failed")
 	}
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "",
-		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+		"", cauthdsl.SignedByMspMember("Org1MSP"), pb.ChaincodeSpec_GOLANG, targets)
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "",
-		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+		"", cauthdsl.SignedByMspMember("Org1MSP"), pb.ChaincodeSpec_GOLANG, targets)
 
 	if err == nil || err.Error() != "Missing 'chaincodePath' parameter" {
 		t.Fatal("Validation for chain code path for send Instantiate Proposal failed")
 	}
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
-		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+		"", cauthdsl.SignedByMspMember("Org1MSP"), pb.ChaincodeSpec_GOLANG, targets)
 
 	if err == nil || err.Error() != "Missing 'chaincodeVersion' parameter" {
 		t.Fatal("Validation for chain code version for send Instantiate Proposal failed")
 	}
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
-		"1", nil, nil)
+		"1", nil, pb.ChaincodeSpec_GOLANG, nil)
 	if err == nil || err.Error() != "Missing 'chaincodePolicy' parameter" {
 		t.Fatal("Validation for chain code policy for send Instantiate Proposal failed")
 	}
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
-		"1", cauthdsl.SignedByMspMember("Org1MSP"), targets)
+		"1", cauthdsl.SignedByMspMember("Org1MSP"), pb.ChaincodeSpec_GOLANG, targets)
 
 	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
 		t.Fatal("Send Instantiate Proposal Test failed")
 	}
 
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
-		"1", cauthdsl.SignedByMspMember("Org1MSP"), nil)
+		"1", cauthdsl.SignedByMspMember("Org1MSP"), pb.ChaincodeSpec_GOLANG, nil)
 	if err == nil || err.Error() != "Missing peer objects for instantiate CC proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
 	}

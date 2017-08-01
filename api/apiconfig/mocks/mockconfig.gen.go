@@ -5,10 +5,11 @@ package mock_apiconfig
 
 import (
 	x509 "crypto/x509"
+	time "time"
+
 	gomock "github.com/golang/mock/gomock"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	factory "github.com/hyperledger/fabric/bccsp/factory"
-	time "time"
 )
 
 // MockConfig is a mock of Config interface
@@ -318,4 +319,16 @@ func (_m *MockConfig) TimeoutOrDefault(_param0 apiconfig.ConnectionType) time.Du
 // TimeoutOrDefault indicates an expected call of TimeoutOrDefault
 func (_mr *MockConfigMockRecorder) TimeoutOrDefault(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TimeoutOrDefault", arg0)
+}
+
+// MaxCallSendMsgSize mocks base method
+func (_m *MockConfig) MaxCallSendMsgSize(_param0 apiconfig.ConnectionType) int {
+	ret := _m.ctrl.Call(_m, "MaxCallSendMsgSize", _param0)
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// MaxCallSendMsgSize indicates an expected call of TimeoutOrDefault
+func (_mr *MockConfigMockRecorder) MaxCallSendMsgSize(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "MaxCallSendMsgSize", arg0)
 }

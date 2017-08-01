@@ -178,21 +178,21 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath stri
 
 	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
 
-	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
+	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, pb.ChaincodeSpec_GOLANG, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
 		return err
 	}
 	return nil
 }
 
 // InstallCC ...
-func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte) error {
+func (setup *BaseSetupImpl) InstallCC(chainCodeID string, chainCodePath string, chainCodeVersion string, chaincodePackage []byte, ccType pb.ChaincodeSpec_Type) error {
 	// installCC requires AdminUser privileges so setting user context with Admin User
 	setup.Client.SetUserContext(setup.AdminUser)
 
 	// must reset client user context to normal user once done with Admin privilieges
 	defer setup.Client.SetUserContext(setup.NormalUser)
 
-	if err := admin.SendInstallCC(setup.Client, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Channel.Peers(), setup.GetDeployPath()); err != nil {
+	if err := admin.SendInstallCC(setup.Client, chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, setup.Channel.Peers(), setup.GetDeployPath(), ccType); err != nil {
 		return fmt.Errorf("SendInstallProposal return error: %v", err)
 	}
 
@@ -215,7 +215,31 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 		setup.ChainCodeID = GenerateRandomID()
 	}
 
-	if err := setup.InstallCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, nil); err != nil {
+	if err := setup.InstallCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, nil, pb.ChaincodeSpec_GOLANG); err != nil {
+		return err
+	}
+
+	var args []string
+	args = append(args, "init")
+	args = append(args, "a")
+	args = append(args, "100")
+	args = append(args, "b")
+	args = append(args, "200")
+
+	return setup.InstantiateCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args)
+}
+
+// InstallAndInstantiateBinaryExampleCC ...
+func (setup *BaseSetupImpl) InstallAndInstantiateBinaryExampleCC() error {
+
+	chainCodePath := "../fixtures/src/github.com/example_cc_binary/example_cc"
+	chainCodeVersion := "v02"
+
+	if setup.ChainCodeID == "" {
+		setup.ChainCodeID = GenerateRandomID()
+	}
+
+	if err := setup.InstallCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, nil, pb.ChaincodeSpec_BINARY); err != nil {
 		return err
 	}
 

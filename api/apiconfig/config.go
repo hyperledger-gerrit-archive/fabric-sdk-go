@@ -20,6 +20,7 @@ type Config interface {
 	CAClientKeyFile(org string) (string, error)
 	CAClientCertFile(org string) (string, error)
 	TimeoutOrDefault(ConnectionType) time.Duration
+	MaxCallSendMsgSize(ConnectionType) int
 	MspID(org string) (string, error)
 	OrderersConfig() ([]OrdererConfig, error)
 	RandomOrdererConfig() (*OrdererConfig, error)

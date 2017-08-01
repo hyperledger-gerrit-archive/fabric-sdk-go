@@ -46,6 +46,7 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().MaxCallSendMsgSize(apiconfig.Endorser).Return(10 * 1024 * 1024)
 
 	conn, err := newPeerEndorser(url, "cert", "", true, config)
 	if err != nil {
@@ -76,6 +77,7 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, fmt.Errorf("ohoh"))
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().MaxCallSendMsgSize(apiconfig.Endorser).Return(10 * 1024 * 1024)
 
 	_, err := newPeerEndorser(url, "cert", "", true, config)
 	if err == nil {
@@ -93,6 +95,7 @@ func TestNewPeerEndorserNoTLS(t *testing.T) {
 	url := "0.0.0.0:1234"
 	config.EXPECT().IsTLSEnabled().Return(false)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().MaxCallSendMsgSize(apiconfig.Endorser).Return(10 * 1024 * 1024)
 
 	conn, err := newPeerEndorser(url, "", "", true, config)
 	if err != nil {
@@ -124,6 +127,7 @@ func TestNewPeerEndorserBlocking(t *testing.T) {
 	url := "0.0.0.0:1234"
 	config.EXPECT().IsTLSEnabled().Return(false)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().MaxCallSendMsgSize(apiconfig.Endorser).Return(10 * 1024 * 1024)
 
 	conn, err := newPeerEndorser(url, "", "", true, config)
 	if err != nil {
@@ -155,6 +159,7 @@ func TestNewPeerEndorserNonBlocking(t *testing.T) {
 	url := "0.0.0.0:1234"
 	config.EXPECT().IsTLSEnabled().Return(false)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().MaxCallSendMsgSize(apiconfig.Endorser).Return(10 * 1024 * 1024)
 
 	conn, err := newPeerEndorser(url, "", "", false, config)
 	if err != nil {
@@ -196,6 +201,7 @@ func TestNewPeerEndorserTLSBad(t *testing.T) {
 	config.EXPECT().IsTLSEnabled().Return(true)
 	config.EXPECT().TLSCACertPool("").Return(x509.NewCertPool(), nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().MaxCallSendMsgSize(apiconfig.Endorser).Return(10 * 1024 * 1024)
 
 	_, err := newPeerEndorser(url, "", "", true, config)
 	if err == nil {
@@ -232,6 +238,7 @@ func testProcessProposal(t *testing.T, url string) (apitxn.TransactionProposalRe
 
 	config.EXPECT().IsTLSEnabled().Return(false)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().MaxCallSendMsgSize(apiconfig.Endorser).Return(10 * 1024 * 1024)
 
 	conn, err := newPeerEndorser(url, "", "", true, config)
 	if err != nil {

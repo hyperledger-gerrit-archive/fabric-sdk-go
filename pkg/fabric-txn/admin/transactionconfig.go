@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
 	"github.com/op/go-logging"
 )
 
@@ -25,10 +26,10 @@ var origGoPath = os.Getenv("GOPATH")
 
 // SendInstallCC  Sends an install proposal to one or more endorsing peers.
 func SendInstallCC(client fab.FabricClient, chainCodeID string, chainCodePath string,
-	chainCodeVersion string, chaincodePackage []byte, targets []fab.Peer, deployPath string) error {
+	chainCodeVersion string, chaincodePackage []byte, targets []fab.Peer, deployPath string, ccType pb.ChaincodeSpec_Type) error {
 
 	changeGOPATHToDeploy(deployPath)
-	transactionProposalResponse, _, err := client.InstallChaincode(chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, targets)
+	transactionProposalResponse, _, err := client.InstallChaincode(chainCodeID, chainCodePath, chainCodeVersion, chaincodePackage, targets, ccType)
 	resetGOPATH()
 	if err != nil {
 		return fmt.Errorf("InstallChaincode returned error: %v", err)
@@ -45,10 +46,10 @@ func SendInstallCC(client fab.FabricClient, chainCodeID string, chainCodePath st
 
 // SendInstantiateCC Sends instantiate CC proposal to one or more endorsing peers
 func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
-	chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor, eventHub fab.EventHub) error {
+	chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, chaincodeType pb.ChaincodeSpec_Type, targets []apitxn.ProposalProcessor, eventHub fab.EventHub) error {
 
 	transactionProposalResponse, txID, err := channel.SendInstantiateProposal(chainCodeID,
-		args, chaincodePath, chaincodeVersion, chaincodePolicy, targets)
+		args, chaincodePath, chaincodeVersion, chaincodePolicy, chaincodeType, targets)
 	if err != nil {
 		return fmt.Errorf("SendInstantiateProposal returned error: %v", err)
 	}

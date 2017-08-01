@@ -99,7 +99,7 @@ func TestIsSourcePath(t *testing.T) {
 // Test packEntry and generateTarGz with empty file Descriptor
 func TestEmptyPackEntry(t *testing.T) {
 	emptyDescriptor := &Descriptor{"NewFile", ""}
-	err := packEntry(nil, nil, emptyDescriptor)
+	err := packEntry(nil, nil, emptyDescriptor, 0)
 	if err == nil {
 		t.Fatal("packEntry call with empty descriptor info must throw an error")
 	}

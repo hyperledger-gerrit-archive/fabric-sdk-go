@@ -59,6 +59,11 @@ func (c *MockConfig) TimeoutOrDefault(config.ConnectionType) time.Duration {
 	return 0
 }
 
+// MaxCallSendMsgSize not implemented
+func (c *MockConfig) MaxCallSendMsgSize(config.ConnectionType) int {
+	return 10 * 1024 * 1024
+}
+
 // FabricClientViper returns the internal viper instance used by the
 // SDK to read configuration options
 func (c *MockConfig) FabricClientViper() *viper.Viper {

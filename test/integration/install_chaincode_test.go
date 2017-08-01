@@ -16,11 +16,14 @@ import (
 	"time"
 
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/packager"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 const (
-	chainCodeName = "install"
-	chainCodePath = "github.com/example_cc"
+	chainCodeIDGOLANG   = "golangcc"
+	chainCodePathGOLANG = "github.com/example_cc"
+	chainCodeIDBINARY   = "binarycc"
+	chainCodePathBINARY = "../fixtures/src/github.com/example_cc_binary/example_cc"
 )
 
 var origGoPath = os.Getenv("GOPATH")
@@ -39,20 +42,29 @@ func TestChaincodeInstal(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	testChaincodeInstallUsingChaincodePath(t, testSetup)
+	//Test Install Chaincode scenario for GOLANG chaincodes
+	fmt.Println("Testing install chaincode for GOLANG chaincode type")
+	testChaincodeInstallUsingChaincodePath(t, testSetup, pb.ChaincodeSpec_GOLANG)
+	testChaincodeInstallUsingChaincodePackage(t, testSetup, pb.ChaincodeSpec_GOLANG)
+	fmt.Println("Testing install chaincode for GOLANG chaincode type is completed")
 
-	testChaincodeInstallUsingChaincodePackage(t, testSetup)
+	//Test Install Chaincode scenario for BINARY chaincodes
+	fmt.Println("Testing install chaincode for BINARY chaincode type")
+	testChaincodeInstallUsingChaincodePath(t, testSetup, pb.ChaincodeSpec_BINARY)
+	testChaincodeInstallUsingChaincodePackage(t, testSetup, pb.ChaincodeSpec_BINARY)
+	fmt.Println("Testing install chaincode for BINARY chaincode type is completed")
 }
 
 // Test chaincode install using chaincodePath to create chaincodePackage
-func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupImpl) {
+func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupImpl, ccType pb.ChaincodeSpec_Type) {
 	chainCodeVersion := getRandomCCVersion()
 
 	// Install and Instantiate Events CC
 	// Retrieve installed chaincodes
 	client := testSetup.Client
+	chainCodeID, chainCodePath := getChainCodeDetails(ccType)
 
-	if err := testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, nil); err != nil {
+	if err := testSetup.InstallCC(chainCodeID, chainCodePath, chainCodeVersion, nil, ccType); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
@@ -65,7 +77,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 	}
 	ccFound := false
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
-		if chaincode.Name == chainCodeName && chaincode.Path == chainCodePath && chaincode.Version == chainCodeVersion {
+		if chaincode.Name == chainCodeID && chaincode.Path == chainCodePath && chaincode.Version == chainCodeVersion {
 			fmt.Printf("Found chaincode: %s\n", chaincode)
 			ccFound = true
 		}
@@ -75,7 +87,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 		t.Fatalf("Failed to retrieve installed chaincode.")
 	}
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC(chainCodeName, chainCodePath, chainCodeVersion, nil)
+	err = testSetup.InstallCC(chainCodeID, chainCodePath, chainCodeVersion, nil, ccType)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -85,22 +97,23 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, testSetup *BaseSetupIm
 }
 
 // Test chaincode install using chaincodePackage[byte]
-func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *BaseSetupImpl) {
+func testChaincodeInstallUsingChaincodePackage(t *testing.T, testSetup *BaseSetupImpl, ccType pb.ChaincodeSpec_Type) {
 
 	chainCodeVersion := getRandomCCVersion()
 	changeGOPATHToDeploy(testSetup.GetDeployPath())
-	chaincodePackage, err := packager.PackageCC(chainCodePath, "")
+	_, chainCodePath := getChainCodeDetails(ccType)
+	chaincodePackage, err := packager.PackageCC(chainCodePath, ccType)
 	resetGOPATH()
 	if err != nil {
 		t.Fatalf("PackageCC return error: %s", err)
 	}
 
-	err = testSetup.InstallCC("install", "github.com/example_cc_pkg", chainCodeVersion, chaincodePackage)
+	err = testSetup.InstallCC("install", "github.com/example_cc_pkg", chainCodeVersion, chaincodePackage, ccType)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 	//Install same chaincode again, should fail
-	err = testSetup.InstallCC("install", chainCodePath, chainCodeVersion, chaincodePackage)
+	err = testSetup.InstallCC("install", chainCodePath, chainCodeVersion, chaincodePackage, ccType)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -122,4 +135,15 @@ func changeGOPATHToDeploy(deployPath string) {
 // ResetGOPATH resets go path to original
 func resetGOPATH() {
 	os.Setenv("GOPATH", origGoPath)
+}
+
+func getChainCodeDetails(ccType pb.ChaincodeSpec_Type) (string, string) {
+	switch ccType {
+	case pb.ChaincodeSpec_GOLANG:
+		return chainCodeIDGOLANG, chainCodePathGOLANG
+	case pb.ChaincodeSpec_BINARY:
+		return chainCodeIDBINARY, chainCodePathBINARY
+	default:
+		return "", ""
+	}
 }

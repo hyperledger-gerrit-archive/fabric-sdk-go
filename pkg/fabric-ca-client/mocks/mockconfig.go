@@ -57,6 +57,11 @@ func (c *MockConfig) TimeoutOrDefault(apiconfig.ConnectionType) time.Duration {
 	return 0
 }
 
+// MaxCallSendMsgSize not implemented
+func (c *MockConfig) MaxCallSendMsgSize(apiconfig.ConnectionType) int {
+	return 10 * 1024 * 1024
+}
+
 // PeersConfig Retrieves the fabric peers from the config file provided
 func (c *MockConfig) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 	return nil, nil

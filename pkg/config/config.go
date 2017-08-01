@@ -31,8 +31,9 @@ var format = logging.MustStringFormatter(
 )
 
 const (
-	cmdRoot        = "fabric_sdk"
-	defaultTimeout = time.Second * 5
+	cmdRoot                   = "fabric_sdk"
+	defaultTimeout            = time.Second * 5
+	defaultMaxCallSendMsgSize = 4 * 1024 * 1024
 )
 
 // Config represents the configuration for the client
@@ -154,6 +155,16 @@ func (c *Config) TimeoutOrDefault(conn apiconfig.ConnectionType) time.Duration {
 	}
 
 	return timeout
+}
+
+// MaxCallSendMsgSize reads max call send size limit in bytes for given connection type
+func (c *Config) MaxCallSendMsgSize(conn apiconfig.ConnectionType) int {
+	switch conn {
+	case apiconfig.Endorser:
+		return myViper.GetInt("client.connection.maxCallSendMsgSize.peer.endorser")
+	default:
+		return defaultMaxCallSendMsgSize
+	}
 }
 
 // MspID returns the MSP ID for the requested organization

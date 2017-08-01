@@ -8,6 +8,8 @@ package packager
 
 import (
 	"fmt"
+
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 // PackageCC ...
@@ -20,18 +22,18 @@ import (
  *                 ['golang', 'car', 'java'] (default 'golang')
  * @returns {[]byte} byte array
  */
-func PackageCC(chaincodePath string, chaincodeType string) ([]byte, error) {
+func PackageCC(chaincodePath string, chaincodeType pb.ChaincodeSpec_Type) ([]byte, error) {
 	logger.Debugf("packager: chaincodePath: %s, chaincodeType: %s", chaincodePath, chaincodeType)
 	if chaincodePath == "" {
 		return nil, fmt.Errorf("Missing 'chaincodePath' parameter")
 	}
-	if chaincodeType == "" {
-		chaincodeType = "golang"
-	}
+
 	logger.Debugf("packager: type %s ", chaincodeType)
 	switch chaincodeType {
-	case "golang":
+	case pb.ChaincodeSpec_GOLANG:
 		return PackageGoLangCC(chaincodePath)
+	case pb.ChaincodeSpec_BINARY:
+		return PackageBinaryCC(chaincodePath)
 	}
 	return nil, fmt.Errorf("Undefined 'chaincodeType' value")
 }

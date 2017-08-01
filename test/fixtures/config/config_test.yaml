@@ -32,6 +32,12 @@ client:
      eventHub: 3s
      eventReg: 3s
     orderer: 3s
+   maxCallSendMsgSize:
+    peer:
+      # Max grpc send message send, 8MB -> 8*1024*1024
+      endorser: 8388608
+
+
 
 # network provides a static definition of a Hyperledger Fabric network
  network:

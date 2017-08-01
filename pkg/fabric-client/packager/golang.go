@@ -60,6 +60,7 @@ func PackageGoLangCC(chaincodePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return tarBytes, nil
 }
 
@@ -123,7 +124,7 @@ func generateTarGz(descriptors []*Descriptor) ([]byte, error) {
 	tw := tar.NewWriter(gw)
 	for _, v := range descriptors {
 		logger.Debugf("generateTarGz for %s", v.fqp)
-		err := packEntry(tw, gw, v)
+		err := packEntry(tw, gw, v, 0)
 		if err != nil {
 			closeStream(tw, gw)
 			return nil, fmt.Errorf("error from packEntry for %s error %s", v.fqp, err.Error())
@@ -139,7 +140,7 @@ func closeStream(tw *tar.Writer, gw *gzip.Writer) {
 	gw.Close()
 }
 
-func packEntry(tw *tar.Writer, gw *gzip.Writer, descriptor *Descriptor) error {
+func packEntry(tw *tar.Writer, gw *gzip.Writer, descriptor *Descriptor, chmod int64) error {
 	file, err := os.Open(descriptor.fqp)
 	if err != nil {
 		return err
@@ -151,7 +152,10 @@ func packEntry(tw *tar.Writer, gw *gzip.Writer, descriptor *Descriptor) error {
 		header := new(tar.Header)
 		header.Name = descriptor.name
 		header.Size = stat.Size()
-		header.Mode = int64(stat.Mode())
+		if chmod == 0 {
+			chmod = int64(stat.Mode())
+		}
+		header.Mode = chmod
 		// Use a deterministic "zero-time" for all date fields
 		header.ModTime = time.Time{}
 		header.AccessTime = time.Time{}

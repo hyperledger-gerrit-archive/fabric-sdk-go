@@ -48,7 +48,7 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 	testSetup.ChainCodeID = GenerateRandomID()
 
 	// Install and Instantiate Events CC
-	if err := testSetup.InstallCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", nil); err != nil {
+	if err := testSetup.InstallCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", nil, pb.ChaincodeSpec_GOLANG); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 

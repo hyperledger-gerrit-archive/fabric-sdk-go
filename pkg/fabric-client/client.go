@@ -459,7 +459,7 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
 func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
-	chaincodePackage []byte, targets []fab.Peer) ([]*apitxn.TransactionProposalResponse, string, error) {
+	chaincodePackage []byte, targets []fab.Peer, ccType pb.ChaincodeSpec_Type) ([]*apitxn.TransactionProposalResponse, string, error) {
 
 	if chaincodeName == "" {
 		return nil, "", fmt.Errorf("Missing 'chaincodeName' parameter")
@@ -473,7 +473,7 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 
 	if chaincodePackage == nil {
 		var err error
-		chaincodePackage, err = packager.PackageCC(chaincodePath, "")
+		chaincodePackage, err = packager.PackageCC(chaincodePath, ccType)
 		if err != nil {
 			return nil, "", fmt.Errorf("PackageCC return error: %s", err)
 		}
@@ -481,7 +481,7 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 
 	now := time.Now()
 	cds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
+		Type: ccType, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
 		CodePackage: chaincodePackage, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
 
 	if c.userContext == nil {

@@ -24,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/common/cauthdsl"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 var org1 = "peerorg1"
@@ -123,18 +124,18 @@ func installAndInstantiate(t *testing.T) {
 
 	orgTestClient.SetUserContext(org1AdminUser)
 	admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer0}, "../../fixtures")
+		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer0}, "../../fixtures", pb.ChaincodeSpec_GOLANG)
 
 	orgTestClient.SetUserContext(org2AdminUser)
 	err := admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures")
+		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures", pb.ChaincodeSpec_GOLANG)
 	failTestIfError(err, t)
 
 	chaincodePolicy := cauthdsl.SignedByAnyMember([]string{
 		org1AdminUser.MspID(), org2AdminUser.MspID()})
 
 	err = admin.SendInstantiateCC(orgTestChannel, "exampleCC",
-		generateInitArgs(), "github.com/example_cc", "0", chaincodePolicy, []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub)
+		generateInitArgs(), "github.com/example_cc", "0", chaincodePolicy, pb.ChaincodeSpec_GOLANG, []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub)
 	failTestIfError(err, t)
 }
 

@@ -157,11 +157,11 @@ func (c *Channel) SendTransaction(tx *apitxn.Transaction) (*apitxn.TransactionRe
 // SendInstantiateProposal sends an instantiate proposal to one or more endorsing peers.
 // chaincodeName: required - The name of the chain.
 // args: optional - string Array arguments specific to the chaincode being instantiated
-// chaincodePath: required - string of the path to the location of the source code of the chaincode
+// chaincodePath: required - string of the path to the location of the source code or binary of the chaincode
 // chaincodeVersion: required - string of the version of the chaincode
 func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	args []string, chaincodePath string, chaincodeVersion string,
-	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+	chaincodePolicy *common.SignaturePolicyEnvelope, chaincodeType pb.ChaincodeSpec_Type, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
 	if chaincodeName == "" {
 		return nil, apitxn.TransactionID{}, fmt.Errorf("Missing 'chaincodeName' parameter")
@@ -187,7 +187,7 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	}
 
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
+		Type: chaincodeType, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
 	if c.clientContext.UserContext() == nil {

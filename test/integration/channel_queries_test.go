@@ -16,9 +16,18 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 func TestChannelQueries(t *testing.T) {
+	//Testing channel queries for golang user chaincodes
+	testChannelQueriesByChaincodeType(t, pb.ChaincodeSpec_GOLANG)
+
+	//Testing channel queries for binary user chaincodes
+	testChannelQueriesByChaincodeType(t, pb.ChaincodeSpec_BINARY)
+}
+
+func testChannelQueriesByChaincodeType(t *testing.T, ccType pb.ChaincodeSpec_Type) {
 
 	testSetup := &BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
@@ -35,8 +44,16 @@ func TestChannelQueries(t *testing.T) {
 	channel := testSetup.Channel
 	client := testSetup.Client
 
-	if err := testSetup.InstallAndInstantiateExampleCC(); err != nil {
-		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	var err error
+	if ccType == pb.ChaincodeSpec_BINARY {
+		err = testSetup.InstallAndInstantiateBinaryExampleCC()
+	} else {
+		err = testSetup.InstallAndInstantiateExampleCC()
+	}
+
+	if err != nil {
+		t.Fatalf("InstallAndInstantiateExampleCC for %v return error: %v", ccType, err)
+		return
 	}
 
 	// Test Query Info - retrieve values before transaction
@@ -48,19 +65,21 @@ func TestChannelQueries(t *testing.T) {
 	// Invoke transaction that changes block state
 	txID, err := changeBlockState(testSetup)
 	if err != nil {
-		t.Fatalf("Failed to change block state (invoke transaction). Return error: %v", err)
+		t.Fatalf("Failed to change block state (invoke transaction) for %v . Return error: %v", ccType, err)
 	}
 
 	// Test Query Info - retrieve values after transaction
 	bciAfterTx, err := channel.QueryInfo()
 	if err != nil {
-		t.Fatalf("QueryInfo return error: %v", err)
+		t.Fatalf("QueryInfo for %v  return error: %v", ccType, err)
 	}
 
 	// Test Query Info -- verify block size changed after transaction
 	if (bciAfterTx.Height - bciBeforeTx.Height) <= 0 {
-		t.Fatalf("Block size did not increase after transaction")
+		t.Fatalf("Block size did not increase after transaction for %v ", ccType)
 	}
+
+	fmt.Printf(" Performing Query tests for chaincode type : %v \n ", ccType)
 
 	testQueryTransaction(t, channel, txID)
 
@@ -71,6 +90,8 @@ func TestChannelQueries(t *testing.T) {
 	testInstalledChaincodes(t, channel, client, testSetup)
 
 	testQueryByChaincode(t, channel, client.Config(), testSetup)
+
+	fmt.Printf(" Query tests for chaincode type : %v  completed successfully \n ", ccType)
 
 	// TODO: Synch with test in node SDK when it becomes available
 	// testInstantiatedChaincodes(t, channel)

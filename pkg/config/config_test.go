@@ -115,6 +115,16 @@ func TestCAConfig(t *testing.T) {
 		t.Fatalf("Incorrect keystore path ")
 	}
 
+	//Test Max
+	//Test Security level
+	if vConfig.GetInt("client.connection.maxCallSendMsgSize.peer.endorser") != configImpl.MaxCallSendMsgSize(api.Endorser) {
+		t.Fatalf("Incorrect max call send msg size")
+	}
+
+	if configImpl.MaxCallSendMsgSize(api.Orderer) <= 0 {
+		t.Fatalf("Expected default value for max call send msg size")
+	}
+
 }
 
 func TestCAConfigFailsByNetworkConfig(t *testing.T) {

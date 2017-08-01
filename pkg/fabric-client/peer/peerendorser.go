@@ -40,6 +40,8 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 	// Construct dialer options for the connection
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.Endorser)))
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(config.MaxCallSendMsgSize(apiconfig.Endorser))))
+
 	if dialBlocking { // TODO: configurable?
 		opts = append(opts, grpc.WithBlock())
 	}

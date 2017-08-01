@@ -14,9 +14,19 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 func TestChainCodeInvoke(t *testing.T) {
+
+	//Testing chaincode invoke for golang user chaincodes
+	testChainCodeInvokeByChaincodeType(t, pb.ChaincodeSpec_GOLANG)
+
+	//Testing chaincode invoke for binary user chaincodes
+	testChainCodeInvokeByChaincodeType(t, pb.ChaincodeSpec_BINARY)
+}
+
+func testChainCodeInvokeByChaincodeType(t *testing.T, ccType pb.ChaincodeSpec_Type) {
 
 	testSetup := BaseSetupImpl{
 		ConfigFile:      "../fixtures/config/config_test.yaml",
@@ -30,14 +40,22 @@ func TestChainCodeInvoke(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	if err := testSetup.InstallAndInstantiateExampleCC(); err != nil {
-		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
+	var err error
+	if ccType == pb.ChaincodeSpec_BINARY {
+		err = testSetup.InstallAndInstantiateBinaryExampleCC()
+	} else {
+		err = testSetup.InstallAndInstantiateExampleCC()
+	}
+
+	if err != nil {
+		t.Fatalf("InstallAndInstantiateExampleCC for %v return error: %v", ccType, err)
+		return
 	}
 
 	// Get Query value before invoke
 	value, err := testSetup.QueryAsset()
 	if err != nil {
-		t.Fatalf("getQueryValue return error: %v", err)
+		t.Fatalf("getQueryValue for %v return error: %v", ccType, err)
 	}
 	fmt.Printf("*** QueryValue before invoke %s\n", value)
 
@@ -48,20 +66,20 @@ func TestChainCodeInvoke(t *testing.T) {
 
 	err = moveFunds(&testSetup)
 	if err != nil {
-		t.Fatalf("Move funds return error: %v", err)
+		t.Fatalf("Move funds for %v return error: %v", ccType, err)
 	}
 
 	select {
 	case <-done:
 	case <-time.After(time.Second * 20):
-		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
+		t.Fatalf("Did NOT receive CC for for %v for eventId(%s)\n", ccType, eventID)
 	}
 
 	testSetup.EventHub.UnregisterChaincodeEvent(rce)
 
 	valueAfterInvoke, err := testSetup.QueryAsset()
 	if err != nil {
-		t.Errorf("getQueryValue return error: %v", err)
+		t.Errorf("getQueryValue for %v return error: %v", ccType, err)
 		return
 	}
 	fmt.Printf("*** QueryValue after invoke %s\n", valueAfterInvoke)
@@ -70,7 +88,7 @@ func TestChainCodeInvoke(t *testing.T) {
 	valueInt = valueInt + 1
 	valueAfterInvokeInt, _ := strconv.Atoi(valueAfterInvoke)
 	if valueInt != valueAfterInvokeInt {
-		t.Fatalf("SendTransaction didn't change the QueryValue")
+		t.Fatalf("SendTransaction didn't change the QueryValue for %v ", ccType)
 	}
 
 }
