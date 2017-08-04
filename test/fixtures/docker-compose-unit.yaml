@@ -1,0 +1,15 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+services:
+
+  fabric-sdk-testcase:
+    container_name: fabric-sdk-softhsm2
+    image: softhsm2-image
+    volumes:
+      - ../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
+    command: bash -c 'softhsm2-util --show-slots; ls -al /var/lib/softhsm/tokens/*/; cd /opt/gopath/src/github.com/hyperledger/fabric-sdk-go; make unit-test-container; ls -al /var/lib/softhsm/tokens/*/'
