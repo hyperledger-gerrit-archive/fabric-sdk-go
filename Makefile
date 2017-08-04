@@ -23,9 +23,10 @@
 #
 
 
-
 export ARCH=$(shell uname -m)
 export LDFLAGS=-ldflags=-s
+export DOCKER_NS=hyperledger
+export DOCKER_TAG=$(ARCH)-0.3.1
 
 all: checks unit-test integration-test
 
@@ -34,7 +35,7 @@ depend:
 
 checks: depend license lint spelling
 
-.PHONY: license
+.PHONY: license build-softhsm2-image
 license:
 	@test/scripts/check_license.sh
 
@@ -44,13 +45,31 @@ lint:
 spelling:
 	@test/scripts/check_spelling.sh
 
-unit-test: checks
+edit-docker:
+	@cd ./test/fixtures && sed -i 's/_NS_/$(DOCKER_NS)/g' Dockerfile \
+     && sed -i 's/_TAG_/$(DOCKER_TAG)/g'  Dockerfile \
+	 && cat Dockerfile
+
+build-softhsm2-image: 
+	 @cd ./test/fixtures && docker build --no-cache -t "softhsm2-image" . \
+
+restore-docker-file:
+	 @cd ./test/fixtures && sed -i 's/$(DOCKER_NS)/_NS_/g' Dockerfile \
+	 && sed -i 's/$(DOCKER_TAG)/_TAG_/g'  Dockerfile \
+
+unit-test: edit-docker build-softhsm2-image restore-docker-file
+	@cd ./test/fixtures && docker-compose -f docker-compose-unit.yaml up --force-recreate
+
+unit-test-container: checks
 	@test/scripts/unit.sh
 
 unit-tests: unit-test
 
-integration-test: clean depend
-	@test/scripts/integration.sh
+integration-test: clean depend edit-docker build-softhsm2-image restore-docker-file
+	@cd ./test/fixtures && docker-compose up --force-recreate
+	
+integration-test-container: 
+	@test/scripts/integration-container.sh
 
 integration-tests: integration-test
 
