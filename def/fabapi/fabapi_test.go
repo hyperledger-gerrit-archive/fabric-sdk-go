@@ -26,4 +26,6 @@ func TestNewDefaultSDK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
+
+	t.Fatal("Failed her on purpose to test exit code")
 }
