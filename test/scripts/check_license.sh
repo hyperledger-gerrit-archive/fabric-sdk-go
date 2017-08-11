@@ -19,8 +19,8 @@ if [[ -z "$CHECK" ]]; then
 fi
 
 echo "Checking committed files for SPDX-License-Identifier headers ..."
-missing=`echo $CHECK | xargs grep -L "SPDX-License-Identifier"`
-if [ -z "$missing" ]; then
+missing=`echo "$CHECK" | xargs grep -L "SPDX-License-Identifier"`
+if [[ -z "$missing" ]]; then
    echo "All files have SPDX-License-Identifier headers"
    exit 0
 fi
