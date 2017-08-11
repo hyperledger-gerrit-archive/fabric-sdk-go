@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-
+set -x
 CHECK=$(git diff --name-only HEAD --diff-filter=ACMRTUXB * | grep -v .png$ | grep -v .rst$ | grep -v .git \
   | grep -v .pem$ | grep -v .block$ | grep -v .tx$ | grep -v ^LICENSE$ | grep -v _sk$ \
   | grep -v .key$ | grep -v \\.gen.go$ \
