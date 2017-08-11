@@ -1,0 +1,5 @@
+[gerrit]
+host=gerrit.hyperledger.org
+port=29418
+project=fabric-sdk-go
+
