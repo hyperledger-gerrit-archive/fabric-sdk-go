@@ -265,7 +265,6 @@ func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockEndo
 func TestTransactionProposalError(t *testing.T) {
 	var mockError error
 
-	proposal := mockTransactionProposal()
 	mockError = TransactionProposalError{
 		Endorser: "1.2.3.4:1000",
 		Proposal: mockTransactionProposal(),
@@ -273,7 +272,7 @@ func TestTransactionProposalError(t *testing.T) {
 	}
 
 	errText := mockError.Error()
-	mockText := fmt.Sprintf("Transaction processor (1.2.3.4:1000) returned error 'error' for proposal: %v", proposal)
+	mockText := "Transaction processor (1.2.3.4:1000) returned error 'error'"
 
 	if errText != mockText {
 		t.Fatalf("Unexpected error")
