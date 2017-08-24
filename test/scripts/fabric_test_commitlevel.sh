@@ -13,3 +13,6 @@ export USE_PREBUILT_IMAGES=true
 #This should always match the compatibility specified in the README.md
 export FABRIC_COMMIT=v1.0.0
 export FABRIC_CA_COMMIT=v1.0.0
+
+# Install dependent tools in the CI
+export FABRIC_SDKGO_DEPEND_INSTALL=true
