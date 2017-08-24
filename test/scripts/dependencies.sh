@@ -16,6 +16,10 @@ if [ -z "$FABRIC_SDKGO_SKIP_DEPEND" ]; then
     go get -u github.com/client9/misspell/cmd/misspell
     go get -u github.com/golang/lint/golint
     go get -u golang.org/x/tools/cmd/goimports
+    go get -u github.com/golang/dep/cmd/dep
+
+    echo "Populating vendor..."
+    dep ensure -vendor-only
 else
     echo "Skipping install dependencies..."
 fi

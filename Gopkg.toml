@@ -1,0 +1,69 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/cloudflare/cfssl"
+
+[[constraint]]
+  name = "github.com/golang/mock"
+  version = "1.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/golang/protobuf"
+
+[[constraint]]
+  name = "github.com/hyperledger/fabric"
+  version = "=1.0.0"
+
+[[constraint]]
+  name = "github.com/hyperledger/fabric-ca"
+  version = "=1.0.1"
+
+[[constraint]]
+  name = "github.com/op/go-logging"
+  #branch = "master"
+  branch = "datarace"
+  source = "github.com/troyronda/go-logging"
+
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "1.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/net"
+
+[[constraint]]
+  name = "google.golang.org/grpc"
+  version = "1.0.0"
+
+# Overrides due to inconsistent semver
+[[override]]
+name = "github.com/docker/libnetwork"
+branch = "master"
+
+[[override]]
+name = "github.com/docker/go-connections"
+branch = "master"
+
+[[override]]
+name = "github.com/docker/go-units"
+branch = "master"
+
+[[override]]
+name = "github.com/docker/libkv"
+branch = "master"
+
+# Temporary overrides due to Sirupsen case sensitivity
+[[override]]
+name = "github.com/docker/docker"
+branch = "master"
+
+[[override]]
+name = "github.com/opencontainers/runc"
+branch = "master"
