@@ -14,7 +14,8 @@
 # clean: stops docker conatainers used for integration testing
 # mock-gen: generate mocks needed for testing (using mockgen)
 # populate: populates generated files (not included in git) - currently only vendor
-# populate-vendor: populate the vendor directory based on the lock 
+# populate-vendor: populate the vendor directory based on the lock
+# populate-clean: cleans up populated files (might become part of clean eventually) 
 #
 #
 # Instructions to generate .tx files used for creating channels:
@@ -50,7 +51,7 @@ checks: depend license lint spelling
 license:
 	@test/scripts/check_license.sh
 
-lint:
+lint: populate
 	@test/scripts/check_lint.sh
 
 spelling:
@@ -87,15 +88,17 @@ mock-gen:
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apiconfig/mocks/mockconfig.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apifabca/mocks/mockfabriccaclient.gen.go
 
-populate: populate-vendor
+populate: populate-clean populate-vendor
 
 populate-vendor:
 	@echo "Populating vendor ..."
 	@dep ensure -vendor-only
+
+populate-clean:
+	rm -Rf vendor
 
 clean:
 	rm -Rf /tmp/enroll_user /tmp/msp /tmp/keyvaluestore
 	rm -f integration-report.xml report.xml
 	cd test/fixtures && docker-compose down
 	cd test/fixtures && docker-compose -f docker-compose-unit.yaml down
-	rm -Rf vendor
