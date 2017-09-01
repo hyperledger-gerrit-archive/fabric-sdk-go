@@ -48,7 +48,7 @@ func TestDeadlock(t *testing.T) {
 
 	// The test should be done in milliseconds but if there's
 	// a deadlock then we don't want it to hang
-	timeout := 5 * time.Second
+	timeout := 50 * time.Second
 
 	// create a flood of TX events
 	txCompletion := newMultiCompletionHandler(eventsSent, timeout)
@@ -97,7 +97,7 @@ func TestDeadlock(t *testing.T) {
 	// Wait for all events to be received
 	txCompletion.wait()
 	ccCompletion.wait()
-
+	eventHub.mtx.Lock()
 	if txCompletion.numDone() != eventsSent {
 		t.Errorf("Sent %d Tx events but received %d - could indicate a deadlock", eventsSent, txCompletion.numDone())
 	} else {
@@ -109,6 +109,7 @@ func TestDeadlock(t *testing.T) {
 	} else {
 		fmt.Printf("Received all %d CC events.\n", ccCompletion.numDone())
 	}
+	eventHub.mtx.Unlock()
 }
 
 func TestChaincodeEvent(t *testing.T) {
