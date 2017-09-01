@@ -10,6 +10,12 @@
 			"revisionTime": "2017-07-30T13:13:16Z"
 		},
 		{
+			"checksumSHA1": "8w8OHOLkOdaBXo8k5jbnedc3w84=",
+			"path": "github.com/DeanThompson/syncmap",
+			"revision": "05cfe1984971e6e97ad4f92c3feb375f47597d71",
+			"revisionTime": "2017-05-15T01:44:30Z"
+		},
+		{
 			"checksumSHA1": "XlByHknREKSQx011F1O+0lHwejw=",
 			"origin": "github.com/hyperledger/fabric/vendor/github.com/Knetic/govaluate",
 			"path": "github.com/Knetic/govaluate",

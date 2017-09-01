@@ -22,6 +22,7 @@ import (
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
 	cnsmr "github.com/hyperledger/fabric/events/consumer"
 
+	syncmapdt "github.com/DeanThompson/syncmap"
 	"github.com/hyperledger/fabric/core/ledger/util"
 	common "github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric/protos/peer"
@@ -30,6 +31,7 @@ import (
 )
 
 var logger = logging.MustGetLogger("fabric_sdk_go")
+var shardCount uint8 = 64
 
 // EventHub allows a client to listen to event at a peer.
 type EventHub struct {
@@ -40,7 +42,7 @@ type EventHub struct {
 	// Map of clients registered for block events
 	blockRegistrants []func(*common.Block)
 	// Map of clients registered for transactional events
-	txRegistrants map[string]func(string, pb.TxValidationCode, error)
+	txRegistrants syncmapdt.SyncMap
 	// peer addr to connect to
 	peerAddr string
 	// peer tls certificate
@@ -78,8 +80,7 @@ func NewEventHub(client fab.FabricClient) (*EventHub, error) {
 		return nil, fmt.Errorf("Client is nil")
 	}
 	chaincodeRegistrants := make(map[string][]*fab.ChainCodeCBE)
-	txRegistrants := make(map[string]func(string, pb.TxValidationCode, error))
-
+	txRegistrants := *syncmapdt.NewWithShard(shardCount)
 	eventHub := EventHub{
 		chaincodeRegistrants: chaincodeRegistrants,
 		blockRegistrants:     nil,
@@ -88,10 +89,8 @@ func NewEventHub(client fab.FabricClient) (*EventHub, error) {
 		eventsClientFactory:  &consumerClientFactory{},
 		client:               client,
 	}
-
 	// register default transaction callback
 	eventHub.RegisterBlockEvent(eventHub.txCallback)
-
 	return &eventHub, nil
 }
 
@@ -373,9 +372,8 @@ func (eventHub *EventHub) UnregisterChaincodeEvent(cbe *fab.ChainCodeCBE) {
 // is a json object representation of type "message Transaction"
 func (eventHub *EventHub) RegisterTxEvent(txnID apitxn.TransactionID, callback func(string, pb.TxValidationCode, error)) {
 	logger.Debugf("reg txid %s\n", txnID.ID)
-
 	eventHub.mtx.Lock()
-	eventHub.txRegistrants[txnID.ID] = callback
+	eventHub.txRegistrants.Set(txnID.ID, callback)
 	eventHub.mtx.Unlock()
 }
 
@@ -383,7 +381,7 @@ func (eventHub *EventHub) RegisterTxEvent(txnID apitxn.TransactionID, callback f
 // txid: transaction id
 func (eventHub *EventHub) UnregisterTxEvent(txnID apitxn.TransactionID) {
 	eventHub.mtx.Lock()
-	delete(eventHub.txRegistrants, txnID.ID)
+	eventHub.txRegistrants.Delete(txnID.ID)
 	eventHub.mtx.Unlock()
 }
 
@@ -394,7 +392,6 @@ func (eventHub *EventHub) UnregisterTxEvent(txnID apitxn.TransactionID) {
  */
 func (eventHub *EventHub) txCallback(block *common.Block) {
 	logger.Debugf("txCallback block=%v\n", block)
-
 	txFilter := util.TxValidationFlags(block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
 	for i, v := range block.Data.Data {
 
@@ -416,7 +413,6 @@ func (eventHub *EventHub) txCallback(block *common.Block) {
 				logger.Errorf("error extracting ChannelHeader from payload: %v\n", err)
 				return
 			}
-
 			callback := eventHub.getTXRegistrant(channelHeader.TxId)
 			if callback != nil {
 				if txFilter.IsInvalid(i) {
@@ -463,7 +459,13 @@ func (eventHub *EventHub) getChaincodeRegistrants(chaincodeID string) []*fab.Cha
 func (eventHub *EventHub) getTXRegistrant(txID string) func(string, pb.TxValidationCode, error) {
 	eventHub.mtx.RLock()
 	defer eventHub.mtx.RUnlock()
-	return eventHub.txRegistrants[txID]
+	v, ok := eventHub.txRegistrants.Get(txID)
+	if !ok {
+		logger.Infof("Entry for key does not exist %s", txID)
+		return nil
+	}
+
+	return v.(func(string, pb.TxValidationCode, error))
 }
 
 // getChainCodeEvents parses block events for chaincode events associated with individual transactions
