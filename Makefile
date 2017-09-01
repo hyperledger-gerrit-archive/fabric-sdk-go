@@ -93,8 +93,8 @@ mock-gen:
 populate: populate-vendor
 
 populate-vendor:
-	@echo "Populating vendor ..."
-	@dep ensure -vendor-only
+#	@echo "Populating vendor ..."
+#	@dep ensure -vendor-only
 
 populate-clean:
 	rm -Rf vendor
