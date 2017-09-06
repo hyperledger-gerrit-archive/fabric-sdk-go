@@ -13,7 +13,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/spf13/viper"
 )
 
 // MockConfig ...
@@ -26,9 +25,14 @@ func NewMockConfig(CAServerURL string) apiconfig.Config {
 	return &MockConfig{CAServerURL: CAServerURL}
 }
 
+// Client ... not implemented
+func (c *MockConfig) Client() (*apiconfig.ClientConfig, error) {
+	return nil, nil
+}
+
 // CAConfig return ca configuration
 func (c *MockConfig) CAConfig(org string) (*apiconfig.CAConfig, error) {
-	return &apiconfig.CAConfig{TLSEnabled: false, ServerURL: c.CAServerURL, Name: "test", TLS: apiconfig.MutualTLSConfig{}}, nil
+	return &apiconfig.CAConfig{Url: c.CAServerURL, CaName: "test", TlsCACerts: apiconfig.MutualTLSConfig{}}, nil
 }
 
 // CAServerCertFiles Read configuration option for the server certificate files
@@ -46,60 +50,14 @@ func (c *MockConfig) CAClientCertFile(org string) (string, error) {
 	return "", nil
 }
 
-// FabricClientViper returns the internal viper instance used by the
-// SDK to read configuration options
-func (c *MockConfig) FabricClientViper() *viper.Viper {
-	return nil
-}
-
 //TimeoutOrDefault not implemented
 func (c *MockConfig) TimeoutOrDefault(apiconfig.ConnectionType) time.Duration {
 	return 0
 }
 
-// PeersConfig Retrieves the fabric peers from the config file provided
-func (c *MockConfig) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
-	return nil, nil
-}
-
-// PeerConfig Retrieves a specific peer from the configuration by org and name
-func (c *MockConfig) PeerConfig(org string, name string) (*apiconfig.PeerConfig, error) {
-	return nil, nil
-}
-
-// IsTLSEnabled ...
-func (c *MockConfig) IsTLSEnabled() bool {
-	return false
-}
-
-// TLSCACertPool ...
-func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
-	return nil, nil
-}
-
-// SetTLSCACertPool ...
-func (c *MockConfig) SetTLSCACertPool(pool *x509.CertPool) {
-}
-
-// IsSecurityEnabled ...
-func (c *MockConfig) IsSecurityEnabled() bool {
-	return false
-}
-
-// TcertBatchSize ...
-func (c *MockConfig) TcertBatchSize() int {
-	return 0
-}
-
-// SecurityAlgorithm ...
-func (c *MockConfig) SecurityAlgorithm() string {
-	return ""
-}
-
-// SecurityLevel ...
-func (c *MockConfig) SecurityLevel() int {
-	return 0
-
+// MspID not implemented
+func (c *MockConfig) MspID(org string) (string, error) {
+	return "", nil
 }
 
 // OrderersConfig returns a list of defined orderers
@@ -117,9 +75,73 @@ func (c *MockConfig) OrdererConfig(name string) (*apiconfig.OrdererConfig, error
 	return nil, nil
 }
 
-// MspID ...
-func (c *MockConfig) MspID(org string) (string, error) {
-	return "", nil
+// PeersConfig Retrieves the fabric peers from the config file provided
+func (c *MockConfig) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
+	return nil, nil
+}
+
+// PeerConfig Retrieves a specific peer from the configuration by org and name
+func (c *MockConfig) PeerConfig(org string, name string) (*apiconfig.PeerConfig, error) {
+	return nil, nil
+}
+
+// NetworkConfig not implemented
+func (c *MockConfig) NetworkConfig() (*apiconfig.NetworkConfig, error) {
+	return nil, nil
+}
+
+// IsTLSEnabled ...
+func (c *MockConfig) IsTLSEnabled() bool {
+	return false
+}
+
+// SetTLSCACertPool ...
+func (c *MockConfig) SetTLSCACertPool(pool *x509.CertPool) {
+}
+
+// TLSCACertPool ...
+func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
+	return nil, nil
+}
+
+// IsSecurityEnabled ...
+func (c *MockConfig) IsSecurityEnabled() bool {
+	return false
+}
+
+// SecurityAlgorithm ...
+func (c *MockConfig) SecurityAlgorithm() string {
+	return ""
+}
+
+// SecurityLevel ...
+func (c *MockConfig) SecurityLevel() int {
+	return 0
+}
+
+// SecurityProvider ...
+func (c *MockConfig) SecurityProvider() string {
+	return ""
+}
+
+// Ephemeral ...
+func (c *MockConfig) Ephemeral() bool {
+	return false
+}
+
+// SoftVerify ...
+func (c *MockConfig) SoftVerify() bool {
+	return false
+}
+
+// SecurityProviderPin ...
+func (c *MockConfig) SecurityProviderPin() string {
+	return ""
+}
+
+// SecurityProviderLabel ...
+func (c *MockConfig) SecurityProviderLabel() string {
+	return ""
 }
 
 // KeyStorePath ...
@@ -140,9 +162,4 @@ func (c *MockConfig) CryptoConfigPath() string {
 // CSPConfig ...
 func (c *MockConfig) CSPConfig() *bccspFactory.FactoryOpts {
 	return nil
-}
-
-// NetworkConfig not implemented
-func (c *MockConfig) NetworkConfig() (*apiconfig.NetworkConfig, error) {
-	return nil, nil
 }

@@ -15,6 +15,7 @@ import (
 
 // Config fabric-sdk-go configuration interface
 type Config interface {
+	Client() (*ClientConfig, error)
 	CAConfig(org string) (*CAConfig, error)
 	CAServerCertFiles(org string) ([]string, error)
 	CAClientKeyFile(org string) (string, error)
@@ -31,9 +32,13 @@ type Config interface {
 	SetTLSCACertPool(*x509.CertPool)
 	TLSCACertPool(tlsCertificate string) (*x509.CertPool, error)
 	IsSecurityEnabled() bool
-	TcertBatchSize() int
 	SecurityAlgorithm() string
 	SecurityLevel() int
+	SecurityProvider() string
+	Ephemeral() bool
+	SoftVerify() bool
+	SecurityProviderPin() string
+	SecurityProviderLabel() string
 	KeyStorePath() string
 	CAKeyStorePath() string
 	CryptoConfigPath() string

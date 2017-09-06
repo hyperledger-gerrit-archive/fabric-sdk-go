@@ -34,6 +34,11 @@ func NewMockConfigCustomized(tlsEnabled bool, errorCase bool) config.Config {
 	return &MockConfig{tlsEnabled: tlsEnabled, errorCase: errorCase}
 }
 
+// Client ...
+func (c *MockConfig) Client() (*config.ClientConfig, error) {
+	return nil, nil
+}
+
 // CAConfig not implemented
 func (c *MockConfig) CAConfig(org string) (*config.CAConfig, error) {
 	return nil, nil
@@ -156,4 +161,29 @@ func (c *MockConfig) CSPConfig() *bccspFactory.FactoryOpts {
 // NetworkConfig not implemented
 func (c *MockConfig) NetworkConfig() (*config.NetworkConfig, error) {
 	return nil, nil
+}
+
+// Ephemeral flag
+func (c *MockConfig) Ephemeral() bool {
+	return false
+}
+
+// SecurityProvider ...
+func (c *MockConfig) SecurityProvider() string {
+	return ""
+}
+
+// SecurityProviderLabel ...
+func (c *MockConfig) SecurityProviderLabel() string {
+	return ""
+}
+
+//SecurityProviderPin ...
+func (c *MockConfig) SecurityProviderPin() string {
+	return ""
+}
+
+//SoftVerify flag
+func (c *MockConfig) SoftVerify() bool {
+	return false
 }

@@ -26,7 +26,7 @@ import (
 )
 
 var myViper = viper.New()
-var log = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.MustGetLogger("fabric_sdk_go")
 var format = logging.MustStringFormatter(
 	`%{color}%{time:15:04:05.000} [%{module}] %{level:.4s} : %{color:reset} %{message}`,
 )
@@ -63,7 +63,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 		err := myViper.ReadInConfig()
 
 		if err == nil {
-			log.Infof("Using config file: %s", myViper.ConfigFileUsed())
+			logger.Infof("Using config file: %s", myViper.ConfigFileUsed())
 		} else {
 			return nil, fmt.Errorf("Fatal error config file: %v", err)
 		}
@@ -72,7 +72,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	loggingLevelString := myViper.GetString("client.logging.level")
 	logLevel := logging.INFO
 	if loggingLevelString != "" {
-		log.Infof("fabric_sdk_go Logging level from the config: %v", loggingLevelString)
+		logger.Infof("fabric_sdk_go Logging level from the config: %v", loggingLevelString)
 		var err error
 		logLevel, err = logging.LogLevel(loggingLevelString)
 		if err != nil {
@@ -81,8 +81,18 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 	}
 	logging.SetLevel(logging.Level(logLevel), "fabric_sdk_go")
 
-	log.Infof("fabric_sdk_go Logging level is finally set to: %s", logging.GetLevel("fabric_sdk_go"))
+	logger.Infof("fabric_sdk_go Logging level is finally set to: %s", logging.GetLevel("fabric_sdk_go"))
 	return &Config{tlsCertPool: x509.NewCertPool()}, nil
+}
+
+// Client returns the Client config
+func (c *Config) Client() (*apiconfig.ClientConfig, error) {
+	config, err := c.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+	client := config.Client
+	return &client, nil
 }
 
 // CAConfig returns the CA configuration.
@@ -91,7 +101,7 @@ func (c *Config) CAConfig(org string) (*apiconfig.CAConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	caConfig := config.Organizations[org].CA
+	caConfig := config.CertificateAuthorities[org]
 
 	return &caConfig, nil
 }
@@ -103,7 +113,7 @@ func (c *Config) CAServerCertFiles(org string) ([]string, error) {
 		return nil, err
 	}
 
-	certFiles := strings.Split(config.Organizations[org].CA.TLS.Certfiles, ",")
+	certFiles := strings.Split(config.CertificateAuthorities[org].TlsCACerts.Path, ",")
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
@@ -119,7 +129,7 @@ func (c *Config) CAClientKeyFile(org string) (string, error) {
 		return "", err
 	}
 
-	return strings.Replace(config.Organizations[org].CA.TLS.Client.Keyfile,
+	return strings.Replace(config.CertificateAuthorities[org].TlsCACerts.Client.Keyfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
@@ -130,7 +140,7 @@ func (c *Config) CAClientCertFile(org string) (string, error) {
 		return "", err
 	}
 
-	return strings.Replace(config.Organizations[org].CA.TLS.Client.Certfile,
+	return strings.Replace(config.CertificateAuthorities[org].TlsCACerts.Client.Certfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
@@ -160,6 +170,7 @@ func (c *Config) MspID(org string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// viper lowercases all key maps, org is lower case
 	mspID := config.Organizations[org].MspID
 	if mspID == "" {
 		return "", fmt.Errorf("MSP ID is empty for org: %s", org)
@@ -175,12 +186,44 @@ func FabricClientViper() *viper.Viper {
 }
 
 func (c *Config) cacheNetworkConfiguration() error {
-	err := myViper.UnmarshalKey("client.network", &c.networkConfig)
-	if err == nil {
-		c.networkConfigCached = true
-		return nil
+	c.networkConfig = new(apiconfig.NetworkConfig)
+	c.networkConfig.Name = myViper.GetString("name")
+	c.networkConfig.Xtype = myViper.GetString("x-type")
+	c.networkConfig.Description = myViper.GetString("description")
+	c.networkConfig.Version = myViper.GetString("version")
+
+	err := myViper.UnmarshalKey("client", &c.networkConfig.Client)
+	logger.Debugf("Client is: %+v", c.networkConfig.Client)
+	if err != nil {
+		return err
+	}
+	err = myViper.UnmarshalKey("channels", &c.networkConfig.Channels)
+	logger.Debugf("channels are: %+v", c.networkConfig.Channels)
+	if err != nil {
+		return err
+	}
+	err = myViper.UnmarshalKey("organizations", &c.networkConfig.Organizations)
+	logger.Debugf("organizations are: %+v", c.networkConfig.Organizations)
+	if err != nil {
+		return err
+	}
+	err = myViper.UnmarshalKey("orderers", &c.networkConfig.Orderers)
+	logger.Debugf("orderers are: %+v", c.networkConfig.Orderers)
+	if err != nil {
+		return err
+	}
+	err = myViper.UnmarshalKey("peers", &c.networkConfig.Peers)
+	logger.Debugf("peers are: %+v", c.networkConfig.Peers)
+	if err != nil {
+		return err
+	}
+	err = myViper.UnmarshalKey("certificateAuthorities", &c.networkConfig.CertificateAuthorities)
+	logger.Debugf("certificateAuthorities are: %+v", c.networkConfig.CertificateAuthorities)
+	if err != nil {
+		return err
 	}
 
+	c.networkConfigCached = true
 	return err
 }
 
@@ -193,8 +236,11 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 	}
 
 	for _, orderer := range config.Orderers {
-		orderer.TLS.Certificate = strings.Replace(orderer.TLS.Certificate, "$GOPATH",
-			os.Getenv("GOPATH"), -1)
+		if orderer.TlsCACerts.Path != "" {
+			orderer.TlsCACerts.Path = strings.Replace(orderer.TlsCACerts.Path, "$GOPATH",
+				os.Getenv("GOPATH"), -1)
+		}
+
 		orderers = append(orderers, orderer)
 	}
 
@@ -214,8 +260,10 @@ func (c *Config) RandomOrdererConfig() (*apiconfig.OrdererConfig, error) {
 
 	var i int
 	for _, value := range config.Orderers {
-		value.TLS.Certificate = strings.Replace(value.TLS.Certificate, "$GOPATH",
-			os.Getenv("GOPATH"), -1)
+		if value.TlsCACerts.Path != "" {
+			value.TlsCACerts.Path = strings.Replace(value.TlsCACerts.Path, "$GOPATH",
+				os.Getenv("GOPATH"), -1)
+		}
 		if i == randomNumber {
 			return &value, nil
 		}
@@ -232,8 +280,10 @@ func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 		return nil, err
 	}
 	orderer := config.Orderers[name]
-	orderer.TLS.Certificate = strings.Replace(orderer.TLS.Certificate, "$GOPATH",
-		os.Getenv("GOPATH"), -1)
+	if orderer.TlsCACerts.Path != "" {
+		orderer.TlsCACerts.Path = strings.Replace(orderer.TlsCACerts.Path, "$GOPATH",
+			os.Getenv("GOPATH"), -1)
+	}
 
 	return &orderer, nil
 }
@@ -249,18 +299,22 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 	peersConfig := config.Organizations[org].Peers
 	peers := []apiconfig.PeerConfig{}
 
-	for key, p := range peersConfig {
-		if p.Host == "" {
-			return nil, fmt.Errorf("host key not exist or empty for peer %s", key)
+	for _, peerName := range peersConfig {
+		p := config.Peers[peerName]
+		if p.Url == "" {
+			return nil, fmt.Errorf("URL does not exist or empty for peer %s", peerName)
 		}
-		if p.Port == 0 {
-			return nil, fmt.Errorf("port key not exist or empty for peer %s", key)
+		if p.EventUrl == "" {
+			return nil, fmt.Errorf("Event URL does not exist or empty for peer %s", peerName)
 		}
-		if c.IsTLSEnabled() && p.TLS.Certificate == "" {
-			return nil, fmt.Errorf("tls.certificate not exist or empty for peer %s", key)
+		if c.IsTLSEnabled() && p.TlsCACerts.Pem == "" && p.TlsCACerts.Path == "" {
+			return nil, fmt.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 		}
-		p.TLS.Certificate = strings.Replace(p.TLS.Certificate, "$GOPATH",
-			os.Getenv("GOPATH"), -1)
+		if p.TlsCACerts.Path != "" {
+			p.TlsCACerts.Path = strings.Replace(p.TlsCACerts.Path, "$GOPATH",
+				os.Getenv("GOPATH"), -1)
+		}
+
 		peers = append(peers, p)
 	}
 	return peers, nil
@@ -274,10 +328,20 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 	}
 
 	peersConfig := config.Organizations[org].Peers
-	peerConfig := peersConfig[name]
-	peerConfig.TLS.Certificate = strings.Replace(peerConfig.TLS.Certificate, "$GOPATH",
-		os.Getenv("GOPATH"), -1)
-
+	peerInOrg := false
+	for _, p := range peersConfig {
+		if p == name {
+			peerInOrg = true
+		}
+	}
+	if !peerInOrg {
+		return nil, fmt.Errorf("Peer %s is not part of orgianzation %s", name, org)
+	}
+	peerConfig := config.Peers[name]
+	if peerConfig.TlsCACerts.Path != "" {
+		peerConfig.TlsCACerts.Path = strings.Replace(peerConfig.TlsCACerts.Path, "$GOPATH",
+			os.Getenv("GOPATH"), -1)
+	}
 	return &peerConfig, nil
 }
 
@@ -332,11 +396,6 @@ func (c *Config) IsSecurityEnabled() bool {
 	return myViper.GetBool("client.BCCSP.security.enabled")
 }
 
-// TcertBatchSize ...
-func (c *Config) TcertBatchSize() int {
-	return myViper.GetInt("client.tcert.batch.size")
-}
-
 // SecurityAlgorithm ...
 func (c *Config) SecurityAlgorithm() string {
 	return myViper.GetString("client.BCCSP.security.hashAlgorithm")
@@ -366,7 +425,7 @@ func (c *Config) SoftVerify() bool {
 func (c *Config) SecurityProviderLibPath() string {
 	configuredLibs := myViper.GetString("client.BCCSP.security.library")
 	libPaths := strings.Split(configuredLibs, ",")
-	log.Debug("Configured BCCSP Lib Paths %v", libPaths)
+	logger.Debug("Configured BCCSP Lib Paths %v", libPaths)
 	var lib string
 	for _, path := range libPaths {
 		if _, err := os.Stat(strings.TrimSpace(path)); !os.IsNotExist(err) {
@@ -375,9 +434,9 @@ func (c *Config) SecurityProviderLibPath() string {
 		}
 	}
 	if lib != "" {
-		log.Debug("Found softhsm library: %s", lib)
+		logger.Debug("Found softhsm library: %s", lib)
 	} else {
-		log.Debug("Softhsm library was not found")
+		logger.Debug("Softhsm library was not found")
 	}
 	return lib
 }
@@ -394,7 +453,7 @@ func (c *Config) SecurityProviderLabel() string {
 
 // KeyStorePath returns the keystore path used by BCCSP
 func (c *Config) KeyStorePath() string {
-	keystorePath := strings.Replace(myViper.GetString("client.keystore.path"),
+	keystorePath := strings.Replace(myViper.GetString("client.credentialStore.cryptoStore.path"),
 		"$GOPATH", os.Getenv("GOPATH"), -1)
 	return path.Join(keystorePath, "keystore")
 }
@@ -403,7 +462,7 @@ func (c *Config) KeyStorePath() string {
 // 'keystore' directory added. This is done because the fabric-ca-client
 // adds this to the path
 func (c *Config) CAKeyStorePath() string {
-	return strings.Replace(myViper.GetString("client.keystore.path"),
+	return strings.Replace(myViper.GetString("client.credentialStore.path"),
 		"$GOPATH", os.Getenv("GOPATH"), -1)
 }
 
@@ -443,14 +502,12 @@ func (c *Config) CSPConfig() *bccspFactory.FactoryOpts {
 				Ephemeral: c.Ephemeral(),
 			},
 		}
-		log.Debug("Initialized SW ")
+		logger.Debug("Initialized SW ")
 		bccspFactory.InitFactories(opts)
 		return opts
 
 	case "PKCS11":
-
 		pkks := pkcs11.FileKeystoreOpts{KeyStorePath: c.KeyStorePath()}
-
 		opts := &bccspFactory.FactoryOpts{
 			ProviderName: "PKCS11",
 			Pkcs11Opts: &pkcs11.PKCS11Opts{
@@ -464,7 +521,7 @@ func (c *Config) CSPConfig() *bccspFactory.FactoryOpts {
 				SoftVerify:   c.SoftVerify(),
 			},
 		}
-		log.Debug("Initialized PKCS11 ")
+		logger.Debug("Initialized PKCS11 ")
 		bccspFactory.InitFactories(opts)
 		return opts
 
