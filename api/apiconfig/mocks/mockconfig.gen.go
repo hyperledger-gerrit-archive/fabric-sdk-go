@@ -5,11 +5,10 @@ package mock_apiconfig
 
 import (
 	x509 "crypto/x509"
-	time "time"
-
 	gomock "github.com/golang/mock/gomock"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	factory "github.com/hyperledger/fabric/bccsp/factory"
+	time "time"
 )
 
 // MockConfig is a mock of Config interface
@@ -111,6 +110,19 @@ func (_mr *MockConfigMockRecorder) CSPConfig() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CSPConfig")
 }
 
+// Client mocks base method
+func (_m *MockConfig) Client() (*apiconfig.ClientConfig, error) {
+	ret := _m.ctrl.Call(_m, "Client")
+	ret0, _ := ret[0].(*apiconfig.ClientConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Client indicates an expected call of Client
+func (_mr *MockConfigMockRecorder) Client() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Client")
+}
+
 // CryptoConfigPath mocks base method
 func (_m *MockConfig) CryptoConfigPath() string {
 	ret := _m.ctrl.Call(_m, "CryptoConfigPath")
@@ -121,6 +133,30 @@ func (_m *MockConfig) CryptoConfigPath() string {
 // CryptoConfigPath indicates an expected call of CryptoConfigPath
 func (_mr *MockConfigMockRecorder) CryptoConfigPath() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "CryptoConfigPath")
+}
+
+// Ephemeral mocks base method
+func (_m *MockConfig) Ephemeral() bool {
+	ret := _m.ctrl.Call(_m, "Ephemeral")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Ephemeral indicates an expected call of Ephemeral
+func (_mr *MockConfigMockRecorder) Ephemeral() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Ephemeral")
+}
+
+// IsSecurityEnabled mocks base method
+func (_m *MockConfig) IsSecurityEnabled() bool {
+	ret := _m.ctrl.Call(_m, "IsSecurityEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsSecurityEnabled indicates an expected call of IsSecurityEnabled
+func (_mr *MockConfigMockRecorder) IsSecurityEnabled() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsSecurityEnabled")
 }
 
 // IsTLSEnabled mocks base method
@@ -262,6 +298,42 @@ func (_mr *MockConfigMockRecorder) SecurityLevel() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityLevel")
 }
 
+// SecurityProvider mocks base method
+func (_m *MockConfig) SecurityProvider() string {
+	ret := _m.ctrl.Call(_m, "SecurityProvider")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SecurityProvider indicates an expected call of SecurityProvider
+func (_mr *MockConfigMockRecorder) SecurityProvider() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProvider")
+}
+
+// SecurityProviderLabel mocks base method
+func (_m *MockConfig) SecurityProviderLabel() string {
+	ret := _m.ctrl.Call(_m, "SecurityProviderLabel")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SecurityProviderLabel indicates an expected call of SecurityProviderLabel
+func (_mr *MockConfigMockRecorder) SecurityProviderLabel() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProviderLabel")
+}
+
+// SecurityProviderPin mocks base method
+func (_m *MockConfig) SecurityProviderPin() string {
+	ret := _m.ctrl.Call(_m, "SecurityProviderPin")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// SecurityProviderPin indicates an expected call of SecurityProviderPin
+func (_mr *MockConfigMockRecorder) SecurityProviderPin() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProviderPin")
+}
+
 // SetTLSCACertPool mocks base method
 func (_m *MockConfig) SetTLSCACertPool(_param0 *x509.CertPool) {
 	_m.ctrl.Call(_m, "SetTLSCACertPool", _param0)
@@ -270,6 +342,18 @@ func (_m *MockConfig) SetTLSCACertPool(_param0 *x509.CertPool) {
 // SetTLSCACertPool indicates an expected call of SetTLSCACertPool
 func (_mr *MockConfigMockRecorder) SetTLSCACertPool(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetTLSCACertPool", arg0)
+}
+
+// SoftVerify mocks base method
+func (_m *MockConfig) SoftVerify() bool {
+	ret := _m.ctrl.Call(_m, "SoftVerify")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// SoftVerify indicates an expected call of SoftVerify
+func (_mr *MockConfigMockRecorder) SoftVerify() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SoftVerify")
 }
 
 // TLSCACertPool mocks base method
@@ -285,18 +369,6 @@ func (_mr *MockConfigMockRecorder) TLSCACertPool(arg0 interface{}) *gomock.Call 
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TLSCACertPool", arg0)
 }
 
-// TcertBatchSize mocks base method
-func (_m *MockConfig) TcertBatchSize() int {
-	ret := _m.ctrl.Call(_m, "TcertBatchSize")
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// TcertBatchSize indicates an expected call of TcertBatchSize
-func (_mr *MockConfigMockRecorder) TcertBatchSize() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "TcertBatchSize")
-}
-
 // TimeoutOrDefault mocks base method
 func (_m *MockConfig) TimeoutOrDefault(_param0 apiconfig.ConnectionType) time.Duration {
 	ret := _m.ctrl.Call(_m, "TimeoutOrDefault", _param0)
@@ -307,64 +379,4 @@ func (_m *MockConfig) TimeoutOrDefault(_param0 apiconfig.ConnectionType) time.Du
 // TimeoutOrDefault indicates an expected call of TimeoutOrDefault
 func (_mr *MockConfigMockRecorder) TimeoutOrDefault(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "TimeoutOrDefault", arg0)
-}
-
-func (_m *MockConfig) Ephemeral() bool {
-	ret := _m.ctrl.Call(_m, "Ephemeral")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-func (_mr *MockConfigMockRecorder) Ephemeral() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Ephemeral")
-}
-
-func (_m *MockConfig) SecurityProviderLibPath() string {
-	ret := _m.ctrl.Call(_m, "SecurityProviderLibPath")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-func (_mr *MockConfigMockRecorder) SecurityProviderLibPath() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProviderLibPath")
-}
-
-func (_m *MockConfig) SecurityProviderPin() string {
-	ret := _m.ctrl.Call(_m, "SecurityProviderPin")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-func (_mr *MockConfigMockRecorder) SecurityProviderPin() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProviderPin")
-}
-
-func (_m *MockConfig) SecurityProviderLabel() string {
-	ret := _m.ctrl.Call(_m, "SecurityProviderLabel")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-func (_mr *MockConfigMockRecorder) SecurityProviderLabel() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProviderLabel")
-}
-
-func (_m *MockConfig) SoftVerify() bool {
-	ret := _m.ctrl.Call(_m, "SoftVerify")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-func (_mr *MockConfigMockRecorder) SoftVerify() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SoftVerify")
-}
-
-func (_m *MockConfig) SecurityProvider() string {
-	ret := _m.ctrl.Call(_m, "SecurityProvider")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-func (_mr *MockConfigMockRecorder) SecurityProvider() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SecurityProvider")
 }
