@@ -41,6 +41,8 @@ type FabricClient interface {
 	SetStateStore(stateStore KeyValueStore)
 	StateStore() KeyValueStore
 	SetCryptoSuite(cryptoSuite bccsp.BCCSP)
+	SigningManager() SigningManager
+	SetSigningManager(signingManager SigningManager)
 	CryptoSuite() bccsp.BCCSP
 	SaveUserToStateStore(user User, skipPersistence bool) error
 	LoadUserFromStateStore(name string) (User, error)

@@ -8,7 +8,6 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"path/filepath"
 	"time"
@@ -19,26 +18,28 @@ import (
 )
 
 // GetOrdererAdmin returns a pre-enrolled orderer admin user
-func GetOrdererAdmin(c fab.FabricClient, orgName string) (ca.User, error) {
-	keyDir := "ordererOrganizations/example.com/users/Admin@example.com/msp/keystore"
-	certDir := "ordererOrganizations/example.com/users/Admin@example.com/msp/signcerts"
-	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, "ordererAdmin", orgName)
-}
+func GetOrdererAdmin(sdk *deffab.FabricSDK, orgID string) (ca.User, error) {
 
-// GetAdmin returns a pre-enrolled org admin user
-func GetAdmin(c fab.FabricClient, orgPath string, orgName string) (ca.User, error) {
-	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/msp/keystore", orgPath, orgPath)
-	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/Admin@%s.example.com/msp/signcerts", orgPath, orgPath)
-	username := fmt.Sprintf("peer%sAdmin", orgPath)
-	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, username, orgName)
-}
+	// Orderer Admin Credentials
+	privateKeyPath := filepath.Join(sdk.ConfigProvider().CryptoConfigPath(), "ordererOrganizations/example.com/users/Admin@example.com/msp/keystore/f4aa194b12d13d7c2b7b275a7115af5e6f728e11710716f2c754df4587891511_sk")
+	enrollmentCertPath := filepath.Join(sdk.ConfigProvider().CryptoConfigPath(), "ordererOrganizations/example.com/users/Admin@example.com/msp/signcerts/Admin@example.com-cert.pem")
 
-// GetUser returns a pre-enrolled org user
-func GetUser(c fab.FabricClient, orgPath string, orgName string) (ca.User, error) {
-	keyDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/msp/keystore", orgPath, orgPath)
-	certDir := fmt.Sprintf("peerOrganizations/%s.example.com/users/User1@%s.example.com/msp/signcerts", orgPath, orgPath)
-	username := fmt.Sprintf("peer%sUser1", orgPath)
-	return getDefaultImplPreEnrolledUser(c, keyDir, certDir, username, orgName)
+	credentialMgr, err := sdk.ContextFactory.NewCredentialManager(orgID, sdk.ConfigProvider(), sdk.CryptoSuiteProvider())
+	if err != nil {
+		return nil, fmt.Errorf("Error getting credential manager: %s ", err)
+	}
+
+	signingIdentity, err := credentialMgr.GetSigningIdentityFromPath(privateKeyPath, enrollmentCertPath)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting signing identity: %s ", err)
+	}
+
+	user, err := deffab.NewPreEnrolledUser(sdk.ConfigProvider(), "ordererAdmin", signingIdentity)
+	if err != nil {
+		return nil, fmt.Errorf("NewUser returned error: %v", err)
+	}
+
+	return user, nil
 }
 
 // GenerateRandomID generates random ID
@@ -57,66 +58,12 @@ func randomString(strlen int) string {
 	return string(result)
 }
 
-// GetDefaultImplPreEnrolledUser ...
-func getDefaultImplPreEnrolledUser(client fab.FabricClient, keyDir string, certDir string, username string, orgName string) (ca.User, error) {
-	privateKeyDir := filepath.Join(client.Config().CryptoConfigPath(), keyDir)
-	privateKeyPath, err := getFirstPathFromDir(privateKeyDir)
-	if err != nil {
-		return nil, fmt.Errorf("Error finding the private key path: %v", err)
-	}
-
-	enrollmentCertDir := filepath.Join(client.Config().CryptoConfigPath(), certDir)
-	enrollmentCertPath, err := getFirstPathFromDir(enrollmentCertDir)
-	if err != nil {
-		return nil, fmt.Errorf("Error finding the enrollment cert path: %v", err)
-	}
-	mspID, err := client.Config().MspID(orgName)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
-	}
-	return deffab.NewPreEnrolledUser(client.Config(), privateKeyPath, enrollmentCertPath, username, mspID, client.CryptoSuite())
-}
-
-// Gets the first path from the dir directory
-func getFirstPathFromDir(dir string) (string, error) {
-
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return "", fmt.Errorf("Could not read directory %s, err %s", err, dir)
-	}
-
-	for _, p := range files {
-		if p.IsDir() {
-			continue
-		}
-
-		fullName := filepath.Join(dir, string(filepath.Separator), p.Name())
-		fmt.Printf("Reading file %s\n", fullName)
-	}
-
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-
-		fullName := filepath.Join(dir, string(filepath.Separator), f.Name())
-		return fullName, nil
-	}
-
-	return "", fmt.Errorf("No paths found in directory: %s", dir)
-}
-
 // HasPrimaryPeerJoinedChannel checks whether the primary peer of a channel
 // has already joined the channel. It returns true if it has, false otherwise,
 // or an error
-func HasPrimaryPeerJoinedChannel(client fab.FabricClient, orgUser ca.User, channel fab.Channel) (bool, error) {
+func HasPrimaryPeerJoinedChannel(client fab.FabricClient, channel fab.Channel) (bool, error) {
 	foundChannel := false
 	primaryPeer := channel.PrimaryPeer()
-
-	currentUser := client.UserContext()
-	defer client.SetUserContext(currentUser)
-
-	client.SetUserContext(orgUser)
 	response, err := client.QueryChannels(primaryPeer)
 	if err != nil {
 		return false, fmt.Errorf("Error querying channel for primary peer: %s", err)
