@@ -9,12 +9,12 @@ package fabricca
 import (
 	"fmt"
 
-	api "github.com/hyperledger/fabric-ca/api"
-	fabric_ca "github.com/hyperledger/fabric-ca/lib"
+	api "github.com/hyperledger/fabric-sdk-go/internal/fabric-ca/api"
+	fabric_ca "github.com/hyperledger/fabric-sdk-go/internal/fabric-ca/lib"
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp"
 	"github.com/op/go-logging"
 )
 

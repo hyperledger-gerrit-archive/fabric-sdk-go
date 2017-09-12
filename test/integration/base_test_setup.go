@@ -20,11 +20,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/common/cauthdsl"
+	pb "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	fabricTxn "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn"
 	admin "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
-	"github.com/hyperledger/fabric/common/cauthdsl"
-	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 // BaseSetupImpl implementation of BaseTestSetup

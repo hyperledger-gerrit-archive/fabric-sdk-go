@@ -14,8 +14,10 @@ REPO="github.com/hyperledger/fabric-sdk-go"
 
 # Packages to exclude
 PKGS=`go list $REPO... 2> /dev/null | \
+      grep -v ^$REPO$ | \
       grep -v ^$REPO/api/ | \
       grep -v ^$REPO/pkg/fabric-ca-client/mocks | grep -v ^$REPO/pkg/fabric-client/mocks | \
+      grep -v ^$REPO/internal/fabric/ | grep -v ^$REPO/internal/fabric-ca/ | \
       grep -v ^$REPO/vendor/ | grep -v ^$REPO/test/`
 echo "Running unit tests..."
 

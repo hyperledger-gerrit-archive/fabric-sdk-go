@@ -18,12 +18,12 @@ import (
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/hyperledger/fabric/common/cauthdsl"
 )
 
 var org1 = "peerorg1"

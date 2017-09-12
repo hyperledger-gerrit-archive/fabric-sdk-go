@@ -12,8 +12,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/peer"
 
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 )

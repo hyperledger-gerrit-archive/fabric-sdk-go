@@ -12,7 +12,8 @@
 # integration-test: runs all the integration tests
 # checks: runs all check conditions (license, spelling, linting)
 # clean: stops docker conatainers used for integration testing
-# mock-gen: generate mocks needed for testing (using mockgen)
+# mock-gen: generate mocks needed for testing (using mockgen) -- checked into git
+# internal-fabric-fetch: fetch fabric dependencies -- checked into git
 # populate: populates generated files (not included in git) - currently only vendor
 # populate-vendor: populate the vendor directory based on the lock
 # populate-clean: cleans up populated files (might become part of clean eventually) 
@@ -30,7 +31,13 @@ export ARCH=$(shell uname -m)
 export LDFLAGS=-ldflags=-s
 export DOCKER_NS=hyperledger
 export DOCKER_TAG=$(ARCH)-0.3.1
-export GO_DEP_COMMIT=v0.3.0 # the version of dep that will be installed by depend-install (or in the CI)
+
+# GO_DEP_COMMIT is the version of dep that will be installed by depend-install (or in the CI)
+export GO_DEP_COMMIT=v0.3.0
+
+# FABRIC_COMMIT is the version of fabric that is used by internal-fabric-fetch to fetch required sources
+export FABRIC_COMMIT=master
+export FABRIC_CA_COMMIT=release
 
 # Detect CI
 ifdef JENKINS_URL
@@ -89,6 +96,10 @@ mock-gen:
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apitxn/mocks/mockapitxn.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apiconfig/mocks/mockconfig.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apifabca/mocks/mockfabriccaclient.gen.go
+
+internal-fabric-fetch:
+	@scripts/fetch_internal_fabric.sh
+	@scripts/fetch_internal_fabric_ca.sh
 
 populate: populate-vendor
 

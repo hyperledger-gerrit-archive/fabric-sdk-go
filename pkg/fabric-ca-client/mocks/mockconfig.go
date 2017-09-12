@@ -12,7 +12,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
-	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp/factory"
 	"github.com/spf13/viper"
 )
 
