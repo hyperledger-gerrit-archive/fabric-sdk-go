@@ -15,8 +15,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
-	"github.com/hyperledger/fabric/bccsp"
 	consumer "github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric/protos/peer"
 	ehpb "github.com/hyperledger/fabric/protos/peer"
@@ -91,8 +89,13 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 	if err != nil {
 		return fmt.Errorf("Error marshaling message: %s", err)
 	}
-	signature, err := fc.SignObjectWithKey(payload, user.PrivateKey(),
-		&bccsp.SHAOpts{}, nil, ec.client.CryptoSuite())
+
+	signingMgr := ec.client.SigningManager()
+	if signingMgr == nil {
+		return fmt.Errorf("Signing Manager is nil")
+	}
+
+	signature, err := signingMgr.Sign(payload, user.PrivateKey())
 	if err != nil {
 		return fmt.Errorf("Error signing message: %s", err)
 	}
