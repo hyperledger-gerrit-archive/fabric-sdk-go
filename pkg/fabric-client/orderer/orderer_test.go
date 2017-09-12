@@ -18,8 +18,8 @@ import (
 
 	"strings"
 
-	"github.com/hyperledger/fabric/protos/common"
-	ab "github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/common"
+	ab "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/orderer"
 	"google.golang.org/grpc"
 )
 

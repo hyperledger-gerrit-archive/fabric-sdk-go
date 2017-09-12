@@ -13,9 +13,9 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp/factory"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
-	"github.com/hyperledger/fabric/bccsp"
-	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // DefaultProviderFactory represents the default SDK provider factory.

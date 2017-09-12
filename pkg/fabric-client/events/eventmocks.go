@@ -19,13 +19,13 @@ import (
 
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 
-	"github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric/bccsp/factory"
-	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
-	ledger_util "github.com/hyperledger/fabric/core/ledger/util"
-	fcConsumer "github.com/hyperledger/fabric/events/consumer"
-	"github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp/factory"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp/factory"
+	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/fabric/core/ledger/util"
+	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/fabric/events/consumer"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/peer"
 )
 
 type mockEventClientMockEventRegistration struct {

@@ -15,8 +15,8 @@ import (
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/common"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
-	"github.com/hyperledger/fabric/protos/common"
 	"github.com/op/go-logging"
 )
 

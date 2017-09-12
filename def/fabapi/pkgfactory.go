@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	fabricCaUtil "github.com/hyperledger/fabric-ca/util"
+	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/fabric-ca/util"
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -19,11 +19,11 @@ import (
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	eventsImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
+	bccsp "github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp/factory"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	ordererImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	bccsp "github.com/hyperledger/fabric/bccsp"
-	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // TODO: Some (or most) of these functions should no longer be exported, as usage should occur via NewSDK

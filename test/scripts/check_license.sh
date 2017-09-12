@@ -9,6 +9,7 @@ function filterExcludedFiles {
   CHECK=`echo "$CHECK" | grep -v .png$ | grep -v .rst$ | grep -v ^.git/ \
   | grep -v .pem$ | grep -v .block$ | grep -v .tx$ | grep -v ^LICENSE$ | grep -v _sk$ \
   | grep -v .key$ | grep -v \\.gen.go$ | grep -v ^Gopkg.lock$ \
+  | grep -v ^internal/fabric/ | grep -v ^internal/fabric-ca/ \
   | grep -v .md$ | grep -v ^vendor/ | grep -v ^build/ | grep -v .pb.go$ | sort -u`
 }
 

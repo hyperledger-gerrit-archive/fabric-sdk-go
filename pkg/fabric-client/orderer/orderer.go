@@ -13,8 +13,8 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/hyperledger/fabric/protos/common"
-	ab "github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/common"
+	ab "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/orderer"
 	"github.com/op/go-logging"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

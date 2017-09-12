@@ -21,8 +21,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	pb "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 const (

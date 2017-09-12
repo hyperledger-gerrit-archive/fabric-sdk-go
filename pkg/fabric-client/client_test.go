@@ -16,8 +16,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp/factory"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
-	bccspFactory "github.com/hyperledger/fabric/bccsp/factory"
 )
 
 var testMsp = "testMsp"

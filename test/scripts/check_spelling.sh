@@ -6,11 +6,13 @@
 #
 
 CHECK=$(git diff --name-only HEAD * | grep -v .png$ | grep -v .git | grep -v ^CHANGELOG \
+  | grep -v ^internal/fabric/ | grep -v ^internal/fabric-ca/ \
   | grep -v ^vendor/ | grep -v ^build/ | sort -u)
 
 if [[ -z "$CHECK" ]]; then
   CHECK=$(git diff-tree --no-commit-id --name-only -r $(git log -2 \
     --pretty=format:"%h") | grep -v .png$ | grep -v .git | grep -v ^CHANGELOG \
+    | grep -v ^internal/fabric/ | grep -v ^internal/fabric-ca/ \
     | grep -v ^vendor/ | grep -v ^build/ | sort -u)
 fi
 

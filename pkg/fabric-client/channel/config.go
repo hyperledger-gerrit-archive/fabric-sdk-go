@@ -11,14 +11,14 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	channelConfig "github.com/hyperledger/fabric/common/channelconfig"
-	"github.com/hyperledger/fabric/msp"
+	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/msp"
 
-	"github.com/hyperledger/fabric/protos/common"
-	mb "github.com/hyperledger/fabric/protos/msp"
-	ab "github.com/hyperledger/fabric/protos/orderer"
-	pb "github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/common"
+	mb "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/msp"
+	ab "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/orderer"
+	pb "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/peer"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/utils"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
