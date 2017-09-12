@@ -9,8 +9,10 @@ package defprovider
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
+	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 )
 
 // SessionClientFactory represents the default implementation of a session client.
@@ -29,6 +31,12 @@ func (f *SessionClientFactory) NewSystemClient(sdk context.SDK, session context.
 	client.SetCryptoSuite(sdk.CryptoSuiteProvider())
 	client.SetStateStore(sdk.StateStoreProvider())
 	client.SetUserContext(session.Identity())
+	client.SetSigningManager(sdk.SigningManager())
 
 	return client, nil
+}
+
+// NewChannelClient returns a client that can execute transactions on specified channel
+func (f *SessionClientFactory) NewChannelClient(sdk context.SDK, session context.Session, config apiconfig.Config, channelName string) (apitxn.ChannelClient, error) {
+	return chImpl.NewChannelClient(sdk, session, channelName)
 }

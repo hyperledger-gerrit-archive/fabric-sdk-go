@@ -8,9 +8,9 @@ package fabapi
 
 import (
 	"fmt"
-	"io/ioutil"
 
-	fabricCaUtil "github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
+
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -45,6 +45,13 @@ func NewClient(user fabca.User, skipUserPersistence bool, stateStorePath string,
 		client.SetStateStore(stateStore)
 	}
 	client.SaveUserToStateStore(user, skipUserPersistence)
+
+	signingMgr, err := signingmgr.NewSigningManager(cryptosuite, config)
+	if err != nil {
+		return nil, fmt.Errorf("NewSigningManager returned error[%s]", err)
+	}
+
+	client.SetSigningManager(signingMgr)
 
 	return client, nil
 }
@@ -83,39 +90,6 @@ func NewClientWithUser(name string, pwd string, orgName string,
 	return client, nil
 }
 
-// NewClientWithPreEnrolledUser returns a new default Client implementation
-// by using a the default implementation of a pre-enrolled user.
-func NewClientWithPreEnrolledUser(config config.Config, stateStorePath string,
-	skipUserPersistence bool, username string, keyDir string, certDir string,
-	orgName string, cryptosuite bccsp.BCCSP) (fab.FabricClient, error) {
-
-	client := clientImpl.NewClient(config)
-
-	if cryptosuite == nil {
-		cryptosuite = bccspFactory.GetDefault()
-	}
-	client.SetCryptoSuite(cryptosuite)
-	if stateStorePath != "" {
-		stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
-		if err != nil {
-			return nil, fmt.Errorf("CreateNewFileKeyValueStore returned error[%s]", err)
-		}
-		client.SetStateStore(stateStore)
-	}
-	mspID, err := client.Config().MspID(orgName)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading MSP ID config: %s", err)
-	}
-	user, err := NewPreEnrolledUser(client.Config(), keyDir, certDir, username, mspID, client.CryptoSuite())
-	if err != nil {
-		return nil, fmt.Errorf("NewPreEnrolledUser returned error: %v", err)
-	}
-	client.SetUserContext(user)
-	client.SaveUserToStateStore(user, skipUserPersistence)
-
-	return client, nil
-}
-
 // NewUser returns a new default implementation of a User.
 func NewUser(config config.Config, msp fabca.FabricCAClient, name string, pwd string,
 	mspID string) (fabca.User, error) {
@@ -131,22 +105,13 @@ func NewUser(config config.Config, msp fabca.FabricCAClient, name string, pwd st
 	return user, nil
 }
 
-// NewPreEnrolledUser returns a new default implementation of User.
-// The user should already be pre-enrolled.
-func NewPreEnrolledUser(config config.Config, privateKeyPath string,
-	enrollmentCertPath string, username string, mspID string, cryptoSuite bccsp.BCCSP) (fabca.User, error) {
-	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEM(privateKeyPath, cryptoSuite, true)
-	if err != nil {
-		return nil, fmt.Errorf("Error importing private key: %v", err)
-	}
-	enrollmentCert, err := ioutil.ReadFile(enrollmentCertPath)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading from the enrollment cert path: %v", err)
-	}
+// NewPreEnrolledUser returns a new default implementation of a User.
+func NewPreEnrolledUser(config config.Config, name string, signingIdentity *fab.SigningIdentity) (fabca.User, error) {
 
-	user := identityImpl.NewUser(username, mspID)
-	user.SetEnrollmentCertificate(enrollmentCert)
-	user.SetPrivateKey(privateKey)
+	user := identityImpl.NewUser(name, signingIdentity.MspID)
+
+	user.SetPrivateKey(signingIdentity.PrivateKey)
+	user.SetEnrollmentCertificate(signingIdentity.EnrollmentCert)
 
 	return user, nil
 }
@@ -175,7 +140,7 @@ func NewChannel(client fab.FabricClient, orderer fab.Orderer, peers []fab.Peer, 
 }
 
 // NewSystemClient returns a new default implementation of Client
-func NewSystemClient(config config.Config) fab.FabricClient {
+func NewSystemClient(config config.Config) *clientImpl.Client {
 	return clientImpl.NewClient(config)
 }
 
@@ -191,6 +156,11 @@ func NewKVStore(stateStorePath string) (fab.KeyValueStore, error) {
 // NewCryptoSuite returns a new default implementation of BCCSP
 func NewCryptoSuite(config *bccspFactory.FactoryOpts) (bccsp.BCCSP, error) {
 	return bccspFactory.GetBCCSPFromOpts(config)
+}
+
+// NewSigningManager returns a new default implementation of signing manager
+func NewSigningManager(cryptoProvider bccsp.BCCSP, config config.Config) (fab.SigningManager, error) {
+	return signingmgr.NewSigningManager(cryptoProvider, config)
 }
 
 // NewEventHub returns a new default implementation of EventHub
