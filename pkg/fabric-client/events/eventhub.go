@@ -19,13 +19,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	cnsmr "github.com/hyperledger/fabric-sdk-go/internal/fabric/events/consumer"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
-	cnsmr "github.com/hyperledger/fabric/events/consumer"
 
-	"github.com/hyperledger/fabric/core/ledger/util"
-	common "github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric/protos/peer"
-	"github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/core/ledger/util"
+	common "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/peer"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/utils"
 	"github.com/op/go-logging"
 	syncmap "golang.org/x/sync/syncmap"
 )
@@ -392,12 +392,12 @@ func (eventHub *EventHub) txCallback(block *common.Block) {
 	txFilter := util.TxValidationFlags(block.Metadata.Metadata[common.BlockMetadataIndex_TRANSACTIONS_FILTER])
 	for i, v := range block.Data.Data {
 
-		if env, err := utils.GetEnvelopeFromBlock(v); err != nil {
+		if env, err := protos_utils.GetEnvelopeFromBlock(v); err != nil {
 			logger.Errorf("error extracting Envelope from block: %v\n", err)
 			return
 		} else if env != nil {
 			// get the payload from the envelope
-			payload, err := utils.GetPayload(env)
+			payload, err := protos_utils.GetPayload(env)
 			if err != nil {
 				logger.Errorf("error extracting Payload from envelope: %v\n", err)
 				return
@@ -463,11 +463,11 @@ func getChainCodeEvent(tdata []byte) (event *pb.ChaincodeEvent, channelID string
 		return nil, "", errors.New("Cannot extract payload from nil transaction")
 	}
 
-	if env, err := utils.GetEnvelopeFromBlock(tdata); err != nil {
+	if env, err := protos_utils.GetEnvelopeFromBlock(tdata); err != nil {
 		return nil, "", fmt.Errorf("Error getting tx from block(%s)", err)
 	} else if env != nil {
 		// get the payload from the envelope
-		payload, err := utils.GetPayload(env)
+		payload, err := protos_utils.GetPayload(env)
 		if err != nil {
 			return nil, "", fmt.Errorf("Could not extract payload from envelope, err %s", err)
 		}
@@ -483,23 +483,23 @@ func getChainCodeEvent(tdata []byte) (event *pb.ChaincodeEvent, channelID string
 
 		// Chaincode events apply to endorser transaction only
 		if common.HeaderType(channelHeader.Type) == common.HeaderType_ENDORSER_TRANSACTION {
-			tx, err := utils.GetTransaction(payload.Data)
+			tx, err := protos_utils.GetTransaction(payload.Data)
 			if err != nil {
 				return nil, "", fmt.Errorf("Error unmarshalling transaction payload for block event: %s", err)
 			}
-			chaincodeActionPayload, err := utils.GetChaincodeActionPayload(tx.Actions[0].Payload)
+			chaincodeActionPayload, err := protos_utils.GetChaincodeActionPayload(tx.Actions[0].Payload)
 			if err != nil {
 				return nil, "", fmt.Errorf("Error unmarshalling transaction action payload for block event: %s", err)
 			}
-			propRespPayload, err := utils.GetProposalResponsePayload(chaincodeActionPayload.Action.ProposalResponsePayload)
+			propRespPayload, err := protos_utils.GetProposalResponsePayload(chaincodeActionPayload.Action.ProposalResponsePayload)
 			if err != nil {
 				return nil, "", fmt.Errorf("Error unmarshalling proposal response payload for block event: %s", err)
 			}
-			caPayload, err := utils.GetChaincodeAction(propRespPayload.Extension)
+			caPayload, err := protos_utils.GetChaincodeAction(propRespPayload.Extension)
 			if err != nil {
 				return nil, "", fmt.Errorf("Error unmarshalling chaincode action for block event: %s", err)
 			}
-			ccEvent, err := utils.GetChaincodeEvents(caPayload.Events)
+			ccEvent, err := protos_utils.GetChaincodeEvents(caPayload.Events)
 
 			if ccEvent != nil {
 				return ccEvent, channelID, nil

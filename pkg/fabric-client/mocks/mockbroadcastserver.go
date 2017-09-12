@@ -9,8 +9,8 @@ package mocks
 import (
 	"io"
 
-	"github.com/hyperledger/fabric/protos/common"
-	po "github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/common"
+	po "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/orderer"
 )
 
 // TestBlock is a test block

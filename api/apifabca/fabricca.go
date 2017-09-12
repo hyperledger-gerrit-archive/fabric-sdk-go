@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package apifabca
 
 import (
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp"
 )
 
 // FabricCAClient is the client interface for fabric-ca

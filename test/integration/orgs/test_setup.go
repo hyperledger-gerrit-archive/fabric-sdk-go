@@ -14,6 +14,8 @@ import (
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
@@ -22,8 +24,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/hyperledger/fabric/common/cauthdsl"
 )
 
 var org1 = "peerorg1"
@@ -137,11 +137,11 @@ func installAndInstantiate(t *testing.T) {
 
 	orgTestClient.SetUserContext(org1AdminUser)
 	admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer0}, "../../fixtures")
+		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer0}, "../../fixtures/testdata")
 
 	orgTestClient.SetUserContext(org2AdminUser)
 	err := admin.SendInstallCC(orgTestClient, "exampleCC",
-		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures")
+		"github.com/example_cc", "0", nil, []fab.Peer{orgTestPeer1}, "../../fixtures/testdata")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -16,12 +16,12 @@ import (
 	proto_ts "github.com/golang/protobuf/ptypes/timestamp"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/peer"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/internal/fabric/protos/utils"
 	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
-	"github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric/protos/utils"
 )
 
 func init() {
