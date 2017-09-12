@@ -5,6 +5,8 @@
 package mock_apifabca
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	apifabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	bccsp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"

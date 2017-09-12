@@ -87,10 +87,10 @@ func getChannel(client fab.FabricClient, channelID string) (fab.Channel, error) 
 		}
 
 		serverHostOverride := ""
-		if str, ok := ordererConfig.GrpcOptions["ssl-target-name-override"].(string); ok {
+		if str, ok := ordererConfig.GRPCOptions["ssl-target-name-override"].(string); ok {
 			serverHostOverride = str
 		}
-		orderer, err := orderer.NewOrderer(ordererConfig.URL, ordererConfig.TlsCACerts.Path, serverHostOverride, client.Config())
+		orderer, err := orderer.NewOrderer(ordererConfig.URL, ordererConfig.TLSCACerts.Path, serverHostOverride, client.Config())
 		if err != nil {
 			return nil, fmt.Errorf("NewOrderer return error: %v", err)
 		}
@@ -117,7 +117,11 @@ func getEventHub(client fab.FabricClient, channelID string) (*events.EventHub, e
 
 		if p.EventSource {
 			serverHostOverride = ""
+<<<<<<< HEAD
 			if str, ok := p.GrpcOptions["ssl-target-name-override"].(string); ok {
+=======
+			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
+>>>>>>> [FAB-6314] Channel Client
 				serverHostOverride = str
 			}
 			eventSource = &p.PeerConfig
@@ -135,7 +139,11 @@ func getEventHub(client fab.FabricClient, channelID string) (*events.EventHub, e
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	eventHub.SetPeerAddr(eventSource.EventUrl, eventSource.TlsCACerts.Path, serverHostOverride)
+=======
+	eventHub.SetPeerAddr(eventSource.EventURL, eventSource.TLSCACerts.Path, serverHostOverride)
+>>>>>>> [FAB-6314] Channel Client
 
 	return eventHub, nil
 }
