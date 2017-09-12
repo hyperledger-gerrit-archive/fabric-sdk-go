@@ -35,6 +35,7 @@ version: 1.0.0
 # The client section used by GO SDK.
 #
 client:
+
   # Which organization does this application instance belong to? The value must be the name of an org
   # defined under "organizations"
   organization: Org1
@@ -126,11 +127,7 @@ channels:
         # Default: true
         eventSource: true
 
-      peer0.org2.example.com:
-        endorsingPeer: true
-        chaincodeQuery: true
-        ledgerQuery: true
-        eventSource: true
+
 
     # [Optional]. what chaincodes are expected to exist on this channel? The application can use
     # this information to validate that the target peers are in the expected state by comparing
@@ -183,6 +180,10 @@ organizations:
     certificateAuthorities:
       - ca-org2
 
+  # Orderer Org name
+  ordererorg:
+      # Membership Service Provider ID for this organization
+      mspID: "OrdererOrg"
 #
 # List of orderers to send transaction and channel create/update requests to. For the time
 # being only one orderer is needed. If more than one is defined, which one get used by the

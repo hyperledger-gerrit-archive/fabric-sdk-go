@@ -29,8 +29,8 @@ import (
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 )
 
-var org1Name = "org1"
-var org2Name = "org2"
+var org1Name = "Org1"
+var org2Name = "Org2"
 var testFabricCAConfig config.Config
 
 func TestMain(m *testing.M) {
