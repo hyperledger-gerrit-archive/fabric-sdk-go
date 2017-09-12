@@ -22,7 +22,7 @@ import (
 
 var configImpl api.Config
 var org0 = "org0"
-var org1 = "org1"
+var org1 = "Org1"
 
 func TestDefaultConfig(t *testing.T) {
 	vConfig := viper.New()
@@ -69,7 +69,7 @@ func TestCAConfig(t *testing.T) {
 	}
 
 	//Test client organization
-	if vConfig.GetString("client.organization") != "org1" {
+	if vConfig.GetString("client.organization") != org1 {
 		t.Fatalf("Incorrect Client organization")
 	}
 
@@ -77,34 +77,34 @@ func TestCAConfig(t *testing.T) {
 	crossCheckWithViperConfig(myViper.GetString("client.cryptoconfig.path"), configImpl.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing CA Client File Location
-	certfile, err := configImpl.CAClientCertFile("org1")
+	certfile, err := configImpl.CAClientCertFile(org1)
 
 	if certfile == "" || err != nil {
 		t.Fatalf("CA Cert file location read failed %s", err)
 	}
 
 	//Testing CA Key File Location
-	keyFile, err := configImpl.CAClientKeyFile("org1")
+	keyFile, err := configImpl.CAClientKeyFile(org1)
 
 	if keyFile == "" || err != nil {
 		t.Fatal("CA Key file location read failed")
 	}
 
 	//Testing CA Server Cert Files
-	sCertFiles, err := configImpl.CAServerCertFiles("org1")
+	sCertFiles, err := configImpl.CAServerCertFiles(org1)
 
 	if sCertFiles == nil || len(sCertFiles) == 0 || err != nil {
 		t.Fatal("Getting CA server cert files failed")
 	}
 
 	//Testing MSPID
-	mspID, err := configImpl.MspID("org1")
+	mspID, err := configImpl.MspID(org1)
 	if mspID != "Org1MSP" || err != nil {
 		t.Fatal("Get MSP ID failed")
 	}
 
 	//Testing CAConfig
-	caConfig, err := configImpl.CAConfig("org1")
+	caConfig, err := configImpl.CAConfig(org1)
 	if caConfig == nil || err != nil {
 		t.Fatal("Get CA Config failed")
 	}
@@ -280,7 +280,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 func TestTLSACAConfig(t *testing.T) {
 	//Test TLSCA Cert Pool (Positive test case)
-	certFile, _ := configImpl.CAClientCertFile("org1")
+	certFile, _ := configImpl.CAClientCertFile(org1)
 	_, err := configImpl.TLSCACertPool(certFile)
 	if err != nil {
 		t.Fatalf("TLS CA cert pool fetch failed, reason: %v", err)
@@ -292,7 +292,7 @@ func TestTLSACAConfig(t *testing.T) {
 		t.Fatalf("TLS CA cert pool was supposed to fail")
 	}
 
-	keyFile, _ := configImpl.CAClientKeyFile("org1")
+	keyFile, _ := configImpl.CAClientKeyFile(org1)
 	_, err = configImpl.TLSCACertPool(keyFile)
 	if err == nil {
 		t.Fatalf("TLS CA cert pool was supposed to fail when provided with wrong cert file")
@@ -347,11 +347,11 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if orderers[0].TlsCACerts.Path != "" {
-		if !filepath.IsAbs(orderers[0].TlsCACerts.Path) {
+	if orderers[0].TLSCACerts.Path != "" {
+		if !filepath.IsAbs(orderers[0].TLSCACerts.Path) {
 			t.Fatal("Expected GOPATH relative path to be replaced")
 		}
-	} else if orderers[0].TlsCACerts.Pem == "" {
+	} else if orderers[0].TLSCACerts.Pem == "" {
 		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
 	}
 }
@@ -385,10 +385,10 @@ func TestPeersConfig(t *testing.T) {
 	}
 
 	for _, value := range pc {
-		if value.Url == "" {
+		if value.URL == "" {
 			t.Fatalf("Url value for the host is empty")
 		}
-		if value.EventUrl == "" {
+		if value.EventURL == "" {
 			t.Fatalf("EventUrl value is empty")
 		}
 	}
@@ -399,10 +399,10 @@ func TestPeersConfig(t *testing.T) {
 	}
 
 	for _, value := range pc {
-		if value.Url == "" {
+		if value.URL == "" {
 			t.Fatalf("Url value for the host is empty")
 		}
-		if value.EventUrl == "" {
+		if value.EventURL == "" {
 			t.Fatalf("EventUrl value is empty")
 		}
 	}
@@ -414,18 +414,18 @@ func TestPeerConfig(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	if pc.Url == "" {
+	if pc.URL == "" {
 		t.Fatalf("Url value for the host is empty")
 	}
 
-	if pc.TlsCACerts.Path != "" {
-		if !filepath.IsAbs(pc.TlsCACerts.Path) {
+	if pc.TLSCACerts.Path != "" {
+		if !filepath.IsAbs(pc.TLSCACerts.Path) {
 			t.Fatalf("Expected cert path to be absolute")
 		}
-	} else if pc.TlsCACerts.Pem == "" {
+	} else if pc.TLSCACerts.Pem == "" {
 		t.Fatalf("Peer %s must have at least a TlsCACerts.Path or TlsCACerts.Pem set", "peer0")
 	}
-	if len(pc.GrpcOptions) == 0 || pc.GrpcOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
+	if len(pc.GRPCOptions) == 0 || pc.GRPCOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
 		t.Fatalf("Peer %s must have grpcOptions set in config_test.yaml", "peer0")
 	}
 }
@@ -580,7 +580,8 @@ func TestNetworkConfig(t *testing.T) {
 	if len(conf.Organizations) == 0 {
 		t.Fatal("Expected atleast one organisation to be set")
 	}
-	if len(conf.Organizations[org1].Peers) == 0 {
+	// viper map keys are lowercase
+	if len(conf.Organizations[strings.ToLower(org1)].Peers) == 0 {
 		t.Fatalf("Expected org %s to be present in network configuration and peers to be set", org1)
 	}
 }

@@ -33,7 +33,7 @@ func (c *MockConfig) Client() (*apiconfig.ClientConfig, error) {
 
 // CAConfig return ca configuration
 func (c *MockConfig) CAConfig(org string) (*apiconfig.CAConfig, error) {
-	return &apiconfig.CAConfig{Url: c.CAServerURL, CaName: "test", TlsCACerts: apiconfig.MutualTLSConfig{}}, nil
+	return &apiconfig.CAConfig{URL: c.CAServerURL, CAName: "test", TLSCACerts: apiconfig.MutualTLSConfig{}}, nil
 }
 
 // CAServerCertFiles Read configuration option for the server certificate files
@@ -144,6 +144,16 @@ func (c *MockConfig) CSPConfig() *bccspFactory.FactoryOpts {
 
 // NetworkConfig not implemented
 func (c *MockConfig) NetworkConfig() (*apiconfig.NetworkConfig, error) {
+	return nil, nil
+}
+
+// ChannelConfig returns the channel configuration
+func (c *MockConfig) ChannelConfig(name string) (*apiconfig.ChannelConfig, error) {
+	return nil, nil
+}
+
+// ChannelPeers returns the channel peers configuration
+func (c *MockConfig) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 	return nil, nil
 }
 
