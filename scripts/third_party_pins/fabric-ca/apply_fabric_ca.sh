@@ -9,14 +9,14 @@
 # These files are checked into internal paths.
 # Note: This script must be adjusted as upstream makes adjustments
 
-INTERNAL_PATH="internal/vendorhl/fabric-ca"
 UPSTREAM_PROJECT="github.com/hyperledger/fabric-ca"
+INTERNAL_PATH="internal/${UPSTREAM_PROJECT}"
 UPSTREAM_BRANCH="release"
-PATCHES_PATH="scripts/vendorhl/fabric-ca/patches"
+PATCHES_PATH="scripts/third_party_pins/fabric-ca/patches"
 
 # TODO - in a future CS, fabric imports need to have imports rewritten.
-#IMPORT_FABRIC_SUBST='s/github.com\/hyperledger\/fabric/github.com\/hyperledger\/fabric-sdk-go\/internal\/fabric/g'
-IMPORT_FABRICCA_SUBST='s/github.com\/hyperledger\/fabric-ca/github.com\/hyperledger\/fabric-sdk-go\/internal\/vendorhl\/fabric-ca/g'
+#IMPORT_FABRIC_SUBST='s/github.com\/hyperledger\/fabric/github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric/g'
+IMPORT_FABRICCA_SUBST='s/github.com\/hyperledger\/fabric-ca/github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca/g'
 
 declare -a PKGS=(
     "api"

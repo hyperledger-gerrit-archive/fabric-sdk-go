@@ -16,7 +16,7 @@
 # populate: populates generated files (not included in git) - currently only vendor
 # populate-vendor: populate the vendor directory based on the lock
 # populate-clean: cleans up populated files (might become part of clean eventually) 
-# vendorhl: pulls hyperledger (fabric/fabric-ca) dependencies into the project
+# thirdparty-pin: pulls (and patches) pinned dependencies into the project under internal
 #
 #
 # Instructions to generate .tx files used for creating channels:
@@ -93,8 +93,8 @@ mock-gen:
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apiconfig/mocks/mockconfig.gen.go
 	mockgen -build_flags '$(LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g"  > api/apifabca/mocks/mockfabriccaclient.gen.go
 
-vendorhl:
-	UPSTREAM_COMMIT=$(FABRIC_CA_COMMIT) scripts/vendorhl/fabric-ca/apply_fabric_ca.sh
+thirdparty-pin:
+	UPSTREAM_COMMIT=$(FABRIC_CA_COMMIT) scripts/third_party_pins/fabric-ca/apply_fabric_ca.sh
 
 populate: populate-vendor
 
