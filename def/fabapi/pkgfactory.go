@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	fabricCaUtil "github.com/hyperledger/fabric-ca/util"
+	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/vendorhl/fabric-ca/util"
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
