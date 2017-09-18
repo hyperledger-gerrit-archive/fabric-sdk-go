@@ -11,7 +11,7 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	pb "github.com/hyperledger/fabric/protos/peer"
+	pb "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/peer"
 	"github.com/op/go-logging"
 )
 

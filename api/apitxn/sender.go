@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 package apitxn
 
 import (
-	pb "github.com/hyperledger/fabric/protos/peer"
+	pb "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/peer"
 )
 
 // Sender provides the ability for a transaction to be created and sent.

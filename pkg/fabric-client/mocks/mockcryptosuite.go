@@ -9,7 +9,7 @@ package mocks
 import (
 	"hash"
 
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp"
 )
 
 // MockCryptoSuite implementation

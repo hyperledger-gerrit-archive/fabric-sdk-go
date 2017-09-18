@@ -33,8 +33,8 @@ import (
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric/bccsp"
-	cspsigner "github.com/hyperledger/fabric/bccsp/signer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp"
+	cspsigner "github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp/signer"
 )
 
 var (

@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	pkcsFactory "github.com/hyperledger/fabric/bccsp/factory"
-	pkcs11 "github.com/hyperledger/fabric/bccsp/pkcs11"
+	pkcsFactory "github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp/factory"
+	pkcs11 "github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp/pkcs11"
 )
 
 var configImpl api.Config

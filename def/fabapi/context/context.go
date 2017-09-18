@@ -9,7 +9,7 @@ package context
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp"
 )
 
 // SDK represents the configuration context

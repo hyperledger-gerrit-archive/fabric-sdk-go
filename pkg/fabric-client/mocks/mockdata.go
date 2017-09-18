@@ -10,12 +10,12 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	channelConfig "github.com/hyperledger/fabric/common/channelconfig"
-	ledger_util "github.com/hyperledger/fabric/core/ledger/util"
-	"github.com/hyperledger/fabric/protos/common"
-	mb "github.com/hyperledger/fabric/protos/msp"
-	ab "github.com/hyperledger/fabric/protos/orderer"
-	pp "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/common"
+	mb "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/msp"
+	ab "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/orderer"
+	pp "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/peer"
+	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
+	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
 )
 
 // NewSimpleMockBlock returns a simple mock block

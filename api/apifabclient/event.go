@@ -8,9 +8,9 @@ package apifabclient
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	common "github.com/hyperledger/fabric/protos/common"
-	ehpb "github.com/hyperledger/fabric/protos/peer"
-	pb "github.com/hyperledger/fabric/protos/peer"
+	common "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/common"
+	ehpb "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/peer"
+	pb "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/peer"
 )
 
 // EventHub ...

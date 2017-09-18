@@ -36,7 +36,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tls"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp"
 	"github.com/mitchellh/mapstructure"
 )
 

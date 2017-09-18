@@ -11,7 +11,7 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
-	"github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/common"
 )
 
 // MockOrderer is a mock fabricclient.Orderer

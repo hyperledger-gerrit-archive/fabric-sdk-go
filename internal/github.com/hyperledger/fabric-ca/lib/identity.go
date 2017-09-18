@@ -24,7 +24,7 @@ import (
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp"
 )
 
 func newIdentity(client *Client, name string, key bccsp.Key, cert []byte) *Identity {

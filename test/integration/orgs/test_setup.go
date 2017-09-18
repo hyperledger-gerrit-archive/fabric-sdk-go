@@ -14,6 +14,7 @@ import (
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
@@ -21,9 +22,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/admin"
+	"github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp/factory"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/hyperledger/fabric/common/cauthdsl"
 )
 
 var org1 = "peerorg1"

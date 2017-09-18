@@ -9,7 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	factory "github.com/hyperledger/fabric/bccsp/factory"
+	factory "github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp/factory"
 )
 
 // MockConfig is a mock of Config interface

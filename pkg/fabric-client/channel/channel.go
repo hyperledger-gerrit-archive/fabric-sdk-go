@@ -11,8 +11,8 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp"
 	"github.com/op/go-logging"
 )
 

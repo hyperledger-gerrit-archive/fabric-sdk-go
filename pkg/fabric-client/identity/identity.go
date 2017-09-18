@@ -10,8 +10,8 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric/bccsp"
-	pb_msp "github.com/hyperledger/fabric/protos/msp"
+	pb_msp "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp"
 )
 
 // User represents a Fabric user registered at an MSP

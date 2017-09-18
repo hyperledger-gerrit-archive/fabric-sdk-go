@@ -9,13 +9,13 @@ package internal
 import (
 	"fmt"
 
-	"github.com/hyperledger/fabric/bccsp"
-	ab "github.com/hyperledger/fabric/protos/orderer"
+	ab "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/third_party/bccsp"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric/common/crypto"
-	"github.com/hyperledger/fabric/protos/common"
-	protos_utils "github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/common"
+	protos_utils "github.com/hyperledger/fabric-sdk-go/api/third_party/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 )
 
 // CreateSeekGenesisBlockRequest creates a seek request for block 0 on the specified
