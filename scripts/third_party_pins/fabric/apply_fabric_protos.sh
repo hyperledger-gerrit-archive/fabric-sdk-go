@@ -28,6 +28,10 @@ declare -a FILES=(
     "protos/common/ledger.pb.go"
     "protos/common/policies.pb.go"
 
+    "protos/common/configtx.go"
+    "protos/common/configuration.go"
+    "protos/common/signed_data.go"
+
     "protos/ledger/rwset/rwset.pb.go"
     "protos/ledger/rwset/kvrwset/kv_rwset.pb.go"
 
