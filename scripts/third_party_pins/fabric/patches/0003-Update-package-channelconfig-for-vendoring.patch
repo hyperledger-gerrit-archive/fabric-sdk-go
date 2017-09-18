@@ -1,0 +1,66 @@
+From c7ba06c2113c14a385ebb7a1879876e3e940c4a1 Mon Sep 17 00:00:00 2001
+From: Troy Ronda <t.....@securekey.com>
+Date: Mon, 18 Sep 2017 21:15:42 -0400
+Subject: [PATCH] Update package channelconfig for vendoring
+
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
+Signed-off-by: Troy Ronda <t.....@securekey.com>
+---
+ common/channelconfig/keys.go | 22 ++++++++++++++++++++++
+ common/channelconfig/stub.go | 13 +++++++++++++
+ 2 files changed, 35 insertions(+)
+ create mode 100644 common/channelconfig/keys.go
+ create mode 100644 common/channelconfig/stub.go
+
+diff --git a/common/channelconfig/keys.go b/common/channelconfig/keys.go
+new file mode 100644
+index 00000000..20f2560d
+--- /dev/null
++++ b/common/channelconfig/keys.go
+@@ -0,0 +1,22 @@
++/*
++Copyright SecureKey Technologies Inc, IBM Corp. All Rights Reserved.
++
++SPDX-License-Identifier: Apache-2.0
++*/
++
++package channelconfig
++
++// Extracted from msp_util.go
++const (
++	// ReadersPolicyKey is the key used for the read policy
++	ReadersPolicyKey = "Readers"
++
++	// WritersPolicyKey is the key used for the read policy
++	WritersPolicyKey = "Writers"
++
++	// AdminsPolicyKey is the key used for the read policy
++	AdminsPolicyKey = "Admins"
++
++	// MSPKey is the org key used for MSP configuration
++	MSPKey = "MSP"
++)
+diff --git a/common/channelconfig/stub.go b/common/channelconfig/stub.go
+new file mode 100644
+index 00000000..73f881ad
+--- /dev/null
++++ b/common/channelconfig/stub.go
+@@ -0,0 +1,13 @@
++/*
++Copyright IBM Corp. All Rights Reserved.
++
++SPDX-License-Identifier: Apache-2.0
++*/
++
++package channelconfig
++
++import (
++	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/flogging"
++)
++
++var logger = flogging.MustGetLogger("common/channelconfig")
+-- 
+2.14.1
+
