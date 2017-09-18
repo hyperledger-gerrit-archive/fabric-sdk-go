@@ -14,11 +14,6 @@ IMPORT_SUBSTS=($IMPORT_SUBSTS)
 declare -a PKGS=(
     "protos/utils"
     "protos/common"
-    "protos/ledger/rwset"
-    "protos/ledger/rwset/kvrwset"
-    "protos/msp"
-    "protos/orderer"
-    "protos/peer"
 )
 
 declare -a FILES=(
@@ -26,35 +21,11 @@ declare -a FILES=(
     "protos/utils/commonutils.go"
     "protos/utils/proputils.go"
     "protos/utils/txutils.go"
-
-    "protos/common/block.go"
-    "protos/common/common.go"
-    "protos/common/configtx.go"
-    "protos/common/configuration.go"
-    "protos/common/policies.go"
-    "protos/common/signed_data.go"
-
-    "protos/ledger/rwset/kvrwset/helper.go"
-
-    "protos/msp/msp_config.go"
-    "protos/msp/msp_principal.go"
-
-    "protos/orderer/configuration.go"
-
-    "protos/peer/admin.pb.go"
-    "protos/peer/chaincodeunmarshall.go"
-    "protos/peer/configuration.go"
-    "protos/peer/configuration.pb.go"
-    "protos/peer/init.go"
-    "protos/peer/proposal.go"
-    "protos/peer/proposal_response.go"
-    "protos/peer/resources.go"
-    "protos/peer/transaction.go"
 )
 
 #echo 'Removing current upstream project from working directory ...'
-#rm -Rf "${INTERNAL_PATH}/protos"
-#mkdir -p "${INTERNAL_PATH}/protos"
+rm -Rf "${INTERNAL_PATH}/protos"
+mkdir -p "${INTERNAL_PATH}/protos"
 
 # Create directory structure for packages
 for i in "${PKGS[@]}"
