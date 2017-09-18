@@ -39,13 +39,12 @@ declare -a PKGS=(
     "msp/mgmt"
 )
 
+#  "common/channelconfig/orderer.go"
+
 # TODO: selective removal of files
 declare -a FILES=(
     "common/crypto/random.go"
     "common/crypto/signer.go"
-
-    "common/errors/codes.go"
-    "common/errors/errors.go"
 
     "common/flogging/grpclogger.go"
     "common/flogging/logging.go"
@@ -111,15 +110,10 @@ declare -a FILES=(
     "msp/mspmgrimpl.go"
 
     "msp/cache/cache.go"
-    "msp/mgmt/deserializer.go"
     "msp/mgmt/mgmt.go"
-    "msp/mgmt/principal.go"
 
     "core/comm/config.go"
     "core/comm/connection.go"
-    "core/comm/creds.go"
-    "core/comm/producer.go"
-    "core/comm/server.go"
 
     "core/config/config.go"
 
