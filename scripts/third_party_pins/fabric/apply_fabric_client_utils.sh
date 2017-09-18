@@ -39,13 +39,12 @@ declare -a PKGS=(
     "msp/mgmt"
 )
 
+#  "common/channelconfig/orderer.go"
+
 # TODO: selective removal of files
 declare -a FILES=(
     "common/crypto/random.go"
     "common/crypto/signer.go"
-
-    "common/errors/codes.go"
-    "common/errors/errors.go"
 
     "common/flogging/grpclogger.go"
     "common/flogging/logging.go"
@@ -58,37 +57,27 @@ declare -a FILES=(
     "common/channelconfig/application.go"
     "common/channelconfig/application_util.go"
     "common/channelconfig/applicationorg.go"
-    "common/channelconfig/bundle.go"
-    "common/channelconfig/bundlesource.go"
     "common/channelconfig/channel.go"
-    "common/channelconfig/channel_util.go"
     "common/channelconfig/consortium.go"
     "common/channelconfig/consortiums.go"
     "common/channelconfig/logsanitychecks.go"
     "common/channelconfig/msp.go"
-    "common/channelconfig/msp_util.go"
     "common/channelconfig/orderer.go"
-    "common/channelconfig/orderer_util.go"
     "common/channelconfig/organization.go"
     "common/channelconfig/standardvalues.go"
-    "common/channelconfig/template.go"
+
+    "common/channelconfig/stub.go"
+    "common/channelconfig/keys.go"
 
     "common/cauthdsl/cauthdsl.go"
     "common/cauthdsl/cauthdsl_builder.go"
     "common/cauthdsl/policy.go"
-    "common/cauthdsl/policy_util.go"
-    "common/cauthdsl/policyparser.go"
 
     "common/configtx/compare.go"
-    "common/configtx/configmap.go"
-    "common/configtx/manager.go"
-    "common/configtx/template.go"
-    "common/configtx/update.go"
     "common/configtx/util.go"
     "common/configtx/api/api.go"
 
     "common/policies/implicitmeta.go"
-    "common/policies/implicitmeta_util.go"
     "common/policies/policy.go"
 
     "core/ledger/kvledger/txmgmt/rwsetutil/query_results_helper.go"
@@ -111,15 +100,10 @@ declare -a FILES=(
     "msp/mspmgrimpl.go"
 
     "msp/cache/cache.go"
-    "msp/mgmt/deserializer.go"
     "msp/mgmt/mgmt.go"
-    "msp/mgmt/principal.go"
 
     "core/comm/config.go"
     "core/comm/connection.go"
-    "core/comm/creds.go"
-    "core/comm/producer.go"
-    "core/comm/server.go"
 
     "core/config/config.go"
 
