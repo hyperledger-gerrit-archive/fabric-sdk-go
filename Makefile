@@ -31,7 +31,7 @@ export ARCH=$(shell uname -m)
 export LDFLAGS=-ldflags=-s
 export DOCKER_NS=hyperledger
 export DOCKER_TAG=$(ARCH)-0.3.1
-export GO_DEP_COMMIT=v0.3.0 # the version of dep that will be installed by depend-install (or in the CI)
+export GO_DEP_COMMIT=v0.3.1 # the version of dep that will be installed by depend-install (or in the CI)
 
 # Upstream fabric patching
 THIRDPARTY_FABRIC_CA_BRANCH=release
