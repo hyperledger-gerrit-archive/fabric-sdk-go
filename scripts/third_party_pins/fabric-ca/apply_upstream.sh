@@ -9,6 +9,8 @@
 # These files are checked into internal paths.
 # Note: This script must be adjusted as upstream makes adjustments
 
+set -e
+
 UPSTREAM_PROJECT="github.com/hyperledger/fabric-ca"
 UPSTREAM_BRANCH="release"
 SCRIPTS_PATH="scripts/third_party_pins/fabric-ca"
