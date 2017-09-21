@@ -34,6 +34,10 @@ func TestChainCodeInvoke(t *testing.T) {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
+	if err := testSetup.UpgradeExampleCC(); err != nil {
+		t.Fatalf("UpgradeExampleCC return error: %v", err)
+	}
+
 	// Get Query value before invoke
 	value, err := testSetup.QueryAsset()
 	if err != nil {
