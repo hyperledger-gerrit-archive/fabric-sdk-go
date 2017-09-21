@@ -6,7 +6,7 @@
 #
 # Environment variables that affect this script:
 # GOTESTFLAGS: Flags are added to the go test command.
-# LDFLAGS: Flags are added to the go test command (example: -ldflags=-s).
+# GO_LDFLAGS: Flags are added to the go test command (example: -ldflags=-s).
 
 set -e
 
@@ -27,4 +27,4 @@ if [ "$ARCH" == "x86_64" ]
 then
     RACEFLAG="-race"
 fi
-go test $RACEFLAG -cover $GOTESTFLAGS $LDFLAGS $PKGS -p 1 -timeout=40m
+go test $RACEFLAG -cover $GOTESTFLAGS $GO_LDFLAGS $PKGS -p 1 -timeout=40m
