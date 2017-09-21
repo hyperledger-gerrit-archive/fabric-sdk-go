@@ -19,10 +19,9 @@ package msp
 import (
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
-
-	"github.com/golang/protobuf/proto"
 )
 
 var mspLogger = flogging.MustGetLogger("msp")

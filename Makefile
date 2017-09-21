@@ -51,7 +51,7 @@ endif
 THIRDPARTY_FABRIC_CA_BRANCH ?= release
 THIRDPARTY_FABRIC_CA_COMMIT ?= v1.0.2
 THIRDPARTY_FABRIC_BRANCH    ?= master
-THIRDPARTY_FABRIC_COMMIT    ?= a657db28a0ff53ed512bd6f4ac4786a0f4ca709c
+THIRDPARTY_FABRIC_COMMIT    ?= 85228470f0607db649db6e228b2acec29bf32125
 
 # Tool versions
 GO_DEP_COMMIT        := v0.3.0 # the version of dep that will be installed by depend-install (or in the CI)
