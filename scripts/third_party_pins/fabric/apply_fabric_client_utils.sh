@@ -63,6 +63,7 @@ declare -a FILES=(
 
     "core/comm/config.go"
     "core/comm/connection.go"
+    "core/comm/util.go"
 
     "core/config/config.go"
 

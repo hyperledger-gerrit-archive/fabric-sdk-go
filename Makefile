@@ -47,7 +47,7 @@ FABRIC_TOOLS_TAG    ?= $(ARCH)-$(FABRIC_TOOLS_VERSION)
 THIRDPARTY_FABRIC_CA_BRANCH ?= release
 THIRDPARTY_FABRIC_CA_COMMIT ?= v1.0.2
 THIRDPARTY_FABRIC_BRANCH    ?= master
-THIRDPARTY_FABRIC_COMMIT    ?= a657db28a0ff53ed512bd6f4ac4786a0f4ca709c
+THIRDPARTY_FABRIC_COMMIT    ?= 9eead80b4b929b781f5b553d1ece2bb42bb3b22b
 
 # Local variables used by makefile
 PACKAGE_NAME := github.com/hyperledger/fabric-sdk-go
