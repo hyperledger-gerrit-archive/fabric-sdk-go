@@ -7,7 +7,10 @@
 set -e
 file_path=$1
 
-docker-compose $file_path ps -q | xargs docker inspect -f '{{ .Name }},{{ .State.ExitCode }}' | \
+DOCKER_CMD         = "${DOCKER_CMD:-docker}"
+DOCKER_COMPOSE_CMD = "${DOCKER_COMPOSE_CMD:-docker-compose}"
+
+$DOCKER_COMPOSE_CMD $file_path ps -q | xargs $DOCKER_CMD inspect -f '{{ .Name }},{{ .State.ExitCode }}' | \
 
 while read name ; do
 if echo "$name" | grep -q "softhsm2" 

@@ -6,7 +6,7 @@
 version: '2'
 
 services:
-      
+
   fabric-sdk-integration-tests:
     container_name: fabric-sdk-integration-test
     image: softhsm2-image
