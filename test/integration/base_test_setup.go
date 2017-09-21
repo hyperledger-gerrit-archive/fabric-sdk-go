@@ -178,10 +178,9 @@ func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath stri
 
 	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
 
-	if err := admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub); err != nil {
-		return err
-	}
-	return nil
+	err := admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub)
+	return err
+
 }
 
 // InstallCC ...
