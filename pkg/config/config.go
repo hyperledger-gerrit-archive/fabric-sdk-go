@@ -63,7 +63,7 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 		err := myViper.ReadInConfig()
 
 		if err == nil {
-			logger.Infof("Using config file: %s", myViper.ConfigFileUsed())
+			logger.Debugf("Using config file: %s", myViper.ConfigFileUsed())
 		} else {
 			return nil, fmt.Errorf("Fatal error config file: %v", err)
 		}
@@ -348,13 +348,13 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 	for _, peerName := range peersConfig {
 		p := config.Peers[peerName]
 		if p.Url == "" {
-			return nil, fmt.Errorf("URL does not exist or empty for peer %s", peerName)
+			return nil, fmt.Errorf("URL does not exist or empty for peer %v", peerName)
 		}
 		if p.EventUrl == "" {
-			return nil, fmt.Errorf("Event URL does not exist or empty for peer %s", peerName)
+			return nil, fmt.Errorf("Event URL does not exist or empty for peer %v", peerName)
 		}
 		if c.IsTLSEnabled() && p.TlsCACerts.Pem == "" && p.TlsCACerts.Path == "" {
-			return nil, fmt.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
+			return nil, fmt.Errorf("tls.certificate does not exist or empty for peer %v", peerName)
 		}
 		if p.TlsCACerts.Path != "" {
 			p.TlsCACerts.Path = strings.Replace(p.TlsCACerts.Path, "$GOPATH",

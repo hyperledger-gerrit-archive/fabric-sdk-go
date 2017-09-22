@@ -66,7 +66,7 @@ func (fkvs *FileKeyValueStore) SetValue(key string, value []byte) error {
 // createDirIfNotExists
 func createDirIfNotExists(path string) error {
 	missing, err := utils.DirMissingOrEmpty(path)
-	logger.Infof("KeyStore path [%s] missing [%t]: [%s]", path, missing, err)
+	logger.Debugf("KeyStore path [%s] missing [%t]: [%s]", missing, err)
 
 	if missing {
 		os.MkdirAll(path, 0755)
