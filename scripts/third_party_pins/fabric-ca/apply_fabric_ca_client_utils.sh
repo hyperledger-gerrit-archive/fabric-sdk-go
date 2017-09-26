@@ -17,7 +17,6 @@ declare -a PKGS=(
     "api"
     "lib"
     "lib/tls"
-    "lib/spi"
     "util"
 )
 
@@ -34,14 +33,8 @@ declare -a FILES=(
 
     "lib/tls/tls.go"
 
-    "lib/spi/affiliation.go"
-    "lib/spi/userregistry.go"
-
     "util/util.go"
-    "util/args.go"
     "util/csp.go"
-    "util/struct.go"
-    "util/flag.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
