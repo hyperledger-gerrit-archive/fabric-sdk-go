@@ -7,13 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 
 	cfapi "github.com/cloudflare/cfssl/api"
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 )
 
 var ecert = `-----BEGIN CERTIFICATE-----
@@ -79,14 +79,14 @@ func Register(w http.ResponseWriter, req *http.Request) {
 
 // Enroll user
 func Enroll(w http.ResponseWriter, req *http.Request) {
-	resp := &enrollmentResponseNet{Cert: util.B64Encode([]byte(ecert))}
+	resp := &enrollmentResponseNet{Cert: base64.StdEncoding.EncodeToString([]byte(ecert))}
 	fillCAInfo(&resp.ServerInfo)
 	cfapi.SendResponse(w, resp)
 }
 
 // Reenroll user
 func Reenroll(w http.ResponseWriter, req *http.Request) {
-	resp := &enrollmentResponseNet{Cert: util.B64Encode([]byte(ecert))}
+	resp := &enrollmentResponseNet{Cert: base64.StdEncoding.EncodeToString([]byte(ecert))}
 	fillCAInfo(&resp.ServerInfo)
 	cfapi.SendResponse(w, resp)
 }
@@ -94,5 +94,5 @@ func Reenroll(w http.ResponseWriter, req *http.Request) {
 // Fill the CA info structure appropriately
 func fillCAInfo(info *serverInfoResponseNet) {
 	info.CAName = "MockCAName"
-	info.CAChain = util.B64Encode([]byte("MockCAChain"))
+	info.CAChain = base64.StdEncoding.EncodeToString([]byte("MockCAChain"))
 }

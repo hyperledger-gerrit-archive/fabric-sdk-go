@@ -1,0 +1,75 @@
+From 63328dd59b06e5afd31d6dac0f44a7fe0f5e460f Mon Sep 17 00:00:00 2001
+From: Troy Ronda <t.....@securekey.com>
+Date: Mon, 25 Sep 2017 20:15:53 -0400
+Subject: [PATCH 2/2] Remove server structs from TLS
+
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
+Signed-off-by: Troy Ronda <t.....@securekey.com>
+---
+ lib/tls/tls.go | 39 +++------------------------------------
+ 1 file changed, 3 insertions(+), 36 deletions(-)
+
+diff --git a/lib/tls/tls.go b/lib/tls/tls.go
+index 238c8ce..f17b555 100644
+--- a/lib/tls/tls.go
++++ b/lib/tls/tls.go
+@@ -25,19 +25,11 @@ import (
+ 	"time"
+ 
+ 	"github.com/cloudflare/cfssl/log"
+-	"github.com/hyperledger/fabric-ca/util"
+-	"github.com/hyperledger/fabric/bccsp"
+-	"github.com/hyperledger/fabric/bccsp/factory"
++	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
++	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
++	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
+ )
+ 
+-// ServerTLSConfig defines key material for a TLS server
+-type ServerTLSConfig struct {
+-	Enabled    bool   `help:"Enable TLS on the listening port"`
+-	CertFile   string `def:"ca-cert.pem" help:"PEM-encoded TLS certificate file for server's listening port"`
+-	KeyFile    string `def:"ca-key.pem" help:"PEM-encoded TLS key for server's listening port"`
+-	ClientAuth ClientAuth
+-}
+-
+ // ClientAuth defines the key material needed to verify client certificates
+ type ClientAuth struct {
+ 	Type      string   `def:"noclientcert" help:"Policy the server will follow for TLS Client Authentication."`
+@@ -133,31 +125,6 @@ func AbsTLSClient(cfg *ClientTLSConfig, configDir string) error {
+ 	return nil
+ }
+ 
+-// AbsTLSServer makes TLS client files absolute
+-func AbsTLSServer(cfg *ServerTLSConfig, configDir string) error {
+-	var err error
+-
+-	for i := 0; i < len(cfg.ClientAuth.CertFiles); i++ {
+-		cfg.ClientAuth.CertFiles[i], err = util.MakeFileAbs(cfg.ClientAuth.CertFiles[i], configDir)
+-		if err != nil {
+-			return err
+-		}
+-
+-	}
+-
+-	cfg.CertFile, err = util.MakeFileAbs(cfg.CertFile, configDir)
+-	if err != nil {
+-		return err
+-	}
+-
+-	cfg.KeyFile, err = util.MakeFileAbs(cfg.KeyFile, configDir)
+-	if err != nil {
+-		return err
+-	}
+-
+-	return nil
+-}
+-
+ func checkCertDates(certFile string) error {
+ 	log.Debug("Check client TLS certificate for valid dates")
+ 	certPEM, err := ioutil.ReadFile(certFile)
+-- 
+2.14.1
+

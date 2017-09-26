@@ -493,9 +493,6 @@ func NormalizeURL(addr string) (*url.URL, error) {
 	if u.Opaque != "" {
 		u.Host = net.JoinHostPort(u.Scheme, u.Opaque)
 		u.Opaque = ""
-	} else if u.Path != "" && !strings.Contains(u.Path, ":") {
-		u.Host = net.JoinHostPort(u.Path, util.GetServerPort())
-		u.Path = ""
 	} else if u.Scheme == "" {
 		u.Host = u.Path
 		u.Path = ""
@@ -505,10 +502,7 @@ func NormalizeURL(addr string) (*url.URL, error) {
 	}
 	_, port, err := net.SplitHostPort(u.Host)
 	if err != nil {
-		_, port, err = net.SplitHostPort(u.Host + ":" + util.GetServerPort())
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 	if port != "" {
 		_, err = strconv.Atoi(port)

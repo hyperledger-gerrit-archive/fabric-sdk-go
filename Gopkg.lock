@@ -4,7 +4,7 @@
 [[projects]]
   branch = "master"
   name = "github.com/cloudflare/cfssl"
-  packages = ["api","api/client","auth","certdb","cli","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","log","ocsp","ocsp/config","signer","signer/local","signer/remote","signer/universal"]
+  packages = ["api","auth","certdb","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","log","ocsp/config","signer"]
   revision = "fb16c3479c6ecbd2211751586b206f71387349e6"
 
 [[projects]]
@@ -34,7 +34,7 @@
 [[projects]]
   branch = "master"
   name = "github.com/google/certificate-transparency-go"
-  packages = [".","asn1","client","jsonclient","tls","x509","x509/pkix"]
+  packages = [".","asn1","tls","x509","x509/pkix"]
   revision = "d1967574b72e51f90f961cc40e5221d75986f0c7"
 
 [[projects]]
@@ -42,12 +42,6 @@
   name = "github.com/hashicorp/hcl"
   packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
   revision = "392dba7d905ed5d04a5794ba89f558b27e2ba1ca"
-
-[[projects]]
-  name = "github.com/jmhodges/clock"
-  packages = ["."]
-  revision = "880ee4c335489bc78d01e4d0a254ae880734bc15"
-  version = "v1.1"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -131,7 +125,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
+  packages = ["context","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
   revision = "57efc9c3d9f91fb3277f8da1cff370539c4d3dc5"
 
 [[projects]]
@@ -173,6 +167,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f4ff2e0899d89f53fb50f16c0a7abd8a32f1d64ecb9cc66614c09f8511071832"
+  inputs-digest = "7b2ab8f76d6d9a874339bc1f76ea0fe2f9fe1750bc16ddf0c4f8047ef1f2a4f9"
   solver-name = "gps-cdcl"
   solver-version = 1
