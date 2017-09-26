@@ -18,6 +18,7 @@ declare -a PKGS=(
     "lib"
     "lib/tls"
     "lib/spi"
+    "lib/logbridge"
     "util"
 )
 
@@ -36,6 +37,8 @@ declare -a FILES=(
 
     "lib/spi/affiliation.go"
     "lib/spi/userregistry.go"
+
+    "lib/logbridge/logbridge.go"
 
     "util/util.go"
     "util/args.go"
