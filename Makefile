@@ -29,15 +29,11 @@ DOCKER_COMPOSE_CMD ?= docker-compose
 # Build flags
 ARCH         := $(shell uname -m)
 GO_LDFLAGS   ?= -ldflags=-s
-EXPERIMENTAL ?= true  # includes experimental features in the tests
-BRANCHFAB    ?= false # requires testing against fabric with cherry picks from gerrit
+EXPERIMENTAL ?= true
+GO_TAGS      ?=
 
 ifeq ($(EXPERIMENTAL),true)
 GO_TAGS += experimental
-endif
-
-ifeq ($(BRANCHFAB),true)
-GO_TAGS += branchfab
 endif
 
 # Upstream fabric patching
