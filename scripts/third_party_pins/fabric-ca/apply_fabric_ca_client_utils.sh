@@ -38,10 +38,7 @@ declare -a FILES=(
     "lib/spi/userregistry.go"
 
     "util/util.go"
-    "util/args.go"
     "util/csp.go"
-    "util/struct.go"
-    "util/flag.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
