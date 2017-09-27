@@ -1,4 +1,4 @@
-// +build experimental
+// +build channelevents
 
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
@@ -152,6 +152,8 @@ func (ed *eventDispatcher) handleRegisterChannelEvent(e event) {
 
 	if ed.chRegistration != nil {
 		event.response <- errorResponse(fmt.Errorf("registration already exists for channel [%s]", ed.channelID))
+	} else if ed.fabclient.UserContext() == nil {
+		event.response <- errorResponse(fmt.Errorf("no user context"))
 	} else {
 		ed.chRegistration = event.reg
 		creator, err := ed.fabclient.UserContext().Identity()

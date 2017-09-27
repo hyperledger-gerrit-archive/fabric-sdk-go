@@ -1,4 +1,4 @@
-// +build experimental
+// +build channelevents
 
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
