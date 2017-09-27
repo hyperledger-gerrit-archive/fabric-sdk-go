@@ -176,3 +176,15 @@ func failTest(t *testing.T, msgAndArgs ...interface{}) {
 		t.Fatalf(msgAndArgs[0].(string), msgAndArgs[1:]...)
 	}
 }
+
+func TestConcurrency(t *testing.T) {
+	logger := NewLogger("concurrencytest")
+	go func() {
+		for i := 0; i < 100; i++ {
+			SetLevel(Level(DEBUG), "concurrencytest")
+		}
+	}()
+	for i := 0; i < 100; i++ {
+		logger.Info("testing")
+	}
+}
