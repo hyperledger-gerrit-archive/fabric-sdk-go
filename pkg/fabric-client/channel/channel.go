@@ -12,11 +12,11 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
-	"github.com/op/go-logging"
 )
 
-var logger = logging.MustGetLogger("fabric_sdk_go")
+var logger = logging.NewLogger("channel")
 
 // Channel  captures settings for a channel, which is created by
 // the orderers to isolate transactions delivery to peers participating on channel.
