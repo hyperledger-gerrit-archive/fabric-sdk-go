@@ -18,6 +18,7 @@ declare -a PKGS=(
     "lib"
     "lib/tls"
     "lib/spi"
+    "lib/logbridge"
     "util"
 )
 
@@ -36,6 +37,8 @@ declare -a FILES=(
 
     "lib/spi/affiliation.go"
     "lib/spi/userregistry.go"
+
+    "lib/logbridge/logbridge.go"
 
     "util/util.go"
     "util/args.go"
@@ -59,6 +62,22 @@ echo "Patching import paths on upstream project ..."
 for i in "${FILES[@]}"
 do
     for subst in "${IMPORT_SUBSTS[@]}"
+    do
+        sed -i '' -e $subst $TMP_PROJECT_PATH/${i}
+    done
+    $GOIMPORTS_CMD -w $TMP_PROJECT_PATH/${i}
+done
+
+# Replacing logging with logbridge
+echo "Patching logging ..."
+cp /tmp/logbridge.go internal/github.com/hyperledger/fabric-ca/lib/logbridge
+declare -a LOGGING_SUBSTS=(
+    's/\"github.com\/cloudflare\/cfssl\/log/log\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/lib\/logbridge/g'
+)
+
+for i in "${FILES[@]}"
+do
+    for subst in "${LOGGING_SUBSTS[@]}"
     do
         sed -i '' -e $subst $TMP_PROJECT_PATH/${i}
     done
