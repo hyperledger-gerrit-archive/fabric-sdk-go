@@ -147,7 +147,7 @@ func (c *Config) CAServerCertFiles(org string) ([]string, error) {
 	if _, ok := config.CertificateAuthorities[caName]; !ok {
 		return nil, fmt.Errorf("CA Server Name '%s' not found", caName)
 	}
-	certFiles := strings.Split(config.CertificateAuthorities[caName].TlsCACerts.Path, ",")
+	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
@@ -191,7 +191,7 @@ func (c *Config) CAClientKeyFile(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[caName]; !ok {
 		return "", fmt.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return strings.Replace(config.CertificateAuthorities[caName].TlsCACerts.Client.Keyfile,
+	return strings.Replace(config.CertificateAuthorities[caName].TLSCACerts.Client.Keyfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
@@ -209,7 +209,7 @@ func (c *Config) CAClientCertFile(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[caName]; !ok {
 		return "", fmt.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return strings.Replace(config.CertificateAuthorities[caName].TlsCACerts.Client.Certfile,
+	return strings.Replace(config.CertificateAuthorities[caName].TLSCACerts.Client.Certfile,
 		"$GOPATH", os.Getenv("GOPATH"), -1), nil
 }
 
@@ -305,8 +305,8 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 	}
 
 	for _, orderer := range config.Orderers {
-		if orderer.TlsCACerts.Path != "" {
-			orderer.TlsCACerts.Path = strings.Replace(orderer.TlsCACerts.Path, "$GOPATH",
+		if orderer.TLSCACerts.Path != "" {
+			orderer.TLSCACerts.Path = strings.Replace(orderer.TLSCACerts.Path, "$GOPATH",
 				os.Getenv("GOPATH"), -1)
 		}
 
@@ -329,8 +329,8 @@ func (c *Config) RandomOrdererConfig() (*apiconfig.OrdererConfig, error) {
 
 	var i int
 	for _, value := range config.Orderers {
-		if value.TlsCACerts.Path != "" {
-			value.TlsCACerts.Path = strings.Replace(value.TlsCACerts.Path, "$GOPATH",
+		if value.TLSCACerts.Path != "" {
+			value.TLSCACerts.Path = strings.Replace(value.TLSCACerts.Path, "$GOPATH",
 				os.Getenv("GOPATH"), -1)
 		}
 		if i == randomNumber {
@@ -349,8 +349,8 @@ func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 		return nil, err
 	}
 	orderer := config.Orderers[name]
-	if orderer.TlsCACerts.Path != "" {
-		orderer.TlsCACerts.Path = strings.Replace(orderer.TlsCACerts.Path, "$GOPATH",
+	if orderer.TLSCACerts.Path != "" {
+		orderer.TLSCACerts.Path = strings.Replace(orderer.TLSCACerts.Path, "$GOPATH",
 			os.Getenv("GOPATH"), -1)
 	}
 
@@ -370,17 +370,17 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 
 	for _, peerName := range peersConfig {
 		p := config.Peers[peerName]
-		if p.Url == "" {
+		if p.URL == "" {
 			return nil, fmt.Errorf("URL does not exist or empty for peer %s", peerName)
 		}
-		if p.EventUrl == "" {
+		if p.EventURL == "" {
 			return nil, fmt.Errorf("Event URL does not exist or empty for peer %s", peerName)
 		}
-		if c.IsTLSEnabled() && p.TlsCACerts.Pem == "" && p.TlsCACerts.Path == "" {
+		if c.IsTLSEnabled() && p.TLSCACerts.Pem == "" && p.TLSCACerts.Path == "" {
 			return nil, fmt.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 		}
-		if p.TlsCACerts.Path != "" {
-			p.TlsCACerts.Path = strings.Replace(p.TlsCACerts.Path, "$GOPATH",
+		if p.TLSCACerts.Path != "" {
+			p.TLSCACerts.Path = strings.Replace(p.TLSCACerts.Path, "$GOPATH",
 				os.Getenv("GOPATH"), -1)
 		}
 
@@ -407,8 +407,8 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 		return nil, fmt.Errorf("Peer %s is not part of orgianzation %s", name, org)
 	}
 	peerConfig := config.Peers[name]
-	if peerConfig.TlsCACerts.Path != "" {
-		peerConfig.TlsCACerts.Path = strings.Replace(peerConfig.TlsCACerts.Path, "$GOPATH",
+	if peerConfig.TLSCACerts.Path != "" {
+		peerConfig.TLSCACerts.Path = strings.Replace(peerConfig.TLSCACerts.Path, "$GOPATH",
 			os.Getenv("GOPATH"), -1)
 	}
 	return &peerConfig, nil
