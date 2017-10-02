@@ -45,7 +45,7 @@ func SendInstallCC(client fab.FabricClient, chainCodeID string, chainCodePath st
 
 // SendInstantiateCC Sends instantiate CC proposal to one or more endorsing peers
 func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
-	chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor, eventHub fab.EventHub) error {
+	chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor, eventHub fab.EventHub, timeout time.Duration) error {
 
 	transactionProposalResponse, txID, err := channel.SendInstantiateProposal(chainCodeID,
 		args, chaincodePath, chaincodeVersion, chaincodePolicy, targets)
@@ -67,11 +67,15 @@ func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
 		return fmt.Errorf("CreateTransaction returned error: %v", err)
 	}
 
+	if timeout == 0 {
+		timeout = time.Second * 30
+	}
+
 	select {
 	case <-done:
 	case <-fail:
 		return fmt.Errorf("instantiateCC Error received from eventhub for txid(%s) error(%v)", txID, fail)
-	case <-time.After(time.Second * 30):
+	case <-time.After(timeout):
 		return fmt.Errorf("instantiateCC Didn't receive block event for txid(%s)", txID)
 	}
 	return nil
@@ -79,7 +83,7 @@ func SendInstantiateCC(channel fab.Channel, chainCodeID string, args []string,
 
 // SendUpgradeCC Sends upgrade CC proposal to one or more endorsing peers
 func SendUpgradeCC(channel fab.Channel, chainCodeID string, args []string,
-	chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor, eventHub fab.EventHub) error {
+	chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor, eventHub fab.EventHub, timeout time.Duration) error {
 
 	transactionProposalResponse, txID, err := channel.SendUpgradeProposal(chainCodeID,
 		args, chaincodePath, chaincodeVersion, chaincodePolicy, targets)
@@ -101,11 +105,15 @@ func SendUpgradeCC(channel fab.Channel, chainCodeID string, args []string,
 		return fmt.Errorf("CreateTransaction returned error: %v", err)
 	}
 
+	if timeout == 0 {
+		timeout = time.Second * 30
+	}
+
 	select {
 	case <-done:
 	case <-fail:
 		return fmt.Errorf("upgradeCC Error received from eventhub for txid(%s) error(%v)", txID, fail)
-	case <-time.After(time.Second * 30):
+	case <-time.After(timeout):
 		return fmt.Errorf("upgradeCC Didn't receive block event for txid(%s)", txID)
 	}
 	return nil

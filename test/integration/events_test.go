@@ -50,7 +50,7 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
-	if err := testSetup.InstantiateCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", nil); err != nil {
+	if err := testSetup.InstantiateCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", nil, 0); err != nil {
 		t.Fatalf("instantiateCC return error: %v", err)
 	}
 
