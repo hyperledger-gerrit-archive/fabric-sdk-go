@@ -140,19 +140,19 @@ func (setup *BaseSetupImpl) InitConfig() (apiconfig.Config, error) {
 }
 
 // InstantiateCC ...
-func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string) error {
+func (setup *BaseSetupImpl) InstantiateCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string, timeout time.Duration) error {
 
 	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
 
-	return admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub)
+	return admin.SendInstantiateCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub, timeout)
 }
 
 // UpgradeCC ...
-func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string) error {
+func (setup *BaseSetupImpl) UpgradeCC(chainCodeID string, chainCodePath string, chainCodeVersion string, args []string, timeout time.Duration) error {
 
 	chaincodePolicy := cauthdsl.SignedByMspMember(setup.Client.UserContext().MspID())
 
-	return admin.SendUpgradeCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub)
+	return admin.SendUpgradeCC(setup.Channel, chainCodeID, args, chainCodePath, chainCodeVersion, chaincodePolicy, []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, setup.EventHub, timeout)
 }
 
 // InstallCC ...
@@ -192,7 +192,7 @@ func (setup *BaseSetupImpl) InstallAndInstantiateExampleCC() error {
 	args = append(args, "b")
 	args = append(args, "200")
 
-	return setup.InstantiateCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args)
+	return setup.InstantiateCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args, time.Second*30)
 }
 
 // UpgradeExampleCC ..
@@ -216,7 +216,7 @@ func (setup *BaseSetupImpl) UpgradeExampleCC() error {
 	args = append(args, "b")
 	args = append(args, "400")
 
-	return setup.UpgradeCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args)
+	return setup.UpgradeCC(setup.ChainCodeID, chainCodePath, chainCodeVersion, args, time.Second*30)
 }
 
 // Query ...

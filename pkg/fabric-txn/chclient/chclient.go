@@ -12,15 +12,11 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
-)
-
-const (
-	defaultQueryTimeout     = time.Second * 20
-	defaultExecuteTxTimeout = time.Second * 30
 )
 
 // ChannelClient enables access to a Fabric network.
@@ -42,7 +38,7 @@ func NewChannelClient(client fab.FabricClient, channel fab.Channel, discovery fa
 // Query chaincode
 func (cc *ChannelClient) Query(request apitxn.QueryRequest) ([]byte, error) {
 
-	return cc.QueryWithOpts(request, apitxn.QueryOpts{Timeout: defaultQueryTimeout})
+	return cc.QueryWithOpts(request, apitxn.QueryOpts{})
 
 }
 
@@ -71,7 +67,8 @@ func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.
 		return nil, nil
 	}
 
-	timeout := defaultQueryTimeout
+	timeout := cc.client.Config().TimeoutOrDefault(apiconfig.Query)
+	fmt.Println("opts.Timeout", opts.Timeout, "timeout", timeout)
 	if opts.Timeout != 0 {
 		timeout = opts.Timeout
 	}
@@ -105,7 +102,7 @@ func sendTransactionProposal(request apitxn.QueryRequest, channel fab.Channel, p
 // ExecuteTx prepares and executes transaction
 func (cc *ChannelClient) ExecuteTx(request apitxn.ExecuteTxRequest) (apitxn.TransactionID, error) {
 
-	return cc.ExecuteTxWithOpts(request, apitxn.ExecuteTxOpts{Timeout: defaultExecuteTxTimeout})
+	return cc.ExecuteTxWithOpts(request, apitxn.ExecuteTxOpts{})
 }
 
 // ExecuteTxWithOpts allows the user to provide options for execute transaction:
@@ -141,7 +138,7 @@ func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts
 		notifier = make(chan apitxn.ExecuteTxResponse)
 	}
 
-	timeout := defaultExecuteTxTimeout
+	timeout := cc.client.Config().TimeoutOrDefault(apiconfig.ExecuteTx)
 	if opts.Timeout != 0 {
 		timeout = opts.Timeout
 	}

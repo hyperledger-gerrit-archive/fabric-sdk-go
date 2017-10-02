@@ -167,7 +167,7 @@ func installAndInstantiate(t *testing.T) {
 		org1AdminUser.MspID(), org2AdminUser.MspID()})
 
 	err = admin.SendInstantiateCC(orgTestChannel, "exampleCC",
-		generateInitArgs(), "github.com/example_cc", "0", chaincodePolicy, []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub)
+		generateInitArgs(), "github.com/example_cc", "0", chaincodePolicy, []apitxn.ProposalProcessor{orgTestPeer1}, peer1EventHub, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

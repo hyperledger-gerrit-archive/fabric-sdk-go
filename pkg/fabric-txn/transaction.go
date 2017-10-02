@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -38,7 +39,7 @@ func QueryChaincode(client fab.FabricClient, channel fab.Channel, chaincodeID st
 
 // InvokeChaincode ...
 func InvokeChaincode(client fab.FabricClient, channel fab.Channel, targets []apitxn.ProposalProcessor,
-	eventHub fab.EventHub, chaincodeID string, fcn string, args []string, transientData map[string][]byte) (apitxn.TransactionID, error) {
+	eventHub fab.EventHub, chaincodeID string, fcn string, args []string, transientData map[string][]byte, timeout time.Duration) (apitxn.TransactionID, error) {
 
 	err := checkCommonArgs(client, channel, chaincodeID)
 	if err != nil {
@@ -75,11 +76,15 @@ func InvokeChaincode(client fab.FabricClient, channel fab.Channel, targets []api
 		return txID, fmt.Errorf("CreateAndSendTransaction returned error: %v", err)
 	}
 
+	if timeout == 0 {
+		timeout = client.Config().TimeoutOrDefault(apiconfig.InvokeChaincodeTx)
+	}
+
 	select {
 	case <-done:
 	case err := <-fail:
 		return txID, fmt.Errorf("invoke Error received from eventhub for txid(%s), error(%v)", txID, err)
-	case <-time.After(time.Second * 30):
+	case <-time.After(timeout):
 		return txID, fmt.Errorf("invoke Didn't receive block event for txid(%s)", txID)
 	}
 

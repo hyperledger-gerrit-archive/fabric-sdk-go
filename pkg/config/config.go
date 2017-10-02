@@ -220,8 +220,16 @@ func (c *Config) TimeoutOrDefault(conn apiconfig.ConnectionType) time.Duration {
 		timeout = myViper.GetDuration("client.connection.timeout.peer.eventhub")
 	case apiconfig.EventReg:
 		timeout = myViper.GetDuration("client.connection.timeout.peer.eventreg")
-	case apiconfig.Orderer:
-		timeout = myViper.GetDuration("client.connection.timeout.orderer")
+	case apiconfig.Query:
+		timeout = myViper.GetDuration("client.connection.timeout.peer.query")
+	case apiconfig.ExecuteTx:
+		timeout = myViper.GetDuration("client.connection.timeout.peer.executeTx")
+	case apiconfig.InvokeChaincodeTx:
+		timeout = myViper.GetDuration("client.connection.timeout.peer.invokeChaincodeTx")
+	case apiconfig.OrdererConnection:
+		timeout = myViper.GetDuration("client.connection.timeout.orderer.grpcConnection")
+	case apiconfig.OrdererSendDeliver:
+		timeout = myViper.GetDuration("client.connection.timeout.orderer.sendDeliver")
 	}
 	if timeout == 0 {
 		timeout = defaultTimeout
