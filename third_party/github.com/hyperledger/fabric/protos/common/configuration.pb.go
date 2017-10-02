@@ -26,7 +26,7 @@ type HashingAlgorithm struct {
 func (m *HashingAlgorithm) Reset()                    { *m = HashingAlgorithm{} }
 func (m *HashingAlgorithm) String() string            { return proto.CompactTextString(m) }
 func (*HashingAlgorithm) ProtoMessage()               {}
-func (*HashingAlgorithm) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (*HashingAlgorithm) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
 
 func (m *HashingAlgorithm) GetName() string {
 	if m != nil {
@@ -46,7 +46,7 @@ type BlockDataHashingStructure struct {
 func (m *BlockDataHashingStructure) Reset()                    { *m = BlockDataHashingStructure{} }
 func (m *BlockDataHashingStructure) String() string            { return proto.CompactTextString(m) }
 func (*BlockDataHashingStructure) ProtoMessage()               {}
-func (*BlockDataHashingStructure) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
+func (*BlockDataHashingStructure) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{1} }
 
 func (m *BlockDataHashingStructure) GetWidth() uint32 {
 	if m != nil {
@@ -64,7 +64,7 @@ type OrdererAddresses struct {
 func (m *OrdererAddresses) Reset()                    { *m = OrdererAddresses{} }
 func (m *OrdererAddresses) String() string            { return proto.CompactTextString(m) }
 func (*OrdererAddresses) ProtoMessage()               {}
-func (*OrdererAddresses) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
+func (*OrdererAddresses) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{2} }
 
 func (m *OrdererAddresses) GetAddresses() []string {
 	if m != nil {
@@ -81,7 +81,7 @@ type Consortium struct {
 func (m *Consortium) Reset()                    { *m = Consortium{} }
 func (m *Consortium) String() string            { return proto.CompactTextString(m) }
 func (*Consortium) ProtoMessage()               {}
-func (*Consortium) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
+func (*Consortium) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{3} }
 
 func (m *Consortium) GetName() string {
 	if m != nil {
@@ -105,7 +105,7 @@ type Capabilities struct {
 func (m *Capabilities) Reset()                    { *m = Capabilities{} }
 func (m *Capabilities) String() string            { return proto.CompactTextString(m) }
 func (*Capabilities) ProtoMessage()               {}
-func (*Capabilities) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
+func (*Capabilities) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{4} }
 
 func (m *Capabilities) GetCapabilities() map[string]*Capability {
 	if m != nil {
@@ -126,7 +126,7 @@ type Capability struct {
 func (m *Capability) Reset()                    { *m = Capability{} }
 func (m *Capability) String() string            { return proto.CompactTextString(m) }
 func (*Capability) ProtoMessage()               {}
-func (*Capability) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{5} }
+func (*Capability) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{5} }
 
 func (m *Capability) GetRequired() bool {
 	if m != nil {
@@ -144,11 +144,11 @@ func init() {
 	proto.RegisterType((*Capability)(nil), "common.Capability")
 }
 
-func init() { proto.RegisterFile("common/configuration.proto", fileDescriptor2) }
+func init() { proto.RegisterFile("common/configuration.proto", fileDescriptor3) }
 
-var fileDescriptor2 = []byte{
+var fileDescriptor3 = []byte{
 	// 329 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x6c, 0x91, 0x41, 0x6b, 0xea, 0x40,
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x91, 0x41, 0x6b, 0xea, 0x40,
 	0x10, 0xc7, 0x89, 0x3e, 0x45, 0x47, 0x1f, 0xf8, 0x96, 0x77, 0xf0, 0xc9, 0x3b, 0x84, 0x50, 0x24,
 	0x50, 0x48, 0x5a, 0x7b, 0x29, 0xbd, 0xa9, 0x2d, 0x94, 0x5e, 0x0a, 0xf1, 0xd6, 0xdb, 0x26, 0x19,
 	0x93, 0xc5, 0x24, 0x6b, 0x67, 0x77, 0x5b, 0xf2, 0xa9, 0xfa, 0x15, 0x8b, 0x59, 0x5b, 0x15, 0x7b,
