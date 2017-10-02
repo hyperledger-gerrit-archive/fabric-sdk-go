@@ -13,6 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+Notice: This file has been modified for usage within Hyperledger fabric-sdk-go - please review third_party pinning scripts and patches for more details.
+*/
 
 package msp
 
