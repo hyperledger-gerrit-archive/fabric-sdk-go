@@ -44,14 +44,19 @@ client:
   logging:
     level: info
 
-  # set connection timeouts for the peer and orderer for the client
-  connection:
-     timeout:
+# set timeouts for the connections and responses for the client
+  timeout:
+    connection:
       peer:
        endorser: 3s
        eventHub: 3s
        eventReg: 3s
       orderer: 3s
+    response:
+      sendDeliver: 5s
+      query: 20s
+      executeTx: 30s
+      invokeChaincodeTx: 30s
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:
@@ -233,7 +238,7 @@ certificateAuthorities:
     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
     # needed to enroll and invoke new users.
 #    registrar:
-#      enrollId: usualy-it-is_admin
+#      enrollId: usually-it-is_admin
 #      enrollSecret: adminpasswd
     # [Optional] The optional name of the CA.
 #    caName: ca-org1

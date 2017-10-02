@@ -15,6 +15,7 @@ import (
 	internal "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
@@ -39,7 +40,7 @@ func QueryChaincode(client fab.FabricClient, channel fab.Channel, chaincodeID st
 
 // InvokeChaincode ...
 func InvokeChaincode(client fab.FabricClient, channel fab.Channel, targets []apitxn.ProposalProcessor,
-	eventHub fab.EventHub, chaincodeID string, fcn string, args []string, transientData map[string][]byte) (apitxn.TransactionID, error) {
+	eventHub fab.EventHub, chaincodeID string, fcn string, args []string, transientData map[string][]byte, timeout time.Duration) (apitxn.TransactionID, error) {
 
 	err := checkCommonArgs(client, channel, chaincodeID)
 	if err != nil {
@@ -74,6 +75,10 @@ func InvokeChaincode(client fab.FabricClient, channel fab.Channel, targets []api
 	_, err = internal.CreateAndSendTransaction(channel, transactionProposalResponses)
 	if err != nil {
 		return txID, fmt.Errorf("CreateAndSendTransaction returned error: %v", err)
+	}
+
+	if timeout == 0 {
+		timeout = client.Config().TimeoutOrDefault(apiconfig.InvokeChaincodeTx)
 	}
 
 	select {

@@ -57,6 +57,14 @@ const (
 	EventHub
 	// EventReg connection
 	EventReg
-	// Orderer connection
-	Orderer
+	// Query timeout
+	Query
+	// ExecuteTx timeout
+	ExecuteTx
+	// OrdererConnection Orderer connection timeout
+	OrdererConnection
+	// OrdererSendDeliver Orderer SendDeliver timeout
+	OrdererSendDeliver
+	// InvokeChaincodeTx Invloke timeout for fabric-txn
+	InvokeChaincodeTx
 )

@@ -300,33 +300,54 @@ func TestTLSACAConfig(t *testing.T) {
 }
 
 func TestTimeouts(t *testing.T) {
-	myViper.Set("client.connection.timeout.peer.endorser", "2s")
-	myViper.Set("client.connection.timeout.peer.eventhub", "2m")
-	myViper.Set("client.connection.timeout.peer.eventreg", "2h")
-	myViper.Set("client.connection.timeout.orderer", "2ms")
+	myViper.Set("client.timeout.connection.peer.endorser", "2s")
+	myViper.Set("client.timeout.connection.peer.eventhub", "2m")
+	myViper.Set("client.timeout.connection.peer.eventreg", "2h")
+	myViper.Set("client.timeout.connection.orderer", "2ms")
+	myViper.Set("client.timeout.response.query", "7h")
+	myViper.Set("client.timeout.response.executeTx", "8h")
+	myViper.Set("client.timeout.response.sendDeliver", "6s")
+	myViper.Set("client.timeout.response.invokeChaincodeTx", "9m")
 
 	t1 := configImpl.TimeoutOrDefault(api.Endorser)
 	if t1 != time.Second*2 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
-	t2 := configImpl.TimeoutOrDefault(api.EventHub)
-	if t2 != time.Minute*2 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t2)
+	t1 = configImpl.TimeoutOrDefault(api.EventHub)
+	if t1 != time.Minute*2 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
-	t3 := configImpl.TimeoutOrDefault(api.EventReg)
-	if t3 != time.Hour*2 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t3)
+	t1 = configImpl.TimeoutOrDefault(api.EventReg)
+	if t1 != time.Hour*2 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
-	t4 := configImpl.TimeoutOrDefault(api.Orderer)
-	if t4 != time.Millisecond*2 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t4)
+	t1 = configImpl.TimeoutOrDefault(api.Query)
+	if t1 != time.Hour*7 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	}
+	t1 = configImpl.TimeoutOrDefault(api.ExecuteTx)
+	if t1 != time.Hour*8 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	}
+	t1 = configImpl.TimeoutOrDefault(api.OrdererConnection)
+	if t1 != time.Millisecond*2 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	}
+	t1 = configImpl.TimeoutOrDefault(api.OrdererSendDeliver)
+	if t1 != time.Second*6 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	}
+	t1 = configImpl.TimeoutOrDefault(api.InvokeChaincodeTx)
+	if t1 != time.Minute*9 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
 	// Test default
-	myViper.Set("client.connection.timeout.orderer", "")
-	t5 := configImpl.TimeoutOrDefault(api.Orderer)
-	if t5 != time.Second*5 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t5)
+	myViper.Set("client.timeout.connection.orderer.grpcConnection", "")
+	t1 = configImpl.TimeoutOrDefault(api.OrdererConnection)
+	if t1 != time.Second*5 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
+
 }
 
 func TestOrdererConfig(t *testing.T) {
