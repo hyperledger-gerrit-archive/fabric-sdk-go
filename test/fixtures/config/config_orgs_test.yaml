@@ -35,6 +35,7 @@ version: 1.0.0
 # The client section used by GO SDK.
 #
 client:
+
   # Which organization does this application instance belong to? The value must be the name of an org
   # defined under "organizations"
   organization: Org1
@@ -80,14 +81,11 @@ client:
     security:
      enabled: true
      default:
-      provider: "PKCS11"
+      provider: "SW"
      hashAlgorithm: "SHA2"
      softVerify: true
      ephemeral: false
      level: 256
-     pin: "98765432"
-     label: "ForFabric"
-     library: "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/softhsm/libsofthsm2.so ,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so, /usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
 
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed
@@ -96,7 +94,7 @@ client:
 #
 channels:
   # name of the channel
-  mychannel:
+  orgchannel:
     # Required. list of orderers designated by the application to use for transactions on this
     # channel. This list can be a result of access control ("org1" can only access "ordererA"), or
     # operational decisions to share loads from applications among the orderers.  The values must
@@ -126,6 +124,11 @@ channels:
         # Default: true
         eventSource: true
 
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
 
     # [Optional]. what chaincodes are expected to exist on this channel? The application can use
     # this information to validate that the target peers are in the expected state by comparing
@@ -178,7 +181,7 @@ organizations:
 
     # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
     cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
-    
+
     peers:
       - peer0.org2.example.com
 
@@ -192,6 +195,7 @@ organizations:
 
       # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
       cryptoPath: ordererOrganizations/example.com/users/{userName}@example.com/msp
+
 
 #
 # List of orderers to send transaction and channel create/update requests to. For the time
