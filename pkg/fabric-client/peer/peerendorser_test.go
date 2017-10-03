@@ -40,10 +40,9 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	url := "0.0.0.0:1234"
+	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
 
-	config.EXPECT().IsTLSEnabled().Return(true)
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
@@ -70,10 +69,9 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	url := "0.0.0.0:1234"
+	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
 
-	config.EXPECT().IsTLSEnabled().Return(true)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, fmt.Errorf("ohoh"))
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
@@ -91,8 +89,7 @@ func TestNewPeerEndorserNoTLS(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	url := "0.0.0.0:1234"
-	config.EXPECT().IsTLSEnabled().Return(false)
+	url := "grpc://0.0.0.0:1234"
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	conn, err := newPeerEndorser(url, "", "", true, config)
@@ -123,7 +120,6 @@ func TestNewPeerEndorserBlocking(t *testing.T) {
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
-	config.EXPECT().IsTLSEnabled().Return(false)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	conn, err := newPeerEndorser(url, "", "", true, config)
@@ -154,7 +150,6 @@ func TestNewPeerEndorserNonBlocking(t *testing.T) {
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	url := "0.0.0.0:1234"
-	config.EXPECT().IsTLSEnabled().Return(false)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	conn, err := newPeerEndorser(url, "", "", false, config)
@@ -193,9 +188,10 @@ func TestNewPeerEndorserTLSBad(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	url := "0.0.0.0:1234"
-	config.EXPECT().IsTLSEnabled().Return(true)
-	config.EXPECT().TLSCACertPool("").Return(x509.NewCertPool(), nil)
+	url := "grpcs://0.0.0.0:1234"
+	certPool := x509.NewCertPool()
+
+	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	_, err := newPeerEndorser(url, "", "", true, config)
@@ -231,7 +227,6 @@ func testProcessProposal(t *testing.T, url string) (apitxn.TransactionProposalRe
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	config.EXPECT().IsTLSEnabled().Return(false)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	conn, err := newPeerEndorser(url, "", "", true, config)
