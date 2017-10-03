@@ -30,7 +30,6 @@ type Config interface {
 	NetworkConfig() (*NetworkConfig, error)
 	ChannelConfig(name string) (*ChannelConfig, error)
 	ChannelPeers(name string) ([]ChannelPeer, error)
-	IsTLSEnabled() bool
 	SetTLSCACertPool(*x509.CertPool)
 	TLSCACertPool(tlsCertificate string) (*x509.CertPool, error)
 	IsSecurityEnabled() bool
@@ -45,6 +44,8 @@ type Config interface {
 	CAKeyStorePath() string
 	CryptoConfigPath() string
 	CSPConfig() *bccspFactory.FactoryOpts
+	IsTLSEnabled(url string) bool
+	GetReadyURL(url string) string
 }
 
 // TimeoutType enumerates the different types of outgoing connections

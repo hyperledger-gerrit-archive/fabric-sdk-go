@@ -45,10 +45,14 @@ func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 		return nil, err
 	}
 
+	if conf == nil {
+		return nil, fmt.Errorf("Orgnization %s have no corresponding CA in the configs", org)
+	}
+
 	//set server CAName
 	c.Config.CAName = conf.CAName
 	//set server URL
-	c.Config.URL = conf.URL
+	c.Config.URL = config.GetReadyURL(conf.URL)
 	//certs file list
 	c.Config.TLS.CertFiles, err = config.CAServerCertFiles(org)
 	if err != nil {
@@ -73,7 +77,7 @@ func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 	}
 
 	//TLS flag enabled/disabled
-	c.Config.TLS.Enabled = config.IsTLSEnabled()
+	c.Config.TLS.Enabled = config.IsTLSEnabled(conf.URL)
 	c.Config.MSPDir = config.CAKeyStorePath()
 	c.Config.CSP = config.CSPConfig()
 

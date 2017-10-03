@@ -44,7 +44,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 		opts = append(opts, grpc.WithBlock())
 	}
 
-	if config.IsTLSEnabled() {
+	if config.IsTLSEnabled(target) {
 		certPool, _ := config.TLSCACertPool("")
 		if len(certificate) == 0 && len(certPool.Subjects()) == 0 {
 			return peerEndorser{}, fmt.Errorf("Certificate is required")
@@ -60,7 +60,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	pc := peerEndorser{grpcDialOption: opts, target: target}
+	pc := peerEndorser{grpcDialOption: opts, target: config.GetReadyURL(target)}
 
 	return pc, nil
 }

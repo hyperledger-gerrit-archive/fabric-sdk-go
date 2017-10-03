@@ -26,12 +26,13 @@ import (
 func TestNewPeerWithCertNoTLS(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	url := "http://example.com"
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().IsTLSEnabled().Return(false)
+	config.EXPECT().IsTLSEnabled(url).Return(false)
+	config.EXPECT().GetReadyURL(url).Return(url)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	url := "http://example.com"
-	p, err := NewPeer("http://example.com", config)
+	p, err := NewPeer(url, config)
 
 	if err != nil {
 		t.Fatalf("Expected peer to be constructed")
@@ -49,12 +50,14 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	certPool := x509.NewCertPool()
-	config.EXPECT().IsTLSEnabled().Return(true)
+	url := "0.0.0.0:1234"
+
+	config.EXPECT().IsTLSEnabled(url).Return(true)
+	config.EXPECT().GetReadyURL(url).Return(url)
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
-	url := "0.0.0.0:1234"
 	// TODO - test actual parameters and test server name override
 	_, err := NewPeerTLSFromCert(url, "cert", "", config)
 
@@ -82,7 +85,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	config.EXPECT().IsTLSEnabled().Return(true)
+	config.EXPECT().IsTLSEnabled("0.0.0.0:1234").Return(true)
 	config.EXPECT().TLSCACertPool("").Return(x509.NewCertPool(), nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
@@ -99,7 +102,8 @@ func TestEnrollmentCert(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().IsTLSEnabled().Return(false)
+	config.EXPECT().IsTLSEnabled(peer1URL).Return(false)
+	config.EXPECT().GetReadyURL(peer1URL).Return(peer1URL)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	peer, err := NewPeer(peer1URL, config)
@@ -130,7 +134,8 @@ func TestRoles(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().IsTLSEnabled().Return(false)
+	config.EXPECT().IsTLSEnabled(peer1URL).Return(false)
+	config.EXPECT().GetReadyURL(peer1URL).Return(peer1URL)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	peer, err := NewPeer(peer1URL, config)
@@ -157,7 +162,8 @@ func TestNames(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().IsTLSEnabled().Return(false)
+	config.EXPECT().IsTLSEnabled(peer1URL).Return(false)
+	config.EXPECT().GetReadyURL(peer1URL).Return(peer1URL)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	peer, err := NewPeer(peer1URL, config)
@@ -181,7 +187,8 @@ func TestMSPIDs(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().IsTLSEnabled().Return(false)
+	config.EXPECT().IsTLSEnabled(peer1URL).Return(false)
+	config.EXPECT().GetReadyURL(peer1URL).Return(peer1URL)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	peer, err := NewPeer(peer1URL, config)
@@ -220,7 +227,8 @@ func TestPlaceholders(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().IsTLSEnabled().Return(false)
+	config.EXPECT().IsTLSEnabled(peer1URL).Return(false)
+	config.EXPECT().GetReadyURL(peer1URL).Return(peer1URL)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	peer, err := NewPeer(peer1URL, config)
@@ -248,7 +256,8 @@ func TestPeersToTxnProcessors(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
-	config.EXPECT().IsTLSEnabled().Return(false)
+	config.EXPECT().IsTLSEnabled(peer1URL).Return(false)
+	config.EXPECT().GetReadyURL(peer1URL).Return(peer1URL)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	peer1, err := NewPeer(peer1URL, config)
@@ -256,7 +265,8 @@ func TestPeersToTxnProcessors(t *testing.T) {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
 
-	config.EXPECT().IsTLSEnabled().Return(false)
+	config.EXPECT().IsTLSEnabled(peer2URL).Return(false)
+	config.EXPECT().GetReadyURL(peer2URL).Return(peer2URL)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 	peer2, err := NewPeer(peer2URL, config)
 	if err != nil {

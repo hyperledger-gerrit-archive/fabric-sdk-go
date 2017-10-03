@@ -60,7 +60,7 @@ func NewEventsClient(client fab.FabricClient, peerAddress string, certificate st
 func newEventsClientConnectionWithAddress(peerAddress string, certificate string, serverhostoverride string, config apiconfig.Config) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.EventHub)))
-	if config.IsTLSEnabled() {
+	if config.IsTLSEnabled(peerAddress) {
 		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {
 			return nil, err
@@ -70,7 +70,7 @@ func newEventsClientConnectionWithAddress(peerAddress string, certificate string
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
-	conn, err := grpc.Dial(peerAddress, opts...)
+	conn, err := grpc.Dial(config.GetReadyURL(peerAddress), opts...)
 	if err != nil {
 		return nil, err
 	}

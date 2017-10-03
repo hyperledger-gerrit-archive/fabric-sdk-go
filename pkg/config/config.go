@@ -374,7 +374,7 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 
 	for _, peerName := range peersConfig {
 		p := config.Peers[strings.ToLower(peerName)]
-		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled()); err != nil {
+		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
 		}
 		if p.TLSCACerts.Path != "" {
@@ -463,7 +463,7 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 			return nil, fmt.Errorf("Peer config not found for %s", peerName)
 		}
 
-		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled()); err != nil {
+		if err = verifyPeerConfig(p, peerName, c.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
 		}
 
@@ -504,11 +504,6 @@ func verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEnabled bool) 
 		return fmt.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
-}
-
-// IsTLSEnabled is TLS enabled?
-func (c *Config) IsTLSEnabled() bool {
-	return myViper.GetBool("client.tls.enabled")
 }
 
 // SetTLSCACertPool allows a user to set a global cert pool with a set of
@@ -678,4 +673,25 @@ func (c *Config) CSPConfig() *bccspFactory.FactoryOpts {
 		panic(fmt.Sprintf("Unsupported BCCSP Provider: %s", c.SecurityProvider()))
 
 	}
+}
+
+// IsTLSEnabled is a generic function that expects a URL and verifies if it has a prefix HTTPS or GRPCS
+func (c *Config) IsTLSEnabled(url string) bool {
+	caURL := strings.ToLower(url)
+	if strings.HasPrefix(caURL, "https://") || strings.HasPrefix(caURL, "grpcs://") {
+		return true
+	}
+	return false
+}
+
+// GetReadyURL is a utility function to trim the GRPC protocol prefix as it is not needed by GO
+// if the GRPC protocol is not found, the url is returned unchanged
+func (c *Config) GetReadyURL(url string) string {
+	if strings.HasPrefix(url, "grpc://") {
+		return strings.TrimPrefix(url, "grpc://")
+	}
+	if strings.HasPrefix(url, "grpcs://") {
+		return strings.TrimPrefix(url, "grpcs://")
+	}
+	return url
 }

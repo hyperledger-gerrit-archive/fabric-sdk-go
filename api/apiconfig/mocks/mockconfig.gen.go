@@ -176,6 +176,18 @@ func (mr *MockConfigMockRecorder) Ephemeral() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ephemeral", reflect.TypeOf((*MockConfig)(nil).Ephemeral))
 }
 
+// GetReadyURL mocks base method
+func (m *MockConfig) GetReadyURL(arg0 string) string {
+	ret := m.ctrl.Call(m, "GetReadyURL", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetReadyURL indicates an expected call of GetReadyURL
+func (mr *MockConfigMockRecorder) GetReadyURL(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReadyURL", reflect.TypeOf((*MockConfig)(nil).GetReadyURL), arg0)
+}
+
 // IsSecurityEnabled mocks base method
 func (m *MockConfig) IsSecurityEnabled() bool {
 	ret := m.ctrl.Call(m, "IsSecurityEnabled")
@@ -189,15 +201,15 @@ func (mr *MockConfigMockRecorder) IsSecurityEnabled() *gomock.Call {
 }
 
 // IsTLSEnabled mocks base method
-func (m *MockConfig) IsTLSEnabled() bool {
-	ret := m.ctrl.Call(m, "IsTLSEnabled")
+func (m *MockConfig) IsTLSEnabled(arg0 string) bool {
+	ret := m.ctrl.Call(m, "IsTLSEnabled", arg0)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // IsTLSEnabled indicates an expected call of IsTLSEnabled
-func (mr *MockConfigMockRecorder) IsTLSEnabled() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTLSEnabled", reflect.TypeOf((*MockConfig)(nil).IsTLSEnabled))
+func (mr *MockConfigMockRecorder) IsTLSEnabled(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTLSEnabled", reflect.TypeOf((*MockConfig)(nil).IsTLSEnabled), arg0)
 }
 
 // KeyStorePath mocks base method

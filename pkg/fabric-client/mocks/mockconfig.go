@@ -14,6 +14,8 @@ import (
 
 	"fmt"
 
+	"strings"
+
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/spf13/viper"
 )
@@ -78,11 +80,6 @@ func (c *MockConfig) PeersConfig(org string) ([]config.PeerConfig, error) {
 // PeerConfig Retrieves a specific peer from the configuration by org and name
 func (c *MockConfig) PeerConfig(org string, name string) (*config.PeerConfig, error) {
 	return nil, nil
-}
-
-// IsTLSEnabled ...
-func (c *MockConfig) IsTLSEnabled() bool {
-	return c.tlsEnabled
 }
 
 // TLSCACertPool ...
@@ -201,4 +198,20 @@ func (c *MockConfig) SoftVerify() bool {
 // IsSecurityEnabled ...
 func (c *MockConfig) IsSecurityEnabled() bool {
 	return false
+}
+
+// IsTLSEnabled ...
+func (c *MockConfig) IsTLSEnabled(url string) bool {
+	return c.tlsEnabled
+}
+
+// GetReadyURL is a utility function to trim the GRPC protocol prefix as it is not needed by GO
+func (c *MockConfig) GetReadyURL(url string) string {
+	if strings.HasPrefix(url, "grpc://") {
+		return strings.TrimPrefix(url, "grpc://")
+	}
+	if strings.HasPrefix(url, "grpcs://") {
+		return strings.TrimPrefix(url, "grpcs://")
+	}
+	return url
 }

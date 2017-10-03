@@ -32,7 +32,7 @@ type Orderer struct {
 func NewOrderer(url string, certificate string, serverHostOverride string, config apiconfig.Config) (*Orderer, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.OrdererConnection)))
-	if config.IsTLSEnabled() {
+	if config.IsTLSEnabled(url) {
 		tlsCaCertPool, err := config.TLSCACertPool(certificate)
 		if err != nil {
 			return nil, err
@@ -42,7 +42,7 @@ func NewOrderer(url string, certificate string, serverHostOverride string, confi
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
-	return &Orderer{url: url, grpcDialOption: opts}, nil
+	return &Orderer{url: config.GetReadyURL(url), grpcDialOption: opts}, nil
 }
 
 // URL Get the Orderer url. Required property for the instance objects.
@@ -53,6 +53,7 @@ func (o *Orderer) URL() string {
 
 // SendBroadcast Send the created transaction to Orderer.
 func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, error) {
+	logger.Infof("o.url is %s", o.url)
 	conn, err := grpc.Dial(o.url, o.grpcDialOption...)
 	if err != nil {
 		return nil, err

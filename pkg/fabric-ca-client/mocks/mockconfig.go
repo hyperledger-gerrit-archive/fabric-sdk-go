@@ -10,6 +10,8 @@ import (
 	"crypto/x509"
 	"time"
 
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
@@ -70,11 +72,6 @@ func (c *MockConfig) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 // PeerConfig Retrieves a specific peer from the configuration by org and name
 func (c *MockConfig) PeerConfig(org string, name string) (*apiconfig.PeerConfig, error) {
 	return nil, nil
-}
-
-// IsTLSEnabled ...
-func (c *MockConfig) IsTLSEnabled() bool {
-	return false
 }
 
 // TLSCACertPool ...
@@ -190,4 +187,24 @@ func (c *MockConfig) SecurityProviderLabel() string {
 // IsSecurityEnabled ...
 func (c *MockConfig) IsSecurityEnabled() bool {
 	return false
+}
+
+// IsTLSEnabled is a generic function that expects a URL and verifies if it has a prefix HTTPS or GRPCS
+func (c *MockConfig) IsTLSEnabled(url string) bool {
+	caURL := strings.ToLower(url)
+	if strings.HasPrefix(caURL, "https://") || strings.HasPrefix(caURL, "grpcs://") {
+		return true
+	}
+	return false
+}
+
+// GetReadyURL is a utility function to trim the GRPC protocol prefix as it is not needed by GO
+func (c *MockConfig) GetReadyURL(url string) string {
+	if strings.HasPrefix(url, "grpc://") {
+		return strings.TrimPrefix(url, "grpc://")
+	}
+	if strings.HasPrefix(url, "grpcs://") {
+		return strings.TrimPrefix(url, "grpcs://")
+	}
+	return url
 }
