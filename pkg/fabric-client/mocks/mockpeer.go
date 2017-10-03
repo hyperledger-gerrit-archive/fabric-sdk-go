@@ -9,7 +9,8 @@ package mocks
 // TODO: Move protos to this library
 import (
 	"encoding/pem"
-	"errors"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
