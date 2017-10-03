@@ -7,11 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package discovery
 
 import (
-	"fmt"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/pkg/errors"
 )
 
 /**
@@ -40,7 +39,7 @@ func (dp *StaticDiscoveryProvider) NewDiscoveryService(channel apifabclient.Chan
 
 	peerConfig, err := dp.config.ChannelPeers(channel.Name())
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read configuration for channel(%s) peers: %s", channel.Name(), err)
+		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
 	}
 
 	peers := []apifabclient.Peer{}
@@ -53,7 +52,7 @@ func (dp *StaticDiscoveryProvider) NewDiscoveryService(channel apifabclient.Chan
 		}
 		peer, err := peer.NewPeerTLSFromCert(p.URL, p.TLSCACerts.Path, serverHostOverride, dp.config)
 		if err != nil {
-			return nil, fmt.Errorf("NewPeer return error: %v", err)
+			return nil, errors.WithMessage(err, "NewPeer failed")
 		}
 		peers = append(peers, peer)
 	}
