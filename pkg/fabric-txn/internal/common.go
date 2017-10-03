@@ -7,12 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package internal
 
 import (
-	"fmt"
-
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -35,9 +34,10 @@ func CreateAndSendTransactionProposal(sender apitxn.ProposalSender, chainCodeID 
 
 	for _, v := range transactionProposalResponses {
 		if v.Err != nil {
-			return nil, request.TxnID, fmt.Errorf("invoke Endorser %s returned error: %v", v.Endorser, v.Err)
+			logger.Debugf("SendTransactionProposal failed (%v)", v.Endorser)
+			return nil, request.TxnID, errors.Wrap(v.Err, "SendTransactionProposal failed")
 		}
-		logger.Debugf("invoke Endorser '%s' returned ProposalResponse status:%v\n", v.Endorser, v.Status)
+		logger.Debugf("invoke Endorser '%s' returned ProposalResponse status:%v", v.Endorser, v.Status)
 	}
 
 	return transactionProposalResponses, txnID, nil
@@ -48,16 +48,17 @@ func CreateAndSendTransaction(sender apitxn.Sender, resps []*apitxn.TransactionP
 
 	tx, err := sender.CreateTransaction(resps)
 	if err != nil {
-		return nil, fmt.Errorf("CreateTransaction returned error: %v", err)
+		return nil, errors.WithMessage(err, "CreateTransaction failed")
 	}
 
 	transactionResponse, err := sender.SendTransaction(tx)
 	if err != nil {
-		return nil, fmt.Errorf("SendTransaction returned error: %v", err)
+		return nil, errors.WithMessage(err, "SendTransaction failed")
 
 	}
 	if transactionResponse.Err != nil {
-		return nil, fmt.Errorf("Orderer %s returned error: %v", transactionResponse.Orderer, transactionResponse.Err)
+		logger.Debugf("orderer %s failed", transactionResponse.Orderer)
+		return nil, errors.Wrap(transactionResponse.Err, "orderer failed")
 	}
 
 	return transactionResponse, nil

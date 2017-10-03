@@ -7,14 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package defprovider
 
 import (
-	"fmt"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+	"github.com/pkg/errors"
 )
 
 // OrgClientFactory represents the default org provider factory.
@@ -30,7 +29,7 @@ func NewOrgClientFactory() *OrgClientFactory {
 func (f *OrgClientFactory) NewMSPClient(orgName string, config apiconfig.Config) (fabca.FabricCAClient, error) {
 	mspClient, err := fabricCAClient.NewFabricCAClient(config, orgName)
 	if err != nil {
-		return nil, fmt.Errorf("NewFabricCAClient returned error: %v", err)
+		return nil, errors.WithMessage(err, "NewFabricCAClient failed")
 	}
 
 	return mspClient, nil
@@ -41,7 +40,7 @@ func (f *OrgClientFactory) NewCredentialManager(orgName string, config apiconfig
 
 	credentialMgr, err := credentialMgr.NewCredentialManager(orgName, config, cryptoProvider)
 	if err != nil {
-		return nil, fmt.Errorf("NewCredentialManager returned error: %v", err)
+		return nil, errors.WithMessage(err, "NewCredentialManager failed")
 	}
 
 	return credentialMgr, nil

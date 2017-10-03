@@ -7,11 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package orgs
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
+	"github.com/pkg/errors"
 
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -269,7 +269,7 @@ func loadOrgUser(t *testing.T, sdk *deffab.FabricSDK, orgName string, userName s
 
 	user, err := sdk.NewPreEnrolledUser(orgName, userName)
 	if err != nil {
-		t.Fatal(fmt.Errorf("Error getting pre-enrolled user(%s,%s): %v", orgName, userName, err))
+		t.Fatal(errors.Wrapf(err, "NewPreEnrolledUser failed (%s,%s): %v", orgName, userName))
 	}
 
 	return user
