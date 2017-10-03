@@ -14,6 +14,7 @@ import (
 	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	fabric_ca "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 )
@@ -45,10 +46,14 @@ func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 		return nil, err
 	}
 
+	if conf == nil {
+		return nil, fmt.Errorf("Orgnization %s have no corresponding CA in the configs", org)
+	}
+
 	//set server CAName
 	c.Config.CAName = conf.CAName
 	//set server URL
-	c.Config.URL = conf.URL
+	c.Config.URL = urlutil.GetReadyURL(conf.URL)
 	//certs file list
 	c.Config.TLS.CertFiles, err = config.CAServerCertFiles(org)
 	if err != nil {
@@ -73,7 +78,7 @@ func NewFabricCAClient(config config.Config, org string) (*FabricCA, error) {
 	}
 
 	//TLS flag enabled/disabled
-	c.Config.TLS.Enabled = config.IsTLSEnabled()
+	c.Config.TLS.Enabled = urlutil.IsTLSEnabled(conf.URL)
 	c.Config.MSPDir = config.CAKeyStorePath()
 	c.Config.CSP = config.CSPConfig()
 
