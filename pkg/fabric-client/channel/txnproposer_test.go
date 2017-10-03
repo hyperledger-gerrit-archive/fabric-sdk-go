@@ -6,14 +6,15 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"fmt"
 	"net"
 	"reflect"
+	"strings"
 	"testing"
 
 	"google.golang.org/grpc"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
@@ -146,7 +147,7 @@ func TestJoinChannel(t *testing.T) {
 	}
 
 	// Test failed proposal error handling
-	endorserServer.ProposalError = fmt.Errorf("Test Error")
+	endorserServer.ProposalError = errors.New("Test Error")
 	request = &fab.JoinChannelRequest{
 		Targets: peers,
 		TxnID:   txid,
@@ -165,7 +166,7 @@ func TestAddPeerDuplicateCheck(t *testing.T) {
 
 	err := channel.AddPeer(&peer)
 
-	if err == nil || err.Error() != "Peer with URL http://peer1.com already exists" {
+	if err == nil || !strings.Contains(err.Error(), "http://peer1.com already exists") {
 		t.Fatal("Duplicate Peer check is not working as expected")
 	}
 }

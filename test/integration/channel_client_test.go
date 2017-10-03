@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package integration
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/pkg/errors"
 )
 
 func TestChannelClient(t *testing.T) {
@@ -159,7 +159,7 @@ func testCommitError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
 	txNotifier := make(chan apitxn.ExecuteTxResponse)
 
-	txFilter := &TestTxFilter{errResponses: fmt.Errorf("Error")}
+	txFilter := &TestTxFilter{errResponses: errors.New("Error")}
 	txOpts := apitxn.ExecuteTxOpts{Notifier: txNotifier, TxFilter: txFilter}
 
 	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: txArgs}, txOpts)
@@ -179,7 +179,7 @@ func testCommitError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
 func testFilterError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
-	txFilter := &TestTxFilter{err: fmt.Errorf("Error")}
+	txFilter := &TestTxFilter{err: errors.New("Error")}
 	txOpts := apitxn.ExecuteTxOpts{TxFilter: txFilter}
 
 	_, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: txArgs}, txOpts)
