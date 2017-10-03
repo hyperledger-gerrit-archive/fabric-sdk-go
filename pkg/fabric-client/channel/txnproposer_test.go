@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"strings"
 	"testing"
 
 	"google.golang.org/grpc"
@@ -165,7 +166,7 @@ func TestAddPeerDuplicateCheck(t *testing.T) {
 
 	err := channel.AddPeer(&peer)
 
-	if err == nil || err.Error() != "Peer with URL http://peer1.com already exists" {
+	if err == nil || !strings.Contains(err.Error(), "http://peer1.com already exists") {
 		t.Fatal("Duplicate Peer check is not working as expected")
 	}
 }

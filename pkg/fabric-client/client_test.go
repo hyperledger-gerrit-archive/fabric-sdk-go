@@ -48,12 +48,12 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("client.LoadUserFromStateStore should return nil user")
 	}
 
-	//Client tests: Should return error "user is nil"
+	//Client tests: Should return error "user required"
 	err = client.SaveUserToStateStore(nil, false)
 	if err == nil {
 		t.Fatalf("client.SaveUserToStateStore didn't return error")
 	}
-	if err.Error() != "user is nil" {
+	if err.Error() != "user required" {
 		t.Fatalf("client.SaveUserToStateStore didn't return right error")
 	}
 
