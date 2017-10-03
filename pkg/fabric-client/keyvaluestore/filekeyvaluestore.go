@@ -7,12 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package keyvaluestore
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/pkg/errors"
+
 	utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/utils"
 )
 
@@ -26,7 +27,7 @@ type FileKeyValueStore struct {
 // CreateNewFileKeyValueStore ...
 func CreateNewFileKeyValueStore(path string) (*FileKeyValueStore, error) {
 	if len(path) == 0 {
-		return nil, fmt.Errorf("FileKeyValueStore path is empty")
+		return nil, errors.New("FileKeyValueStore path is empty")
 	}
 	createDirIfNotExists(path)
 	return &FileKeyValueStore{path: path}, nil

@@ -7,9 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package logging
 
 import (
-	"errors"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 // ErrInvalidLogLevel is used when an invalid log level has been used.
