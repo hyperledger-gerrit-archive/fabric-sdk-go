@@ -10,11 +10,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 // peerEndorser enables access to a GRPC-based endorser for running transaction proposal simulations
@@ -34,7 +36,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 	dialBlocking bool, config apiconfig.Config) (
 	peerEndorser, error) {
 	if len(target) == 0 {
-		return peerEndorser{}, fmt.Errorf("Target is required")
+		return peerEndorser{}, errors.New("target is required")
 	}
 
 	// Construct dialer options for the connection
@@ -47,7 +49,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 	if config.IsTLSEnabled() {
 		certPool, _ := config.TLSCACertPool("")
 		if len(certificate) == 0 && len(certPool.Subjects()) == 0 {
-			return peerEndorser{}, fmt.Errorf("Certificate is required")
+			return peerEndorser{}, errors.New("certificate is required")
 		}
 
 		tlsCaCertPool, err := config.TLSCACertPool(certificate)

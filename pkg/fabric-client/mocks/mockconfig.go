@@ -10,12 +10,11 @@ import (
 	"crypto/x509"
 	"time"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-
-	"fmt"
-
-	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/spf13/viper"
+
+	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // MockConfig ...
@@ -88,7 +87,7 @@ func (c *MockConfig) IsTLSEnabled() bool {
 // TLSCACertPool ...
 func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error) {
 	if c.errorCase {
-		return nil, fmt.Errorf("just to test error scenario")
+		return nil, errors.New("just to test error scenario")
 	}
 	return nil, nil
 }
