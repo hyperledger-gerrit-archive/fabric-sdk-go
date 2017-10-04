@@ -33,8 +33,8 @@ FABRIC_SDK_EXPERIMENTAL  ?= true
 FABRIC_SDK_EXTRA_GO_TAGS ?=
 
 # Fabric tool versions (overridable)
-FABRIC_TOOLS_VERSION ?= 1.0.1
-FABRIC_BASE_VERSION  ?= 0.3.1
+FABRIC_TOOLS_VERSION ?= 1.0.3
+FABRIC_BASE_VERSION  ?= 0.4.2
 
 # Fabric base docker image (overridable)
 FABRIC_BASE_IMAGE   ?= hyperledger/fabric-baseimage
