@@ -15,11 +15,18 @@ import (
 func TestNewDefaultSDK(t *testing.T) {
 
 	setup := Options{
-		ConfigFile: "../../test/fixtures/config/config_test.yaml",
+		ConfigFile: "../../test/fixtures/config/invalid.yaml",
 		StateStoreOpts: opt.StateStoreOpts{
 			Path: "/tmp/state",
 		},
 	}
+
+	_, err := NewSDK(setup)
+	if err == nil {
+		t.Fatalf("Should have failed for invalid config file")
+	}
+
+	setup.ConfigFile = "../../test/fixtures/config/config_test.yaml"
 
 	sdk, err := NewSDK(setup)
 	if err != nil {
