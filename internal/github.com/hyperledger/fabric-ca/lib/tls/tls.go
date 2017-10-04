@@ -34,14 +34,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
 )
 
-// ServerTLSConfig defines key material for a TLS server
-type ServerTLSConfig struct {
-	Enabled    bool   `help:"Enable TLS on the listening port"`
-	CertFile   string `def:"ca-cert.pem" help:"PEM-encoded TLS certificate file for server's listening port"`
-	KeyFile    string `def:"ca-key.pem" help:"PEM-encoded TLS key for server's listening port"`
-	ClientAuth ClientAuth
-}
-
 // ClientAuth defines the key material needed to verify client certificates
 type ClientAuth struct {
 	Type      string   `def:"noclientcert" help:"Policy the server will follow for TLS Client Authentication."`
@@ -130,31 +122,6 @@ func AbsTLSClient(cfg *ClientTLSConfig, configDir string) error {
 	}
 
 	cfg.Client.KeyFile, err = util.MakeFileAbs(cfg.Client.KeyFile, configDir)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// AbsTLSServer makes TLS client files absolute
-func AbsTLSServer(cfg *ServerTLSConfig, configDir string) error {
-	var err error
-
-	for i := 0; i < len(cfg.ClientAuth.CertFiles); i++ {
-		cfg.ClientAuth.CertFiles[i], err = util.MakeFileAbs(cfg.ClientAuth.CertFiles[i], configDir)
-		if err != nil {
-			return err
-		}
-
-	}
-
-	cfg.CertFile, err = util.MakeFileAbs(cfg.CertFile, configDir)
-	if err != nil {
-		return err
-	}
-
-	cfg.KeyFile, err = util.MakeFileAbs(cfg.KeyFile, configDir)
 	if err != nil {
 		return err
 	}
