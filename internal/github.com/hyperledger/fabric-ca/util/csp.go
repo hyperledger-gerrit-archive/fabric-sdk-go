@@ -32,15 +32,9 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
-	_ "time" // for ocspSignerFromConfig
 
-	_ "github.com/cloudflare/cfssl/cli" // for ocspSignerFromConfig
-	"github.com/cloudflare/cfssl/config"
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/cloudflare/cfssl/helpers"
-	_ "github.com/cloudflare/cfssl/ocsp" // for ocspSignerFromConfig
-	"github.com/cloudflare/cfssl/signer"
-	"github.com/cloudflare/cfssl/signer/local"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
@@ -139,35 +133,6 @@ func makeFileNamesAbsolute(opts *factory.FactoryOpts, homeDir string) error {
 		fks.KeyStorePath, err = MakeFileAbs(fks.KeyStorePath, homeDir)
 	}
 	return err
-}
-
-// BccspBackedSigner attempts to create a signer using csp bccsp.BCCSP. This csp could be SW (golang crypto)
-// PKCS11 or whatever BCCSP-conformant library is configured
-func BccspBackedSigner(caFile, keyFile string, policy *config.Signing, csp bccsp.BCCSP) (signer.Signer, error) {
-	_, cspSigner, parsedCa, err := GetSignerFromCertFile(caFile, csp)
-	if err != nil {
-		// Fallback: attempt to read out of keyFile and import
-		log.Debugf("No key found in BCCSP keystore, attempting fallback")
-		var key bccsp.Key
-		var signer crypto.Signer
-
-		key, err = ImportBCCSPKeyFromPEM(keyFile, csp, false)
-		if err != nil {
-			return nil, fmt.Errorf("Could not find the private key in BCCSP keystore nor in keyfile %s: %s", keyFile, err)
-		}
-
-		signer, err = cspsigner.New(csp, key)
-		if err != nil {
-			return nil, fmt.Errorf("Failed initializing CryptoSigner: %s", err)
-		}
-		cspSigner = signer
-	}
-
-	signer, err := local.NewSigner(cspSigner, parsedCa, signer.DefaultSigAlgo(cspSigner), policy)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create new signer: %s", err.Error())
-	}
-	return signer, nil
 }
 
 // getBCCSPKeyOpts generates a key as specified in the request.
