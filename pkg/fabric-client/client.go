@@ -445,7 +445,7 @@ func (c *Client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) 
 		return nil, fmt.Errorf("QueryChannels requires peer")
 	}
 
-	payload, err := c.queryBySystemChaincodeByTarget("cscc", "GetChannels", []string{}, peer)
+	payload, err := c.queryBySystemChaincodeByTarget("cscc", "GetChannels", [][]byte{}, peer)
 	if err != nil {
 		return nil, fmt.Errorf("QueryBySystemChaincodeByTarget return error: %v", err)
 	}
@@ -465,7 +465,7 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 	if peer == nil {
 		return nil, fmt.Errorf("To query installed chaincdes you need to pass peer")
 	}
-	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getinstalledchaincodes", []string{}, peer)
+	payload, err := c.queryBySystemChaincodeByTarget("lscc", "getinstalledchaincodes", [][]byte{}, peer)
 	if err != nil {
 		return nil, fmt.Errorf("Invoke lscc getinstalledchaincodes return error: %v", err)
 	}
@@ -589,7 +589,7 @@ func (c *Client) NewTxnID() (apitxn.TransactionID, error) {
 	return txnID, nil
 }
 
-func (c *Client) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args []string, target apitxn.ProposalProcessor) ([]byte, error) {
+func (c *Client) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target apitxn.ProposalProcessor) ([]byte, error) {
 	targets := []apitxn.ProposalProcessor{target}
 	request := apitxn.ChaincodeInvokeRequest{
 		ChaincodeID: chaincodeID,
