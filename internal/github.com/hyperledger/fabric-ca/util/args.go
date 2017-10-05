@@ -21,7 +21,6 @@ Please review third_party pinning scripts and patches for more details.
 package util
 
 import (
-	"fmt"
 	"os"
 )
 
@@ -54,29 +53,6 @@ func GetCommandLineOptValue(optName string, remove bool) string {
 	return ""
 }
 
-// GetServerURL returns the server's URL
-func GetServerURL() string {
-	return fmt.Sprintf("%s://%s:%s", GetServerProtocol(), GetServerAddr(), GetServerPort())
-}
-
-// GetServerProtocol returns the server's protocol
-func GetServerProtocol() string {
-	protocol := GetCommandLineOptValue("-protocol", false)
-	if protocol != "" {
-		return protocol
-	}
-	return defaultServerProtocol
-}
-
-// GetServerAddr returns the server's address
-func GetServerAddr() string {
-	addr := GetCommandLineOptValue("-address", false)
-	if addr != "" {
-		return addr
-	}
-	return defaultServerAddr
-}
-
 // GetServerPort returns the server's listening port
 func GetServerPort() string {
 	port := GetCommandLineOptValue("-port", false)
@@ -84,13 +60,4 @@ func GetServerPort() string {
 		return port
 	}
 	return defaultServerPort
-}
-
-// SetDefaultServerPort overrides the default CFSSL server port
-// by adding the "-port" option to the command line if it was not
-// already present.
-func SetDefaultServerPort() {
-	if len(os.Args) > 2 && GetCommandLineOptValue("-port", false) == "" {
-		os.Args = append(os.Args, "-port", defaultServerPort)
-	}
 }

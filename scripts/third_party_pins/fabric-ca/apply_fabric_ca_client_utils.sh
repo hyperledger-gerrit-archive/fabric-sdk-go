@@ -12,12 +12,12 @@
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 GOIMPORTS_CMD=goimports
+GOFILTER_CMD="go run scripts/_go/cmd/gofilter/gofilter.go"
 
 declare -a PKGS=(
     "api"
     "lib"
     "lib/tls"
-    "lib/spi"
     "lib/logbridge"
     "util"
 )
@@ -35,17 +35,12 @@ declare -a FILES=(
 
     "lib/tls/tls.go"
 
-    "lib/spi/affiliation.go"
-    "lib/spi/userregistry.go"
-
     "lib/logbridge/logbridge.go"
     "lib/logbridge/syslogwriter.go"
 
     "util/util.go"
-    "util/args.go"
     "util/csp.go"
-    "util/struct.go"
-    "util/flag.go"
+    "util/args.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
@@ -57,6 +52,39 @@ for i in "${PKGS[@]}"
 do
     mkdir -p $INTERNAL_PATH/${i}
 done
+
+# Apply fine-grained patching
+gofilter() {
+    echo "Filtering: ${FILTER_FILENAME}"
+    cp ${TMP_PROJECT_PATH}/${FILTER_FILENAME} ${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak
+    $GOFILTER_CMD -filename "${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak" \
+        -fn "$FILTER_FN" \
+        > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+} 
+
+echo "Filtering Go sources for allowed functions ..."
+FILTER_FILENAME="lib/client.go"
+FILTER_FN=Enroll,GenCSR,SendReq,Init,newPost,newEnrollmentResponse,newCertificateRequest,getURL,StoreMyIdentity,NormalizeURL,initHTTPClient,net2LocalServerInfo,NewIdentity
+gofilter
+
+FILTER_FILENAME="lib/util.go"
+FILTER_FN=GetCertID,BytesToX509Cert
+gofilter
+
+FILTER_FILENAME="util/args.go"
+FILTER_FN=GetServerPort,GetCommandLineOptValue
+gofilter
+
+FILTER_FILENAME="util/csp.go"
+FILTER_FN=GetDefaultBCCSP,InitBCCSP,ConfigureBCCSP,GetBCCSP,makeFileNamesAbsolute,getBCCSPKeyOpts,ImportBCCSPKeyFromPEM,LoadX509KeyPair,GetSignerFromCert,BCCSPKeyRequestGenerate,GetSignerFromCertFile
+gofilter
+sed -i '' -e '/_.\"time\"/d' $FILTER_FILENAME
+sed -i '' -e '/\"github.com\/cloudflare\/cfssl\/cli\"/d' $FILTER_FILENAME
+sed -i '' -e '/\"github.com\/cloudflare\/cfssl\/ocsp\"/d' $FILTER_FILENAME
+
+FILTER_FILENAME="util/util.go"
+FILTER_FN=ReadFile,WriteFile,GenECDSAToken,B64Encode,B64Decode,HTTPRequestToString,HTTPResponseToString,GetX509CertificateFromPEM,GetEnrollmentIDFromPEM,GetSerialAsHex,MakeFileAbs,GetEnrollmentIDFromX509Certificate,Marshal,Unmarshal,StructToString,FileExists,GetServerPort,LoadX509KeyPair,CreateToken
+gofilter
 
 # Apply patching
 echo "Patching import paths on upstream project ..."
