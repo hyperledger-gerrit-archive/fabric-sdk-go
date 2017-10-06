@@ -46,6 +46,7 @@ cd $CWD
 # fabric client utils
 echo "Pinning and patching fabric client utils..."
 declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
+    's/[[:space:]]logging[[:space:]]\"github.com/\"github.com/g'
     's/\"github.com\/pkg\/errors/\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/errors/g'
     's/\"github.com\/hyperledger\/fabric\/common\/flogging/flogging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/common\/logbridge/g'
     's/\"github.com\/op\/go-logging/logging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/common\/logbridge/g'
