@@ -43,8 +43,9 @@ declare -a FILES=(
 
     "common/channelconfig/applicationorg.go"
     "common/channelconfig/channel.go"
-    "common/channelconfig/msp_util.go"
+    "common/channelconfig/util.go"
     "common/channelconfig/orderer.go"
+    "common/channelconfig/organization.go"
     
     "sdkpatch/logbridge/logbridge.go"
 
@@ -111,11 +112,15 @@ FILTER_FILENAME="common/channelconfig/channel.go"
 FILTER_FN=
 gofilter
 
-FILTER_FILENAME="common/channelconfig/msp_util.go"
+FILTER_FILENAME="common/channelconfig/util.go"
 FILTER_FN=
 gofilter
 
 FILTER_FILENAME="common/channelconfig/orderer.go"
+FILTER_FN=
+gofilter
+
+FILTER_FILENAME="common/channelconfig/organization.go"
 FILTER_FN=
 gofilter
 
@@ -166,11 +171,14 @@ FILTER_FN+=",getValidationChain,validateCertAgainstChain,GetSigningIdentity,getS
 FILTER_FN+=",getAuthorityKeyIdentifierFromCrl,GetTLSIntermediateCerts,GetTLSRootCerts,GetType,Setup,setupCrypto"
 FILTER_FN+=",setupCAs,setupAdmins,setupCRLs,finalizeSetupCAs,setupSigningIdentity,setupOUs,setupTLSCAs"
 FILTER_FN+=",getCertFromPem,getIdentityFromConf,isCACert,validateCAIdentity,getSigningIdentityFromConf"
-FILTER_FN+=",validateTLSCAIdentity,NewBccspMsp"
+FILTER_FN+=",validateTLSCAIdentity,newBccspMsp,IsWellFormed"
 gofilter
+# TODO - adapt to msp/factory.go rather than changing newBccspMsp
+sed -i'' -e 's/newBccspMsp/NewBccspMsp/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
 
 FILTER_FILENAME="msp/mspmgrimpl.go"
-FILTER_FN="NewMSPManager,DeserializeIdentity,GetMSPs,Setup"
+FILTER_FN="NewMSPManager,DeserializeIdentity,GetMSPs,Setup,IsWellFormed"
 gofilter
 
 FILTER_FILENAME="msp/cache/cache.go"
@@ -193,10 +201,13 @@ gofilter
 FILTER_FILENAME="common/channelconfig/channel.go"
 gofilter
 
-FILTER_FILENAME="common/channelconfig/msp_util.go"
+FILTER_FILENAME="common/channelconfig/util.go"
 gofilter
 
 FILTER_FILENAME="common/channelconfig/orderer.go"
+gofilter
+
+FILTER_FILENAME="common/channelconfig/organization.go"
 gofilter
 
 # Apply patching

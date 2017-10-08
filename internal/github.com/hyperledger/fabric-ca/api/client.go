@@ -21,7 +21,10 @@ Please review third_party pinning scripts and patches for more details.
 package api
 
 import (
+	"time"
+
 	"github.com/cloudflare/cfssl/csr"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 )
 
 // RegistrationRequest for a new identity
@@ -33,7 +36,7 @@ type RegistrationRequest struct {
 	// Secret is an optional password.  If not specified,
 	// a random secret is generated.  In both cases, the secret
 	// is returned in the RegistrationResponse.
-	Secret string `json:"secret,omitempty" secret:"password" help:"The enrollment secret for the identity being registered"`
+	Secret string `json:"secret,omitempty" mask:"password" help:"The enrollment secret for the identity being registered"`
 	// MaxEnrollments is the maximum number of times the secret can
 	// be reused to enroll.
 	MaxEnrollments int `json:"max_enrollments,omitempty" def:"-1" help:"The maximum number of times the secret can be reused to enroll."`
@@ -47,6 +50,10 @@ type RegistrationRequest struct {
 	CAName string `json:"caname,omitempty" skip:"true"`
 }
 
+func (rr *RegistrationRequest) String() string {
+	return util.StructToString(rr)
+}
+
 // RegistrationResponse is a registration response
 type RegistrationResponse struct {
 	// The secret returned from a successful registration response
@@ -58,7 +65,7 @@ type EnrollmentRequest struct {
 	// The identity name to enroll
 	Name string `json:"name" skip:"true"`
 	// The secret returned via Register
-	Secret string `json:"secret,omitempty" skip:"true"`
+	Secret string `json:"secret,omitempty" skip:"true" mask:"password"`
 	// Profile is the name of the signing profile to use in issuing the certificate
 	Profile string `json:"profile,omitempty" help:"Name of the signing profile to use in issuing the certificate"`
 	// Label is the label to use in HSM operations
@@ -70,6 +77,10 @@ type EnrollmentRequest struct {
 	// AttrReqs are requests for attributes to add to the certificate.
 	// Each attribute is added only if the requestor owns the attribute.
 	AttrReqs []*AttributeRequest `json:"attr_reqs,omitempty"`
+}
+
+func (er EnrollmentRequest) String() string {
+	return util.StructToString(&er)
 }
 
 // ReenrollmentRequest is a request to reenroll an identity.
@@ -113,6 +124,20 @@ type RevocationRequest struct {
 // GetCAInfoRequest is request to get generic CA information
 type GetCAInfoRequest struct {
 	CAName string `json:"caname,omitempty" skip:"true"`
+}
+
+// GenCRLRequest represents a request to get CRL for the specified certificate authority
+type GenCRLRequest struct {
+	CAName        string    `json:"caname,omitempty" skip:"true"`
+	RevokedAfter  time.Time `json:"revokedafter,omitempty"`
+	RevokedBefore time.Time `json:"revokedbefore,omitempty"`
+	ExpireAfter   time.Time `json:"expireafter,omitempty"`
+	ExpireBefore  time.Time `json:"expirebefore,omitempty"`
+}
+
+// GenCRLResponse represents a response to get CRL
+type GenCRLResponse struct {
+	CRL string
 }
 
 // CSRInfo is Certificate Signing Request (CSR) Information
