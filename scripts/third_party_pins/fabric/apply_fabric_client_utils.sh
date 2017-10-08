@@ -25,8 +25,6 @@ declare -a PKGS=(
 
     "sdkpatch/logbridge"
 
-    "core/comm"
-    "core/config"
     "core/ledger/kvledger/txmgmt/rwsetutil"
     "core/ledger/kvledger/txmgmt/version"
     "core/ledger/util"
@@ -69,11 +67,6 @@ declare -a FILES=(
     "msp/mspmgrimpl.go"
     "msp/cache/cache.go"
     "msp/mgmt/mgmt.go"
-
-    "core/comm/config.go"
-    "core/comm/connection.go"
-
-    "core/config/config.go"
 
     "common/ledger/util/util.go"
 )
@@ -200,18 +193,6 @@ gofilter
     
 FILTER_FILENAME="msp/mgmt/mgmt.go"
 FILTER_FN="GetLocalMSP"
-gofilter
-
-FILTER_FILENAME="core/comm/config.go"
-FILTER_FN="MaxRecvMsgSize,MaxSendMsgSize,TLSEnabled,cacheConfiguration"
-gofilter
-
-FILTER_FILENAME="core/comm/connection.go"
-FILTER_FN="InitTLSForPeer,NewClientConnectionWithAddress"
-gofilter
-
-FILTER_FILENAME="core/config/config.go"
-FILTER_FN="GetPath,TranslatePath"
 gofilter
 
 FILTER_FILENAME="common/ledger/util/util.go"
