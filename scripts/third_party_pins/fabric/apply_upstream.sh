@@ -12,7 +12,7 @@
 set -e
 
 UPSTREAM_PROJECT="github.com/hyperledger/fabric"
-UPSTREAM_BRANCH="master"
+UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-release}"
 SCRIPTS_PATH="scripts/third_party_pins/fabric"
 PATCHES_PATH="${SCRIPTS_PATH}/patches"
 
@@ -42,6 +42,8 @@ echo "Patching upstream project ..."
 git am ${CWD}/${PATCHES_PATH}/*
 
 cd $CWD
+
+eval "TMP_PROJECT_PATH=$TMP_PROJECT_PATH $SCRIPTS_PATH/apply_cherrypick.sh"
 
 # fabric client utils
 echo "Pinning and patching fabric client utils..."
