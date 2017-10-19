@@ -23,7 +23,6 @@ declare -a FILES=(
     "protos/utils/commonutils.go"
     "protos/utils/proputils.go"
     "protos/utils/txutils.go"
-    "protos/orderer/ab.pb.go"
 )
 
 declare -a NPBFILES=(
@@ -33,7 +32,7 @@ declare -a NPBFILES=(
 )
 
 declare -a PBFILES=(
-    "protos/orderer/ab.pb.go"
+
 )
 
 #echo 'Removing current upstream project from working directory ...'

@@ -21,10 +21,12 @@ declare -a PKGS=(
 
     "protos/ledger/rwset"
     "protos/ledger/rwset/kvrwset"
+    "protos/ledger/queryresult"
     "protos/orderer"
 )
 
 declare -a FILES=(
+    "protos/common/block.go"
     "protos/common/common.pb.go"
     "protos/common/configtx.pb.go"
     "protos/common/configuration.pb.go"
@@ -33,6 +35,7 @@ declare -a FILES=(
 
     "protos/peer/chaincode.pb.go"
     "protos/peer/chaincode_event.pb.go"
+    "protos/peer/chaincode_shim.pb.go"
     "protos/peer/configuration.pb.go"
     "protos/peer/events.pb.go"
     "protos/peer/peer.pb.go"
@@ -49,7 +52,10 @@ declare -a FILES=(
     "protos/ledger/rwset/rwset.pb.go"
     "protos/ledger/rwset/kvrwset/kv_rwset.pb.go"
 
+    "protos/ledger/queryresult/kv_query_result.pb.go"
+
     "protos/orderer/configuration.pb.go"
+    "protos/orderer/ab.pb.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
