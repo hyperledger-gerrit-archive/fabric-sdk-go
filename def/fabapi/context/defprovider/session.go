@@ -59,12 +59,22 @@ func (f *SessionClientFactory) NewChannelClient(sdk context.SDK, session context
 		return nil, errors.WithMessage(err, "create discovery service failed")
 	}
 
+	ccPolicy, err := sdk.CCPolicyProvider().NewCCPolicyService(client)
+	if err != nil {
+		return nil, errors.WithMessage(err, "create cc policy provider failed")
+	}
+
+	selection, err := sdk.SelectionProvider().NewSelectionService(ccPolicy)
+	if err != nil {
+		return nil, errors.WithMessage(err, "create selection service failed")
+	}
+
 	eventHub, err := getEventHub(client, channelName, session)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getEventHub failed")
 	}
 
-	return chImpl.NewChannelClient(client, channel, discovery, eventHub)
+	return chImpl.NewChannelClient(client, channel, discovery, selection, eventHub)
 }
 
 // getChannel is helper method to initializes and returns a channel based on config
