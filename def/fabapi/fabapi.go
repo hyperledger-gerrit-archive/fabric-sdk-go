@@ -46,6 +46,8 @@ type FabricSDK struct {
 	stateStore        apifabclient.KeyValueStore
 	cryptoSuite       bccsp.BCCSP // TODO - maybe copy this interface into the API package
 	discoveryProvider apifabclient.DiscoveryProvider
+	ccPolicyProvider  apifabclient.CCPolicyProvider
+	selectionProvider apifabclient.SelectionProvider
 	signingManager    apifabclient.SigningManager
 }
 
@@ -105,6 +107,20 @@ func NewSDK(options Options) (*FabricSDK, error) {
 	}
 	sdk.discoveryProvider = discoveryProvider
 
+	// Initialize cc policy provider (required by selection provider)
+	ccPolicyProvider, err := sdk.ProviderFactory.NewCCPolicyProvider(sdk.configProvider)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to initialize chaincode policy provider")
+	}
+	sdk.ccPolicyProvider = ccPolicyProvider
+
+	// Initialize selection provider (for selecting endorsing peers)
+	selectionProvider, err := sdk.ProviderFactory.NewSelectionProvider(sdk.configProvider)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to initialize selection provider")
+	}
+	sdk.selectionProvider = selectionProvider
+
 	// Initialize Signing Manager
 	signingMgr, err := sdk.ProviderFactory.NewSigningManager(sdk.CryptoSuiteProvider(), sdk.configProvider)
 	if err != nil {
@@ -133,6 +149,16 @@ func (sdk *FabricSDK) StateStoreProvider() apifabclient.KeyValueStore {
 // DiscoveryProvider returns discovery provider
 func (sdk *FabricSDK) DiscoveryProvider() apifabclient.DiscoveryProvider {
 	return sdk.discoveryProvider
+}
+
+// SelectionProvider returns selection provider
+func (sdk *FabricSDK) SelectionProvider() apifabclient.SelectionProvider {
+	return sdk.selectionProvider
+}
+
+// CCPolicyProvider returns policy provider
+func (sdk *FabricSDK) CCPolicyProvider() apifabclient.CCPolicyProvider {
+	return sdk.ccPolicyProvider
 }
 
 // SigningManager returns signing manager

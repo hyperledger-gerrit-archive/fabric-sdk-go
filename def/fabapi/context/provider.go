@@ -23,6 +23,8 @@ type SDKProviderFactory interface {
 	NewCryptoSuiteProvider(config *bccspFactory.FactoryOpts) (bccsp.BCCSP, error)
 	NewSigningManager(cryptoProvider bccsp.BCCSP, config apiconfig.Config) (fab.SigningManager, error)
 	NewDiscoveryProvider(config apiconfig.Config) (fab.DiscoveryProvider, error)
+	NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error)
+	NewCCPolicyProvider(config apiconfig.Config) (fab.CCPolicyProvider, error)
 }
 
 // OrgClientFactory allows overriding default clients and providers of an organization

@@ -13,5 +13,5 @@ type DiscoveryProvider interface {
 
 // DiscoveryService is used to discover eligible peers on specific channel
 type DiscoveryService interface {
-	GetPeers(chaincodeID string) ([]Peer, error)
+	GetPeers() ([]Peer, error)
 }
