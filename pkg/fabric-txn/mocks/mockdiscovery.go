@@ -38,7 +38,7 @@ func (dp *MockStaticDiscoveryProvider) NewDiscoveryService(channel apifabclient.
 }
 
 // GetPeers is used to discover eligible peers for chaincode
-func (ds *MockStaticDiscoveryService) GetPeers(chaincodeID string) ([]apifabclient.Peer, error) {
+func (ds *MockStaticDiscoveryService) GetPeers() ([]apifabclient.Peer, error) {
 
 	if ds.Error != nil {
 		return nil, ds.Error

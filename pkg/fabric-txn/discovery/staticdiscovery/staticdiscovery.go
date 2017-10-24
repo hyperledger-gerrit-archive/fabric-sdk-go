@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package discovery
+package staticdiscovery
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -18,25 +18,25 @@ import (
  * Discovery Provider is used to discover peers on the network
  */
 
-// StaticDiscoveryProvider implements discovery provider
-type StaticDiscoveryProvider struct {
+// DiscoveryProvider implements discovery provider
+type DiscoveryProvider struct {
 	config apiconfig.Config
 }
 
-// StaticDiscoveryService implements discovery service
-type StaticDiscoveryService struct {
+// discoveryService implements discovery service
+type discoveryService struct {
 	config  apiconfig.Config
 	channel apifabclient.Channel
 	peers   []apifabclient.Peer
 }
 
 // NewDiscoveryProvider returns discovery provider
-func NewDiscoveryProvider(config apiconfig.Config) (*StaticDiscoveryProvider, error) {
-	return &StaticDiscoveryProvider{config: config}, nil
+func NewDiscoveryProvider(config apiconfig.Config) (*DiscoveryProvider, error) {
+	return &DiscoveryProvider{config: config}, nil
 }
 
 // NewDiscoveryService return discovery service for specific channel
-func (dp *StaticDiscoveryProvider) NewDiscoveryService(channel apifabclient.Channel) (apifabclient.DiscoveryService, error) {
+func (dp *DiscoveryProvider) NewDiscoveryService(channel apifabclient.Channel) (apifabclient.DiscoveryService, error) {
 
 	peerConfig, err := dp.config.ChannelPeers(channel.Name())
 	if err != nil {
@@ -53,18 +53,20 @@ func (dp *StaticDiscoveryProvider) NewDiscoveryService(channel apifabclient.Chan
 		}
 
 		newPeer, err := peer.NewPeerTLSFromCert(p.URL, p.TLSCACerts.Path, serverHostOverride, dp.config)
-
 		if err != nil || newPeer == nil {
 			return nil, errors.WithMessage(err, "NewPeer failed")
 		}
+
+		newPeer.SetMSPID(p.MspID)
+
 		peers = append(peers, newPeer)
 	}
 
-	return &StaticDiscoveryService{channel: channel, config: dp.config, peers: peers}, nil
+	return &discoveryService{channel: channel, config: dp.config, peers: peers}, nil
 }
 
-// GetPeers is used to discover eligible peers for chaincode
-func (ds *StaticDiscoveryService) GetPeers(chaincodeID string) ([]apifabclient.Peer, error) {
-	// TODO: Incorporate CC policy here
+// GetPeers is used to get peers (discovery service is channel based)
+func (ds *discoveryService) GetPeers() ([]apifabclient.Peer, error) {
+
 	return ds.peers, nil
 }

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package discovery
+package staticdiscovery
 
 import (
 	"testing"
@@ -26,7 +26,7 @@ func TestDiscovery(t *testing.T) {
 		t.Fatalf("Failed to setup channel: %s", err)
 	}
 
-	config, err := config.InitConfig("../../../test/fixtures/config/config_test.yaml")
+	config, err := config.InitConfig("../../../../test/fixtures/config/config_test.yaml")
 	if err != nil {
 		t.Log(err.Error())
 	}
@@ -46,7 +46,7 @@ func TestDiscovery(t *testing.T) {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	peers, err := discoveryService.GetPeers("testCC")
+	peers, err := discoveryService.GetPeers()
 	if err != nil {
 		t.Fatalf("Failed to get peers from discovery service: %s", err)
 	}
