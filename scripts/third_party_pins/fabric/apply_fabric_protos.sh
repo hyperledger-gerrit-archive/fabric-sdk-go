@@ -69,6 +69,39 @@ WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" IMPORT_SUBSTS="${IMPORT_SUBSTS
 echo "Inserting modification notice ..."
 WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" ALLOW_NONE_LICENSE_ID="true" scripts/third_party_pins/common/apply_header_notice.sh
 
+echo "Changing proto registration paths to be unique"
+for i in "${FILES[@]}"
+do
+  if [[ ${i} == "protos/common"* ]]; then
+    sed -i'' -e '/proto.RegisterType/s/common/commonclient/g' "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e '/proto.RegisterEnum/s/common/commonclient/g' "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/ledger/rwset/rwset.pb.go" ]]; then
+    sed -i'' -e '/proto.RegisterType/s/rwset/rwsetclient/g' "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e '/proto.RegisterEnum/s/rwset/rwsetclient/g' "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/ledger/rwset/kvrwset/kv_rwset.pb.go" ]]; then
+    sed -i'' -e '/proto.RegisterType/s/kvrwset/kvrwsetclient/g' "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e '/proto.RegisterEnum/s/kvrwset/kvrwsetclient/g' "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/msp"* ]]; then
+    sed -i'' -e '/proto.RegisterType/s/msp/mspclient/g' "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e '/proto.RegisterEnum/s/msp/mspclient/g' "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/msp/msp_principal.pb.go" ]]; then
+    sed -i'' -e '/proto.RegisterType/s/common/commonclient/g' "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e '/proto.RegisterEnum/s/common/commonclient/g' "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/orderer"* ]]; then
+    sed -i'' -e '/proto.RegisterType/s/orderer/ordererclient/g' "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e '/proto.RegisterEnum/s/orderer/ordererclient/g' "${TMP_PROJECT_PATH}/${i}"
+  fi
+  if [[ ${i} == "protos/peer"* ]]; then
+    sed -i'' -e '/proto.RegisterType/s/protos/protosclient/g' "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e '/proto.RegisterEnum/s/protos/protosclient/g' "${TMP_PROJECT_PATH}/${i}"
+  fi
+done
+
 # Copy patched project into internal paths
 echo "Copying patched upstream project into working directory ..."
 for i in "${FILES[@]}"

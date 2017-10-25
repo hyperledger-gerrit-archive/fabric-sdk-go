@@ -204,10 +204,10 @@ func (m *Endorsement) GetSignature() []byte {
 }
 
 func init() {
-	proto.RegisterType((*ProposalResponse)(nil), "protos.ProposalResponse")
-	proto.RegisterType((*Response)(nil), "protos.Response")
-	proto.RegisterType((*ProposalResponsePayload)(nil), "protos.ProposalResponsePayload")
-	proto.RegisterType((*Endorsement)(nil), "protos.Endorsement")
+	proto.RegisterType((*ProposalResponse)(nil), "protosclient.ProposalResponse")
+	proto.RegisterType((*Response)(nil), "protosclient.Response")
+	proto.RegisterType((*ProposalResponsePayload)(nil), "protosclient.ProposalResponsePayload")
+	proto.RegisterType((*Endorsement)(nil), "protosclient.Endorsement")
 }
 
 func init() { proto.RegisterFile("peer/proposal_response.proto", fileDescriptor8) }

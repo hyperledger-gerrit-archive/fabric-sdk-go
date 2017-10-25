@@ -126,11 +126,11 @@ func (m *ChannelRestrictions) GetMaxCount() uint64 {
 }
 
 func init() {
-	proto.RegisterType((*ConsensusType)(nil), "orderer.ConsensusType")
-	proto.RegisterType((*BatchSize)(nil), "orderer.BatchSize")
-	proto.RegisterType((*BatchTimeout)(nil), "orderer.BatchTimeout")
-	proto.RegisterType((*KafkaBrokers)(nil), "orderer.KafkaBrokers")
-	proto.RegisterType((*ChannelRestrictions)(nil), "orderer.ChannelRestrictions")
+	proto.RegisterType((*ConsensusType)(nil), "ordererclient.ConsensusType")
+	proto.RegisterType((*BatchSize)(nil), "ordererclient.BatchSize")
+	proto.RegisterType((*BatchTimeout)(nil), "ordererclient.BatchTimeout")
+	proto.RegisterType((*KafkaBrokers)(nil), "ordererclient.KafkaBrokers")
+	proto.RegisterType((*ChannelRestrictions)(nil), "ordererclient.ChannelRestrictions")
 }
 
 func init() { proto.RegisterFile("orderer/configuration.proto", fileDescriptor1) }

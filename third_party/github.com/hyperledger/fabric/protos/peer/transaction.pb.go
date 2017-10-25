@@ -300,13 +300,13 @@ func (m *ChaincodeEndorsedAction) GetEndorsements() []*Endorsement {
 }
 
 func init() {
-	proto.RegisterType((*SignedTransaction)(nil), "protos.SignedTransaction")
-	proto.RegisterType((*ProcessedTransaction)(nil), "protos.ProcessedTransaction")
-	proto.RegisterType((*Transaction)(nil), "protos.Transaction")
-	proto.RegisterType((*TransactionAction)(nil), "protos.TransactionAction")
-	proto.RegisterType((*ChaincodeActionPayload)(nil), "protos.ChaincodeActionPayload")
-	proto.RegisterType((*ChaincodeEndorsedAction)(nil), "protos.ChaincodeEndorsedAction")
-	proto.RegisterEnum("protos.TxValidationCode", TxValidationCode_name, TxValidationCode_value)
+	proto.RegisterType((*SignedTransaction)(nil), "protosclient.SignedTransaction")
+	proto.RegisterType((*ProcessedTransaction)(nil), "protosclient.ProcessedTransaction")
+	proto.RegisterType((*Transaction)(nil), "protosclient.Transaction")
+	proto.RegisterType((*TransactionAction)(nil), "protosclient.TransactionAction")
+	proto.RegisterType((*ChaincodeActionPayload)(nil), "protosclient.ChaincodeActionPayload")
+	proto.RegisterType((*ChaincodeEndorsedAction)(nil), "protosclient.ChaincodeEndorsedAction")
+	proto.RegisterEnum("protosclient.TxValidationCode", TxValidationCode_name, TxValidationCode_value)
 }
 
 func init() { proto.RegisterFile("peer/transaction.proto", fileDescriptor12) }

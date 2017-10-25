@@ -195,11 +195,11 @@ func (m *MSPRole) GetRole() MSPRole_MSPRoleType {
 }
 
 func init() {
-	proto.RegisterType((*MSPPrincipal)(nil), "common.MSPPrincipal")
-	proto.RegisterType((*OrganizationUnit)(nil), "common.OrganizationUnit")
-	proto.RegisterType((*MSPRole)(nil), "common.MSPRole")
-	proto.RegisterEnum("common.MSPPrincipal_Classification", MSPPrincipal_Classification_name, MSPPrincipal_Classification_value)
-	proto.RegisterEnum("common.MSPRole_MSPRoleType", MSPRole_MSPRoleType_name, MSPRole_MSPRoleType_value)
+	proto.RegisterType((*MSPPrincipal)(nil), "commonclient.MSPPrincipal")
+	proto.RegisterType((*OrganizationUnit)(nil), "commonclient.OrganizationUnit")
+	proto.RegisterType((*MSPRole)(nil), "commonclient.MSPRole")
+	proto.RegisterEnum("commonclient.MSPPrincipal_Classification", MSPPrincipal_Classification_name, MSPPrincipal_Classification_value)
+	proto.RegisterEnum("commonclient.MSPRole_MSPRoleType", MSPRole_MSPRoleType_name, MSPRole_MSPRoleType_value)
 }
 
 func init() { proto.RegisterFile("msp/msp_principal.proto", fileDescriptor2) }

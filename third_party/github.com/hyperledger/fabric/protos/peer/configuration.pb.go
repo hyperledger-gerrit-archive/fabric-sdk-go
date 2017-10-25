@@ -62,8 +62,8 @@ func (m *AnchorPeer) GetPort() int32 {
 }
 
 func init() {
-	proto.RegisterType((*AnchorPeers)(nil), "protos.AnchorPeers")
-	proto.RegisterType((*AnchorPeer)(nil), "protos.AnchorPeer")
+	proto.RegisterType((*AnchorPeers)(nil), "protosclient.AnchorPeers")
+	proto.RegisterType((*AnchorPeer)(nil), "protosclient.AnchorPeer")
 }
 
 func init() { proto.RegisterFile("peer/configuration.proto", fileDescriptor4) }

@@ -251,11 +251,11 @@ func (m *ChaincodeAction) GetChaincodeId() *ChaincodeID {
 }
 
 func init() {
-	proto.RegisterType((*SignedProposal)(nil), "protos.SignedProposal")
-	proto.RegisterType((*Proposal)(nil), "protos.Proposal")
-	proto.RegisterType((*ChaincodeHeaderExtension)(nil), "protos.ChaincodeHeaderExtension")
-	proto.RegisterType((*ChaincodeProposalPayload)(nil), "protos.ChaincodeProposalPayload")
-	proto.RegisterType((*ChaincodeAction)(nil), "protos.ChaincodeAction")
+	proto.RegisterType((*SignedProposal)(nil), "protosclient.SignedProposal")
+	proto.RegisterType((*Proposal)(nil), "protosclient.Proposal")
+	proto.RegisterType((*ChaincodeHeaderExtension)(nil), "protosclient.ChaincodeHeaderExtension")
+	proto.RegisterType((*ChaincodeProposalPayload)(nil), "protosclient.ChaincodeProposalPayload")
+	proto.RegisterType((*ChaincodeAction)(nil), "protosclient.ChaincodeAction")
 }
 
 func init() { proto.RegisterFile("peer/proposal.proto", fileDescriptor7) }

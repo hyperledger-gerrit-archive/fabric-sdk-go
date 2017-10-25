@@ -149,12 +149,12 @@ func (*Capability) ProtoMessage()               {}
 func (*Capability) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{5} }
 
 func init() {
-	proto.RegisterType((*HashingAlgorithm)(nil), "common.HashingAlgorithm")
-	proto.RegisterType((*BlockDataHashingStructure)(nil), "common.BlockDataHashingStructure")
-	proto.RegisterType((*OrdererAddresses)(nil), "common.OrdererAddresses")
-	proto.RegisterType((*Consortium)(nil), "common.Consortium")
-	proto.RegisterType((*Capabilities)(nil), "common.Capabilities")
-	proto.RegisterType((*Capability)(nil), "common.Capability")
+	proto.RegisterType((*HashingAlgorithm)(nil), "commonclient.HashingAlgorithm")
+	proto.RegisterType((*BlockDataHashingStructure)(nil), "commonclient.BlockDataHashingStructure")
+	proto.RegisterType((*OrdererAddresses)(nil), "commonclient.OrdererAddresses")
+	proto.RegisterType((*Consortium)(nil), "commonclient.Consortium")
+	proto.RegisterType((*Capabilities)(nil), "commonclient.Capabilities")
+	proto.RegisterType((*Capability)(nil), "commonclient.Capability")
 }
 
 func init() { proto.RegisterFile("common/configuration.proto", fileDescriptor3) }

@@ -136,8 +136,8 @@ func (m *SerializedIdemixIdentity) GetProof() []byte {
 }
 
 func init() {
-	proto.RegisterType((*SerializedIdentity)(nil), "msp.SerializedIdentity")
-	proto.RegisterType((*SerializedIdemixIdentity)(nil), "msp.SerializedIdemixIdentity")
+	proto.RegisterType((*SerializedIdentity)(nil), "mspclient.SerializedIdentity")
+	proto.RegisterType((*SerializedIdemixIdentity)(nil), "mspclient.SerializedIdemixIdentity")
 }
 
 func init() { proto.RegisterFile("msp/identities.proto", fileDescriptor0) }

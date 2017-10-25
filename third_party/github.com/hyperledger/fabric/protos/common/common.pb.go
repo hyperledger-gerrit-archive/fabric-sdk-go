@@ -478,21 +478,21 @@ func (m *BlockMetadata) GetMetadata() [][]byte {
 }
 
 func init() {
-	proto.RegisterType((*LastConfig)(nil), "common.LastConfig")
-	proto.RegisterType((*Metadata)(nil), "common.Metadata")
-	proto.RegisterType((*MetadataSignature)(nil), "common.MetadataSignature")
-	proto.RegisterType((*Header)(nil), "common.Header")
-	proto.RegisterType((*ChannelHeader)(nil), "common.ChannelHeader")
-	proto.RegisterType((*SignatureHeader)(nil), "common.SignatureHeader")
-	proto.RegisterType((*Payload)(nil), "common.Payload")
-	proto.RegisterType((*Envelope)(nil), "common.Envelope")
-	proto.RegisterType((*Block)(nil), "common.Block")
-	proto.RegisterType((*BlockHeader)(nil), "common.BlockHeader")
-	proto.RegisterType((*BlockData)(nil), "common.BlockData")
-	proto.RegisterType((*BlockMetadata)(nil), "common.BlockMetadata")
-	proto.RegisterEnum("common.Status", Status_name, Status_value)
-	proto.RegisterEnum("common.HeaderType", HeaderType_name, HeaderType_value)
-	proto.RegisterEnum("common.BlockMetadataIndex", BlockMetadataIndex_name, BlockMetadataIndex_value)
+	proto.RegisterType((*LastConfig)(nil), "commonclient.LastConfig")
+	proto.RegisterType((*Metadata)(nil), "commonclient.Metadata")
+	proto.RegisterType((*MetadataSignature)(nil), "commonclient.MetadataSignature")
+	proto.RegisterType((*Header)(nil), "commonclient.Header")
+	proto.RegisterType((*ChannelHeader)(nil), "commonclient.ChannelHeader")
+	proto.RegisterType((*SignatureHeader)(nil), "commonclient.SignatureHeader")
+	proto.RegisterType((*Payload)(nil), "commonclient.Payload")
+	proto.RegisterType((*Envelope)(nil), "commonclient.Envelope")
+	proto.RegisterType((*Block)(nil), "commonclient.Block")
+	proto.RegisterType((*BlockHeader)(nil), "commonclient.BlockHeader")
+	proto.RegisterType((*BlockData)(nil), "commonclient.BlockData")
+	proto.RegisterType((*BlockMetadata)(nil), "commonclient.BlockMetadata")
+	proto.RegisterEnum("commonclient.Status", Status_name, Status_value)
+	proto.RegisterEnum("commonclient.HeaderType", HeaderType_name, HeaderType_value)
+	proto.RegisterEnum("commonclient.BlockMetadataIndex", BlockMetadataIndex_name, BlockMetadataIndex_value)
 }
 
 func init() { proto.RegisterFile("common/common.proto", fileDescriptor1) }

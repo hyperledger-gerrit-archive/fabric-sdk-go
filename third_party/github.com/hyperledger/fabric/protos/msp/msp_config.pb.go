@@ -388,14 +388,14 @@ func (m *FabricOUIdentifier) GetOrganizationalUnitIdentifier() string {
 }
 
 func init() {
-	proto.RegisterType((*MSPConfig)(nil), "msp.MSPConfig")
-	proto.RegisterType((*FabricMSPConfig)(nil), "msp.FabricMSPConfig")
-	proto.RegisterType((*FabricCryptoConfig)(nil), "msp.FabricCryptoConfig")
-	proto.RegisterType((*IdemixMSPConfig)(nil), "msp.IdemixMSPConfig")
-	proto.RegisterType((*IdemixMSPSignerConfig)(nil), "msp.IdemixMSPSignerConfig")
-	proto.RegisterType((*SigningIdentityInfo)(nil), "msp.SigningIdentityInfo")
-	proto.RegisterType((*KeyInfo)(nil), "msp.KeyInfo")
-	proto.RegisterType((*FabricOUIdentifier)(nil), "msp.FabricOUIdentifier")
+	proto.RegisterType((*MSPConfig)(nil), "mspclient.MSPConfig")
+	proto.RegisterType((*FabricMSPConfig)(nil), "mspclient.FabricMSPConfig")
+	proto.RegisterType((*FabricCryptoConfig)(nil), "mspclient.FabricCryptoConfig")
+	proto.RegisterType((*IdemixMSPConfig)(nil), "mspclient.IdemixMSPConfig")
+	proto.RegisterType((*IdemixMSPSignerConfig)(nil), "mspclient.IdemixMSPSignerConfig")
+	proto.RegisterType((*SigningIdentityInfo)(nil), "mspclient.SigningIdentityInfo")
+	proto.RegisterType((*KeyInfo)(nil), "mspclient.KeyInfo")
+	proto.RegisterType((*FabricOUIdentifier)(nil), "mspclient.FabricOUIdentifier")
 }
 
 func init() { proto.RegisterFile("msp/msp_config.proto", fileDescriptor1) }

@@ -62,8 +62,8 @@ func (m *PeerEndpoint) GetAddress() string {
 }
 
 func init() {
-	proto.RegisterType((*PeerID)(nil), "protos.PeerID")
-	proto.RegisterType((*PeerEndpoint)(nil), "protos.PeerEndpoint")
+	proto.RegisterType((*PeerID)(nil), "protosclient.PeerID")
+	proto.RegisterType((*PeerEndpoint)(nil), "protosclient.PeerEndpoint")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.

@@ -443,14 +443,14 @@ func _DeliverResponse_OneofSizer(msg proto.Message) (n int) {
 }
 
 func init() {
-	proto.RegisterType((*BroadcastResponse)(nil), "orderer.BroadcastResponse")
-	proto.RegisterType((*SeekNewest)(nil), "orderer.SeekNewest")
-	proto.RegisterType((*SeekOldest)(nil), "orderer.SeekOldest")
-	proto.RegisterType((*SeekSpecified)(nil), "orderer.SeekSpecified")
-	proto.RegisterType((*SeekPosition)(nil), "orderer.SeekPosition")
-	proto.RegisterType((*SeekInfo)(nil), "orderer.SeekInfo")
-	proto.RegisterType((*DeliverResponse)(nil), "orderer.DeliverResponse")
-	proto.RegisterEnum("orderer.SeekInfo_SeekBehavior", SeekInfo_SeekBehavior_name, SeekInfo_SeekBehavior_value)
+	proto.RegisterType((*BroadcastResponse)(nil), "ordererclient.BroadcastResponse")
+	proto.RegisterType((*SeekNewest)(nil), "ordererclient.SeekNewest")
+	proto.RegisterType((*SeekOldest)(nil), "ordererclient.SeekOldest")
+	proto.RegisterType((*SeekSpecified)(nil), "ordererclient.SeekSpecified")
+	proto.RegisterType((*SeekPosition)(nil), "ordererclient.SeekPosition")
+	proto.RegisterType((*SeekInfo)(nil), "ordererclient.SeekInfo")
+	proto.RegisterType((*DeliverResponse)(nil), "ordererclient.DeliverResponse")
+	proto.RegisterEnum("ordererclient.SeekInfo_SeekBehavior", SeekInfo_SeekBehavior_name, SeekInfo_SeekBehavior_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.

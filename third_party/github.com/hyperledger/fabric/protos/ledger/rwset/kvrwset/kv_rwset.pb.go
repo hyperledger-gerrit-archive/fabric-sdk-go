@@ -452,16 +452,16 @@ func (m *QueryReadsMerkleSummary) GetMaxLevelHashes() [][]byte {
 }
 
 func init() {
-	proto.RegisterType((*KVRWSet)(nil), "kvrwset.KVRWSet")
-	proto.RegisterType((*HashedRWSet)(nil), "kvrwset.HashedRWSet")
-	proto.RegisterType((*KVRead)(nil), "kvrwset.KVRead")
-	proto.RegisterType((*KVWrite)(nil), "kvrwset.KVWrite")
-	proto.RegisterType((*KVReadHash)(nil), "kvrwset.KVReadHash")
-	proto.RegisterType((*KVWriteHash)(nil), "kvrwset.KVWriteHash")
-	proto.RegisterType((*Version)(nil), "kvrwset.Version")
-	proto.RegisterType((*RangeQueryInfo)(nil), "kvrwset.RangeQueryInfo")
-	proto.RegisterType((*QueryReads)(nil), "kvrwset.QueryReads")
-	proto.RegisterType((*QueryReadsMerkleSummary)(nil), "kvrwset.QueryReadsMerkleSummary")
+	proto.RegisterType((*KVRWSet)(nil), "kvrwsetclient.KVRWSet")
+	proto.RegisterType((*HashedRWSet)(nil), "kvrwsetclient.HashedRWSet")
+	proto.RegisterType((*KVRead)(nil), "kvrwsetclient.KVRead")
+	proto.RegisterType((*KVWrite)(nil), "kvrwsetclient.KVWrite")
+	proto.RegisterType((*KVReadHash)(nil), "kvrwsetclient.KVReadHash")
+	proto.RegisterType((*KVWriteHash)(nil), "kvrwsetclient.KVWriteHash")
+	proto.RegisterType((*Version)(nil), "kvrwsetclient.Version")
+	proto.RegisterType((*RangeQueryInfo)(nil), "kvrwsetclient.RangeQueryInfo")
+	proto.RegisterType((*QueryReads)(nil), "kvrwsetclient.QueryReads")
+	proto.RegisterType((*QueryReadsMerkleSummary)(nil), "kvrwsetclient.QueryReadsMerkleSummary")
 }
 
 func init() { proto.RegisterFile("ledger/rwset/kvrwset/kv_rwset.proto", fileDescriptor0) }

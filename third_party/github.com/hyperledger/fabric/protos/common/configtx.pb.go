@@ -385,18 +385,18 @@ func (m *ConfigSignature) GetSignature() []byte {
 }
 
 func init() {
-	proto.RegisterType((*ConfigEnvelope)(nil), "common.ConfigEnvelope")
-	proto.RegisterType((*ConfigGroupSchema)(nil), "common.ConfigGroupSchema")
-	proto.RegisterType((*ConfigValueSchema)(nil), "common.ConfigValueSchema")
-	proto.RegisterType((*ConfigPolicySchema)(nil), "common.ConfigPolicySchema")
-	proto.RegisterType((*Config)(nil), "common.Config")
-	proto.RegisterType((*ConfigUpdateEnvelope)(nil), "common.ConfigUpdateEnvelope")
-	proto.RegisterType((*ConfigUpdate)(nil), "common.ConfigUpdate")
-	proto.RegisterType((*ConfigGroup)(nil), "common.ConfigGroup")
-	proto.RegisterType((*ConfigValue)(nil), "common.ConfigValue")
-	proto.RegisterType((*ConfigPolicy)(nil), "common.ConfigPolicy")
-	proto.RegisterType((*ConfigSignature)(nil), "common.ConfigSignature")
-	proto.RegisterEnum("common.ConfigType", ConfigType_name, ConfigType_value)
+	proto.RegisterType((*ConfigEnvelope)(nil), "commonclient.ConfigEnvelope")
+	proto.RegisterType((*ConfigGroupSchema)(nil), "commonclient.ConfigGroupSchema")
+	proto.RegisterType((*ConfigValueSchema)(nil), "commonclient.ConfigValueSchema")
+	proto.RegisterType((*ConfigPolicySchema)(nil), "commonclient.ConfigPolicySchema")
+	proto.RegisterType((*Config)(nil), "commonclient.Config")
+	proto.RegisterType((*ConfigUpdateEnvelope)(nil), "commonclient.ConfigUpdateEnvelope")
+	proto.RegisterType((*ConfigUpdate)(nil), "commonclient.ConfigUpdate")
+	proto.RegisterType((*ConfigGroup)(nil), "commonclient.ConfigGroup")
+	proto.RegisterType((*ConfigValue)(nil), "commonclient.ConfigValue")
+	proto.RegisterType((*ConfigPolicy)(nil), "commonclient.ConfigPolicy")
+	proto.RegisterType((*ConfigSignature)(nil), "commonclient.ConfigSignature")
+	proto.RegisterEnum("commonclient.ConfigType", ConfigType_name, ConfigType_value)
 }
 
 func init() { proto.RegisterFile("common/configtx.proto", fileDescriptor2) }
