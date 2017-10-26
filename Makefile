@@ -60,7 +60,7 @@ ARCH                 := $(shell uname -m)
 FIXTURE_PROJECT_NAME := fabsdkgo
 
 # The version of dep that will be installed by depend-install (or in the CI)
-GO_DEP_COMMIT := v0.3.1
+GO_DEP_COMMIT := v0.3.2
 
 # Setup Go Tags
 GO_TAGS := $(FABRIC_SDK_EXTRA_GO_TAGS)
@@ -92,7 +92,7 @@ depend:
 depend-install:
 	@FABRIC_SDKGO_DEPEND_INSTALL="true" test/scripts/dependencies.sh
 
-checks: depend license lint spelling
+checks: depend license lint spelling check-dep
 
 .PHONY: license build-softhsm2-image
 license:
@@ -103,6 +103,10 @@ lint: populate
 
 spelling:
 	@test/scripts/check_spelling.sh
+
+check-dep:
+	@dep ensure -no-vendor -dry-run
+	# TODO - look for missing contraints in Gopkg.toml
 
 build-softhsm2-image:
 	 @$(DOCKER_CMD) build --no-cache -q -t "softhsm2-image" \
