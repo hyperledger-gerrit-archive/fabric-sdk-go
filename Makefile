@@ -34,7 +34,7 @@ FABRIC_SDK_EXTRA_GO_TAGS   ?=
 FABRIC_SDK_POPULATE_VENDOR ?= true
 
 # Fabric tool versions (overridable)
-FABRIC_TOOLS_VERSION ?= 1.0.4
+FABRIC_TOOLS_VERSION ?= 1.1.0-preview
 FABRIC_BASE_VERSION  ?= 0.4.2
 
 # Fabric base docker image (overridable)
