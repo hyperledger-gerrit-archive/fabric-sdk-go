@@ -1,0 +1,131 @@
+From 0e0f263fb3dc8faa7a7df9a978cb54a7a4d15004 Mon Sep 17 00:00:00 2001
+From: Troy Ronda <troy@troyronda.com>
+Date: Thu, 19 Oct 2017 11:59:49 -0400
+Subject: [PATCH] Build flags to disable BCCSP plugins
+
+Change-Id: Id00605ebfb1a75cfcd5ae9ecd950d3fdd215a588
+Signed-off-by: Troy Ronda <troy@troyronda.com>
+Signed-off-by: Divyank Katira <Divyank.Katira@securekey.com>
+---
+ bccsp/factory/pluginfactory.go                     |  5 ++-
+ .../sdkpatch_pluginfactory_nobccspplugin.go        | 40 ++++++++++++++++++++++
+ bccsp/factory/sdkpatch_pluginfactory_noplugin.go   | 40 ++++++++++++++++++++++
+ 3 files changed, 84 insertions(+), 1 deletion(-)
+ create mode 100644 bccsp/factory/sdkpatch_pluginfactory_nobccspplugin.go
+ create mode 100644 bccsp/factory/sdkpatch_pluginfactory_noplugin.go
+
+diff --git a/bccsp/factory/pluginfactory.go b/bccsp/factory/pluginfactory.go
+index 3870bbcd..c7526b06 100644
+--- a/bccsp/factory/pluginfactory.go
++++ b/bccsp/factory/pluginfactory.go
+@@ -1,3 +1,6 @@
++// +build linux
++// +build !nobccspplugin
++
+ /*
+ Copyright IBM Corp. All Rights Reserved.
+ 
+@@ -11,7 +14,7 @@ import (
+ 	"os"
+ 	"plugin"
+ 
+-	"github.com/hyperledger/fabric/bccsp"
++	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+ )
+ 
+ const (
+diff --git a/bccsp/factory/sdkpatch_pluginfactory_nobccspplugin.go b/bccsp/factory/sdkpatch_pluginfactory_nobccspplugin.go
+new file mode 100644
+index 00000000..d572885c
+--- /dev/null
++++ b/bccsp/factory/sdkpatch_pluginfactory_nobccspplugin.go
+@@ -0,0 +1,40 @@
++// +build nobccspplugin
++
++/*
++Copyright IBM Corp., SecureKey Technologies Inc. All Rights Reserved.
++
++SPDX-License-Identifier: Apache-2.0
++*/
++package factory
++
++import (
++	"github.com/pkg/errors"
++
++	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
++)
++
++const (
++	// PluginFactoryName is the factory name for BCCSP plugins
++	PluginFactoryName = "PLUGIN"
++)
++
++// PluginOpts contains the options for the PluginFactory
++type PluginOpts struct {
++	// Path to plugin library
++	Library string
++	// Config map for the plugin library
++	Config map[string]interface{}
++}
++
++// PluginFactory is the factory for BCCSP plugins
++type PluginFactory struct{}
++
++// Name returns the name of this factory
++func (f *PluginFactory) Name() string {
++	return PluginFactoryName
++}
++
++// Get returns an instance of BCCSP using Opts.
++func (f *PluginFactory) Get(config *FactoryOpts) (bccsp.BCCSP, error) {
++	return nil, errors.New("not supported")
++}
+diff --git a/bccsp/factory/sdkpatch_pluginfactory_noplugin.go b/bccsp/factory/sdkpatch_pluginfactory_noplugin.go
+new file mode 100644
+index 00000000..8e20735c
+--- /dev/null
++++ b/bccsp/factory/sdkpatch_pluginfactory_noplugin.go
+@@ -0,0 +1,40 @@
++// +build !linux,!nobccspplugin
++
++/*
++Copyright IBM Corp., SecureKey Technologies Inc. All Rights Reserved.
++
++SPDX-License-Identifier: Apache-2.0
++*/
++package factory
++
++import (
++	"github.com/pkg/errors"
++
++	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
++)
++
++const (
++	// PluginFactoryName is the factory name for BCCSP plugins
++	PluginFactoryName = "PLUGIN"
++)
++
++// PluginOpts contains the options for the PluginFactory
++type PluginOpts struct {
++	// Path to plugin library
++	Library string
++	// Config map for the plugin library
++	Config map[string]interface{}
++}
++
++// PluginFactory is the factory for BCCSP plugins
++type PluginFactory struct{}
++
++// Name returns the name of this factory
++func (f *PluginFactory) Name() string {
++	return PluginFactoryName
++}
++
++// Get returns an instance of BCCSP using Opts.
++func (f *PluginFactory) Get(config *FactoryOpts) (bccsp.BCCSP, error) {
++	return nil, errors.New("not supported")
++}
+-- 
+2.14.1
+
