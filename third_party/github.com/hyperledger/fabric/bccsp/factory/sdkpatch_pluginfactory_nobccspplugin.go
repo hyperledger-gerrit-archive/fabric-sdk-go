@@ -1,4 +1,4 @@
-// +build !linux,!nobccspplugin
+// +build nobccspplugin
 
 /*
 Copyright IBM Corp., SecureKey Technologies Inc. All Rights Reserved.
