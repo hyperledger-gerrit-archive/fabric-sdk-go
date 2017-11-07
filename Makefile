@@ -153,3 +153,4 @@ clean:
 	rm -f integration-report.xml report.xml
 	rm -f test/fixtures/tls/fabricca/certs/server/ca.org*.example.com-cert.pem
 	cd test/fixtures && $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml -f docker-compose-pkcs11-test.yaml down
+	$(DOCKER_CMD) images | grep "fabsdkgo-peer.\.org.\.example\.com-" | awk '{print $$1}' | xargs $(DOCKER_CMD) rmi -f
