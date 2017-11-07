@@ -52,8 +52,9 @@ THIRDPARTY_FABRIC_BRANCH    ?= master
 THIRDPARTY_FABRIC_COMMIT    ?= v1.1.0-preview
 
 # Local variables used by makefile
-PACKAGE_NAME := github.com/hyperledger/fabric-sdk-go
-ARCH         := $(shell uname -m)
+PACKAGE_NAME         := github.com/hyperledger/fabric-sdk-go
+ARCH                 := $(shell uname -m)
+FIXTURE_PROJECT_NAME := fabsdkgo
 
 # The version of dep that will be installed by depend-install (or in the CI)
 GO_DEP_COMMIT := v0.3.1
@@ -153,3 +154,6 @@ clean:
 	rm -f integration-report.xml report.xml
 	rm -f test/fixtures/tls/fabricca/certs/server/ca.org*.example.com-cert.pem
 	cd test/fixtures && $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml -f docker-compose-pkcs11-test.yaml down
+	$(DOCKER_CMD) ps -a | grep "$(FIXTURE_PROJECT_NAME)-peer.\.org.\.example\.com-" | awk '{print $$1}' | xargs $(DOCKER_CMD) stop
+	$(DOCKER_CMD) ps -a | grep "$(FIXTURE_PROJECT_NAME)-peer.\.org.\.example\.com-" | awk '{print $$1}' | xargs $(DOCKER_CMD) rm -f
+	$(DOCKER_CMD) images | grep "$(FIXTURE_PROJECT_NAME)-peer.\.org.\.example\.com-" | awk '{print $$1}' | xargs $(DOCKER_CMD) rmi -f
