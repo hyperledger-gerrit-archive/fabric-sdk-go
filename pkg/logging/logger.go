@@ -73,19 +73,19 @@ func IsEnabledForLogger(level apilogging.Level, logger *Logger) bool {
 	return moduleLevels.IsEnabledFor(level, logger.module)
 }
 
-//ShowCallerInfo - Show caller info in log lines
-func ShowCallerInfo(module string) {
-	callerInfos.ShowCallerInfo(module)
+//ShowCallerInfo - Show caller info in log lines for given log level
+func ShowCallerInfo(level apilogging.Level) {
+	callerInfos.ShowCallerInfo(level)
 }
 
-//HideCallerInfo - Do not show caller info in log lines
-func HideCallerInfo(module string) {
-	callerInfos.HideCallerInfo(module)
+//HideCallerInfo - Do not show caller info in log lines for given log level
+func HideCallerInfo(level apilogging.Level) {
+	callerInfos.HideCallerInfo(level)
 }
 
 //IsCallerInfoEnabled - Check if caller info is enabled for given module
-func IsCallerInfoEnabled(module string) bool {
-	return callerInfos.IsCallerInfoEnabled(module)
+func IsCallerInfoEnabled(level apilogging.Level) bool {
+	return callerInfos.IsCallerInfoEnabled(level)
 }
 
 //Fatal calls Fatal function of underlying logger
