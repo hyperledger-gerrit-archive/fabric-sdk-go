@@ -1,0 +1,7 @@
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Code-Review+2: Firas Qutishat <firas.qutishat@securekey.com>
+Submitted-by: Firas Qutishat <firas.qutishat@securekey.com>
+Submitted-at: Wed, 08 Nov 2017 17:24:04 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/15235
+Project: fabric-sdk-go
+Branch: refs/heads/master
