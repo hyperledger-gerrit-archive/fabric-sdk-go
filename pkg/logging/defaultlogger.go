@@ -19,13 +19,13 @@ import (
 
 func getDefaultLogger(module string) apilogging.Logger {
 	newLogger := log.New(os.Stdout, fmt.Sprintf(logPrefixFormatter, module), log.Ldate|log.Ltime|log.LUTC)
-	return &DefaultLogger{defaultLogger: newLogger, module: module}
+	return &DefaultLogger{defaultLogger: newLogger}
 }
 
 //DefaultLogger default underlying logger used by logging.Logger
 type DefaultLogger struct {
 	defaultLogger *log.Logger
-	module        string
+	string
 }
 
 const (
@@ -163,26 +163,26 @@ func (l *DefaultLogger) Errorln(args ...interface{}) {
 
 func (l *DefaultLogger) logf(level apilogging.Level, format string, args ...interface{}) {
 	//Format prefix to show function name and log level and to indicate that timezone used is UTC
-	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(), levelNames[level])
+	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(level), levelNames[level])
 	l.defaultLogger.Output(2, customPrefix+fmt.Sprintf(format, args...))
 }
 
 func (l *DefaultLogger) log(level apilogging.Level, args ...interface{}) {
 
 	//Format prefix to show function name and log level and to indicate that timezone used is UTC
-	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(), levelNames[level])
+	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(level), levelNames[level])
 	l.defaultLogger.Output(2, customPrefix+fmt.Sprint(args...))
 }
 
 func (l *DefaultLogger) logln(level apilogging.Level, args ...interface{}) {
 	//Format prefix to show function name and log level and to indicate that timezone used is UTC
-	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(), levelNames[level])
+	customPrefix := fmt.Sprintf(logLevelFormatter, l.getCallerInfo(level), levelNames[level])
 	l.defaultLogger.Output(2, customPrefix+fmt.Sprintln(args...))
 }
 
-func (l *DefaultLogger) getCallerInfo() string {
+func (l *DefaultLogger) getCallerInfo(level apilogging.Level) string {
 
-	if !IsCallerInfoEnabled(l.module) {
+	if !IsCallerInfoEnabled(level) {
 		return ""
 	}
 
