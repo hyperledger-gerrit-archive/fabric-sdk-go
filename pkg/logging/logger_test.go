@@ -112,7 +112,7 @@ func verifyCriticalLoggings(t *testing.T, level apilogging.Level, loggerFunc fn,
 			t.Errorf("%v was supposed to panic", loggerFunc)
 		}
 		var regex string
-		if IsCallerInfoEnabled(moduleName) {
+		if IsCallerInfoEnabled(CRITICAL) {
 			//with caller info
 			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, levelNames[level])
 		} else {
@@ -152,7 +152,7 @@ func verifyBasicLogging(t *testing.T, level apilogging.Level, loggerFunc fn, log
 		regex = fmt.Sprintf(customLevelOutputExpectedRegex, moduleName)
 	} else if level > 0 && !verifyCustom {
 		levelName = levelNames[level]
-		if IsCallerInfoEnabled(moduleName) {
+		if IsCallerInfoEnabled(level) {
 			//with caller info
 			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, levelName)
 		} else {
