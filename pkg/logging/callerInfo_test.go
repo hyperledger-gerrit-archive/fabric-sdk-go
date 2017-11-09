@@ -6,20 +6,38 @@ SPDX-License-Identifier: Apache-2.0
 
 package logging
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestCallerInfoSetting(t *testing.T) {
 
 	sampleCallerInfoSetting := callerInfo{}
-	sampleModuleName := "module-xyz-info"
+	samppleModuleName := "sample-module-name"
 
-	sampleCallerInfoSetting.ShowCallerInfo(sampleModuleName)
-	verifyTrue(t, sampleCallerInfoSetting.IsCallerInfoEnabled(sampleModuleName), "Callerinfo supposed to be enabled for this module")
+	sampleCallerInfoSetting.HideCallerInfo(samppleModuleName, DEBUG)
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleModuleName, DEBUG), "Callerinfo supposed to be disabled for this level")
 
-	sampleCallerInfoSetting.HideCallerInfo(sampleModuleName)
-	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(sampleModuleName), "Callerinfo supposed to be disabled for this module")
+	sampleCallerInfoSetting.ShowCallerInfo(samppleModuleName, DEBUG)
+	verifyTrue(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleModuleName, DEBUG), "Callerinfo supposed to be enabled for this level")
 
-	//By default caller info should be disabled
-	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(sampleModuleName+"DUMMY"), "Callerinfo supposed to be disabled for this module")
+	//Reset existing caller info setting
+	sampleCallerInfoSetting.showcaller = nil
 
+	sampleCallerInfoSetting.ShowCallerInfo(samppleModuleName, DEBUG)
+	verifyTrue(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleModuleName, DEBUG), "Callerinfo supposed to be enabled for this level")
+
+	//By default caller info should be disabled if not set
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleModuleName, INFO), "Callerinfo supposed to be disabled for this level")
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleModuleName, WARNING), "Callerinfo supposed to be disabled for this level")
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleModuleName, ERROR), "Callerinfo supposed to be disabled for this level")
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleModuleName, CRITICAL), "Callerinfo supposed to be disabled for this level")
+
+	//By default caller info should be disabled if module name not found
+	samppleInvalidModuleName := "sample-module-name-doesnt-exists"
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleInvalidModuleName, INFO), "Callerinfo supposed to be disabled for this level")
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleInvalidModuleName, WARNING), "Callerinfo supposed to be disabled for this level")
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleInvalidModuleName, ERROR), "Callerinfo supposed to be disabled for this level")
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleInvalidModuleName, CRITICAL), "Callerinfo supposed to be disabled for this level")
+	verifyFalse(t, sampleCallerInfoSetting.IsCallerInfoEnabled(samppleInvalidModuleName, DEBUG), "Callerinfo supposed to be disabled for this level")
 }

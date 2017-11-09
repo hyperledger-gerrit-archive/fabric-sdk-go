@@ -86,6 +86,12 @@ func InitConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 		}
 	}
 	logging.SetLevel(apilogging.Level(logLevel), "fabric_sdk_go")
+	//By default for SDK-Go, callerinfo enabled for all levels
+	logging.ShowCallerInfo("fabric_sdk_go", logging.CRITICAL)
+	logging.ShowCallerInfo("fabric_sdk_go", logging.ERROR)
+	logging.ShowCallerInfo("fabric_sdk_go", logging.WARNING)
+	logging.ShowCallerInfo("fabric_sdk_go", logging.INFO)
+	logging.ShowCallerInfo("fabric_sdk_go", logging.DEBUG)
 
 	logger.Infof("fabric_sdk_go Logging level is finally set to: %s", logging.GetLevel("fabric_sdk_go"))
 	return &Config{tlsCertPool: x509.NewCertPool(), configViper: myViper}, nil
