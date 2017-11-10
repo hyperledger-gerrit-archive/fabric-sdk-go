@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	basicLevelOutputWithCallerInfoExpectedRegex = "\\[%s\\] .* UTC - logging.* -> %s brown fox jumps over the lazy dog"
-	basicLevelOutputExpectedRegex               = "\\[%s\\] .* UTC .*-> %s brown fox jumps over the lazy dog"
+	basicLevelOutputWithCallerInfoExpectedRegex = "\\[%s\\] .* UTC - logging.* -> %4.4s brown fox jumps over the lazy dog"
+	basicLevelOutputExpectedRegex               = "\\[%s\\] .* UTC .*-> %4.4s brown fox jumps over the lazy dog"
 	printLevelOutputExpectedRegex               = "\\[%s\\] .* brown fox jumps over the lazy dog"
 	customLevelOutputExpectedRegex              = "\\[%s\\] .* CUSTOM LOG OUTPUT"
 	moduleName                                  = "module-xyz"
@@ -112,7 +112,7 @@ func verifyCriticalLoggings(t *testing.T, level apilogging.Level, loggerFunc fn,
 			t.Errorf("%v was supposed to panic", loggerFunc)
 		}
 		var regex string
-		if IsCallerInfoEnabled(moduleName) {
+		if IsCallerInfoEnabled(moduleName, CRITICAL) {
 			//with caller info
 			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, levelNames[level])
 		} else {
@@ -152,7 +152,7 @@ func verifyBasicLogging(t *testing.T, level apilogging.Level, loggerFunc fn, log
 		regex = fmt.Sprintf(customLevelOutputExpectedRegex, moduleName)
 	} else if level > 0 && !verifyCustom {
 		levelName = levelNames[level]
-		if IsCallerInfoEnabled(moduleName) {
+		if IsCallerInfoEnabled(moduleName, level) {
 			//with caller info
 			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, levelName)
 		} else {

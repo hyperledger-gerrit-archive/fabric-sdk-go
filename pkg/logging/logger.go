@@ -12,7 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 )
 
-var mutex = &sync.Mutex{}
+var rwmutex = &sync.RWMutex{}
 
 //Logger basic implementation of api.Logger interface
 type Logger struct {
@@ -43,9 +43,9 @@ func NewLogger(module string) *Logger {
 //new logger which are going to be created. Care should be taken while using this method.
 //It is recommended to add Custom loggers before making any loggings.
 func SetCustomLogger(newCustomLogger apilogging.Logger) {
-	mutex.Lock()
+	rwmutex.Lock()
+	defer rwmutex.Unlock()
 	customLogger = newCustomLogger
-	mutex.Unlock()
 }
 
 //SetModuleLevels replaces existing levelled logging modules
@@ -55,37 +55,51 @@ func SetModuleLevels(customModuleLevels apilogging.Leveled) {
 
 //SetLevel - setting log level for given module
 func SetLevel(level apilogging.Level, module string) {
+	rwmutex.Lock()
+	defer rwmutex.Unlock()
 	moduleLevels.SetLevel(level, module)
 }
 
 //GetLevel - getting log level for given module
 func GetLevel(module string) apilogging.Level {
+	rwmutex.RLock()
+	defer rwmutex.RUnlock()
 	return moduleLevels.GetLevel(module)
 }
 
 //IsEnabledFor - Check if given log level is enabled for given module
 func IsEnabledFor(level apilogging.Level, module string) bool {
+	rwmutex.RLock()
+	defer rwmutex.RUnlock()
 	return moduleLevels.IsEnabledFor(level, module)
 }
 
 // IsEnabledForLogger will return true if given logging level is enabled for the given logger.
 func IsEnabledForLogger(level apilogging.Level, logger *Logger) bool {
+	rwmutex.RLock()
+	defer rwmutex.RUnlock()
 	return moduleLevels.IsEnabledFor(level, logger.module)
 }
 
-//ShowCallerInfo - Show caller info in log lines
-func ShowCallerInfo(module string) {
-	callerInfos.ShowCallerInfo(module)
+//ShowCallerInfo - Show caller info in log lines for given log level
+func ShowCallerInfo(module string, level apilogging.Level) {
+	rwmutex.Lock()
+	defer rwmutex.Unlock()
+	callerInfos.ShowCallerInfo(module, level)
 }
 
-//HideCallerInfo - Do not show caller info in log lines
-func HideCallerInfo(module string) {
-	callerInfos.HideCallerInfo(module)
+//HideCallerInfo - Do not show caller info in log lines for given log level
+func HideCallerInfo(module string, level apilogging.Level) {
+	rwmutex.Lock()
+	defer rwmutex.Unlock()
+	callerInfos.HideCallerInfo(module, level)
 }
 
-//IsCallerInfoEnabled - Check if caller info is enabled for given module
-func IsCallerInfoEnabled(module string) bool {
-	return callerInfos.IsCallerInfoEnabled(module)
+//IsCallerInfoEnabled - Check if caller info is enabled for given logging level
+func IsCallerInfoEnabled(module string, level apilogging.Level) bool {
+	rwmutex.RLock()
+	defer rwmutex.RUnlock()
+	return callerInfos.IsCallerInfoEnabled(module, level)
 }
 
 //Fatal calls Fatal function of underlying logger

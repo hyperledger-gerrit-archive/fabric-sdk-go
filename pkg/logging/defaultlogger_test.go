@@ -12,12 +12,12 @@ import (
 )
 
 func TestDefaultLoggingWithoutCallerInfo(t *testing.T) {
-	HideCallerInfo(moduleName)
+	HideCallerInfo(moduleName, WARNING)
 	testDefaultLogging(t)
 }
 
 func TestDefaultLoggingWithCallerInfo(t *testing.T) {
-	ShowCallerInfo(moduleName)
+	ShowCallerInfo(moduleName, WARNING)
 	testDefaultLogging(t)
 }
 

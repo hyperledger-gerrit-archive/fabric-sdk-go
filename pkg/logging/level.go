@@ -8,7 +8,6 @@ package logging
 
 import (
 	"strings"
-	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -46,14 +45,11 @@ func LogLevel(level string) (apilogging.Level, error) {
 }
 
 type moduleLeveled struct {
-	sync.RWMutex
 	levels map[string]apilogging.Level
 }
 
 // GetLevel returns the log level for the given module.
 func (l *moduleLeveled) GetLevel(module string) apilogging.Level {
-	l.RLock()
-	defer l.RUnlock()
 	level, exists := l.levels[module]
 	if exists == false {
 		level, exists = l.levels[""]
@@ -67,8 +63,6 @@ func (l *moduleLeveled) GetLevel(module string) apilogging.Level {
 
 // SetLevel sets the log level for the given module.
 func (l *moduleLeveled) SetLevel(level apilogging.Level, module string) {
-	l.Lock()
-	defer l.Unlock()
 	if l.levels == nil {
 		l.levels = make(map[string]apilogging.Level)
 	}
