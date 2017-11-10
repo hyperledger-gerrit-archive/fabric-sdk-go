@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	basicLevelOutputWithCallerInfoExpectedRegex = "\\[%s\\] .* UTC - logging.* -> %s brown fox jumps over the lazy dog"
-	basicLevelOutputExpectedRegex               = "\\[%s\\] .* UTC .*-> %s brown fox jumps over the lazy dog"
+	basicLevelOutputWithCallerInfoExpectedRegex = "\\[%s\\] .* UTC - logging.* -> %4.4s brown fox jumps over the lazy dog"
+	basicLevelOutputExpectedRegex               = "\\[%s\\] .* UTC .*-> %4.4s brown fox jumps over the lazy dog"
 	printLevelOutputExpectedRegex               = "\\[%s\\] .* brown fox jumps over the lazy dog"
 	customLevelOutputExpectedRegex              = "\\[%s\\] .* CUSTOM LOG OUTPUT"
 	moduleName                                  = "module-xyz"
@@ -35,7 +35,7 @@ func TestLevelledLoggingForCustomLogger(t *testing.T) {
 	//Create new logger
 	logger := NewLogger(moduleName)
 	//Now add custom logger
-	SetCustomLogger(&SampleCustomLogger{customLogger: customLogger})
+	SetCustomLogger(&SampleCustomLogger{customLogger: customLogger, module: moduleName})
 
 	//Test logger.print outputs
 	verifyBasicLogging(t, INFO, logger.Print, nil, &buf, true)
@@ -112,7 +112,8 @@ func verifyCriticalLoggings(t *testing.T, level apilogging.Level, loggerFunc fn,
 			t.Errorf("%v was supposed to panic", loggerFunc)
 		}
 		var regex string
-		if IsCallerInfoEnabled(moduleName) {
+		opts := getLoggerOpts(level, moduleName)
+		if opts.callerInfoEnabled {
 			//with caller info
 			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, levelNames[level])
 		} else {
@@ -152,7 +153,8 @@ func verifyBasicLogging(t *testing.T, level apilogging.Level, loggerFunc fn, log
 		regex = fmt.Sprintf(customLevelOutputExpectedRegex, moduleName)
 	} else if level > 0 && !verifyCustom {
 		levelName = levelNames[level]
-		if IsCallerInfoEnabled(moduleName) {
+		opts := getLoggerOpts(level, moduleName)
+		if opts.callerInfoEnabled {
 			//with caller info
 			regex = fmt.Sprintf(basicLevelOutputWithCallerInfoExpectedRegex, moduleName, levelName)
 		} else {
@@ -226,6 +228,7 @@ func failTest(t *testing.T, msgAndArgs ...interface{}) {
 
 type SampleCustomLogger struct {
 	customLogger *log.Logger
+	module       string
 }
 
 func (l *SampleCustomLogger) Fatal(v ...interface{}) { l.customLogger.Print("CUSTOM LOG OUTPUT") }
@@ -242,23 +245,53 @@ func (l *SampleCustomLogger) Print(v ...interface{})   { l.customLogger.Print("C
 func (l *SampleCustomLogger) Printf(format string, v ...interface{}) {
 	l.customLogger.Print("CUSTOM LOG OUTPUT")
 }
-func (l *SampleCustomLogger) Println(v ...interface{})  { l.customLogger.Print("CUSTOM LOG OUTPUT") }
-func (l *SampleCustomLogger) Debug(args ...interface{}) { l.customLogger.Print("CUSTOM LOG OUTPUT") }
+func (l *SampleCustomLogger) Println(v ...interface{}) { l.customLogger.Print("CUSTOM LOG OUTPUT") }
+func (l *SampleCustomLogger) Debug(args ...interface{}) {
+	if IsEnabledFor(DEBUG, l.module) {
+		l.customLogger.Print("CUSTOM LOG OUTPUT")
+	}
+}
 func (l *SampleCustomLogger) Debugf(format string, args ...interface{}) {
-	l.customLogger.Print("CUSTOM LOG OUTPUT")
+	if IsEnabledFor(DEBUG, l.module) {
+		l.customLogger.Print("CUSTOM LOG OUTPUT")
+	}
 }
-func (l *SampleCustomLogger) Debugln(args ...interface{}) { l.customLogger.Print("CUSTOM LOG OUTPUT") }
-func (l *SampleCustomLogger) Info(args ...interface{})    { l.customLogger.Print("CUSTOM LOG OUTPUT") }
+func (l *SampleCustomLogger) Debugln(args ...interface{}) {
+	if IsEnabledFor(DEBUG, l.module) {
+		l.customLogger.Print("CUSTOM LOG OUTPUT")
+	}
+}
+func (l *SampleCustomLogger) Info(args ...interface{}) {
+	if IsEnabledFor(INFO, l.module) {
+		l.customLogger.Print("CUSTOM LOG OUTPUT")
+	}
+}
 func (l *SampleCustomLogger) Infof(format string, args ...interface{}) {
-	l.customLogger.Print("CUSTOM LOG OUTPUT")
+	if IsEnabledFor(INFO, l.module) {
+		l.customLogger.Print("CUSTOM LOG OUTPUT")
+	}
 }
-func (l *SampleCustomLogger) Infoln(args ...interface{}) { l.customLogger.Print("CUSTOM LOG OUTPUT") }
-func (l *SampleCustomLogger) Warn(args ...interface{})   { l.customLogger.Print("CUSTOM LOG OUTPUT") }
+func (l *SampleCustomLogger) Infoln(args ...interface{}) {
+	if IsEnabledFor(INFO, l.module) {
+		l.customLogger.Print("CUSTOM LOG OUTPUT")
+	}
+}
+func (l *SampleCustomLogger) Warn(args ...interface{}) {
+	if IsEnabledFor(WARNING, l.module) {
+		l.customLogger.Print("CUSTOM LOG OUTPUT")
+	}
+}
 func (l *SampleCustomLogger) Warnf(format string, args ...interface{}) {
-	l.customLogger.Print("CUSTOM LOG OUTPUT")
+	if IsEnabledFor(WARNING, l.module) {
+		l.customLogger.Print("CUSTOM LOG OUTPUT")
+	}
 }
-func (l *SampleCustomLogger) Warnln(args ...interface{}) { l.customLogger.Print("CUSTOM LOG OUTPUT") }
-func (l *SampleCustomLogger) Error(args ...interface{})  { l.customLogger.Print("CUSTOM LOG OUTPUT") }
+func (l *SampleCustomLogger) Warnln(args ...interface{}) {
+	if IsEnabledFor(WARNING, l.module) {
+		l.customLogger.Print("CUSTOM LOG OUTPUT")
+	}
+}
+func (l *SampleCustomLogger) Error(args ...interface{}) { l.customLogger.Print("CUSTOM LOG OUTPUT") }
 func (l *SampleCustomLogger) Errorf(format string, args ...interface{}) {
 	l.customLogger.Print("CUSTOM LOG OUTPUT")
 }
