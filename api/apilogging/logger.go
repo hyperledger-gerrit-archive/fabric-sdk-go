@@ -57,6 +57,15 @@ type Level int
 // Leveled interface is the interface required to be able to add leveled logging.
 type Leveled interface {
 	GetLevel(string) Level
-	SetLevel(Level, string)
-	IsEnabledFor(Level, string) bool
+	SetLevel(string, Level)
+	IsEnabledFor(string, Level) bool
 }
+
+// Log levels.
+const (
+	CRITICAL Level = iota
+	ERROR
+	WARNING
+	INFO
+	DEBUG
+)
