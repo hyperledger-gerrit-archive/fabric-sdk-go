@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package channelevents
 
 import (
+	"regexp"
+
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
 
@@ -20,4 +22,11 @@ type connectionRegistration struct {
 
 type filteredBlockRegistration struct {
 	eventch chan<- *fab.FilteredBlockEvent
+}
+
+type ccRegistration struct {
+	ccID        string
+	eventFilter string
+	eventRegExp *regexp.Regexp
+	eventch     chan<- *fab.CCEvent
 }
