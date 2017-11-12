@@ -15,6 +15,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -164,6 +165,10 @@ func TestCallsOnClosedClient(t *testing.T) {
 		t.Fatalf("expecting error registering for block events on closed channel event client but got none")
 	}
 
+	if _, _, err := eventClient.RegisterChaincodeEvent("ccid", "event"); err == nil {
+		t.Fatalf("expecting error registering for chaincode events on closed channel event client but got none")
+	}
+
 	// Make sure the client doesn't panic when calling unregister on disconnected client
 	eventClient.Unregister(nil)
 }
@@ -252,6 +257,109 @@ func TestFilteredBlockEventsUnauthorized(t *testing.T) {
 	}
 }
 
+func TestCCEvents(t *testing.T) {
+	channelID := "mychannel"
+	eventClient, conn, err := newClientWithMockConn(channelID, "grpc://localhost:7051", "admin", NewAuthorizedEventsOpt(FILTEREDBLOCKEVENT))
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+	defer eventClient.Disconnect()
+
+	ccID1 := "mycc1"
+	ccID2 := "mycc2"
+	ccFilter1 := "event1"
+	ccFilter2 := "event.*"
+	event1 := "event1"
+	event2 := "event2"
+	event3 := "event3"
+
+	if _, _, err := eventClient.RegisterChaincodeEvent("", ccFilter1); err == nil {
+		t.Fatalf("expecting error registering for chaincode events without CC ID but got none")
+	}
+	if _, _, err := eventClient.RegisterChaincodeEvent(ccID1, ""); err == nil {
+		t.Fatalf("expecting error registering for chaincode events without event filter but got none")
+	}
+	if _, _, err := eventClient.RegisterChaincodeEvent(ccID1, ".(xxx"); err == nil {
+		t.Fatalf("expecting error registering for chaincode events with invalid (regular expression) event filter but got none")
+	}
+	reg1, _, err := eventClient.RegisterChaincodeEvent(ccID1, ccFilter1)
+	if err != nil {
+		t.Fatalf("error registering for chaincode events: %s", err)
+	}
+	_, _, err = eventClient.RegisterChaincodeEvent(ccID1, ccFilter1)
+	if err == nil {
+		t.Fatalf("expecting error registering multiple times for chaincode events: %s", err)
+	}
+	eventClient.Unregister(reg1)
+
+	reg1, eventch1, err := eventClient.RegisterChaincodeEvent(ccID1, ccFilter1)
+	if err != nil {
+		t.Fatalf("error registering for block events: %s", err)
+	}
+	defer eventClient.Unregister(reg1)
+
+	reg2, eventch2, err := eventClient.RegisterChaincodeEvent(ccID2, ccFilter2)
+	if err != nil {
+		t.Fatalf("error registering for chaincode events: %s", err)
+	}
+	defer eventClient.Unregister(reg2)
+
+	conn.ProduceEvent(
+		newMockFilteredBlock(
+			channelID,
+			newMockCCEvent("txid1", ccID1, event1),
+			newMockCCEvent("txid2", ccID2, event2),
+			newMockCCEvent("txid3", ccID2, event3),
+		),
+	)
+
+	numExpected := 3
+	numReceived := 0
+	done := false
+	for !done {
+		select {
+		case event, ok := <-eventch1:
+			if !ok {
+				t.Fatalf("unexpected closed channel")
+			} else {
+				checkCCEvent(t, event, ccID1, event1)
+				numReceived++
+			}
+		case event, ok := <-eventch2:
+			if !ok {
+				t.Fatalf("unexpected closed channel")
+			} else {
+				checkCCEvent(t, event, ccID2, event2, event3)
+				numReceived++
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("timed out waiting for [%d] CC events. Only received [%d]", numExpected, numReceived)
+		}
+
+		if numReceived == numExpected {
+			break
+		}
+	}
+}
+
+func TestCCEventsUnauthorized(t *testing.T) {
+	eventClient, _, err := newClientWithMockConn("mychannel", "grpc://localhost:7051", "admin")
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+	defer eventClient.Disconnect()
+
+	if _, _, err := eventClient.RegisterChaincodeEvent("ccid", ".*"); err == nil {
+		t.Fatalf("expecting authorization error since client is not authorized to receive filtered events")
+	}
+}
+
 func newClientWithMockConn(channelID string, peerURL string, userName string, connOpts ...MockConnOpt) (*Client, *MockConnection, error) {
 	conn := NewMockConnection(connOpts...)
 
@@ -275,6 +383,22 @@ func newClientWithMockConnAndOpts(channelID string, peerURL string, userName str
 	return NewClientWithOpts(fabClient, newPeerConfig(peerURL), channelID, opts)
 }
 
+func checkCCEvent(t *testing.T, event *apifabclient.CCEvent, expectedCCID string, expectedEventNames ...string) {
+	if event.ChaincodeID != expectedCCID {
+		t.Fatalf("expecting event for CC [%s] but received event for CC [%s]", expectedCCID, event.ChaincodeID)
+	}
+	found := false
+	for _, eventName := range expectedEventNames {
+		if event.EventName == eventName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expecting one of [%v] but received [%s]", expectedEventNames, event.EventName)
+	}
+}
+
 func newMockFilteredBlock(channelID string, filteredTx ...*pb.FilteredTransaction) *pb.ChannelServiceResponse_Event {
 	return &pb.ChannelServiceResponse_Event{
 		Event: &pb.Event{
@@ -295,6 +419,21 @@ func newMockTxEvent(txID string, txValidationCode pb.TxValidationCode) *pb.Filte
 	return &pb.FilteredTransaction{
 		Txid:             txID,
 		TxValidationCode: txValidationCode,
+	}
+}
+
+func newMockCCEvent(txID, ccID, event string) *pb.FilteredTransaction {
+	return &pb.FilteredTransaction{
+		Txid: txID,
+		FilteredAction: []*pb.FilteredAction{
+			&pb.FilteredAction{
+				CcEvent: &pb.ChaincodeEvent{
+					ChaincodeId: ccID,
+					EventName:   event,
+					TxId:        txID,
+				},
+			},
+		},
 	}
 }
 

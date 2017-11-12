@@ -15,6 +15,13 @@ type FilteredBlockEvent struct {
 	FilteredBlock *pb.FilteredBlock
 }
 
+// CCEvent contains the data for a chaincocde event
+type CCEvent struct {
+	TxID        string
+	ChaincodeID string
+	EventName   string
+}
+
 // ConnectionEvent is sent when the client disconnects or reconnects to the peer
 type ConnectionEvent struct {
 	Connected bool
@@ -50,6 +57,12 @@ type ChannelEventClient interface {
 	// - Returns the registration and a channel that is used to receive events
 	// NOTE: It is recommended that the event be handled in a separate Go routine so as not to block other events.
 	RegisterFilteredBlockEvent() (Registration, <-chan *FilteredBlockEvent, error)
+
+	// RegisterChaincodeEvent registers for chaincode events. If the client is not authorized to receive
+	// chaincode events then an error is returned.
+	// - ccID is the chaincode ID for which events are to be received
+	// - eventFilter is the chaincode event filter (regular expression) for which events are to be received
+	RegisterChaincodeEvent(ccID, eventFilter string) (Registration, <-chan *CCEvent, error)
 
 	// Unregister unregisters the given registration.
 	// - reg is the registration handle that was returned from one of the RegisterXXX functions

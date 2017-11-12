@@ -9,6 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 package channelevents
 
 import (
+	"regexp"
 	"sync/atomic"
 	"time"
 
@@ -171,6 +172,34 @@ func (cc *Client) RegisterFilteredBlockEvent() (fab.Registration, <-chan *fab.Fi
 	eventch := make(chan *fab.FilteredBlockEvent, cc.eventChannelSize)
 	respch := make(chan *fab.RegistrationResponse)
 	cc.dispatcher.submit(newRegisterFilteredBlockEvent(eventch, respch))
+	response := <-respch
+
+	return response.Reg, eventch, response.Err
+}
+
+// RegisterChaincodeEvent registers for chaincode events. If the client is not authorized to receive
+// chaincode events then an error is returned.
+// - ccID is the chaincode ID for which events are to be received
+// - eventFilter is the chaincode event name for which events are to be received
+func (cc *Client) RegisterChaincodeEvent(ccID, eventFilter string) (fab.Registration, <-chan *fab.CCEvent, error) {
+	if cc.Stopped() {
+		return nil, nil, errors.New("channel event client is closed")
+	}
+	if ccID == "" {
+		return nil, nil, errors.New("chaincode ID is required")
+	}
+	if eventFilter == "" {
+		return nil, nil, errors.New("event filter is required")
+	}
+
+	regExp, err := regexp.Compile(eventFilter)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "invalid event filter [%s] for chaincode [%s]", eventFilter, ccID)
+	}
+
+	eventch := make(chan *fab.CCEvent, cc.eventChannelSize)
+	respch := make(chan *fab.RegistrationResponse)
+	cc.dispatcher.submit(newRegisterCCEvent(ccID, eventFilter, regExp, eventch, respch))
 	response := <-respch
 
 	return response.Reg, eventch, response.Err

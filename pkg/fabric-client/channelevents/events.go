@@ -6,7 +6,11 @@ SPDX-License-Identifier: Apache-2.0
 
 package channelevents
 
-import fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+import (
+	"regexp"
+
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+)
 
 type eventType string
 type event interface{}
@@ -24,6 +28,11 @@ type registerChannelEvent struct {
 type registerFilteredBlockEvent struct {
 	registerEvent
 	reg *filteredBlockRegistration
+}
+
+type registerCCEvent struct {
+	registerEvent
+	reg *ccRegistration
 }
 
 type connectionResponse struct {
@@ -78,5 +87,25 @@ func newRegisterFilteredBlockEvent(eventch chan<- *fab.FilteredBlockEvent, respc
 func newUnregisterEvent(reg fab.Registration) *unregisterEvent {
 	return &unregisterEvent{
 		reg: reg,
+	}
+}
+
+func newRegisterCCEvent(ccID, eventFilter string, eventRegExp *regexp.Regexp, eventch chan<- *fab.CCEvent, respch chan<- *fab.RegistrationResponse) *registerCCEvent {
+	return &registerCCEvent{
+		reg: &ccRegistration{
+			ccID:        ccID,
+			eventFilter: eventFilter,
+			eventRegExp: eventRegExp,
+			eventch:     eventch,
+		},
+		registerEvent: registerEvent{respch: respch},
+	}
+}
+
+func newCCEvent(chaincodeID, eventName, txID string) *fab.CCEvent {
+	return &fab.CCEvent{
+		ChaincodeID: chaincodeID,
+		EventName:   eventName,
+		TxID:        txID,
 	}
 }
