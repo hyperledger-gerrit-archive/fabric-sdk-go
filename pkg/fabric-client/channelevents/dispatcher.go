@@ -50,6 +50,7 @@ type eventDispatcher struct {
 	eventTypes                []eventType
 	chRegistration            *channelRegistration
 	filteredBlockRegistration *filteredBlockRegistration
+	txRegistrations           map[string]*txRegistration
 	ccRegistrations           map[string]*ccRegistration
 	connectionProvider        ConnectionProvider
 }
@@ -68,6 +69,7 @@ func newEventDispatcher(fabclient fab.FabricClient, peerConfig *apiconfig.PeerCo
 		peerConfig:         *peerConfig,
 		channelID:          channelID,
 		eventch:            make(chan interface{}, dispatcherChannelSize),
+		txRegistrations:    make(map[string]*txRegistration),
 		ccRegistrations:    make(map[string]*ccRegistration),
 		connectionProvider: connectionProvider,
 	}
@@ -115,6 +117,7 @@ func (ed *eventDispatcher) stop() {
 	// Remove all registrations and close the associated event channels
 	// so that the client is notified that the registration has been removed
 	ed.clearFilteredBlockRegistration()
+	ed.clearTxRegistrations()
 	ed.clearChaincodeRegistrations()
 
 	logger.Debugf("Closing dispatcher event channel.\n")
@@ -127,6 +130,14 @@ func (ed *eventDispatcher) clearChaincodeRegistrations() {
 		close(reg.eventch)
 	}
 	ed.ccRegistrations = make(map[string]*ccRegistration)
+}
+
+func (ed *eventDispatcher) clearTxRegistrations() {
+	for _, reg := range ed.txRegistrations {
+		logger.Debugf("Closing TX registration event channel for TxID [%s].\n", reg.txID)
+		close(reg.eventch)
+	}
+	ed.txRegistrations = make(map[string]*txRegistration)
 }
 
 func (ed *eventDispatcher) clearFilteredBlockRegistration() {
@@ -270,6 +281,19 @@ func (ed *eventDispatcher) handleRegisterCCEvent(e event) {
 	}
 }
 
+func (ed *eventDispatcher) handleRegisterTxStatusEvent(e event) {
+	event := e.(*registerTxStatusEvent)
+
+	if !ed.authorized[FILTEREDBLOCKEVENT] {
+		event.respch <- errorResponse(errors.New("client not authorized to receive TX events"))
+	} else if _, exists := ed.txRegistrations[event.reg.txID]; exists {
+		event.respch <- errorResponse(errors.Errorf("registration already exists for TX ID [%s]", event.reg.txID))
+	} else {
+		ed.txRegistrations[event.reg.txID] = event.reg
+		event.respch <- successResponse(event.reg)
+	}
+}
+
 func (ed *eventDispatcher) handleUnregisterEvent(e event) {
 	event := e.(*unregisterEvent)
 
@@ -279,6 +303,8 @@ func (ed *eventDispatcher) handleUnregisterEvent(e event) {
 		err = ed.unregisterFilteredBlockEvents(registration)
 	case *ccRegistration:
 		err = ed.unregisterCCEvents(registration)
+	case *txRegistration:
+		err = ed.unregisterTXEvents(registration)
 	default:
 		err = errors.Errorf("Unsupported registration type: %v", reflect.TypeOf(registration))
 	}
@@ -342,6 +368,7 @@ func (ed *eventDispatcher) handleRegisterChannelResponse(resp *pb.ChannelService
 	if len(ed.ccRegistrations) > 0 && !ed.authorized[FILTEREDBLOCKEVENT] {
 		logger.Warnf("Client not authorized to receive filtered block events. All chaincode and transaction events will be removed.")
 		ed.clearChaincodeRegistrations()
+		ed.clearTxRegistrations()
 	}
 
 	if ed.chRegistration.respch != nil {
@@ -409,6 +436,8 @@ func (ed *eventDispatcher) handleFilteredBlockEvent(event *pb.Event_FilteredBloc
 	}
 
 	for _, tx := range event.FilteredBlock.FilteredTx {
+		ed.triggerTxStatusEvent(tx)
+
 		// Only send a chaincode event if the transaction has committed
 		if tx.TxValidationCode == pb.TxValidationCode_VALID {
 			for _, action := range tx.FilteredAction {
@@ -445,6 +474,31 @@ func (ed *eventDispatcher) unregisterCCEvents(registration *ccRegistration) erro
 	return nil
 }
 
+func (ed *eventDispatcher) unregisterTXEvents(registration *txRegistration) error {
+	reg, ok := ed.txRegistrations[registration.txID]
+	if !ok {
+		return errors.New("the provided registration is invalid")
+	}
+
+	logger.Debugf("Unregistering Tx Status event for TxID [%s]...\n", registration.txID)
+	close(reg.eventch)
+	delete(ed.txRegistrations, registration.txID)
+	return nil
+}
+
+func (ed *eventDispatcher) triggerTxStatusEvent(tx *pb.FilteredTransaction) {
+	logger.Debugf("Triggering Tx Status event for TxID [%s]...\n", tx.Txid)
+	if reg, ok := ed.txRegistrations[tx.Txid]; ok {
+		logger.Debugf("Sending Tx Status event for TxID [%s] to registrant...\n", tx.Txid)
+
+		select {
+		case reg.eventch <- newTxStatusEvent(tx.Txid, tx.TxValidationCode):
+		default:
+			logger.Warnf("Unable to send to Tx Status event channel.")
+		}
+	}
+}
+
 func (ed *eventDispatcher) triggerCCEvent(ccEvent *pb.ChaincodeEvent) {
 	for _, reg := range ed.ccRegistrations {
 		logger.Debugf("Matching CCEvent[%s,%s] against Reg[%s,%s] ...\n", ccEvent.ChaincodeId, ccEvent.EventName, reg.ccID, reg.eventFilter)
@@ -466,6 +520,7 @@ func (ed *eventDispatcher) registerHandlers() {
 	ed.registerHandler(&registerChannelEvent{}, ed.handleRegisterChannelEvent)
 	ed.registerHandler(&unregisterChannelEvent{}, ed.handleUnregisterChannelEvent)
 	ed.registerHandler(&registerCCEvent{}, ed.handleRegisterCCEvent)
+	ed.registerHandler(&registerTxStatusEvent{}, ed.handleRegisterTxStatusEvent)
 	ed.registerHandler(&registerFilteredBlockEvent{}, ed.handleRegisterFilteredBlockEvent)
 	ed.registerHandler(&unregisterEvent{}, ed.handleUnregisterEvent)
 	ed.registerHandler(&pb.ChannelServiceResponse_Result{}, ed.handleServiceResponse)

@@ -205,6 +205,25 @@ func (cc *Client) RegisterChaincodeEvent(ccID, eventFilter string) (fab.Registra
 	return response.Reg, eventch, response.Err
 }
 
+// RegisterTxStatusEvent registers for transaction status events. If the client is not authorized to receive
+// transaction status events then an error is returned.
+// - txID is the transaction ID for which events are to be received
+func (cc *Client) RegisterTxStatusEvent(txID string) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
+	if cc.Stopped() {
+		return nil, nil, errors.New("channel event client is closed")
+	}
+	if txID == "" {
+		return nil, nil, errors.New("txID must be provided")
+	}
+
+	eventch := make(chan *fab.TxStatusEvent, cc.eventChannelSize)
+	respch := make(chan *fab.RegistrationResponse)
+	cc.dispatcher.submit(newRegisterTxStatusEvent(txID, eventch, respch))
+	response := <-respch
+
+	return response.Reg, eventch, response.Err
+}
+
 // Unregister unregisters the given registration.
 // - reg is the registration handle that was returned from one of the RegisterXXX functions
 func (cc *Client) Unregister(reg fab.Registration) {

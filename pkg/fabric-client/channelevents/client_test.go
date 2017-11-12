@@ -169,6 +169,10 @@ func TestCallsOnClosedClient(t *testing.T) {
 		t.Fatalf("expecting error registering for chaincode events on closed channel event client but got none")
 	}
 
+	if _, _, err := eventClient.RegisterTxStatusEvent("txid"); err == nil {
+		t.Fatalf("expecting error registering for TX events on closed channel event client but got none")
+	}
+
 	// Make sure the client doesn't panic when calling unregister on disconnected client
 	eventClient.Unregister(nil)
 }
@@ -254,6 +258,99 @@ func TestFilteredBlockEventsUnauthorized(t *testing.T) {
 
 	if _, _, err := eventClient.RegisterFilteredBlockEvent(); err == nil {
 		t.Fatalf("expecting authorization error since client is not authorized to receive filtered block events")
+	}
+}
+
+func TestTxStatusEvents(t *testing.T) {
+	channelID := "mychannel"
+	eventClient, conn, err := newClientWithMockConn(channelID, "grpc://localhost:7051", "admin", NewAuthorizedEventsOpt(FILTEREDBLOCKEVENT))
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+	defer eventClient.Disconnect()
+
+	txID1 := "1234"
+	txCode1 := pb.TxValidationCode_VALID
+	txID2 := "5678"
+	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
+
+	if _, _, err := eventClient.RegisterTxStatusEvent(""); err == nil {
+		t.Fatalf("expecting error registering for TxStatus event without a TX ID but got none")
+	}
+	reg1, _, err := eventClient.RegisterTxStatusEvent(txID1)
+	if err != nil {
+		t.Fatalf("error registering for TxStatus events: %s", err)
+	}
+	_, _, err = eventClient.RegisterTxStatusEvent(txID1)
+	if err == nil {
+		t.Fatalf("expecting error registering multiple times for TxStatus events: %s", err)
+	}
+	eventClient.Unregister(reg1)
+
+	reg1, eventch1, err := eventClient.RegisterTxStatusEvent(txID1)
+	if err != nil {
+		t.Fatalf("error registering for TxStatus events: %s", err)
+	}
+	defer eventClient.Unregister(reg1)
+
+	reg2, eventch2, err := eventClient.RegisterTxStatusEvent(txID2)
+	if err != nil {
+		t.Fatalf("error registering for TxStatus events: %s", err)
+	}
+	defer eventClient.Unregister(reg2)
+
+	conn.ProduceEvent(
+		newMockFilteredBlock(
+			channelID,
+			newMockTxEvent(txID1, txCode1),
+			newMockTxEvent(txID2, txCode2),
+		),
+	)
+
+	numExpected := 2
+	numReceived := 0
+	done := false
+	for !done {
+		select {
+		case event, ok := <-eventch1:
+			if !ok {
+				t.Fatalf("unexpected closed channel")
+			} else {
+				checkTxStatusEvent(t, event, txID1, txCode1)
+				numReceived++
+			}
+		case event, ok := <-eventch2:
+			if !ok {
+				t.Fatalf("unexpected closed channel")
+			} else {
+				checkTxStatusEvent(t, event, txID2, txCode2)
+				numReceived++
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("timed out waiting for [%d] TxStatus events. Only received [%d]", numExpected, numReceived)
+		}
+
+		if numReceived == numExpected {
+			break
+		}
+	}
+}
+
+func TestTxStatusEventsUnauthorized(t *testing.T) {
+	eventClient, _, err := newClientWithMockConn("mychannel", "grpc://localhost:7051", "admin")
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+	defer eventClient.Disconnect()
+
+	if _, _, err := eventClient.RegisterTxStatusEvent("txid"); err == nil {
+		t.Fatalf("expecting authorization error since client is not authorized to receive filtered events")
 	}
 }
 
@@ -381,6 +478,15 @@ func newClientWithMockConnAndOpts(channelID string, peerURL string, userName str
 	fabClient.SetSigningManager(mocks.NewMockSigningManager())
 
 	return NewClientWithOpts(fabClient, newPeerConfig(peerURL), channelID, opts)
+}
+
+func checkTxStatusEvent(t *testing.T, event *apifabclient.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
+	if event.TxID != expectedTxID {
+		t.Fatalf("expecting event for TxID [%s] but received event for TxID [%s]", expectedTxID, event.TxID)
+	}
+	if event.TxValidationCode != expectedCode {
+		t.Fatalf("expecting TxValidationCode [%s] but received [%s]", expectedCode, event.TxValidationCode)
+	}
 }
 
 func checkCCEvent(t *testing.T, event *apifabclient.CCEvent, expectedCCID string, expectedEventNames ...string) {
