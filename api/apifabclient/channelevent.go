@@ -6,6 +6,15 @@ SPDX-License-Identifier: Apache-2.0
 
 package apifabclient
 
+import (
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+)
+
+// FilteredBlockEvent contains the data for a filtered block event
+type FilteredBlockEvent struct {
+	FilteredBlock *pb.FilteredBlock
+}
+
 // ConnectionEvent is sent when the client disconnects or reconnects to the peer
 type ConnectionEvent struct {
 	Connected bool
@@ -35,4 +44,14 @@ type ChannelEventClient interface {
 
 	// Disconnect disconnects from the peer. Once this function is invoked the client may no longer be used.
 	Disconnect()
+
+	// RegisterFilteredBlockEvent registers for filtered block events. If the client is not authorized to receive
+	// filtered block events then an error is returned.
+	// - Returns the registration and a channel that is used to receive events
+	// NOTE: It is recommended that the event be handled in a separate Go routine so as not to block other events.
+	RegisterFilteredBlockEvent() (Registration, <-chan *FilteredBlockEvent, error)
+
+	// Unregister unregisters the given registration.
+	// - reg is the registration handle that was returned from one of the RegisterXXX functions
+	Unregister(reg Registration)
 }
