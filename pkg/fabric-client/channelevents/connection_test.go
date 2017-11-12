@@ -97,6 +97,33 @@ func TestConnection(t *testing.T) {
 	conn.Close()
 }
 
+func TestSend(t *testing.T) {
+	fabClient := fab.NewClient(mocks.NewMockConfig())
+	user := mocks.NewMockUser("admin")
+	fabClient.SetUserContext(user)
+	fabClient.SetSigningManager(mocks.NewMockSigningManager())
+
+	channelID := "mychannel"
+	conn, err := newConnection(channelID, fabClient, newPeerConfig(peerURL))
+	if err != nil {
+		t.Fatalf("error creating new connection: %s", err)
+	}
+
+	eventch := make(chan interface{})
+
+	go conn.Receive(eventch)
+
+	time.Sleep(1 * time.Second)
+
+	if err := conn.Send(newRegisterChannelRequest(channelID)); err != nil {
+		t.Fatalf("error sending register event for channel [%s]: err", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	conn.Close()
+}
+
 var mockChannelServer *MockChannelServer
 
 func TestMain(m *testing.M) {
@@ -116,4 +143,15 @@ func TestMain(m *testing.M) {
 
 	time.Sleep(2 * time.Second)
 	os.Exit(m.Run())
+}
+
+func newRegisterChannelRequest(channelID string) *pb.ChannelServiceRequest {
+	return &pb.ChannelServiceRequest{
+		Request: &pb.ChannelServiceRequest_RegisterChannel{
+			RegisterChannel: &pb.RegisterChannel{
+				ChannelIds: []string{channelID},
+				// Events:     interestedEvents,
+			},
+		},
+	}
 }

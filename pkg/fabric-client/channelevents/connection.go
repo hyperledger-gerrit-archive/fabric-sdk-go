@@ -13,11 +13,16 @@ import (
 	"io"
 	"sync/atomic"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/utils"
+
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 
+	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -113,7 +118,59 @@ func (c *connection) Close() {
 }
 
 func (c *connection) Send(emsg *pb.ChannelServiceRequest) error {
-	panic("not implemented")
+	if c.closed() {
+		return errors.New("connection is closed")
+	}
+
+	user, err := c.fabclient.LoadUserFromStateStore("")
+	if err != nil {
+		return err
+	}
+
+	identity, err := user.Identity()
+	if err != nil {
+		return errors.Wrapf(err, "error getting user identity")
+	}
+
+	signingMgr := c.fabclient.SigningManager()
+	if signingMgr == nil {
+		return errors.New("signing manager is nil")
+	}
+
+	payload, err := proto.Marshal(emsg)
+	if err != nil {
+		return errors.Wrapf(err, "error marshalling message")
+	}
+
+	nonce, err := fc.GenerateRandomNonce()
+	if err != nil {
+		return errors.Wrap(err, "GenerateRandomNonce failed")
+	}
+
+	msgVersion := int32(0)
+	epoch := uint64(0)
+
+	payloadBytes := utils.MarshalOrPanic(&cb.Payload{
+		Header: utils.MakePayloadHeader(
+			utils.MakeChannelHeader(cb.HeaderType_CHANNEL_SERVICE_REQUEST, msgVersion, c.channelID, epoch),
+			&cb.SignatureHeader{
+				Creator: identity,
+				Nonce:   nonce,
+			}),
+		Data: payload,
+	})
+
+	signature, err := signingMgr.Sign(payloadBytes, user.PrivateKey())
+	if err != nil {
+		return errors.Wrap(err, "error signing message")
+	}
+
+	logger.Debugf("Sending %v\n", emsg)
+
+	return c.stream.Send(&cb.Envelope{
+		Payload:   payloadBytes,
+		Signature: signature,
+	})
 }
 
 func (c *connection) Receive(eventch chan<- interface{}) {

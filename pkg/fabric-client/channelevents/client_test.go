@@ -9,6 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 package channelevents
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -55,6 +56,89 @@ func TestClientConnect(t *testing.T) {
 	if eventClient.ConnectionState() != disconnected {
 		t.Fatalf("expecting connection state %s but got %s", disconnected, eventClient.ConnectionState())
 	}
+}
+
+func TestFailedChannelRegistration(t *testing.T) {
+	channelID := "mychannel"
+	errMsg := "mock failed channel registration"
+	opts := newMockClientOpts()
+	opts.connectionProvider = NewMockConnectionProviderFactory().Provider(
+		NewMockConnection(
+			NewResultsOpt(
+				NewResult(RegisterChannel, FailResult, errMsg),
+			),
+		),
+	)
+
+	eventClient, err := newClientWithMockConnAndOpts(channelID, "grpc://localhost:7051", "admin", opts)
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err == nil {
+		t.Fatalf("expecting error connecting channel event client but got none")
+	} else if !strings.Contains(err.Error(), errMsg) {
+		t.Fatalf("expecting error message to contain [%s] when connecting channel event client but got [%s]", errMsg, err)
+	}
+}
+
+func TestInvalidChannelRegistrationResponse(t *testing.T) {
+	channelID := "mychannel"
+	opts := newMockClientOpts()
+	opts.connectionProvider = NewMockConnectionProviderFactory().Provider(
+		NewMockConnection(
+			NewResultsOpt(
+				NewResult(RegisterChannel, InvalidChannelResult),
+			),
+		),
+	)
+
+	eventClient, err := newClientWithMockConnAndOpts(channelID, "grpc://localhost:7051", "admin", opts)
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err == nil {
+		t.Fatalf("expecting error connecting channel event client but got none")
+	}
+}
+
+func TestTimedOutChannelRegistration(t *testing.T) {
+	channelID := "mychannel"
+	opts := newMockClientOpts()
+	opts.connectionProvider = NewMockConnectionProviderFactory().Provider(
+		NewMockConnection(
+			NewResultsOpt(
+				NewResult(RegisterChannel, NoOpResult),
+			),
+		),
+	)
+	eventClient, err := newClientWithMockConnAndOpts(channelID, "grpc://localhost:7051", "admin", opts)
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err == nil {
+		t.Fatalf("expecting error connecting channel event client due to no response from channel registration but got none")
+	}
+}
+
+func TestTimedOutChannelUnregistration(t *testing.T) {
+	channelID := "mychannel"
+	opts := newMockClientOpts()
+	opts.connectionProvider = NewMockConnectionProviderFactory().Provider(
+		NewMockConnection(
+			NewResultsOpt(
+				NewResult(UnregisterChannel, NoOpResult),
+			),
+		),
+	)
+	eventClient, err := newClientWithMockConnAndOpts(channelID, "grpc://localhost:7051", "admin", opts)
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+	// Should just disconnect gracefully
+	eventClient.Disconnect()
 }
 
 func TestCallsOnClosedClient(t *testing.T) {
