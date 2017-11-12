@@ -15,6 +15,12 @@ type FilteredBlockEvent struct {
 	FilteredBlock *pb.FilteredBlock
 }
 
+// TxStatusEvent contains the data for a transaction status event
+type TxStatusEvent struct {
+	TxID             string
+	TxValidationCode pb.TxValidationCode
+}
+
 // CCEvent contains the data for a chaincocde event
 type CCEvent struct {
 	TxID        string
@@ -63,6 +69,11 @@ type ChannelEventClient interface {
 	// - ccID is the chaincode ID for which events are to be received
 	// - eventFilter is the chaincode event filter (regular expression) for which events are to be received
 	RegisterChaincodeEvent(ccID, eventFilter string) (Registration, <-chan *CCEvent, error)
+
+	// RegisterTxStatusEvent registers for transaction status events. If the client is not authorized to receive
+	// transaction status events then an error is returned.
+	// - txID is the transaction ID for which events are to be received
+	RegisterTxStatusEvent(txID string) (Registration, <-chan *TxStatusEvent, error)
 
 	// Unregister unregisters the given registration.
 	// - reg is the registration handle that was returned from one of the RegisterXXX functions

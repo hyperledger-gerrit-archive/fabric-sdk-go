@@ -10,6 +10,7 @@ import (
 	"regexp"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 type eventType string
@@ -33,6 +34,11 @@ type registerFilteredBlockEvent struct {
 type registerCCEvent struct {
 	registerEvent
 	reg *ccRegistration
+}
+
+type registerTxStatusEvent struct {
+	registerEvent
+	reg *txRegistration
 }
 
 type connectionResponse struct {
@@ -107,5 +113,19 @@ func newCCEvent(chaincodeID, eventName, txID string) *fab.CCEvent {
 		ChaincodeID: chaincodeID,
 		EventName:   eventName,
 		TxID:        txID,
+	}
+}
+
+func newRegisterTxStatusEvent(txID string, eventch chan<- *fab.TxStatusEvent, respch chan<- *fab.RegistrationResponse) *registerTxStatusEvent {
+	return &registerTxStatusEvent{
+		reg:           &txRegistration{txID: txID, eventch: eventch},
+		registerEvent: registerEvent{respch: respch},
+	}
+}
+
+func newTxStatusEvent(txID string, txValidationCode pb.TxValidationCode) *fab.TxStatusEvent {
+	return &fab.TxStatusEvent{
+		TxID:             txID,
+		TxValidationCode: txValidationCode,
 	}
 }
