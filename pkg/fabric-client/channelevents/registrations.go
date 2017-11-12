@@ -30,3 +30,8 @@ type ccRegistration struct {
 	eventRegExp *regexp.Regexp
 	eventch     chan<- *fab.CCEvent
 }
+
+type txRegistration struct {
+	txID    string
+	eventch chan<- *fab.TxStatusEvent
+}
