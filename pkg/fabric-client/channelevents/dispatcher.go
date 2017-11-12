@@ -40,16 +40,17 @@ type ConnectionProvider func(string, fab.FabricClient, *apiconfig.PeerConfig) (C
 // and events originating from the channel event service. All events are processed in a single Go routine
 // in order to avoid any race conditions. This avoids the need for synchronization.
 type eventDispatcher struct {
-	handlers           map[reflect.Type]handler
-	fabclient          fab.FabricClient
-	peerConfig         apiconfig.PeerConfig
-	channelID          string
-	eventch            chan interface{}
-	connection         Connection
-	authorized         map[eventType]bool
-	eventTypes         []eventType
-	chRegistration     *channelRegistration
-	connectionProvider ConnectionProvider
+	handlers                  map[reflect.Type]handler
+	fabclient                 fab.FabricClient
+	peerConfig                apiconfig.PeerConfig
+	channelID                 string
+	eventch                   chan interface{}
+	connection                Connection
+	authorized                map[eventType]bool
+	eventTypes                []eventType
+	chRegistration            *channelRegistration
+	filteredBlockRegistration *filteredBlockRegistration
+	connectionProvider        ConnectionProvider
 }
 
 type handler func(event)
@@ -109,8 +110,20 @@ func (ed *eventDispatcher) start() {
 }
 
 func (ed *eventDispatcher) stop() {
+	// Remove all registrations and close the associated event channels
+	// so that the client is notified that the registration has been removed
+	ed.clearFilteredBlockRegistration()
+
 	logger.Debugf("Closing dispatcher event channel.\n")
 	close(ed.eventch)
+}
+
+func (ed *eventDispatcher) clearFilteredBlockRegistration() {
+	if ed.filteredBlockRegistration != nil {
+		logger.Debugf("Closing filtered block registration event channel.\n")
+		close(ed.filteredBlockRegistration.eventch)
+		ed.filteredBlockRegistration = nil
+	}
 }
 
 func (ed *eventDispatcher) handleConnectEvent(e event) {
@@ -219,6 +232,34 @@ func (ed *eventDispatcher) handleUnregisterChannelEvent(e event) {
 	}
 }
 
+func (ed *eventDispatcher) handleRegisterFilteredBlockEvent(e event) {
+	event := e.(*registerFilteredBlockEvent)
+
+	if !ed.authorized[FILTEREDBLOCKEVENT] {
+		event.respch <- errorResponse(errors.New("client not authorized to receive filtered block events"))
+	} else if ed.filteredBlockRegistration != nil {
+		event.respch <- errorResponse(errors.New("registration already exists for filtered block event"))
+	} else {
+		ed.filteredBlockRegistration = event.reg
+		event.respch <- successResponse(event.reg)
+	}
+}
+
+func (ed *eventDispatcher) handleUnregisterEvent(e event) {
+	event := e.(*unregisterEvent)
+
+	var err error
+	switch registration := event.reg.(type) {
+	case *filteredBlockRegistration:
+		err = ed.unregisterFilteredBlockEvents(registration)
+	default:
+		err = errors.Errorf("Unsupported registration type: %v", reflect.TypeOf(registration))
+	}
+	if err != nil {
+		logger.Warnf("Error in unregister: %s\n", err)
+	}
+}
+
 func (ed *eventDispatcher) handleServiceResponse(e event) {
 	event := e.(*pb.ChannelServiceResponse_Result)
 
@@ -264,6 +305,12 @@ func (ed *eventDispatcher) handleRegisterChannelResponse(resp *pb.ChannelService
 		ed.authorized[eventType(authEvent)] = true
 	}
 
+	// Check existing registrations to ensure they're still valid, otherwise remove the registrations
+	if ed.filteredBlockRegistration != nil && !ed.authorized[FILTEREDBLOCKEVENT] {
+		logger.Warnf("Client not authorized to receive filtered block events. Filtered block registration will be removed.")
+		ed.clearFilteredBlockRegistration()
+	}
+
 	if ed.chRegistration.respch != nil {
 		ed.chRegistration.respch <- successResponse(nil)
 
@@ -301,12 +348,55 @@ func (ed *eventDispatcher) handleUnregisterChannelResponse(resp *pb.ChannelServi
 	ed.chRegistration = nil
 }
 
+func (ed *eventDispatcher) handleChannelEvent(e event) {
+	event := e.(*pb.ChannelServiceResponse_Event)
+
+	switch evt := event.Event.Event.(type) {
+	case *pb.Event_FilteredBlock:
+		ed.handleFilteredBlockEvent(evt)
+	default:
+		logger.Warnf("Unsupported event type: %v", reflect.TypeOf(event.Event.Event))
+	}
+}
+
+func (ed *eventDispatcher) handleFilteredBlockEvent(event *pb.Event_FilteredBlock) {
+	logger.Debugf("Handling filtered block event: %v\n", event)
+
+	if event.FilteredBlock == nil || event.FilteredBlock.FilteredTx == nil {
+		logger.Errorf("Received invalid filtered block event: %s", event)
+		return
+	}
+
+	if ed.filteredBlockRegistration != nil {
+		select {
+		case ed.filteredBlockRegistration.eventch <- &fab.FilteredBlockEvent{FilteredBlock: event.FilteredBlock}:
+		default:
+			logger.Warnf("Unable to send to filtered block event channel.")
+		}
+	}
+}
+
+func (ed *eventDispatcher) unregisterFilteredBlockEvents(registration *filteredBlockRegistration) error {
+	if ed.filteredBlockRegistration == nil {
+		return errors.New("no filtered block registration found")
+	}
+	if ed.filteredBlockRegistration != registration {
+		return errors.New("the provided registration is invalid")
+	}
+	close(ed.filteredBlockRegistration.eventch)
+	ed.filteredBlockRegistration = nil
+	return nil
+}
+
 func (ed *eventDispatcher) registerHandlers() {
 	ed.registerHandler(&connectEvent{}, ed.handleConnectEvent)
 	ed.registerHandler(&disconnectEvent{}, ed.handleDisconnectEvent)
 	ed.registerHandler(&registerChannelEvent{}, ed.handleRegisterChannelEvent)
 	ed.registerHandler(&unregisterChannelEvent{}, ed.handleUnregisterChannelEvent)
+	ed.registerHandler(&registerFilteredBlockEvent{}, ed.handleRegisterFilteredBlockEvent)
+	ed.registerHandler(&unregisterEvent{}, ed.handleUnregisterEvent)
 	ed.registerHandler(&pb.ChannelServiceResponse_Result{}, ed.handleServiceResponse)
+	ed.registerHandler(&pb.ChannelServiceResponse_Event{}, ed.handleChannelEvent)
 }
 
 func (ed *eventDispatcher) registerHandler(t interface{}, h handler) {

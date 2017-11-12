@@ -161,6 +161,32 @@ func (cc *Client) Disconnect() {
 	logger.Debugf("... channel event client is stopped\n")
 }
 
+// RegisterFilteredBlockEvent registers for filtered block events. If the client is not authorized to receive
+// filtered block events then an error is returned.
+func (cc *Client) RegisterFilteredBlockEvent() (fab.Registration, <-chan *fab.FilteredBlockEvent, error) {
+	if cc.Stopped() {
+		return nil, nil, errors.New("channel event client is closed")
+	}
+
+	eventch := make(chan *fab.FilteredBlockEvent, cc.eventChannelSize)
+	respch := make(chan *fab.RegistrationResponse)
+	cc.dispatcher.submit(newRegisterFilteredBlockEvent(eventch, respch))
+	response := <-respch
+
+	return response.Reg, eventch, response.Err
+}
+
+// Unregister unregisters the given registration.
+// - reg is the registration handle that was returned from one of the RegisterXXX functions
+func (cc *Client) Unregister(reg fab.Registration) {
+	if cc.Stopped() {
+		// Client is already closed. Do nothing.
+		return
+	}
+
+	cc.dispatcher.submit(newUnregisterEvent(reg))
+}
+
 func newClient(fabclient fab.FabricClient, peerConfig *apiconfig.PeerConfig, channelID string, opts *ClientOpts, eventTypes []eventType) (*Client, error) {
 	if peerConfig.URL == "" {
 		return nil, errors.New("expecting peer URL")
