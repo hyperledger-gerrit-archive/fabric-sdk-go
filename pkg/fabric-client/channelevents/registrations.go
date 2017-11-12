@@ -17,3 +17,7 @@ type channelRegistration struct {
 type connectionRegistration struct {
 	eventch chan<- *fab.ConnectionEvent
 }
+
+type filteredBlockRegistration struct {
+	eventch chan<- *fab.FilteredBlockEvent
+}
