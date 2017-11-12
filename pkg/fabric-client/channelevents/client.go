@@ -94,6 +94,24 @@ func (cc *Client) Connect() error {
 		return r.err
 	}
 
+	if err := cc.registerChannel(cc.eventTypes); err != nil {
+		logger.Warnf("Unable to register for events: %s. Disconnecting...", err)
+
+		respch := make(chan *connectionResponse)
+		cc.dispatcher.submit(newDisconnectEvent(respch))
+		response := <-respch
+
+		if response.err != nil {
+			logger.Warnf("Received error from disconnect request: %s\n", response.err)
+		} else {
+			logger.Debugf("Received success from disconnect request\n")
+		}
+
+		cc.setConnectionState(connecting, disconnected)
+
+		return errors.Errorf("unable to register for events: %s", err)
+	}
+
 	cc.setConnectionState(connecting, connected)
 
 	return nil
@@ -110,6 +128,17 @@ func (cc *Client) Disconnect() {
 	}
 
 	logger.Debugf("Stopping client...\n")
+
+	select {
+	case resp := <-cc.unregisterChannelAsync():
+		if resp.Err != nil {
+			logger.Warnf("Error in unregister channel: %s", resp.Err)
+		} else {
+			logger.Debugf("Channel unregistered\n")
+		}
+	case <-time.After(cc.opts.ResponseTimeout):
+		logger.Warnf("Timed out waiting for unregister channel response")
+	}
 
 	logger.Debugf("Sending disconnect request...\n")
 
@@ -153,6 +182,38 @@ func newClient(fabclient fab.FabricClient, peerConfig *apiconfig.PeerConfig, cha
 	go dispatcher.start()
 
 	return cc, nil
+}
+
+func (cc *Client) registerChannelAsync(eventTypes []eventType) <-chan *fab.RegistrationResponse {
+	respch := make(chan *fab.RegistrationResponse)
+	cc.dispatcher.submit(newRegisterChannelEvent(eventTypes, respch))
+	return respch
+}
+
+func (cc *Client) unregisterChannelAsync() <-chan *fab.RegistrationResponse {
+	respch := make(chan *fab.RegistrationResponse)
+	cc.dispatcher.submit(newUnregisterChannelEvent(respch))
+	return respch
+}
+
+func (cc *Client) registerChannel(eventTypes []eventType) error {
+	logger.Debugf("registering channel....\n")
+
+	var err error
+	select {
+	case s := <-cc.registerChannelAsync(eventTypes):
+		err = s.Err
+	case <-time.After(cc.opts.ResponseTimeout):
+		err = errors.New("timeout waiting for channel registration response")
+	}
+
+	if err != nil {
+		logger.Errorf("unable to register for channel events: %s\n", err)
+		return err
+	}
+
+	logger.Debugf("successfully registered for channel events\n")
+	return nil
 }
 
 // Stopped returns true if the client has been stopped (disconnected)

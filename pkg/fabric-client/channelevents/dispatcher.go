@@ -18,11 +18,12 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-type eventType string
-
 const (
 	BLOCKEVENT         eventType = "BLOCKEVENT"
 	FILTEREDBLOCKEVENT eventType = "FILTEREDBLOCKEVENT"
+
+	REGISTER_CHANNEL_ACTION   = "RegisterChannel"
+	DEREGISTER_CHANNEL_ACTION = "DeregisterChannel"
 )
 
 // Connection defines the functions for a channel event service connection
@@ -45,6 +46,9 @@ type eventDispatcher struct {
 	channelID          string
 	eventch            chan interface{}
 	connection         Connection
+	authorized         map[eventType]bool
+	eventTypes         []eventType
+	chRegistration     *channelRegistration
 	connectionProvider ConnectionProvider
 }
 
@@ -147,11 +151,210 @@ func (ed *eventDispatcher) handleDisconnectEvent(e event) {
 	event.respch <- &connectionResponse{}
 }
 
+func (ed *eventDispatcher) handleRegisterChannelEvent(e event) {
+	event := e.(*registerChannelEvent)
+
+	if ed.connection == nil {
+		logger.Warnf("Unable to register channel since no connection was established.")
+		return
+	}
+
+	if ed.fabclient.UserContext() == nil {
+		event.respch <- errorResponse(errors.New("user context not set"))
+		return
+	}
+
+	identity, err := ed.fabclient.UserContext().Identity()
+	if err != nil {
+		event.respch <- errorResponse(errors.Wrap(err, "error getting signing identity"))
+		return
+	}
+
+	if ed.chRegistration != nil {
+		logger.Debugf("Already register events for channel [%s] and event types %v\n", ed.channelID, ed.eventTypes)
+		event.respch <- successResponse(ed.chRegistration)
+		return
+	} else if event.eventTypes != nil {
+		// First time registering
+		ed.eventTypes = event.eventTypes
+		logger.Debugf("Sending register events for channel [%s] and event types %v\n", ed.channelID, ed.eventTypes)
+	} else {
+		// No events to register for
+		logger.Debugf("No events to register for on channel [%s]\n", ed.channelID)
+		event.respch <- errorResponse(errors.Wrapf(err, "no events to register on channel [%s]", ed.channelID))
+		return
+	}
+
+	if err := ed.connection.Send(ed.newRegisterChannelEvent(ed.eventTypes, identity)); err != nil {
+		event.respch <- errorResponse(errors.Wrapf(err, "error sending register event for channel [%s]", ed.channelID))
+	} else {
+		ed.chRegistration = event.reg
+		ed.chRegistration.respch = event.respch
+	}
+}
+
+func (ed *eventDispatcher) handleUnregisterChannelEvent(e event) {
+	event := e.(*unregisterChannelEvent)
+
+	if ed.connection == nil {
+		event.respch <- errorResponse(errors.New("not connected"))
+		return
+	}
+
+	if ed.chRegistration == nil {
+		event.respch <- errorResponse(errors.Errorf("invalid registration for channel [%s]", ed.channelID))
+		return
+	}
+
+	identity, err := ed.fabclient.UserContext().Identity()
+	if err != nil {
+		event.respch <- errorResponse(errors.Wrap(err, "error getting signing identity"))
+		return
+	}
+
+	if err := ed.connection.Send(ed.newUnregisterChannelEvent(identity)); err != nil {
+		event.respch <- errorResponse(errors.Wrapf(err, "error sending deregister event for channel [%s]", ed.channelID))
+	} else {
+		ed.chRegistration.respch = event.respch
+	}
+}
+
+func (ed *eventDispatcher) handleServiceResponse(e event) {
+	event := e.(*pb.ChannelServiceResponse_Result)
+
+	resp := event.Result
+
+	if resp.Action == REGISTER_CHANNEL_ACTION {
+		ed.handleRegisterChannelResponse(resp)
+	} else if resp.Action == DEREGISTER_CHANNEL_ACTION {
+		ed.handleUnregisterChannelResponse(resp)
+	} else {
+		logger.Warnf("unsupported ChannelServiceResponse action [%s]\n", resp.Action)
+	}
+}
+
+func (ed *eventDispatcher) handleRegisterChannelResponse(resp *pb.ChannelServiceResult) {
+	logger.Debugf("Handling response: %v\n", resp)
+
+	if ed.chRegistration == nil {
+		logger.Warnf("Unexpected service response for nil channel registration\n")
+		return
+	}
+
+	result := ed.getChannelServiceResult(resp)
+	if result == nil {
+		if ed.chRegistration.respch != nil {
+			ed.chRegistration.respch <- errorResponse(errors.Errorf("no channel registration result found for channel [%s] in channel service response", ed.channelID))
+		}
+		ed.chRegistration = nil
+		return
+	}
+
+	ed.authorized = make(map[eventType]bool)
+	if !resp.Success {
+		if ed.chRegistration.respch != nil {
+			ed.chRegistration.respch <- errorResponse(errors.Errorf("failed to register for channel events. ErrorMsg [%s]", result.ErrorMsg))
+		}
+		ed.chRegistration = nil
+		return
+	}
+
+	for _, authEvent := range result.RegisteredEvents {
+		logger.Debugf("Registered Event [%s]\n", authEvent)
+		ed.authorized[eventType(authEvent)] = true
+	}
+
+	if ed.chRegistration.respch != nil {
+		ed.chRegistration.respch <- successResponse(nil)
+
+		// Set the event to nil since we've already responded
+		ed.chRegistration.respch = nil
+	}
+}
+
+func (ed *eventDispatcher) getChannelServiceResult(resp *pb.ChannelServiceResult) *pb.ChannelResult {
+	for _, result := range resp.ChannelResults {
+		if result.ChannelId == ed.channelID {
+			return result
+		}
+	}
+	return nil
+}
+
+func (ed *eventDispatcher) handleUnregisterChannelResponse(resp *pb.ChannelServiceResult) {
+	logger.Debugf("Handling response: %v\n", resp)
+
+	if ed.chRegistration == nil || ed.chRegistration.respch == nil {
+		logger.Warnf("Unexpected service response for nil channel registration\n")
+		return
+	}
+
+	result := ed.getChannelServiceResult(resp)
+	if result == nil {
+		ed.chRegistration.respch <- errorResponse(errors.Errorf("no channel unregistration result found for channel [%s] in channel service response", ed.channelID))
+	} else if !resp.Success {
+		ed.chRegistration.respch <- errorResponse(errors.Errorf("failed to unregister for channel events. ErrorMsg [%s]", result.ErrorMsg))
+	} else {
+		ed.chRegistration.respch <- successResponse(nil)
+	}
+
+	ed.chRegistration = nil
+}
+
 func (ed *eventDispatcher) registerHandlers() {
 	ed.registerHandler(&connectEvent{}, ed.handleConnectEvent)
 	ed.registerHandler(&disconnectEvent{}, ed.handleDisconnectEvent)
+	ed.registerHandler(&registerChannelEvent{}, ed.handleRegisterChannelEvent)
+	ed.registerHandler(&unregisterChannelEvent{}, ed.handleUnregisterChannelEvent)
+	ed.registerHandler(&pb.ChannelServiceResponse_Result{}, ed.handleServiceResponse)
 }
 
 func (ed *eventDispatcher) registerHandler(t interface{}, h handler) {
 	ed.handlers[reflect.TypeOf(t)] = h
+}
+
+func (ed *eventDispatcher) newRegisterChannelEvent(eventTypes []eventType, identity []byte) *pb.ChannelServiceRequest {
+	var interestedEvents []*pb.Interest
+	for _, eventType := range eventTypes {
+		if eventType == BLOCKEVENT {
+			interestedEvents = append(interestedEvents, &pb.Interest{EventType: pb.EventType_BLOCK})
+		} else if eventType == FILTEREDBLOCKEVENT {
+			interestedEvents = append(interestedEvents, &pb.Interest{EventType: pb.EventType_FILTEREDBLOCK})
+		}
+	}
+
+	return &pb.ChannelServiceRequest{
+		Request: &pb.ChannelServiceRequest_RegisterChannel{
+			RegisterChannel: &pb.RegisterChannel{
+				ChannelIds: []string{ed.channelID},
+				Events:     interestedEvents,
+			},
+		},
+	}
+}
+
+func (ed *eventDispatcher) newUnregisterChannelEvent(identity []byte) *pb.ChannelServiceRequest {
+	return &pb.ChannelServiceRequest{
+		Request: &pb.ChannelServiceRequest_DeregisterChannel{
+			DeregisterChannel: &pb.DeregisterChannel{
+				ChannelIds: []string{ed.channelID},
+			},
+		},
+	}
+}
+
+func successResponse(reg fab.Registration) *fab.RegistrationResponse {
+	return &fab.RegistrationResponse{Reg: reg}
+}
+
+func errorResponse(err error) *fab.RegistrationResponse {
+	return &fab.RegistrationResponse{Err: err}
+}
+
+func unregResponse(err error) *fab.RegistrationResponse {
+	return &fab.RegistrationResponse{Err: err}
+}
+
+func getKey(ccID, eventFilter string) string {
+	return ccID + "/" + eventFilter
 }

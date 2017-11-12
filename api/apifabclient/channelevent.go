@@ -12,6 +12,21 @@ type ConnectionEvent struct {
 	Err       error
 }
 
+// Registration is a handle that is returned from a successful RegisterXXXEvent.
+// This handle should be used in Unregister in order to unregister the event.
+type Registration interface{}
+
+// RegistrationResponse is the response that is returned for any register/unregister event.
+// For a successful registration, the registration handle is set. This handle should be used
+// in a subsequent Unregister request. If an error occurs then the error is set.
+type RegistrationResponse struct {
+	// Reg is a handle to the registration
+	Reg Registration
+
+	// Err contains the error if registration is unsuccessful
+	Err error
+}
+
 // ChannelEventClient is a client that connects to a peer and receives channel events,
 // such as filtered block, chaincode, and transaction status events.
 type ChannelEventClient interface {
