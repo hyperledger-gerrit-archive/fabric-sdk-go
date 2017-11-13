@@ -20,6 +20,10 @@ type connectionRegistration struct {
 	eventch chan<- *fab.ConnectionEvent
 }
 
+type blockRegistration struct {
+	eventch chan<- *fab.BlockEvent
+}
+
 type filteredBlockRegistration struct {
 	eventch chan<- *fab.FilteredBlockEvent
 }

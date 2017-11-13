@@ -26,6 +26,11 @@ type registerChannelEvent struct {
 	reg        *channelRegistration
 }
 
+type registerBlockEvent struct {
+	registerEvent
+	reg *blockRegistration
+}
+
 type registerFilteredBlockEvent struct {
 	registerEvent
 	reg *filteredBlockRegistration
@@ -79,6 +84,13 @@ func newRegisterChannelEvent(eventTypes []eventType, respch chan<- *fab.Registra
 
 func newUnregisterChannelEvent(respch chan<- *fab.RegistrationResponse) *unregisterChannelEvent {
 	return &unregisterChannelEvent{
+		registerEvent: registerEvent{respch: respch},
+	}
+}
+
+func newRegisterBlockEvent(eventch chan<- *fab.BlockEvent, respch chan<- *fab.RegistrationResponse) *registerBlockEvent {
+	return &registerBlockEvent{
+		reg:           &blockRegistration{eventch: eventch},
 		registerEvent: registerEvent{respch: respch},
 	}
 }
