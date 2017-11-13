@@ -11,6 +11,7 @@ package channelevents
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -793,6 +794,46 @@ func TestReconnectRegistration(t *testing.T) {
 	})
 }
 
+// TestConcurrentEvents ensures that the channel event client is thread-safe
+func TestConcurrentEvents(t *testing.T) {
+	numEvents := 1000
+	channelID := "mychannel"
+	opts := newMockClientOpts()
+	opts.EventQueueSize = numEvents * 4
+	eventClient, conn, err := newAdminClientWithOpts(channelID, "grpc://localhost:7051", "admin", opts, NewAuthorizedEventsOpt(BLOCKEVENT, FILTEREDBLOCKEVENT))
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+
+	t.Run("Block Events", func(t *testing.T) {
+		t.Parallel()
+		if err := testConcurrentBlockEvents(channelID, numEvents, eventClient, conn); err != nil {
+			t.Fatalf("error in testConcurrentBlockEvents: %s", err)
+		}
+	})
+	t.Run("Filtered Block Events", func(t *testing.T) {
+		t.Parallel()
+		if err := testConcurrentFilteredBlockEvents(channelID, numEvents, eventClient, conn); err != nil {
+			t.Fatalf("error in testConcurrentBlockEvents: %s", err)
+		}
+	})
+	t.Run("Chaincode Events", func(t *testing.T) {
+		t.Parallel()
+		if err := testConcurrentCCEvents(channelID, numEvents, eventClient, conn); err != nil {
+			t.Fatalf("error in testConcurrentBlockEvents: %s", err)
+		}
+	})
+	t.Run("Tx Status Events", func(t *testing.T) {
+		t.Parallel()
+		if err := testConcurrentTxStatusEvents(channelID, numEvents, eventClient, conn); err != nil {
+			t.Fatalf("error in testConcurrentBlockEvents: %s", err)
+		}
+	})
+}
+
 func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome Outcome, connAttemptResult ConnectAttemptResults) {
 	cp := NewMockConnectionProviderFactory()
 
@@ -948,6 +989,193 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents NumBlockEvents,
 	if eventsReceived.CCEvents != expectedCCEvents {
 		t.Fatalf("Expecting to receive [%d] CC events but received [%d]", expectedCCEvents, eventsReceived.CCEvents)
 	}
+}
+
+func testConcurrentBlockEvents(channelID string, numEvents int, eventClient apifabclient.ChannelEventAdminClient, conn *MockConnection) error {
+	registration, eventch, err := eventClient.RegisterBlockEvent()
+	if err != nil {
+		return errors.Errorf("error registering for block events: %s", err)
+	}
+
+	go func() {
+		for i := 0; i < numEvents+10; i++ {
+			conn.ProduceEvent(newMockBlock(channelID))
+		}
+	}()
+
+	numReceived := 0
+	done := false
+
+	for !done {
+		select {
+		case _, ok := <-eventch:
+			if !ok {
+				fmt.Printf("Block events channel was closed \n")
+				done = true
+			} else {
+				numReceived++
+				if numReceived == numEvents {
+					// Unregister will close the event channel
+					// and done will be set to true
+					eventClient.Unregister(registration)
+				}
+			}
+		case <-time.After(5 * time.Second):
+			if numReceived < numEvents {
+				return errors.Errorf("Expected [%d] events but received [%d]", numEvents, numReceived)
+			}
+		}
+	}
+
+	return nil
+}
+
+func testConcurrentFilteredBlockEvents(channelID string, numEvents int, eventClient apifabclient.ChannelEventClient, conn *MockConnection) error {
+	registration, eventch, err := eventClient.RegisterFilteredBlockEvent()
+	if err != nil {
+		return errors.Errorf("error registering for filtered block events: %s", err)
+	}
+	defer eventClient.Unregister(registration)
+
+	for i := 0; i < numEvents; i++ {
+		txID := fmt.Sprintf("txid_fb_%d", i)
+		conn.ProduceEvent(newMockFilteredBlock(
+			channelID,
+			newMockTxEvent(txID, pb.TxValidationCode_VALID),
+		))
+	}
+
+	numReceived := 0
+	done := false
+
+	for !done {
+		select {
+		case fbevent, ok := <-eventch:
+			if !ok {
+				fmt.Printf("Filtered block events channel was closed \n")
+				done = true
+			} else {
+				if fbevent.FilteredBlock == nil {
+					return errors.New("Expecting filtered block but got nil")
+				}
+				if fbevent.FilteredBlock.ChannelId != channelID {
+					return errors.Errorf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
+				}
+				numReceived++
+				if numReceived == numEvents {
+					// Unregister will close the event channel and done will be set to true
+					return nil
+					// eventClient.Unregister(registration)
+				}
+			}
+		case <-time.After(5 * time.Second):
+			if numReceived < numEvents {
+				return errors.Errorf("Expected [%d] events but received [%d]", numEvents, numReceived)
+			}
+		}
+	}
+
+	return nil
+}
+
+func testConcurrentCCEvents(channelID string, numEvents int, eventClient apifabclient.ChannelEventClient, conn *MockConnection) error {
+	ccID := "mycc1"
+	ccFilter := "event.*"
+	event1 := "event1"
+
+	reg, eventch, err := eventClient.RegisterChaincodeEvent(ccID, ccFilter)
+	if err != nil {
+		return errors.New("error registering for chaincode events")
+	}
+
+	for i := 0; i < numEvents+10; i++ {
+		txID := fmt.Sprintf("txid_cc_%d", i)
+		conn.ProduceEvent(
+			newMockFilteredBlock(
+				channelID,
+				newMockCCEvent(txID, ccID, event1),
+			),
+		)
+	}
+
+	numReceived := 0
+	done := false
+	for !done {
+		select {
+		case _, ok := <-eventch:
+			if !ok {
+				fmt.Printf("CC events channel was closed \n")
+				done = true
+			} else {
+				numReceived++
+			}
+		case <-time.After(5 * time.Second):
+			if numReceived < numEvents {
+				return errors.Errorf("timed out waiting for [%d] CC events but received [%d]", numEvents, numReceived)
+			}
+		}
+
+		if numReceived == numEvents {
+			// Unregister will close the event channel and done will be set to true
+			eventClient.Unregister(reg)
+		}
+	}
+
+	return nil
+}
+
+func testConcurrentTxStatusEvents(channelID string, numEvents int, eventClient apifabclient.ChannelEventClient, conn *MockConnection) error {
+	var wg sync.WaitGroup
+	wg.Add(numEvents)
+
+	var errs []error
+	var mutex sync.Mutex
+
+	var receivedEvents int
+	for i := 0; i < numEvents; i++ {
+		txID := fmt.Sprintf("txid_tx_%d", i)
+		go func() {
+			defer wg.Done()
+
+			reg, eventch, err := eventClient.RegisterTxStatusEvent(txID)
+			if err != nil {
+				mutex.Lock()
+				errs = append(errs, errors.New("Error registering for TxStatus event"))
+				mutex.Unlock()
+				return
+			}
+			defer eventClient.Unregister(reg)
+
+			conn.ProduceEvent(
+				newMockFilteredBlock(
+					channelID,
+					newMockTxEvent(txID, pb.TxValidationCode_VALID),
+				),
+			)
+
+			select {
+			case _, ok := <-eventch:
+				mutex.Lock()
+				if !ok {
+					errs = append(errs, errors.New("unexpected closed channel"))
+				} else {
+					receivedEvents++
+				}
+				mutex.Unlock()
+			case <-time.After(5 * time.Second):
+				mutex.Lock()
+				errs = append(errs, errors.New("timed out waiting for TxStatus event"))
+				mutex.Unlock()
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	if len(errs) > 0 {
+		return errors.Errorf("Received %d events and %d errors. First error %s\n", receivedEvents, len(errs), errs[0])
+	}
+	return nil
 }
 
 func listenConnection(eventch chan *apifabclient.ConnectionEvent, outcome chan Outcome) {
