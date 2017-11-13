@@ -105,6 +105,7 @@ func (c *MockConnection) Send(emsg *pb.ChannelServiceRequest) error {
 
 // Disconnect implements the Connection interface
 func (c *MockConnection) Disconnect(err error) {
+	c.ProduceEvent(&disconnectedEvent{err: err})
 }
 
 // Receive implements the Connection interface
@@ -203,6 +204,53 @@ func (cp *MockConnectionProviderFactory) Provider(conn *MockConnection) Connecti
 	return func(string, apifabclient.FabricClient, *apiconfig.PeerConfig) (Connection, error) {
 		return conn, nil
 	}
+}
+
+// FlakeyProvider creates a connection provider that returns a connection according to the given
+// connection attempt results. The results tell the connection provider whether or not to fail,
+// to return a connection, what authorization to give the connection, etc.
+func (cp *MockConnectionProviderFactory) FlakeyProvider(connAttemptResults ConnectAttemptResults) ConnectionProvider {
+	var connectAttempt ConnectionAttempt
+	return func(string, apifabclient.FabricClient, *apiconfig.PeerConfig) (Connection, error) {
+		connectAttempt++
+
+		result, ok := connAttemptResults[connectAttempt]
+		if !ok {
+			return nil, errors.New("simulating failed connection attempt")
+		}
+
+		cp.mtx.Lock()
+		defer cp.mtx.Unlock()
+
+		cp.connection = NewMockConnection(NewAuthorizedEventsOpt(result.AuthorizedEvents...))
+		return cp.connection, nil
+	}
+}
+
+// ConnectionAttempt specifies the number of connection attempts
+type ConnectionAttempt uint
+
+// ConnectResult contains the data to use for the N'th connection attempt
+type ConnectResult struct {
+	Attempt          ConnectionAttempt
+	AuthorizedEvents []eventType
+}
+
+// NewConnectResult returns a new ConnectResult
+func NewConnectResult(attempt ConnectionAttempt, authorizedEvents ...eventType) ConnectResult {
+	return ConnectResult{Attempt: attempt, AuthorizedEvents: authorizedEvents}
+}
+
+// ConnectAttemptResults maps a connection attempt to a connection result
+type ConnectAttemptResults map[ConnectionAttempt]ConnectResult
+
+// NewConnectResults returns a new ConnectAttemptResults
+func NewConnectResults(results ...ConnectResult) ConnectAttemptResults {
+	mapResults := make(map[ConnectionAttempt]ConnectResult)
+	for _, r := range results {
+		mapResults[r.Attempt] = r
+	}
+	return mapResults
 }
 
 // ResultDesc describes the result of an operation and optional error string

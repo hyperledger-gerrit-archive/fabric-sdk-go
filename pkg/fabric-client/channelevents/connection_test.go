@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	peerAddress = "localhost:7051"
+	peerAddress = "localhost:9999"
 	peerURL     = "grpc://" + peerAddress
 )
 
