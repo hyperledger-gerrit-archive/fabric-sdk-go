@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -29,10 +30,19 @@ func TestInvalidOptionsInNewClient(t *testing.T) {
 	fabClient.SetUserContext(user)
 	fabClient.SetSigningManager(mocks.NewMockSigningManager())
 
+	// Client
 	if _, err := NewClient(fabClient, newPeerConfig("grpc://localhost:7051"), ""); err == nil {
 		t.Fatalf("expecting error with no channel ID but got none")
 	}
 	if _, err := NewClient(fabClient, newPeerConfig(""), "channelid"); err == nil {
+		t.Fatalf("expecting error with no peer URL but got none")
+	}
+
+	// Admin client
+	if _, err := NewAdminClient(fabClient, newPeerConfig("grpc://localhost:7051"), ""); err == nil {
+		t.Fatalf("expecting error with no channel ID but got none")
+	}
+	if _, err := NewAdminClient(fabClient, newPeerConfig(""), "channelid"); err == nil {
 		t.Fatalf("expecting error with no peer URL but got none")
 	}
 }
@@ -192,6 +202,60 @@ func TestInvalidUnregister(t *testing.T) {
 	eventClient.Unregister("invalid registration")
 }
 
+func TestBlockEvents(t *testing.T) {
+	channelID := "mychannel"
+	eventClient, conn, err := newAdminClient(channelID, "grpc://localhost:7051", "admin", NewAuthorizedEventsOpt(BLOCKEVENT))
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+	defer eventClient.Disconnect()
+
+	registration, eventch, err := eventClient.RegisterBlockEvent()
+	if err != nil {
+		t.Fatalf("error registering for block events: %s", err)
+	}
+	_, eventch, err = eventClient.RegisterBlockEvent()
+	if err == nil {
+		t.Fatalf("expecting error registering multiple times for block events: %s", err)
+	}
+	eventClient.Unregister(registration)
+
+	registration, eventch, err = eventClient.RegisterBlockEvent()
+	if err != nil {
+		t.Fatalf("error registering for block events: %s", err)
+	}
+	defer eventClient.Unregister(registration)
+
+	conn.ProduceEvent(newMockBlock(channelID))
+
+	select {
+	case _, ok := <-eventch:
+		if !ok {
+			t.Fatalf("unexpected closed channel")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatalf("timed out waiting for block event")
+	}
+}
+
+func TestBlockEventsUnauthorized(t *testing.T) {
+	eventClient, _, err := newAdminClient("mychannel", "grpc://localhost:7051", "admin", NewAuthorizedEventsOpt(FILTEREDBLOCKEVENT))
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+	defer eventClient.Disconnect()
+
+	if _, _, err := eventClient.RegisterBlockEvent(); err == nil {
+		t.Fatalf("expecting authorization error since client is not authorized to receive block events")
+	}
+}
+
 func TestFilteredBlockEvents(t *testing.T) {
 	channelID := "mychannel"
 	eventClient, conn, err := newClientWithMockConn(channelID, "grpc://localhost:7051", "admin", NewAuthorizedEventsOpt(FILTEREDBLOCKEVENT))
@@ -258,6 +322,88 @@ func TestFilteredBlockEventsUnauthorized(t *testing.T) {
 
 	if _, _, err := eventClient.RegisterFilteredBlockEvent(); err == nil {
 		t.Fatalf("expecting authorization error since client is not authorized to receive filtered block events")
+	}
+}
+
+func TestBlockAndFilteredBlockEvents(t *testing.T) {
+	channelID := "mychannel"
+	eventClient, conn, err := newAdminClient(channelID, "grpc://localhost:7051", "admin", NewAuthorizedEventsOpt(BLOCKEVENT, FILTEREDBLOCKEVENT))
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if err := eventClient.Connect(); err != nil {
+		t.Fatalf("error connecting channel event client: %s", err)
+	}
+	defer eventClient.Disconnect()
+
+	// First register for filtered block events
+	fbreg, fbeventch, err := eventClient.RegisterFilteredBlockEvent()
+	if err != nil {
+		t.Fatalf("error registering for filtered block events: %s", err)
+	}
+	defer eventClient.Unregister(fbreg)
+
+	txID1 := "1234"
+	txCode1 := pb.TxValidationCode_VALID
+	txID2 := "5678"
+	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
+
+	conn.ProduceEvent(newMockFilteredBlock(
+		channelID,
+		newMockTxEvent(txID1, txCode1),
+		newMockTxEvent(txID2, txCode2),
+	))
+
+	select {
+	case fbevent, ok := <-fbeventch:
+		if !ok {
+			t.Fatalf("unexpected closed channel")
+		}
+		if fbevent.FilteredBlock == nil {
+			t.Fatalf("Expecting filtered block but got nil")
+		}
+		if fbevent.FilteredBlock.ChannelId != channelID {
+			t.Fatalf("Expecting channel [%s] but got [%s]", channelID, fbevent.FilteredBlock.ChannelId)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatalf("timed out waiting for filtered block event")
+	}
+
+	// Now register for block events
+	breg, beventch, err := eventClient.RegisterBlockEvent()
+	if err != nil {
+		t.Fatalf("error registering for block events: %s", err)
+	}
+	defer eventClient.Unregister(breg)
+
+	conn.ProduceEvent(newMockBlock(channelID))
+	conn.ProduceEvent(newMockFilteredBlock(
+		channelID,
+		newMockTxEvent(txID1, txCode1),
+		newMockTxEvent(txID2, txCode2),
+	))
+
+	numEventsReceived := 0
+	expectedEvents := 2
+
+	for {
+		select {
+		case _, ok := <-fbeventch:
+			if !ok {
+				t.Fatalf("unexpected closed channel")
+			}
+			numEventsReceived++
+		case _, ok := <-beventch:
+			if !ok {
+				t.Fatalf("unexpected closed channel")
+			}
+			numEventsReceived++
+		case <-time.After(5 * time.Second):
+			t.Fatalf("timed out waiting for events")
+		}
+		if numEventsReceived == expectedEvents {
+			break
+		}
 	}
 }
 
@@ -480,6 +626,30 @@ func newClientWithMockConnAndOpts(channelID string, peerURL string, userName str
 	return NewClientWithOpts(fabClient, newPeerConfig(peerURL), channelID, opts)
 }
 
+func newAdminClient(channelID string, peerURL string, userName string, connOpts ...MockConnOpt) (*AdminClient, *MockConnection, error) {
+	return newAdminClientWithOpts(channelID, peerURL, userName, newMockClientOpts(), connOpts...)
+}
+
+func newAdminClientWithOpts(channelID string, peerURL string, userName string, opts *ClientOpts, connOpts ...MockConnOpt) (*AdminClient, *MockConnection, error) {
+	fabClient := fab.NewClient(mocks.NewMockConfig())
+
+	if userName != "" {
+		user := mocks.NewMockUser(userName)
+		fabClient.SetUserContext(user)
+	}
+
+	fabClient.SetSigningManager(mocks.NewMockSigningManager())
+
+	var conn *MockConnection
+	if opts.connectionProvider == nil {
+		conn = NewMockConnection(connOpts...)
+		opts.connectionProvider = NewMockConnectionProviderFactory().Provider(conn)
+	}
+
+	client, err := NewAdminClientWithOpts(fabClient, newPeerConfig(peerURL), channelID, opts)
+	return client, conn, err
+}
+
 func checkTxStatusEvent(t *testing.T, event *apifabclient.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
 	if event.TxID != expectedTxID {
 		t.Fatalf("expecting event for TxID [%s] but received event for TxID [%s]", expectedTxID, event.TxID)
@@ -502,6 +672,19 @@ func checkCCEvent(t *testing.T, event *apifabclient.CCEvent, expectedCCID string
 	}
 	if !found {
 		t.Fatalf("expecting one of [%v] but received [%s]", expectedEventNames, event.EventName)
+	}
+}
+
+func newMockBlock(channelID string) *pb.ChannelServiceResponse_Event {
+	return &pb.ChannelServiceResponse_Event{
+		Event: &pb.Event{
+			ChannelId: channelID,
+			Creator:   []byte("some-id"),
+			Timestamp: &timestamp.Timestamp{Seconds: 1000},
+			Event: &pb.Event_Block{
+				Block: &cb.Block{},
+			},
+		},
 	}
 }
 

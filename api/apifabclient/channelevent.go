@@ -7,8 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
+
+// BlockEvent contains the data for the block event
+type BlockEvent struct {
+	Block *common.Block
+}
 
 // FilteredBlockEvent contains the data for a filtered block event
 type FilteredBlockEvent struct {
@@ -78,4 +84,14 @@ type ChannelEventClient interface {
 	// Unregister unregisters the given registration.
 	// - reg is the registration handle that was returned from one of the RegisterXXX functions
 	Unregister(reg Registration)
+}
+
+// ChannelEventAdminClient is a client that is used to connect to a peer and receive channel events,
+// such as block, filtered block, chaincode, and transaction status events.
+type ChannelEventAdminClient interface {
+	ChannelEventClient
+
+	// RegisterBlockEvent registers for block events. If the client is not authorized to receive
+	// block events then an error is returned.
+	RegisterBlockEvent() (Registration, <-chan *BlockEvent, error)
 }

@@ -38,6 +38,11 @@ type Client struct {
 	eventChannelSize int
 }
 
+// AdminClient extends Client with ability to receive block events.
+type AdminClient struct {
+	Client
+}
+
 // ClientOpts provides options for the events client
 type ClientOpts struct {
 	// ResponseTimeout is the response timeout when communicating with the server.
@@ -62,14 +67,28 @@ func DefaultClientOpts() *ClientOpts {
 	}
 }
 
-// NewClient returns a new ChannelEventClient
+// NewClient returns a new channel event Client
 func NewClient(fabclient fab.FabricClient, peerConfig *apiconfig.PeerConfig, channelID string) (*Client, error) {
 	return NewClientWithOpts(fabclient, peerConfig, channelID, DefaultClientOpts())
 }
 
-// NewClientWithOpts returns a new ChannelEventClient initialized with the given options
+// NewClientWithOpts returns a new channel event Client initialized with the given options
 func NewClientWithOpts(fabclient fab.FabricClient, peerConfig *apiconfig.PeerConfig, channelID string, opts *ClientOpts) (*Client, error) {
 	return newClient(fabclient, peerConfig, channelID, opts, []eventType{FILTEREDBLOCKEVENT})
+}
+
+// NewAdminClient returns a new channel event Admin Client
+func NewAdminClient(fabclient fab.FabricClient, peerConfig *apiconfig.PeerConfig, channelID string) (*AdminClient, error) {
+	return NewAdminClientWithOpts(fabclient, peerConfig, channelID, DefaultClientOpts())
+}
+
+// NewAdminClientWithOpts returns a new channel event Admin Client
+func NewAdminClientWithOpts(fabclient fab.FabricClient, peerConfig *apiconfig.PeerConfig, channelID string, opts *ClientOpts) (*AdminClient, error) {
+	client, err := newClient(fabclient, peerConfig, channelID, opts, []eventType{BLOCKEVENT, FILTEREDBLOCKEVENT})
+	if err != nil {
+		return nil, err
+	}
+	return &AdminClient{Client: *client}, nil
 }
 
 // Connect connects to the peer and registers for channel events on a particular channel.
@@ -288,6 +307,21 @@ func (cc *Client) registerChannel(eventTypes []eventType) error {
 
 	logger.Debugf("successfully registered for channel events\n")
 	return nil
+}
+
+// RegisterBlockEvent registers for block events. If the client is not authorized to receive
+// block events then an error is returned.
+func (cc *AdminClient) RegisterBlockEvent() (fab.Registration, <-chan *fab.BlockEvent, error) {
+	if cc.Stopped() {
+		return nil, nil, errors.New("channel event client is closed")
+	}
+
+	eventch := make(chan *fab.BlockEvent, cc.eventChannelSize)
+	respch := make(chan *fab.RegistrationResponse)
+	cc.dispatcher.submit(newRegisterBlockEvent(eventch, respch))
+	response := <-respch
+
+	return response.Reg, eventch, response.Err
 }
 
 // Stopped returns true if the client has been stopped (disconnected)
