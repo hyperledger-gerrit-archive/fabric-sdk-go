@@ -49,6 +49,7 @@ type eventDispatcher struct {
 	authorized                map[eventType]bool
 	eventTypes                []eventType
 	chRegistration            *channelRegistration
+	connectionRegistration    *connectionRegistration
 	blockRegistration         *blockRegistration
 	filteredBlockRegistration *filteredBlockRegistration
 	txRegistrations           map[string]*txRegistration
@@ -121,6 +122,7 @@ func (ed *eventDispatcher) stop() {
 	ed.clearFilteredBlockRegistration()
 	ed.clearTxRegistrations()
 	ed.clearChaincodeRegistrations()
+	ed.clearConnectionRegistration()
 
 	logger.Debugf("Closing dispatcher event channel.\n")
 	close(ed.eventch)
@@ -155,6 +157,14 @@ func (ed *eventDispatcher) clearFilteredBlockRegistration() {
 		logger.Debugf("Closing filtered block registration event channel.\n")
 		close(ed.filteredBlockRegistration.eventch)
 		ed.filteredBlockRegistration = nil
+	}
+}
+
+func (ed *eventDispatcher) clearConnectionRegistration() {
+	if ed.connectionRegistration != nil {
+		logger.Debugf("Closing connection registration event channel.\n")
+		close(ed.connectionRegistration.eventch)
+		ed.connectionRegistration = nil
 	}
 }
 
@@ -223,6 +233,9 @@ func (ed *eventDispatcher) handleRegisterChannelEvent(e event) {
 		// First time registering
 		ed.eventTypes = event.eventTypes
 		logger.Debugf("Sending register events for channel [%s] and event types %v\n", ed.channelID, ed.eventTypes)
+	} else if len(ed.eventTypes) > 0 {
+		// Re-registering (must have reconnected)
+		logger.Debugf("Re-registering events for channel [%s] and event types %v\n", ed.channelID, ed.eventTypes)
 	} else {
 		// No events to register for
 		logger.Debugf("No events to register for on channel [%s]\n", ed.channelID)
@@ -262,6 +275,18 @@ func (ed *eventDispatcher) handleUnregisterChannelEvent(e event) {
 	} else {
 		ed.chRegistration.respch = event.respch
 	}
+}
+
+func (ed *eventDispatcher) handleRegisterConnectionEvent(e event) {
+	event := e.(*registerConnectionEvent)
+
+	if ed.connectionRegistration != nil {
+		event.respch <- errorResponse(errors.New("registration already exists for connection event"))
+		return
+	}
+
+	ed.connectionRegistration = event.reg
+	event.respch <- successResponse(event.reg)
 }
 
 func (ed *eventDispatcher) handleRegisterBlockEvent(e event) {
@@ -490,6 +515,48 @@ func (ed *eventDispatcher) handleBlockEvent(event *pb.Event_Block) {
 	}
 }
 
+func (ed *eventDispatcher) handleConnectedEvent(e event) {
+	event := e.(*connectedEvent)
+
+	logger.Debugf("Handling connected event: %v\n", event)
+
+	if ed.connectionRegistration != nil && ed.connectionRegistration.eventch != nil {
+		select {
+		case ed.connectionRegistration.eventch <- &fab.ConnectionEvent{Connected: true}:
+		default:
+			logger.Warnf("Unable to send to connection event channel.")
+		}
+	}
+}
+
+func (ed *eventDispatcher) handleDisconnectedEvent(e event) {
+	event := e.(*disconnectedEvent)
+
+	if ed.connection != nil {
+		ed.connection.Close()
+		ed.connection = nil
+	}
+
+	if ed.chRegistration != nil && ed.chRegistration.respch != nil {
+		// We're in the middle of a channel registration. Send an error response to the caller.
+		ed.chRegistration.respch <- errorResponse(errors.New("connection terminated"))
+	}
+
+	ed.chRegistration = nil
+	ed.authorized = nil
+
+	if ed.connectionRegistration != nil {
+		logger.Debugf("Disconnected from channel service: %s\n", event.err)
+		select {
+		case ed.connectionRegistration.eventch <- &fab.ConnectionEvent{Connected: false, Err: event.err}:
+		default:
+			logger.Warnf("Unable to send to connection event channel.")
+		}
+	} else {
+		logger.Warnf("Disconnected from channel service: %s\n", event.err)
+	}
+}
+
 func (ed *eventDispatcher) unregisterBlockEvents(registration *blockRegistration) error {
 	if ed.blockRegistration == nil {
 		return errors.New("no block registration found")
@@ -570,8 +637,11 @@ func (ed *eventDispatcher) triggerCCEvent(ccEvent *pb.ChaincodeEvent) {
 func (ed *eventDispatcher) registerHandlers() {
 	ed.registerHandler(&connectEvent{}, ed.handleConnectEvent)
 	ed.registerHandler(&disconnectEvent{}, ed.handleDisconnectEvent)
+	ed.registerHandler(&connectedEvent{}, ed.handleConnectedEvent)
+	ed.registerHandler(&disconnectedEvent{}, ed.handleDisconnectedEvent)
 	ed.registerHandler(&registerChannelEvent{}, ed.handleRegisterChannelEvent)
 	ed.registerHandler(&unregisterChannelEvent{}, ed.handleUnregisterChannelEvent)
+	ed.registerHandler(&registerConnectionEvent{}, ed.handleRegisterConnectionEvent)
 	ed.registerHandler(&registerCCEvent{}, ed.handleRegisterCCEvent)
 	ed.registerHandler(&registerTxStatusEvent{}, ed.handleRegisterTxStatusEvent)
 	ed.registerHandler(&registerBlockEvent{}, ed.handleRegisterBlockEvent)

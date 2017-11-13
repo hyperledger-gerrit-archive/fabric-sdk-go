@@ -10,6 +10,7 @@ package channelevents
 
 import (
 	"regexp"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -30,12 +31,15 @@ const (
 
 // Client connects to a peer and receives channel events, such as filtered block, chaincode, and transaction status events.
 type Client struct {
-	eventTypes       []eventType
-	opts             ClientOpts
-	dispatcher       *eventDispatcher
-	connectionState  int32
-	stopped          int32
-	eventChannelSize int
+	eventTypes          []eventType
+	opts                ClientOpts
+	dispatcher          *eventDispatcher
+	connEvent           chan *fab.ConnectionEvent
+	connEventSubscriber chan<- *fab.ConnectionEvent
+	registerOnce        sync.Once
+	connectionState     int32
+	stopped             int32
+	eventChannelSize    int
 }
 
 // AdminClient extends Client with ability to receive block events.
@@ -54,6 +58,30 @@ type ClientOpts struct {
 	// Default: 1000
 	EventQueueSize int
 
+	// Reconnect indicates whether the client should automatically attempt to reconnect
+	// to the serever after a connection has been lost
+	// Default: true
+	Reconnect bool
+
+	// MaxReconnectAttempts is the maximum number of times that the client will attempt
+	// to connect to the server. If set to 0 then the client will try until it is stopped.
+	// Default: 1
+	MaxConnectAttempts uint
+
+	// MaxReconnectAttempts is the maximum number of times that the client will attempt
+	// to reconnect to the server after a connection has been lost. If set to 0 then the
+	// client will try until it is stopped.
+	// Default: 0 (try forever)
+	MaxReconnectAttempts uint
+
+	// TimeBetweenConnectAttempts is the time between connection attempts.
+	// Default: 5 seconds
+	TimeBetweenConnectAttempts time.Duration
+
+	// ConnectEventCh is the channel that is to receive connection events, i.e. when the client connects and/or
+	// disconnects from the channel event service.
+	ConnectEventCh chan *fab.ConnectionEvent
+
 	// connectionProvider specifies the connection provider. This is only used for unit testing.
 	connectionProvider func(string, fab.FabricClient, *apiconfig.PeerConfig) (Connection, error)
 }
@@ -61,9 +89,13 @@ type ClientOpts struct {
 // DefaultClientOpts returns client options set to default values
 func DefaultClientOpts() *ClientOpts {
 	return &ClientOpts{
-		ResponseTimeout:    3 * time.Second,
-		EventQueueSize:     1000,
-		connectionProvider: grpcConnectionProvider,
+		ResponseTimeout:            3 * time.Second,
+		Reconnect:                  true,
+		MaxConnectAttempts:         1,
+		MaxReconnectAttempts:       0, // Try forever
+		TimeBetweenConnectAttempts: 5 * time.Second,
+		EventQueueSize:             1000,
+		connectionProvider:         grpcConnectionProvider,
 	}
 }
 
@@ -93,48 +125,10 @@ func NewAdminClientWithOpts(fabclient fab.FabricClient, peerConfig *apiconfig.Pe
 
 // Connect connects to the peer and registers for channel events on a particular channel.
 func (cc *Client) Connect() error {
-	if cc.Stopped() {
-		return errors.New("channel event client is closed")
+	if cc.opts.MaxConnectAttempts == 1 {
+		return cc.connect()
 	}
-
-	if !cc.setConnectionState(disconnected, connecting) {
-		return errors.Errorf("unable to connect channel event client since client is [%d]", cc.ConnectionState())
-	}
-
-	logger.Debugf("Submitting connection request...\n")
-
-	respch := make(chan *connectionResponse)
-	cc.dispatcher.submit(newConnectEvent(respch))
-
-	r := <-respch
-
-	if r.err != nil {
-		cc.mustSetConnectionState(disconnected)
-		logger.Debugf("... got error in connection response: %s\n", r.err)
-		return r.err
-	}
-
-	if err := cc.registerChannel(cc.eventTypes); err != nil {
-		logger.Warnf("Unable to register for events: %s. Disconnecting...", err)
-
-		respch := make(chan *connectionResponse)
-		cc.dispatcher.submit(newDisconnectEvent(respch))
-		response := <-respch
-
-		if response.err != nil {
-			logger.Warnf("Received error from disconnect request: %s\n", response.err)
-		} else {
-			logger.Debugf("Received success from disconnect request\n")
-		}
-
-		cc.setConnectionState(connecting, disconnected)
-
-		return errors.Errorf("unable to register for events: %s", err)
-	}
-
-	cc.setConnectionState(connecting, connected)
-
-	return nil
+	return cc.connectWithRetry(cc.opts.MaxConnectAttempts, cc.opts.TimeBetweenConnectAttempts)
 }
 
 // Disconnect disconnects from the peer
@@ -148,6 +142,10 @@ func (cc *Client) Disconnect() {
 	}
 
 	logger.Debugf("Stopping client...\n")
+
+	if cc.connEventSubscriber != nil {
+		close(cc.connEventSubscriber)
+	}
 
 	select {
 	case resp := <-cc.unregisterChannelAsync():
@@ -265,16 +263,116 @@ func newClient(fabclient fab.FabricClient, peerConfig *apiconfig.PeerConfig, cha
 	dispatcher := newEventDispatcher(fabclient, peerConfig, channelID, opts.connectionProvider, opts.EventQueueSize)
 
 	cc := &Client{
-		eventTypes:       eventTypes,
-		opts:             *opts,
-		dispatcher:       dispatcher,
-		connectionState:  disconnected,
-		eventChannelSize: opts.EventQueueSize,
+		eventTypes:          eventTypes,
+		opts:                *opts,
+		dispatcher:          dispatcher,
+		connEvent:           make(chan *fab.ConnectionEvent),
+		connEventSubscriber: opts.ConnectEventCh,
+		connectionState:     disconnected,
+		eventChannelSize:    opts.EventQueueSize,
 	}
 
 	go dispatcher.start()
 
 	return cc, nil
+}
+
+func (cc *Client) connect() error {
+	if cc.Stopped() {
+		return errors.New("channel event client is closed")
+	}
+
+	if !cc.setConnectionState(disconnected, connecting) {
+		return errors.Errorf("unable to connect channel event client since client is [%d]", cc.ConnectionState())
+	}
+
+	logger.Debugf("Submitting connection request...\n")
+
+	respch := make(chan *connectionResponse)
+	cc.dispatcher.submit(newConnectEvent(respch))
+
+	r := <-respch
+
+	if r.err != nil {
+		cc.mustSetConnectionState(disconnected)
+		logger.Debugf("... got error in connection response: %s\n", r.err)
+		return r.err
+	}
+
+	var err error
+	cc.registerOnce.Do(func() {
+		logger.Debugf("Submitting connection event registration...\n")
+		_, eventch, err := cc.registerConnectionEvent()
+		if err != nil {
+			logger.Errorf("Error registering for connection events: %s\n", err)
+			cc.Disconnect()
+		}
+		cc.connEvent = eventch
+		go cc.monitorConnection()
+	})
+
+	if err := cc.registerChannel(cc.eventTypes); err != nil {
+		logger.Warnf("Unable to register for events: %s. Disconnecting...", err)
+
+		respch := make(chan *connectionResponse)
+		cc.dispatcher.submit(newDisconnectEvent(respch))
+		response := <-respch
+
+		if response.err != nil {
+			logger.Warnf("Received error from disconnect request: %s\n", response.err)
+		} else {
+			logger.Debugf("Received success from disconnect request\n")
+		}
+
+		cc.setConnectionState(connecting, disconnected)
+
+		return errors.Errorf("unable to register for events: %s", err)
+	}
+
+	cc.setConnectionState(connecting, connected)
+
+	logger.Debugf("Submitting connected event\n")
+	cc.dispatcher.submit(&connectedEvent{})
+
+	return err
+}
+
+func (cc *Client) connectWithRetry(maxAttempts uint, timeBetweenAttempts time.Duration) error {
+	if cc.Stopped() {
+		return errors.New("channel event client is closed")
+	}
+	if timeBetweenAttempts < time.Second {
+		timeBetweenAttempts = time.Second
+	}
+
+	var attempts uint
+	for {
+		attempts++
+		logger.Debugf("Attempt #%d to connect...\n", attempts)
+		if err := cc.connect(); err != nil {
+			logger.Warnf("... connection attempt failed: %s\n", err)
+			if maxAttempts > 0 && attempts >= maxAttempts {
+				logger.Warnf("maximum connect attempts exceeded\n")
+				return errors.New("maximum connect attempts exceeded")
+			}
+			time.Sleep(timeBetweenAttempts)
+		} else {
+			logger.Debugf("... connect succeeded.\n")
+			return nil
+		}
+	}
+}
+
+func (cc *Client) registerConnectionEvent() (fab.Registration, chan *fab.ConnectionEvent, error) {
+	if cc.Stopped() {
+		return nil, nil, errors.New("channel event client is closed")
+	}
+
+	eventch := make(chan *fab.ConnectionEvent, cc.eventChannelSize)
+	respch := make(chan *fab.RegistrationResponse)
+	cc.dispatcher.submit(newRegisterConnectionEvent(eventch, respch))
+	response := <-respch
+	return response.Reg, eventch, response.Err
 }
 
 func (cc *Client) registerChannelAsync(eventTypes []eventType) <-chan *fab.RegistrationResponse {
@@ -347,4 +445,50 @@ func (cc *Client) setConnectionState(currentState, newState int32) bool {
 
 func (cc *Client) mustSetConnectionState(newState int32) {
 	atomic.StoreInt32(&cc.connectionState, newState)
+}
+
+func (cc *Client) monitorConnection() {
+	logger.Debugf("Monitoring connection\n")
+	for {
+		event, ok := <-cc.connEvent
+		if !ok {
+			logger.Debugln("Connection has closed.")
+			break
+		}
+
+		if cc.Stopped() {
+			logger.Debugln("Channel event client has been stopped.")
+			break
+		}
+
+		if cc.connEventSubscriber != nil {
+			logger.Debugln("Sending connection event to subscriber.")
+			cc.connEventSubscriber <- event
+		}
+
+		if event.Connected {
+			logger.Infof("Channel event client has connected\n")
+		} else if cc.opts.Reconnect {
+			logger.Warnf("Channel event client has disconnected. Details: %s\n", event.Err)
+			if cc.setConnectionState(connected, disconnected) {
+				logger.Warnf("Attempting to reconnect...\n")
+				go cc.reconnect()
+			} else if cc.setConnectionState(connecting, disconnected) {
+				logger.Warnf("Reconnect already in progress. Setting state to disconnected\n")
+			}
+		} else {
+			logger.Warnf("Channel event client has disconnected. Terminating: %s\n", event.Err)
+			go cc.Disconnect()
+			break
+		}
+	}
+	logger.Debugf("Exiting connection monitor\n")
+}
+
+func (cc *Client) reconnect() {
+	logger.Debugf("Attempting to reconnect channel event client...\n")
+	if err := cc.connectWithRetry(cc.opts.MaxReconnectAttempts, cc.opts.TimeBetweenConnectAttempts); err != nil {
+		logger.Warnf("Could not reconnect channel event client: %s\n", err)
+		cc.Disconnect()
+	}
 }

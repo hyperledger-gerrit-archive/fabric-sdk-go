@@ -46,6 +46,18 @@ type registerTxStatusEvent struct {
 	reg *txRegistration
 }
 
+type registerConnectionEvent struct {
+	registerEvent
+	reg *connectionRegistration
+}
+
+type disconnectedEvent struct {
+	err error
+}
+
+type connectedEvent struct {
+}
+
 type connectionResponse struct {
 	err error
 }
@@ -139,5 +151,12 @@ func newTxStatusEvent(txID string, txValidationCode pb.TxValidationCode) *fab.Tx
 	return &fab.TxStatusEvent{
 		TxID:             txID,
 		TxValidationCode: txValidationCode,
+	}
+}
+
+func newRegisterConnectionEvent(eventch chan<- *fab.ConnectionEvent, respch chan<- *fab.RegistrationResponse) *registerConnectionEvent {
+	return &registerConnectionEvent{
+		reg:           &connectionRegistration{eventch: eventch},
+		registerEvent: registerEvent{respch: respch},
 	}
 }
