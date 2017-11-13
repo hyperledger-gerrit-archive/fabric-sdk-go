@@ -49,6 +49,7 @@ type eventDispatcher struct {
 	authorized                map[eventType]bool
 	eventTypes                []eventType
 	chRegistration            *channelRegistration
+	blockRegistration         *blockRegistration
 	filteredBlockRegistration *filteredBlockRegistration
 	txRegistrations           map[string]*txRegistration
 	ccRegistrations           map[string]*ccRegistration
@@ -116,6 +117,7 @@ func (ed *eventDispatcher) start() {
 func (ed *eventDispatcher) stop() {
 	// Remove all registrations and close the associated event channels
 	// so that the client is notified that the registration has been removed
+	ed.clearBlockRegistration()
 	ed.clearFilteredBlockRegistration()
 	ed.clearTxRegistrations()
 	ed.clearChaincodeRegistrations()
@@ -138,6 +140,14 @@ func (ed *eventDispatcher) clearTxRegistrations() {
 		close(reg.eventch)
 	}
 	ed.txRegistrations = make(map[string]*txRegistration)
+}
+
+func (ed *eventDispatcher) clearBlockRegistration() {
+	if ed.blockRegistration != nil {
+		logger.Debugf("Closing block registration event channel.\n")
+		close(ed.blockRegistration.eventch)
+		ed.blockRegistration = nil
+	}
 }
 
 func (ed *eventDispatcher) clearFilteredBlockRegistration() {
@@ -254,6 +264,19 @@ func (ed *eventDispatcher) handleUnregisterChannelEvent(e event) {
 	}
 }
 
+func (ed *eventDispatcher) handleRegisterBlockEvent(e event) {
+	event := e.(*registerBlockEvent)
+
+	if !ed.authorized[BLOCKEVENT] {
+		event.respch <- errorResponse(errors.New("client not authorized to receive block events"))
+	} else if ed.blockRegistration != nil {
+		event.respch <- errorResponse(errors.New("registration already exists for block event"))
+	} else {
+		ed.blockRegistration = event.reg
+		event.respch <- successResponse(event.reg)
+	}
+}
+
 func (ed *eventDispatcher) handleRegisterFilteredBlockEvent(e event) {
 	event := e.(*registerFilteredBlockEvent)
 
@@ -299,6 +322,8 @@ func (ed *eventDispatcher) handleUnregisterEvent(e event) {
 
 	var err error
 	switch registration := event.reg.(type) {
+	case *blockRegistration:
+		err = ed.unregisterBlockEvents(registration)
 	case *filteredBlockRegistration:
 		err = ed.unregisterFilteredBlockEvents(registration)
 	case *ccRegistration:
@@ -359,12 +384,14 @@ func (ed *eventDispatcher) handleRegisterChannelResponse(resp *pb.ChannelService
 	}
 
 	// Check existing registrations to ensure they're still valid, otherwise remove the registrations
+	if ed.blockRegistration != nil && !ed.authorized[BLOCKEVENT] {
+		logger.Warnf("Client not authorized to receive block events. The block registration will be removed.")
+		ed.clearBlockRegistration()
+	}
 	if ed.filteredBlockRegistration != nil && !ed.authorized[FILTEREDBLOCKEVENT] {
 		logger.Warnf("Client not authorized to receive filtered block events. Filtered block registration will be removed.")
 		ed.clearFilteredBlockRegistration()
 	}
-
-	// Check existing CC registrations to ensure they're still valid, otherwise remove the registrations
 	if len(ed.ccRegistrations) > 0 && !ed.authorized[FILTEREDBLOCKEVENT] {
 		logger.Warnf("Client not authorized to receive filtered block events. All chaincode and transaction events will be removed.")
 		ed.clearChaincodeRegistrations()
@@ -412,6 +439,8 @@ func (ed *eventDispatcher) handleChannelEvent(e event) {
 	event := e.(*pb.ChannelServiceResponse_Event)
 
 	switch evt := event.Event.Event.(type) {
+	case *pb.Event_Block:
+		ed.handleBlockEvent(evt)
 	case *pb.Event_FilteredBlock:
 		ed.handleFilteredBlockEvent(evt)
 	default:
@@ -447,6 +476,30 @@ func (ed *eventDispatcher) handleFilteredBlockEvent(event *pb.Event_FilteredBloc
 			}
 		}
 	}
+}
+
+func (ed *eventDispatcher) handleBlockEvent(event *pb.Event_Block) {
+	logger.Debugf("Handling block event %v\n", event)
+
+	if ed.blockRegistration != nil {
+		select {
+		case ed.blockRegistration.eventch <- &fab.BlockEvent{Block: event.Block}:
+		default:
+			logger.Warnf("Unable to send to block event channel.")
+		}
+	}
+}
+
+func (ed *eventDispatcher) unregisterBlockEvents(registration *blockRegistration) error {
+	if ed.blockRegistration == nil {
+		return errors.New("no block registration found")
+	}
+	if ed.blockRegistration != registration {
+		return errors.New("the provided registration is invalid")
+	}
+	close(ed.blockRegistration.eventch)
+	ed.blockRegistration = nil
+	return nil
 }
 
 func (ed *eventDispatcher) unregisterFilteredBlockEvents(registration *filteredBlockRegistration) error {
@@ -521,6 +574,7 @@ func (ed *eventDispatcher) registerHandlers() {
 	ed.registerHandler(&unregisterChannelEvent{}, ed.handleUnregisterChannelEvent)
 	ed.registerHandler(&registerCCEvent{}, ed.handleRegisterCCEvent)
 	ed.registerHandler(&registerTxStatusEvent{}, ed.handleRegisterTxStatusEvent)
+	ed.registerHandler(&registerBlockEvent{}, ed.handleRegisterBlockEvent)
 	ed.registerHandler(&registerFilteredBlockEvent{}, ed.handleRegisterFilteredBlockEvent)
 	ed.registerHandler(&unregisterEvent{}, ed.handleUnregisterEvent)
 	ed.registerHandler(&pb.ChannelServiceResponse_Result{}, ed.handleServiceResponse)

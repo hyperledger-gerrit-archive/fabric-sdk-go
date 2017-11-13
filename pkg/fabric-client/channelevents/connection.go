@@ -193,6 +193,11 @@ func (c *connection) Receive(eventch chan<- interface{}) {
 			break
 		}
 
+		if err != nil {
+			logger.Debugf("Received error from stream: [%s].\n", err)
+			break
+		}
+
 		eventch <- in.Response
 	}
 	logger.Debugf("Exiting stream listener\n")
