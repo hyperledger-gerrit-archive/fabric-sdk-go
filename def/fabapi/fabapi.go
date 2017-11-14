@@ -19,6 +19,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
+
+	cons "github.com/hyperledger/fabric-sdk-go/api/apitxn/consclient"
 )
 
 // Options encapsulates configuration for the SDK
@@ -54,6 +56,12 @@ type FabricSDK struct {
 
 // ChannelClientOpts provides options for creating channel client
 type ChannelClientOpts struct {
+	OrgName        string
+	ConfigProvider apiconfig.Config
+}
+
+// ConsortiumClientOpts provides options for creating consortium client
+type ConsortiumClientOpts struct {
 	OrgName        string
 	ConfigProvider apiconfig.Config
 }
@@ -195,6 +203,49 @@ func (sdk *FabricSDK) NewSystemClient(s context.Session) (apifabclient.FabricCli
 	return client, nil
 }
 
+// NewConsortiumClient returns a new client for managing consortium
+func (sdk *FabricSDK) NewConsortiumClient(userName string) (cons.ConsortiumClient, error) {
+
+	// Read default org name from configuration
+	client, err := sdk.configProvider.Client()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to retrieve client from network config")
+	}
+
+	if client.Organization == "" {
+		return nil, errors.New("must provide default organisation name in configuration")
+	}
+
+	opt := &ConsortiumClientOpts{OrgName: client.Organization, ConfigProvider: sdk.configProvider}
+
+	return sdk.NewConsortiumClientWithOpts(userName, opt)
+}
+
+// NewConsortiumClientWithOpts returns a new consortium client (user has to be pre-enrolled)
+func (sdk *FabricSDK) NewConsortiumClientWithOpts(userName string, opt *ConsortiumClientOpts) (cons.ConsortiumClient, error) {
+
+	if opt == nil || opt.OrgName == "" {
+		return nil, errors.New("organization name must be provided")
+	}
+
+	session, err := sdk.NewPreEnrolledUserSession(opt.OrgName, userName)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get pre-enrolled user session")
+	}
+
+	configProvider := sdk.ConfigProvider()
+	if opt.ConfigProvider != nil {
+		configProvider = opt.ConfigProvider
+	}
+
+	client, err := sdk.SessionFactory.NewConsortiumClient(sdk, session, configProvider)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to created new consortium client")
+	}
+
+	return client, nil
+}
+
 // NewChannelClient returns a new client for a channel
 func (sdk *FabricSDK) NewChannelClient(channelID string, userName string) (apitxn.ChannelClient, error) {
 
@@ -262,17 +313,12 @@ func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabc
 // NewPreEnrolledUserSession returns a new pre-enrolled user session
 func (sdk *FabricSDK) NewPreEnrolledUserSession(orgID string, userName string) (*Session, error) {
 
-	context, err := sdk.NewContext(orgID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get context for org")
-	}
-
 	user, err := sdk.NewPreEnrolledUser(orgID, userName)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get pre-enrolled user")
 	}
 
-	session, err := sdk.NewSession(context, user)
+	session, err := sdk.NewSession(nil, user)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewSession returned error")
 	}

@@ -52,6 +52,30 @@ func TestNewDefaultSDK(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
+	// Test configuration failure for consortium client (invalid user/default organisation)
+	_, err = sdk.NewConsortiumClient("Invalid")
+	if err == nil {
+		t.Fatalf("Should have failed to create consortium client due to invalid user")
+	}
+
+	// Test valid configuration for consortium client
+	_, err = sdk.NewConsortiumClient("Admin")
+	if err != nil {
+		t.Fatalf("Failed to create new consortium client: %s", err)
+	}
+
+	// Test configuration failure for new consortium client with options (invalid org)
+	_, err = sdk.NewConsortiumClientWithOpts("Admin", &ConsortiumClientOpts{OrgName: "Invalid"})
+	if err == nil {
+		t.Fatalf("Should have failed to create consortium client due to invalid organisation")
+	}
+
+	// Test new consortium client with options (orderer admin configuration)
+	_, err = sdk.NewConsortiumClientWithOpts("Admin", &ConsortiumClientOpts{OrgName: "ordererorg"})
+	if err != nil {
+		t.Fatalf("Failed to create new consortium client with opts: %s", err)
+	}
+
 }
 
 func TestNewDefaultTwoValidSDK(t *testing.T) {
