@@ -10,13 +10,15 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-
+	cons "github.com/hyperledger/fabric-sdk-go/api/apitxn/consclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
+	consImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/consclient"
 )
 
 // SessionClientFactory represents the default implementation of a session client.
@@ -38,6 +40,16 @@ func (f *SessionClientFactory) NewSystemClient(sdk context.SDK, session context.
 	client.SetSigningManager(sdk.SigningManager())
 
 	return client, nil
+}
+
+// NewConsortiumClient returns a client that manages consortium (create/join channel)
+func (f *SessionClientFactory) NewConsortiumClient(sdk context.SDK, session context.Session, config apiconfig.Config) (cons.ConsortiumClient, error) {
+	// For now settings are the same as for system client
+	client, err := f.NewSystemClient(sdk, session, config)
+	if err != nil {
+		return nil, err
+	}
+	return consImpl.NewConsortiumClient(client, config)
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel
@@ -82,9 +94,9 @@ func getChannel(client fab.FabricClient, channelID string) (fab.Channel, error) 
 		return nil, errors.WithMessage(err, "NewChannel failed")
 	}
 
-	_, err = client.Config().ChannelConfig(channel.Name())
-	if err != nil {
-		return nil, errors.WithMessage(err, "reading channel config failed")
+	chCfg, err := client.Config().ChannelConfig(channel.Name())
+	if err != nil || chCfg == nil {
+		return nil, errors.Errorf("reading channel config failed: %s", err)
 	}
 
 	chOrderers, err := client.Config().ChannelOrderers(channel.Name())

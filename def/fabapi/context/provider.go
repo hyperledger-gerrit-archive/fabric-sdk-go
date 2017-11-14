@@ -11,6 +11,7 @@ import (
 	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	cons "github.com/hyperledger/fabric-sdk-go/api/apitxn/consclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/bccsp/factory"
@@ -36,5 +37,6 @@ type OrgClientFactory interface {
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
 	NewSystemClient(context SDK, session Session, config apiconfig.Config) (fab.FabricClient, error)
+	NewConsortiumClient(context SDK, session Session, config apiconfig.Config) (cons.ConsortiumClient, error)
 	NewChannelClient(context SDK, session Session, config apiconfig.Config, channelID string) (txn.ChannelClient, error)
 }
