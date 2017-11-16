@@ -46,8 +46,6 @@ declare -a FILES=(
     "bccsp/pkcs11/impl.go"
     "bccsp/pkcs11/pkcs11.go"
 
-    "bccsp/signer/signer.go"
-
     "bccsp/sw/aes.go"
     "bccsp/sw/aeskey.go"
     "bccsp/sw/conf.go"
