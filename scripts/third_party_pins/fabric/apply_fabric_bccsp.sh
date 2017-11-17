@@ -12,6 +12,7 @@
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 GOIMPORTS_CMD=goimports
+GOFILTER_CMD="go run scripts/_go/cmd/gofilter/gofilter.go"
 
 declare -a PKGS=(
     "bccsp"
@@ -80,6 +81,26 @@ for i in "${PKGS[@]}"
 do
     mkdir -p $INTERNAL_PATH/${i}
 done
+
+# Apply fine-grained patching
+gofilter() {
+    echo "Filtering: ${FILTER_FILENAME}"
+    cp ${TMP_PROJECT_PATH}/${FILTER_FILENAME} ${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak
+    $GOFILTER_CMD -filename "${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak" \
+        -filters "$FILTERS_ENABLED" -fn "$FILTER_FN" -gen "$FILTER_GEN" -type "$FILTER_TYPE" \
+        > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+}
+
+echo "Filtering Go sources for allowed functions ..."
+FILTERS_ENABLED="fn"
+
+FILTER_FILENAME="bccsp/signer/signer.go"
+FILTER_FN=New,Public,Sign
+gofilter
+sed -i '/"github.com\// a "github.com\/hyperledger\/fabric-sdk-go\/api\/apicryptosuite"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
 
 # Apply patching
 echo "Patching import paths on upstream project ..."
