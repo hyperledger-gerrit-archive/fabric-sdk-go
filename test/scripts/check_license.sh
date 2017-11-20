@@ -9,14 +9,14 @@ function filterExcludedFiles {
   CHECK=`echo "$CHECK" | grep -v .png$ | grep -v .rst$ | grep -v ^.git/ \
   | grep -v .pem$ | grep -v .block$ | grep -v .tx$ | grep -v ^LICENSE$ | grep -v _sk$ \
   | grep -v .key$ | grep -v \\.gen.go$ | grep -v ^Gopkg.lock$ \
+  | grep -v ^internal/github.com/hyperledger/fabric/bccsp/utils/ecdsa.go$ \
   | grep -v .md$ | grep -v ^vendor/ | grep -v ^build/ | grep -v .pb.go$ | sort -u`
 }
 
-CHECK=$(git diff --name-only HEAD --diff-filter=ACMRTUXB *)
+CHECK=$(git diff --name-only HEAD --diff-filter=ACMRTUXB* *)
 filterExcludedFiles
-
 if [[ -z "$CHECK" ]]; then
-  CHECK=$(git diff-tree --no-commit-id --name-only --diff-filter=ACMRTUXB -r $(git log -2 \
+  CHECK=$(git diff-tree --no-commit-id --name-only --diff-filter=ACMRTUXB* -r $(git log -2 \
     --pretty=format:"%h"))
     filterExcludedFiles
 fi

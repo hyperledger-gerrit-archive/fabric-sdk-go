@@ -9,6 +9,8 @@
 # These files are checked into internal paths.
 # Note: This script must be adjusted as upstream makes adjustments
 
+set -e
+
 IMPORT_SUBSTS=($IMPORT_SUBSTS)
 
 GOIMPORTS_CMD=goimports
@@ -94,6 +96,7 @@ declare -a FILES=(
     "bccsp/utils/keys.go"
     "bccsp/utils/slice.go"
     "bccsp/utils/x509.go"
+    "bccsp/utils/ecdsa.go"
     "common/crypto/random.go"
     "common/crypto/signer.go"
 
@@ -338,7 +341,11 @@ echo "Patching import paths on upstream project ..."
 WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" IMPORT_SUBSTS="${IMPORT_SUBSTS[@]}" scripts/third_party_pins/common/apply_import_patching.sh
 
 echo "Inserting modification notice ..."
-WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
+# Temporary missing license
+MISSING_LICENSE_FILES=("bccsp/utils/ecdsa.go")
+NOTICE_FILES=( "${FILES[@]/$MISSING_LICENSE_FILES}" )
+WORKING_DIR=$TMP_PROJECT_PATH FILES="${NOTICE_FILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
+WORKING_DIR=$TMP_PROJECT_PATH ALLOW_NONE_LICENSE_ID=true FILES="${MISSING_LICENSE_FILES[@]}" scripts/third_party_pins/common/apply_header_notice.sh
 
 # Copy patched project into internal paths
 echo "Copying patched upstream project into working directory ..."
