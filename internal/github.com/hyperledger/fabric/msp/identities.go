@@ -13,10 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*
-Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
-Please review third_party pinning scripts and patches for more details.
-*/
 
 package msp
 
@@ -25,11 +21,10 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/hex"
-
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-
 	"encoding/pem"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 
 	"github.com/golang/protobuf/proto"
 	bccsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"

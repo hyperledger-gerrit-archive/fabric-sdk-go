@@ -13,10 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*
-Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
-Please review third_party pinning scripts and patches for more details.
-*/
 
 package msp
 
@@ -31,7 +27,7 @@ import (
 	"math/big"
 	"time"
 
-	sw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
@@ -85,7 +81,7 @@ func sanitizeECDSASignedCert(cert *x509.Certificate, parentCert *x509.Certificat
 		return nil, errors.New("parent certificate must be different from nil")
 	}
 
-	expectedSig, err := sw.SignatureToLowS(parentCert.PublicKey.(*ecdsa.PublicKey), cert.Signature)
+	expectedSig, err := utils.SignatureToLowS(parentCert.PublicKey.(*ecdsa.PublicKey), cert.Signature)
 	if err != nil {
 		return nil, err
 	}

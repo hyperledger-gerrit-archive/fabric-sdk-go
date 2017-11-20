@@ -94,6 +94,7 @@ declare -a FILES=(
     "bccsp/utils/keys.go"
     "bccsp/utils/slice.go"
     "bccsp/utils/x509.go"
+    "bccsp/utils/ecdsa.go"
     "common/crypto/random.go"
     "common/crypto/signer.go"
 

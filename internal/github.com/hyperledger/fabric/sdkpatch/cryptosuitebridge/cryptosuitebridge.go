@@ -3,10 +3,6 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
-/*
-Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
-Please review third_party pinning scripts and patches for more details.
-*/
 
 package cryptosuitebridge
 
@@ -18,7 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 )
 
@@ -58,14 +54,14 @@ func NewCspSigner(csp apicryptosuite.CryptoSuite, key apicryptosuite.Key) (crypt
 	return cspsigner.New(csp, key)
 }
 
-//GetFactoryDefaultCryptoSuite creates new cryptosuite from bccsp factory default
+//GetDefault creates new cryptosuite from bccsp factory default
 func GetDefault() apicryptosuite.CryptoSuite {
 	return cryptosuite.GetDefault()
 }
 
-//SignatureToLowS is a bridge for bccsp sw.SignatureToLowS()
+//SignatureToLowS is a bridge for bccsp utils.SignatureToLowS()
 func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {
-	return sw.SignatureToLowS(k, signature)
+	return utils.SignatureToLowS(k, signature)
 }
 
 //GetHashOpt is a bridge for bccsp util GetHashOpt
