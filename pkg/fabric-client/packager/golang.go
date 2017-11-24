@@ -34,17 +34,22 @@ var keep = []string{".go", ".c", ".h"}
 var logger = logging.NewLogger("fabric_sdk_go")
 
 // PackageGoLangCC ...
-func PackageGoLangCC(chaincodePath string) ([]byte, error) {
+func PackageGoLangCC(chaincodePath string, deployPath string) ([]byte, error) {
 
-	// Determine the user's $GOPATH
-	goPath := os.Getenv("GOPATH")
-	if goPath == "" {
-		return nil, errors.New("GOPATH not defined")
+	var projDir string
+	if deployPath == "" {
+		// Determine the user's $GOPATH
+		goPath := os.Getenv("GOPATH")
+		if goPath == "" {
+			return nil, errors.New("GOPATH not defined")
+		}
+		logger.Debugf("GOPATH environment variable=%s", goPath)
+
+		// Compose the path to the chaincode project directory
+		projDir = path.Join(goPath, "src", chaincodePath)
+	} else {
+		projDir = path.Join(deployPath, "src", chaincodePath)
 	}
-	logger.Debugf("GOPATH environment variable=%s", goPath)
-
-	// Compose the path to the chaincode project directory
-	projDir := path.Join(goPath, "src", chaincodePath)
 
 	logger.Debugf("projDir variable=%s", projDir)
 
@@ -52,7 +57,7 @@ func PackageGoLangCC(chaincodePath string) ([]byte, error) {
 	// and then pack them into an archive.  While the two phases aren't
 	// strictly necessary yet, they pave the way for the future where we
 	// will need to assemble sources from multiple packages
-	descriptors, err := findSource(goPath, projDir)
+	descriptors, err := findSource(deployPath, projDir)
 	if err != nil {
 		return nil, err
 	}

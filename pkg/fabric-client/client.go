@@ -480,7 +480,7 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
+func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string, deployPath string,
 	chaincodePackage []byte, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, string, error) {
 
 	if chaincodeName == "" {
@@ -495,7 +495,7 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 
 	if chaincodePackage == nil {
 		var err error
-		chaincodePackage, err = packager.PackageCC(chaincodePath, "")
+		chaincodePackage, err = packager.PackageCC(chaincodePath, "", deployPath)
 		if err != nil {
 			return nil, "", errors.WithMessage(err, "PackageCC failed")
 		}

@@ -43,7 +43,7 @@ type FabricClient interface {
 	CryptoSuite() apicryptosuite.CryptoSuite
 	SaveUserToStateStore(user User, skipPersistence bool) error
 	LoadUserFromStateStore(name string) (User, error)
-	InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string, chaincodePackage []byte, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, string, error)
+	InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string, deployPath string, chaincodePackage []byte, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, string, error)
 	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
 	UserContext() User

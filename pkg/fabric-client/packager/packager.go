@@ -13,12 +13,13 @@ import "github.com/hyperledger/fabric-sdk-go/pkg/errors"
  * Utility function to package a chaincode. The contents will be returned as a byte array.
  *
  * @param {string} chaincodePath required - String of the path to location of
- *                the source code of the chaincode
+ *                the source code of the chaincode relative to "GO" src folder
  * @param {string} chaincodeType optional - String of the type of chaincode
  *                 ['golang', 'car', 'java'] (default 'golang')
+ * @param {string} deployPath optional - String of the path to "GO" src folder. If empty GOPATH will be used.
  * @returns {[]byte} byte array
  */
-func PackageCC(chaincodePath string, chaincodeType string) ([]byte, error) {
+func PackageCC(chaincodePath string, chaincodeType string, deployPath string) ([]byte, error) {
 	logger.Debugf("packager: chaincodePath: %s, chaincodeType: %s", chaincodePath, chaincodeType)
 	if chaincodePath == "" {
 		return nil, errors.New("chaincodePath is required")
@@ -29,7 +30,7 @@ func PackageCC(chaincodePath string, chaincodeType string) ([]byte, error) {
 	logger.Debugf("packager: type %s ", chaincodeType)
 	switch chaincodeType {
 	case "golang":
-		return PackageGoLangCC(chaincodePath)
+		return PackageGoLangCC(chaincodePath, deployPath)
 	}
 	return nil, errors.New("chaincodeType is required")
 }
