@@ -77,6 +77,8 @@ sed -i'' -e '/log "github.com\// a\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/\/\/ Initialize BCCSP (the crypto layer)/c.csp = cfg.CSP/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/c.csp, err = util.InitBCCSP(&cfg.CSP, mspDir, c.HomeDir)/,+3 d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/identity.go"
 FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName"
@@ -99,6 +101,8 @@ sed -i'' -e 's/bccsp.Key/apicryptosuite.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FIL
 FILTER_FILENAME="lib/clientconfig.go"
 FILTER_FN=
 gofilter
+sed -i'' -e 's/*factory.FactoryOpts/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
 
 FILTER_FILENAME="lib/util.go"
 FILTER_FN="GetCertID,BytesToX509Cert"
@@ -114,9 +118,7 @@ sed -i'' -e 's/bccsp.BCCSP/apicryptosuite.CryptoSuite/g' "${TMP_PROJECT_PATH}/${
 
 
 FILTER_FILENAME="util/csp.go"
-FILTER_FN="InitBCCSP,ConfigureBCCSP,GetBCCSP,makeFileNamesAbsolute"
-FILTER_FN+=",getBCCSPKeyOpts,ImportBCCSPKeyFromPEM,LoadX509KeyPair,GetSignerFromCert"
-FILTER_FN+=",BCCSPKeyRequestGenerate,GetSignerFromCertFile"
+FILTER_FN=",getBCCSPKeyOpts,ImportBCCSPKeyFromPEM,LoadX509KeyPair,GetSignerFromCert,BCCSPKeyRequestGenerate"
 gofilter
 sed -i'' -e '/_.\"time\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/\"github.com\/cloudflare\/cfssl\/cli\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"

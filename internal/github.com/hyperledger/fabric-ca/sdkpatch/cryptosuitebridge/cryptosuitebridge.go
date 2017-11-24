@@ -18,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
 	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 )
@@ -54,20 +53,6 @@ type FactoryOpts struct {
 	*factory.FactoryOpts
 }
 
-//GetBCCSPFromOpts is a bridge for factory.GetBCCSPFromOpts(config)
-func GetBCCSPFromOpts(config *FactoryOpts) (apicryptosuite.CryptoSuite, error) {
-	bccsp, err := factory.GetBCCSPFromOpts(getFactoryOpts(config))
-	if err != nil {
-		return nil, err
-	}
-	return cryptosuite.GetSuite(bccsp), nil
-}
-
-//InitFactories is a bridge for bccsp factory.InitFactories(config)
-func InitFactories(config *FactoryOpts) error {
-	return factory.InitFactories(getFactoryOpts(config))
-}
-
 // PEMtoPrivateKey is a bridge for bccsp utils.PEMtoPrivateKey()
 func PEMtoPrivateKey(raw []byte, pwd []byte) (interface{}, error) {
 	return utils.PEMtoPrivateKey(raw, pwd)
@@ -96,28 +81,6 @@ func NewFileKeystoreOpts() *factory.FileKeystoreOpts {
 //GetFactoryDefaultCryptoSuite creates new cryptosuite from bccsp factory default
 func GetDefault() apicryptosuite.CryptoSuite {
 	return cryptosuite.GetSuite(factory.GetDefault())
-}
-
-//SignatureToLowS is a bridge for bccsp sw.SignatureToLowS()
-func SignatureToLowS(k *ecdsa.PublicKey, signature []byte) ([]byte, error) {
-	return sw.SignatureToLowS(k, signature)
-}
-
-//GetHashOpt is a bridge for bccsp util GetHashOpt
-func GetHashOpt(hashFunction string) (apicryptosuite.HashOpts, error) {
-	return bccsp.GetHashOpt(hashFunction)
-}
-
-func getFactoryOpts(config *FactoryOpts) *factory.FactoryOpts {
-	if config == nil {
-		return nil
-	}
-	return &factory.FactoryOpts{
-		SwOpts:       config.SwOpts,
-		ProviderName: config.ProviderName,
-		Pkcs11Opts:   config.Pkcs11Opts,
-		PluginOpts:   config.PluginOpts,
-	}
 }
 
 //GetSHAOpts returns options for computing SHA.
