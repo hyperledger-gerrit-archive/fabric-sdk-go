@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package packager
+package gopackager
 
 import (
 	"archive/tar"
@@ -22,14 +22,13 @@ func TestPackageGoLangCC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from os.Getwd %v", err)
 	}
-	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixtures/testdata"))
 
-	ccPackage, err := PackageGoLangCC("github.com")
+	ccPackage, err := PackageGoLangCC("github.com", path.Join(pwd, "../../../../test/fixtures/testdata"))
 	if err != nil {
 		t.Fatalf("error from PackageGoLangCC %v", err)
 	}
 
-	r := bytes.NewReader(ccPackage)
+	r := bytes.NewReader(ccPackage.Code)
 	gzf, err := gzip.NewReader(r)
 	if err != nil {
 		t.Fatalf("error from gzip.NewReader %v", err)
@@ -62,8 +61,8 @@ func TestPackageGoLangCC(t *testing.T) {
 
 // Test Package Go ChainCode
 func TestEmptyPackageGoLangCC(t *testing.T) {
-	os.Setenv("GOPATH", "")
-	_, err := PackageGoLangCC("")
+
+	_, err := PackageGoLangCC("", "")
 	if err == nil {
 		t.Fatalf("Package Empty GoLang CC must return an error.")
 	}
@@ -75,9 +74,8 @@ func TestBadPackagePathGoLangCC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from os.Getwd %v", err)
 	}
-	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixturesABC"))
 
-	_, err = PackageGoLangCC("github.com")
+	_, err = PackageGoLangCC("github.com", path.Join(pwd, "../../../../test/fixturesABC"))
 	if err == nil {
 		t.Fatalf("error expected from PackageGoLangCC %v", err)
 	}
