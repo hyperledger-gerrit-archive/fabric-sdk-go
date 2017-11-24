@@ -480,22 +480,22 @@ func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResp
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
-func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, chaincodeVersion string,
-	chaincodePackage []byte, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, string, error) {
+func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.TransactionProposalResponse, string, error) {
 
-	if chaincodeName == "" {
+	if req.Name == "" {
 		return nil, "", errors.New("chaincodeName required")
 	}
-	if chaincodePath == "" {
+	if req.Path == "" {
 		return nil, "", errors.New("chaincodePath required")
 	}
-	if chaincodeVersion == "" {
+	if req.Version == "" {
 		return nil, "", errors.New("chaincodeVersion required")
 	}
 
+	chaincodePackage := req.Package
 	if chaincodePackage == nil {
 		var err error
-		chaincodePackage, err = packager.PackageCC(chaincodePath, "")
+		chaincodePackage, err = packager.PackageCC(req.Path, "", req.GoPath)
 		if err != nil {
 			return nil, "", errors.WithMessage(err, "PackageCC failed")
 		}
@@ -503,7 +503,7 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 
 	now := time.Now()
 	cds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion}},
+		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: req.Name, Path: req.Path, Version: req.Version}},
 		CodePackage: chaincodePackage, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
 
 	if c.userContext == nil {
@@ -546,7 +546,7 @@ func (c *Client) InstallChaincode(chaincodeName string, chaincodePath string, ch
 		SignedProposal: signedProposal,
 		Proposal:       proposal,
 		TxnID:          txnID,
-	}, targets)
+	}, req.Targets)
 
 	return transactionProposalResponse, txID, err
 }

@@ -21,9 +21,8 @@ func TestPackageCC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from os.Getwd %v", err)
 	}
-	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixtures/testdata"))
 
-	ccPackage, err := PackageCC("github.com", "")
+	ccPackage, err := PackageCC("github.com", "", path.Join(pwd, "../../../test/fixtures/testdata"))
 	if err != nil {
 		t.Fatalf("error from PackageGoLangCC %v", err)
 	}
@@ -60,9 +59,8 @@ func TestPackageCC(t *testing.T) {
 
 // Test Package Go ChainCode
 func TestEmptyPackageCC(t *testing.T) {
-	os.Setenv("GOPATH", "")
 
-	_, err := PackageCC("", "")
+	_, err := PackageCC("", "", "")
 	if err == nil {
 		t.Fatalf("Package Empty GoLang CC must return an error.")
 	}
@@ -74,9 +72,8 @@ func TestUndefinedPackageCC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from os.Getwd %v", err)
 	}
-	os.Setenv("GOPATH", path.Join(pwd, "../../../test/fixtures/testdata"))
 
-	_, err = PackageCC("github.com", "UndefinedCCType")
+	_, err = PackageCC("github.com", "UndefinedCCType", path.Join(pwd, "../../../test/fixtures/testdata"))
 	if err == nil {
 		t.Fatalf("Undefined package UndefinedCCType GoLang CC must return an error.")
 	}
