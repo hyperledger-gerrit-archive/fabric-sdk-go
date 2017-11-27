@@ -9,8 +9,6 @@ package logging
 import (
 	"sync"
 
-	"fmt"
-
 	"sync/atomic"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
@@ -31,7 +29,8 @@ var loggingProvider apilogging.LoggingProvider
 
 const (
 	//loggerNotInitializedMsg is used when a logger is not initialized before logging
-	loggerNotInitializedMsg = "logger not initialized, please make sure logging.InitLogger is called."
+	loggerNotInitializedMsg = "Default logger initialized. Please call logging.InitLogger if you wish to use a custom logger."
+	loggerModule            = "fabric_sdk_go"
 )
 
 // GetLogger creates and returns a Logger object based on the module name.
@@ -244,17 +243,18 @@ func (l *Logger) checkLogger() bool {
 		return true
 	}
 
+	if !IsLoggerInitialized() {
+		InitLogger(deflogger.GetLoggingProvider())
+		logger := loggingProvider.GetLogger(loggerModule)
+		logger.Info(loggerNotInitializedMsg)
+	}
+
 	return l.loadLoggerFromFactory()
 }
 
 func (l *Logger) loadLoggerFromFactory() bool {
 	mutex.Lock()
 	defer mutex.Unlock()
-
-	if loggingProvider == nil {
-		fmt.Println(loggerNotInitializedMsg)
-		return false
-	}
 
 	l.logger = loggingProvider.GetLogger(l.module)
 	atomic.StoreInt32(&l.initialized, 1)
