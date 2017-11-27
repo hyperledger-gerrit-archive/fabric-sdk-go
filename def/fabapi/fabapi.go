@@ -10,6 +10,7 @@ package fabapi
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
@@ -53,6 +54,7 @@ type FabricSDK struct {
 	discoveryProvider apifabclient.DiscoveryProvider
 	selectionProvider apifabclient.SelectionProvider
 	signingManager    apifabclient.SigningManager
+	loggerProvider    apilogging.LoggerProvider
 }
 
 // ChannelClientOpts provides options for creating channel client
@@ -90,9 +92,11 @@ func NewSDK(options Options) (*FabricSDK, error) {
 		Options: options,
 	}
 
-	//Initialize logging provider with default logging provider if not yet initialized
-	if !logging.IsLoggerInitialized() {
-		logging.InitLogger(deflogger.GetLoggingProvider())
+	// Initialize logging provider with default logging provider
+	if sdk.loggerProvider == nil {
+		logging.InitLogger(deflogger.LoggerProvider())
+	} else {
+		logging.InitLogger(sdk.loggerProvider)
 	}
 
 	// Initialize default factories (if needed)
