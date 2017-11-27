@@ -90,10 +90,9 @@ func NewSDK(options Options) (*FabricSDK, error) {
 		Options: options,
 	}
 
-	//Initialize logging provider with default logging provider if not yet initialized
-	if !logging.IsLoggerInitialized() {
-		logging.InitLogger(deflogger.GetLoggingProvider())
-	}
+	// Initialize logging provider with default logging provider
+	// TODO: Allow override in opts
+	logging.InitLogger(deflogger.LoggerProvider())
 
 	// Initialize default factories (if needed)
 	if sdk.ProviderFactory == nil {
