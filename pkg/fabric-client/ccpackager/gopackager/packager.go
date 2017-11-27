@@ -10,6 +10,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"go/build"
 	"io"
 	"os"
 	"path"
@@ -46,8 +47,7 @@ func NewCCPackage(chaincodePath string, goPath string) (*fab.CCPackage, error) {
 	var projDir string
 	gp := goPath
 	if gp == "" {
-		// TODO: for now use env variable
-		gp = os.Getenv("GOPATH")
+		gp = build.Default.GOPATH
 		if gp == "" {
 			return nil, errors.New("GOPATH not defined")
 		}
