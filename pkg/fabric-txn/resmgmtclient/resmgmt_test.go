@@ -526,14 +526,14 @@ func TestInstallCCDiscoveryError(t *testing.T) {
 
 }
 
-func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryService, error) {
+func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryProvider, error) {
 
 	mockDiscovery, err := txnmocks.NewMockDiscoveryProvider(discErr, peers)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewMockDiscoveryProvider failed")
 	}
 
-	return mockDiscovery.NewDiscoveryService("")
+	return mockDiscovery, nil
 }
 
 func getNetworkConfig(t *testing.T) *config.Config {
