@@ -163,59 +163,8 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	args [][]byte, chaincodePath string, chaincodeVersion string,
 	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
-	if chaincodeName == "" {
-		return nil, apitxn.TransactionID{}, errors.New("chaincodeName is required")
-	}
-	if chaincodePath == "" {
-		return nil, apitxn.TransactionID{}, errors.New("chaincodePath is required")
-	}
-	if chaincodeVersion == "" {
-		return nil, apitxn.TransactionID{}, errors.New("chaincodeVersion is required")
-	}
-	if chaincodePolicy == nil {
-		return nil, apitxn.TransactionID{}, errors.New("chaincodePolicy is required")
-	}
+	return c.sendCCProposal("instantiate", chaincodeName, args, chaincodePath, chaincodeVersion, chaincodePolicy, targets)
 
-	// TODO: We should validate that targets are added to the channel.
-	if targets == nil || len(targets) < 1 {
-		return nil, apitxn.TransactionID{}, errors.New("missing peer objects for instantiate chaincode proposal")
-	}
-
-	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincodeName, Path: chaincodePath, Version: chaincodeVersion},
-		Input: &pb.ChaincodeInput{Args: args}}}
-
-	if c.clientContext.UserContext() == nil {
-		return nil, apitxn.TransactionID{}, errors.New("user context is nil")
-	}
-	creator, err := c.clientContext.UserContext().Identity()
-	if err != nil {
-		return nil, apitxn.TransactionID{}, errors.Wrap(err, "getting user context's identity failed")
-	}
-	chaincodePolicyBytes, err := protos_utils.Marshal(chaincodePolicy)
-	if err != nil {
-		return nil, apitxn.TransactionID{}, err
-	}
-	// create a proposal from a chaincodeDeploymentSpec
-	proposal, txID, err := protos_utils.CreateDeployProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
-	if err != nil {
-		return nil, apitxn.TransactionID{}, errors.Wrap(err, "create chaincode deploy proposal failed")
-	}
-
-	signedProposal, err := c.signProposal(proposal)
-	if err != nil {
-		return nil, apitxn.TransactionID{}, err
-	}
-
-	txnID := apitxn.TransactionID{ID: txID} // Nonce is missing
-
-	transactionProposalResponse, err := txnproc.SendTransactionProposalToProcessors(&apitxn.TransactionProposal{
-		SignedProposal: signedProposal,
-		Proposal:       proposal,
-		TxnID:          txnID,
-	}, targets)
-
-	return transactionProposalResponse, txnID, err
 }
 
 // SendUpgradeProposal sends an upgrade proposal to one or more endorsing peers.
@@ -224,6 +173,15 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 // chaincodePath: required - string of the path to the location of the source code of the chaincode
 // chaincodeVersion: required - string of the version of the chaincode
 func (c *Channel) SendUpgradeProposal(chaincodeName string,
+	args [][]byte, chaincodePath string, chaincodeVersion string,
+	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+
+	return c.sendCCProposal("upgrade", chaincodeName, args, chaincodePath, chaincodeVersion, chaincodePolicy, targets)
+
+}
+
+// helper function that sends an instantiate or upgrade chaincode proposal to one or more endorsing peers
+func (c *Channel) sendCCProposal(fn string, chaincodeName string,
 	args [][]byte, chaincodePath string, chaincodeVersion string,
 	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 
@@ -240,9 +198,8 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 		return nil, apitxn.TransactionID{}, errors.New("chaincodePolicy is required")
 	}
 
-	// TODO: We should validate that targets are added to the channel.
 	if targets == nil || len(targets) < 1 {
-		return nil, apitxn.TransactionID{}, errors.New("missing peer objects for upgrade chaincode proposal")
+		return nil, apitxn.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
 	}
 
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
@@ -260,10 +217,24 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 	if err != nil {
 		return nil, apitxn.TransactionID{}, err
 	}
-	// create a proposal from a chaincodeDeploymentSpec
-	proposal, txID, err := protos_utils.CreateUpgradeProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
-	if err != nil {
-		return nil, apitxn.TransactionID{}, errors.Wrap(err, "create chaincode upgrade proposal failed")
+
+	var proposal *pb.Proposal
+	var txID string
+
+	switch fn {
+
+	case "instantiate":
+		proposal, txID, err = protos_utils.CreateDeployProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
+		if err != nil {
+			return nil, apitxn.TransactionID{}, errors.Wrap(err, "create instantiate chaincode proposal failed")
+		}
+	case "upgrade":
+		proposal, txID, err = protos_utils.CreateUpgradeProposalFromCDS(c.Name(), ccds, creator, chaincodePolicyBytes, []byte("escc"), []byte("vscc"))
+		if err != nil {
+			return nil, apitxn.TransactionID{}, errors.Wrap(err, "create  upgrade chaincode proposal failed")
+		}
+	default:
+		return nil, apitxn.TransactionID{}, errors.Errorf("chaincode proposal type %s not supported", fn)
 	}
 
 	signedProposal, err := c.signProposal(proposal)
@@ -282,7 +253,7 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 	return transactionProposalResponse, txnID, err
 }
 
-// SignPayload ... TODO.
+// SignPayload signs payload
 func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
 	//Get user info
 	user := c.clientContext.UserContext()
