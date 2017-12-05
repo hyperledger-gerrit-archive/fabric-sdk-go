@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package resmgmt
+package resmgmtclient
 
 import (
 	"time"
@@ -82,11 +82,14 @@ type UpgradeCCOpts struct {
 // ResourceMgmtClient is responsible for managing resources: peers joining channels, and installing and instantiating chaincodes(TODO).
 type ResourceMgmtClient interface {
 
-	// InstallCC - install chaincode
+	// InstallCC - installs chaincode
 	InstallCC(req InstallCCRequest) ([]InstallCCResponse, error)
 
 	// InstallCCWithOpts installs chaincode with custom options (specific peers, filtered peers)
 	InstallCCWithOpts(req InstallCCRequest, opts InstallCCOpts) ([]InstallCCResponse, error)
+
+	// IsChaincodeInstalled verifies if chaincode is installed on peer
+	IsChaincodeInstalled(req InstallCCRequest, peer fab.Peer) (bool, error)
 
 	// InstantiateCC instantiates chaincode using default settings
 	InstantiateCC(channelID string, req InstantiateCCRequest) error
