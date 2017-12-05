@@ -38,8 +38,18 @@ func (c *MockConfig) CAServerCertFiles(org string) ([]string, error) {
 	return nil, nil
 }
 
+//CAClientKeyPem Read configuration option for the fabric CA client key from a string
+func (c *MockConfig) CAClientKeyPem(org string) (string, error) {
+	return "", nil
+}
+
 // CAClientKeyFile Read configuration option for the fabric CA client key file
 func (c *MockConfig) CAClientKeyFile(org string) (string, error) {
+	return "", nil
+}
+
+//CAClientCertPem Read configuration option for the fabric CA client cert from a string
+func (c *MockConfig) CAClientCertPem(org string) (string, error) {
 	return "", nil
 }
 
