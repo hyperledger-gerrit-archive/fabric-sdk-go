@@ -16,7 +16,9 @@ type Config interface {
 	Client() (*ClientConfig, error)
 	CAConfig(org string) (*CAConfig, error)
 	CAServerCertFiles(org string) ([]string, error)
+	CAClientKeyPem(org string) (string, error)
 	CAClientKeyFile(org string) (string, error)
+	CAClientCertPem(org string) (string, error)
 	CAClientCertFile(org string) (string, error)
 	TimeoutOrDefault(TimeoutType) time.Duration
 	MspID(org string) (string, error)
