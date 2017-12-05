@@ -8,7 +8,10 @@ package opt
 
 // SDKOpts provides bootstrap setup
 type SDKOpts struct {
+	//ConfigFile to load from a predefined path
 	ConfigFile string
+	//ConfigBytes to load from an bytes array
+	ConfigBytes []byte
 }
 
 // ConfigOpts provides setup parameters for Config
