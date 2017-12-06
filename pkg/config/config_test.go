@@ -757,7 +757,7 @@ O94CDp7l2k7hMQI0zQ==
 		t.Fatalf("%s Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", peer0, pPem, loadedPPem)
 	}
 
-	// get CAServerCertPems for org1
+	// get CAServerCertPems (embedded) for org1
 	certs, err := c.CAServerCertPems("org1")
 	if err != nil {
 		t.Fatalf("Failed to load CAServerCertPems from config. Error: %s", err)
@@ -766,20 +766,37 @@ O94CDp7l2k7hMQI0zQ==
 		t.Fatalf("Got empty PEM certs for CAServerCertPems")
 	}
 
+	// get the client cert Pem (embedded) for org1
 	c.CAClientCertPem("org1")
 	if err != nil {
 		t.Fatalf("Failed to load CAClientCertPem from config. Error: %s", err)
 	}
+
+	// get CAServerCertFile (loaded file paths) for org1
+	certs, err = c.CAServerCertFiles("org1")
+	if err != nil {
+		t.Fatalf("Failed to load CAServerCertFiles from config. Error: %s", err)
+	}
 	if len(certs) == 0 {
-		t.Fatalf("Got empty PEM certs for CAClientCertPem")
+		t.Fatalf("Got empty cert file paths for CAServerCertFiles")
 	}
 
+	// get the client cert File (file path) for org1
+	c.CAClientCertFile("org1")
+	if err != nil {
+		t.Fatalf("Failed to load CAClientKeyFile from config. Error: %s", err)
+	}
+
+	// get the client Key Pem (embedded) for org1
 	c.CAClientKeyPem("org1")
 	if err != nil {
 		t.Fatalf("Failed to load CAClientKeyPem from config. Error: %s", err)
 	}
-	if len(certs) == 0 {
-		t.Fatalf("Got empty PEM certs for CAClientKeyPem")
+
+	// get the client key File (file path) for org1
+	c.CAClientKeyFile("org1")
+	if err != nil {
+		t.Fatalf("Failed to load CAClientKeyFile from config. Error: %s", err)
 	}
 }
 
