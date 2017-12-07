@@ -17,7 +17,7 @@ import (
 
 func TestChainCodeInvoke(t *testing.T) {
 
-	testSetup := BaseSetupImpl{
+	testSetup := &BaseSetupImpl{
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
