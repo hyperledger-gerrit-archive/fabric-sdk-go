@@ -675,6 +675,13 @@ func TestInterfaces(t *testing.T) {
 	}
 }
 
+func TestSystemCertPool(t *testing.T) {
+	if len(configImpl.tlsCertPool.Subjects()) == 0 {
+		t.Fatalf("System Cert Pool not loaded even though it is enabled")
+	}
+	t.Log("System Cert Pool loaded. Nothing additional to verify..")
+}
+
 func TestSetTLSCACertPool(t *testing.T) {
 	configImpl.SetTLSCACertPool(nil)
 	t.Log("TLSCACertRoot must be created. Nothing additional to verify..")
@@ -691,6 +698,11 @@ func TestInitConfigFromBytesWithPem(t *testing.T) {
 	c, err := InitConfigFromBytes(cBytes, configType)
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
+	}
+
+	// cert pool should be empty
+	if len(c.tlsCertPool.Subjects()) > 0 {
+		t.Fatal("Expecting empty tls cert pool due to disabled system cert pool")
 	}
 
 	o, err := c.OrderersConfig()
