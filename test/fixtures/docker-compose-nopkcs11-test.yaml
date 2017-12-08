@@ -8,10 +8,11 @@ version: '2'
 services:
 
   integration-tests:
-    image: ${FABRIC_BASEIMAGE_FIXTURE_IMAGE}:${ARCH}-${FABRIC_BASEIMAGE_FIXTURE_TAG}
+    image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_BASEIMAGE_FIXTURE_IMAGE}:${BASE_ARCH}-${FABRIC_BASEIMAGE_FIXTURE_TAG}
     environment:
       - GO_TAGS
       - GO_TESTFLAGS
+      - FABRIC_SDKGO_CODELEVEL
     volumes:
       - ../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
     command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration.sh
