@@ -13,6 +13,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestChainCodeInvoke(t *testing.T) {
@@ -21,7 +22,7 @@ func TestChainCodeInvoke(t *testing.T) {
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   "../../" + metadata.ChannelConfigPath + "mychannel.tx",
 		ConnectEventHub: true,
 	}
 
