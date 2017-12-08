@@ -34,7 +34,7 @@ client:
       response: 5s
 
   cryptoconfig:
-    path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
+    path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric-v1.1/config/crypto-config
 
   credentialStore:
     path: "/tmp/hfc-kvs"
@@ -98,7 +98,7 @@ orderers:
       grpc-max-send-message-length: 15
 
     tlsCACerts:
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric-v1.1/config/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 
 peers:
   peer0.org2.example.com:
@@ -107,7 +107,7 @@ peers:
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
     tlsCACerts:
-      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+      path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric-v1.1/config/crypto-config/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
 certificateAuthorities:
   ca-org2:
