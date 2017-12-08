@@ -93,6 +93,16 @@ client:
   # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
   systemcertpool: false
 
+  mutualTls:
+    enabled: true
+
+  mutualTlsCerts:
+    # Client key and cert for SSL handshake with peers, orderers
+    client:
+      keyfile: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/mutual/client_sdk_go-key.pem
+      certfile: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/tls/mutual/client_sdk_go.pem
+
+
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed
 # based on the content below. If an app is creating channels, then it likely will not need this

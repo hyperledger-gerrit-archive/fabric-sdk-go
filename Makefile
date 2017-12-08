@@ -129,6 +129,10 @@ integration-tests-pkcs11: clean depend populate build-softhsm2-image
 
 integration-test: integration-tests-nopkcs11 integration-tests-pkcs11
 
+integration-tests-mutual-tls: clean depend populate
+	@cd ./test/fixtures && $(DOCKER_COMPOSE_CMD) -f docker-compose-mutual-tls.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd test/fixtures && ../scripts/check_status.sh "-f ./docker-compose-mutual-tls.yaml -f ./docker-compose-nopkcs11-test.yaml"
+
 mock-gen:
 	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apitxn/mocks/mockapitxn.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apiconfig/mocks/mockconfig.gen.go

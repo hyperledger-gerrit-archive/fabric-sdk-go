@@ -175,6 +175,19 @@ func (c *Config) Client() (*apiconfig.ClientConfig, error) {
 		return nil, err
 	}
 	client := config.Client
+
+	if client.MutualTLSCerts.Path != "" {
+		client.MutualTLSCerts.Path = substGoPath(client.MutualTLSCerts.Path)
+	}
+
+	if client.MutualTLSCerts.Client.Keyfile != "" {
+		client.MutualTLSCerts.Client.Keyfile = substGoPath(client.MutualTLSCerts.Client.Keyfile)
+	}
+
+	if client.MutualTLSCerts.Client.Certfile != "" {
+		client.MutualTLSCerts.Client.Certfile = substGoPath(client.MutualTLSCerts.Client.Certfile)
+	}
+
 	return &client, nil
 }
 
