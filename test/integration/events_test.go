@@ -38,7 +38,7 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   "../fixtures/fabric-v1.0/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
 
