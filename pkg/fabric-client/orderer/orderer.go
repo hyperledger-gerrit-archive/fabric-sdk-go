@@ -17,6 +17,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
+	"crypto/tls"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
@@ -38,7 +40,31 @@ func NewOrderer(url string, certificate string, serverHostOverride string, confi
 		if err != nil {
 			return nil, err
 		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
+
+		clientConfig, err := config.Client()
+		if err != nil {
+			return nil, err
+		}
+
+		var certificates []tls.Certificate
+
+		// check if we need certs for mutual TLS
+		if clientConfig.MutualTLS.Enabled {
+			certsForMutual, err := tls.LoadX509KeyPair(clientConfig.MutualTLSCerts.Client.Certfile, clientConfig.MutualTLSCerts.Client.Keyfile)
+			if err != nil {
+				return nil, errors.Errorf("Error loading cert/key pair for mutual TLS: %v", err)
+			}
+			certificates = []tls.Certificate{certsForMutual}
+
+			logger.Info("*****    ADDED CERTS FOR MUTUAL TLS *******")
+		}
+
+		creds := credentials.NewTLS(&tls.Config{
+			Certificates: certificates,
+			RootCAs:      tlsCaCertPool,
+			ServerName:   serverHostOverride,
+		})
+
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
 		opts = append(opts, grpc.WithInsecure())

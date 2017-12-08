@@ -17,8 +17,9 @@ import (
 
 // MockConfig ...
 type MockConfig struct {
-	tlsEnabled bool
-	errorCase  bool
+	tlsEnabled       bool
+	mutualTLSEnabled bool
+	errorCase        bool
 }
 
 // NewMockConfig ...
@@ -27,13 +28,17 @@ func NewMockConfig() config.Config {
 }
 
 // NewMockConfigCustomized ...
-func NewMockConfigCustomized(tlsEnabled bool, errorCase bool) config.Config {
-	return &MockConfig{tlsEnabled: tlsEnabled, errorCase: errorCase}
+func NewMockConfigCustomized(tlsEnabled, mutualTLSEnabled, errorCase bool) config.Config {
+	return &MockConfig{tlsEnabled: tlsEnabled, mutualTLSEnabled: mutualTLSEnabled, errorCase: errorCase}
 }
 
 // Client ...
 func (c *MockConfig) Client() (*config.ClientConfig, error) {
-	return nil, nil
+	if c.mutualTLSEnabled {
+		return &config.ClientConfig{}, nil
+	}
+
+	return &config.ClientConfig{}, nil
 }
 
 // CAConfig not implemented

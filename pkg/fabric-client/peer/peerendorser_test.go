@@ -43,10 +43,12 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 
 	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
+	clientConfig := &apiconfig.ClientConfig{MutualTLS: apiconfig.TLSType{Enabled: false}}
 
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
+	config.EXPECT().Client().Return(clientConfig, nil)
 
 	conn, err := newPeerEndorser(url, "cert", "", true, config)
 	if err != nil {
