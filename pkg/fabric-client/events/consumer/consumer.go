@@ -25,6 +25,8 @@ import (
 	consumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+
+	"crypto/tls"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -67,7 +69,29 @@ func newEventsClientConnectionWithAddress(peerAddress string, certificate string
 		if err != nil {
 			return nil, err
 		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverhostoverride)
+
+		clientConfig, err := config.Client()
+		if err != nil {
+			return nil, err
+		}
+
+		var certificates []tls.Certificate
+
+		// check if we need certs for mutual TLS
+		if clientConfig.MutualTLS.Enabled {
+			certsForMutual, err := tls.LoadX509KeyPair(clientConfig.MutualTLSCerts.Client.Certfile, clientConfig.MutualTLSCerts.Client.Keyfile)
+			if err != nil {
+				return nil, errors.Errorf("Error loading cert/key pair for mutual TLS: %v", err)
+			}
+			certificates = []tls.Certificate{certsForMutual}
+		}
+
+		creds := credentials.NewTLS(&tls.Config{
+			Certificates: certificates,
+			RootCAs:      tlsCaCertPool,
+			ServerName:   serverhostoverride,
+		})
+
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
