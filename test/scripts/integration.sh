@@ -16,15 +16,21 @@ echo "Running integration tests ..."
 RACEFLAG=""
 ARCH=$(uname -m)
 
-if [ "$ARCH" == "x86_64" ]
-then
+if [ "$ARCH" == "x86_64" ]; then
     RACEFLAG="-race"
 fi
 
-if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]
-then
+if [ ! -z "$FABRIC_SDKGO_CODELEVEL" ]; then
+    echo "Testing with code level $FABRIC_SDKGO_CODELEVEL ..."
+    GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL"
+else
+    echo "Testing with code level stable ..."
+fi
+
+if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
     echo "Testing with PKCS11 ..."
     GO_TAGS="$GO_TAGS testpkcs11"
 fi
 
-$GO_CMD test $RACEFLAG -cover -tags "$GO_TAGS" $GO_TESTFLAGS $GO_LDFLAGS $PKGS -p 1 -timeout=40m
+GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric-${FABRIC_SDKGO_CODELEVEL_VER}/channel/ -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric-${FABRIC_SDKGO_CODELEVEL_VER}/config/crypto-config/"
+$GO_CMD test $RACEFLAG -cover -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m
