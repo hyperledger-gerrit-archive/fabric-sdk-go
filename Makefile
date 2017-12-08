@@ -224,6 +224,15 @@ integration-tests-devstable: clean depend populate
 		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
 	@cd test/fixtures && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ ../scripts/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
 
+.PHONY: integration-tests-mutual-tls
+integration-tests-mutual-tls: clean depend populate
+	@. ./test/fixtures/devstable-env.sh && \
+		$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
+		cd ./test/fixtures && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose-mutual-tls.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd test/fixtures && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ ../scripts/check_status.sh "-f ./docker-compose-mutual-tls.yaml -f ./docker-compose-nopkcs11-test.yaml"
+
+
 .PHONY: integration-tests-stable-pkcs11
 integration-tests-stable-pkcs11: clean depend populate build-softhsm2-image
 	@cd ./test/fixtures && \
@@ -256,6 +265,9 @@ ifeq ($(FABRIC_PREV_CODELEVEL_TEST),true)
 	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-prev
 endif
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
+
+
+
 
 .PHONY: mock-gen
 mock-gen:

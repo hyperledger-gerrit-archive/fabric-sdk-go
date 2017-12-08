@@ -18,6 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"crypto/tls"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
@@ -49,6 +51,7 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 	}
 
 	if urlutil.IsTLSEnabled(target) {
+		// get the root cert pool
 		certPool, _ := config.TLSCACertPool("")
 		if len(certificate) == 0 && len(certPool.Subjects()) == 0 {
 			return peerEndorser{}, errors.New("certificate is required")
@@ -58,7 +61,29 @@ func newPeerEndorser(target string, certificate string, serverHostOverride strin
 		if err != nil {
 			return peerEndorser{}, err
 		}
-		creds := credentials.NewClientTLSFromCert(tlsCaCertPool, serverHostOverride)
+
+		clientConfig, err := config.Client()
+		if err != nil {
+			return peerEndorser{}, err
+		}
+
+		var certificates []tls.Certificate
+
+		// check if we need certs for mutual TLS
+		if clientConfig.MutualTLS.Enabled {
+			certsForMutual, err := tls.LoadX509KeyPair(clientConfig.MutualTLSCerts.Client.Certfile, clientConfig.MutualTLSCerts.Client.Keyfile)
+			if err != nil {
+				return peerEndorser{}, errors.Errorf("Error loading cert/key pair for mutual TLS: %v", err)
+			}
+			certificates = []tls.Certificate{certsForMutual}
+		}
+
+		creds := credentials.NewTLS(&tls.Config{
+			Certificates: certificates,
+			RootCAs:      tlsCaCertPool,
+			ServerName:   serverHostOverride,
+		})
+
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
 		opts = append(opts, grpc.WithInsecure())
