@@ -61,7 +61,7 @@ client:
 
   # Needed to load users crypto keys and certs.
   cryptoconfig:
-    path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config
+    path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIGPATH}
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
@@ -256,7 +256,7 @@ orderers:
         -----END CERTIFICATE-----
       # Certificate location absolute path
       path:
-      #path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+      #path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIGPATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 
 #
 # List of peers to send various requests to, including endorsement, query
@@ -293,7 +293,7 @@ peers:
         -----END CERTIFICATE-----
       # Certificate location absolute path
       path:
-      #path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      #path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIGPATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer0.org2.example.com:
     url: grpcs://peer0.org2.example.com:7051
@@ -303,7 +303,7 @@ peers:
     tlsCACerts:
       pem:
       path:
-      #path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/channel/crypto-config/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+      #path: $GOPATH/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIGPATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
 #
 # Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
