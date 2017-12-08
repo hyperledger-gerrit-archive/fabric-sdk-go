@@ -17,8 +17,9 @@ import (
 
 // MockConfig ...
 type MockConfig struct {
-	tlsEnabled bool
-	errorCase  bool
+	tlsEnabled       bool
+	mutualTLSEnabled bool
+	errorCase        bool
 }
 
 // NewMockConfig ...
@@ -27,13 +28,30 @@ func NewMockConfig() config.Config {
 }
 
 // NewMockConfigCustomized ...
-func NewMockConfigCustomized(tlsEnabled bool, errorCase bool) config.Config {
-	return &MockConfig{tlsEnabled: tlsEnabled, errorCase: errorCase}
+func NewMockConfigCustomized(tlsEnabled, mutualTLSEnabled, errorCase bool) config.Config {
+	return &MockConfig{tlsEnabled: tlsEnabled, mutualTLSEnabled: mutualTLSEnabled, errorCase: errorCase}
 }
 
 // Client ...
 func (c *MockConfig) Client() (*config.ClientConfig, error) {
-	return nil, nil
+	if c.mutualTLSEnabled {
+		if c.errorCase {
+			return &config.ClientConfig{MutualTLS: config.TLSType{Enabled: true}}, nil
+		}
+
+		mutualTLSCerts := config.MutualTLSConfig{
+			Client: struct {
+				KeyPem   string
+				Keyfile  string
+				CertPem  string
+				Certfile string
+			}{KeyPem: "", Keyfile: "../../../test/fixtures/tls/mutual/client_sdk_go-key.pem", CertPem: "", Certfile: "../../../test/fixtures/tls/mutual/client_sdk_go.pem"},
+		}
+
+		return &config.ClientConfig{MutualTLS: config.TLSType{Enabled: true}, MutualTLSCerts: mutualTLSCerts}, nil
+	}
+
+	return &config.ClientConfig{}, nil
 }
 
 // CAConfig not implemented

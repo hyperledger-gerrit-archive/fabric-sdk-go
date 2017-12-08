@@ -67,6 +67,8 @@ services:
       - ORDERER_GENERAL_TLS_PRIVATEKEY=/etc/hyperledger/tls/orderer/server.key
       - ORDERER_GENERAL_TLS_CERTIFICATE=/etc/hyperledger/tls/orderer/server.crt
       - ORDERER_GENERAL_TLS_ROOTCAS=[/etc/hyperledger/tls/orderer/ca.crt]
+      - ORDERER_GENERAL_TLS_CLIENTAUTHENABLED
+      - ORDERER_GENERAL_TLS_CLIENTROOTCAS
     #comment out logging.driver in order to render the debug logs  
     logging:
       driver: none
@@ -106,6 +108,8 @@ services:
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
       - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/tls/peer/ca.crt
+      - CORE_PEER_TLS_CLIENTAUTHREQUIRED
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES
       # # the following setting starts chaincode containers on the same
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/
@@ -159,6 +163,8 @@ services:
       - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/tls/peer/server.key
       - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/tls/peer/server.crt
       - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/tls/peer/ca.crt
+      - CORE_PEER_TLS_CLIENTAUTHREQUIRED
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES
       # # the following setting starts chaincode containers on the same
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/

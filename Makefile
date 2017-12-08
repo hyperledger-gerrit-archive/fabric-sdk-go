@@ -257,6 +257,9 @@ ifeq ($(FABRIC_PREV_CODELEVEL_TEST),true)
 endif
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
 
+
+
+
 .PHONY: mock-gen
 mock-gen:
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apitxn/mocks/mockapitxn.gen.go
