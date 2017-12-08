@@ -125,7 +125,7 @@ func initConfigWithCmdRoot(configFile string, cmdRootPrefix string) (*Config, er
 
 func getCertPool(myViper *viper.Viper) (*x509.CertPool, error) {
 	tlsCertPool := x509.NewCertPool()
-	if myViper.GetBool("client.systemcertpool") == true {
+	if myViper.GetBool("client.tlsCerts.systemCertPool") == true {
 		var err error
 		if tlsCertPool, err = x509.SystemCertPool(); err != nil {
 			return nil, err
@@ -173,6 +173,11 @@ func (c *Config) Client() (*apiconfig.ClientConfig, error) {
 		return nil, err
 	}
 	client := config.Client
+
+	client.TLSCerts.Path = substPathVars(client.TLSCerts.Path)
+	client.TLSCerts.Client.Keyfile = substPathVars(client.TLSCerts.Client.Keyfile)
+	client.TLSCerts.Client.Certfile = substPathVars(client.TLSCerts.Client.Certfile)
+
 	return &client, nil
 }
 
@@ -438,7 +443,7 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = substPathVars(orderer.TLSCACerts.Path)
-		} else if len(orderer.TLSCACerts.Pem) == 0 && c.configViper.GetBool("client.systemcertpool") == false {
+		} else if len(orderer.TLSCACerts.Pem) == 0 && c.configViper.GetBool("client.tlsCerts.systemCertPool") == false {
 			errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
 
@@ -697,7 +702,7 @@ func (c *Config) verifyPeerConfig(p apiconfig.PeerConfig, peerName string, tlsEn
 	if p.EventURL == "" {
 		return errors.Errorf("event URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && c.configViper.GetBool("client.systemcertpool") == false {
+	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && c.configViper.GetBool("client.tlsCerts.systemCertPool") == false {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
