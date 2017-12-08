@@ -24,6 +24,7 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
@@ -61,7 +62,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 	// Create channel (or update if it already exists)
 	org1AdminUser := loadOrgUser(t, sdk, org1, "Admin")
-	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: "../../fixtures/channel/orgchannel.tx", SigningUser: org1AdminUser}
+	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: "../../../" + metadata.ChannelConfigPath + "orgchannel.tx", SigningUser: org1AdminUser}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
