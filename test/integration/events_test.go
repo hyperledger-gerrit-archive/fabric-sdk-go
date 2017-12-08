@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -38,7 +39,7 @@ func initializeTests(t *testing.T) BaseSetupImpl {
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   "../../" + metadata.ChannelConfigPath + "/mychannel.tx",
 		ConnectEventHub: true,
 	}
 

@@ -17,6 +17,7 @@ import (
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/spf13/viper"
 )
 
@@ -659,8 +660,8 @@ func teardown() {
 }
 
 func crossCheckWithViperConfig(expected string, actual string, message string, t *testing.T) {
-	expected = strings.Replace(expected, "$GOPATH", "", -1)
-	if !strings.HasSuffix(actual, expected) {
+	expected = substPathVars(expected)
+	if actual != expected {
 		t.Fatalf(message)
 	}
 }
@@ -861,5 +862,104 @@ func TestInitConfigFromBytesWrongType(t *testing.T) {
 	np, err := c.NetworkPeers()
 	if len(np) > 0 {
 		t.Fatalf("Expected to get an empty list of peers for wrong config type")
+	}
+}
+
+func TestSubstCryptoConfigMiddle(t *testing.T) {
+	o := "foo${CRYPTOCONFIGPATH}foo"
+	s := substPathVars(o)
+	e := "foo" + metadata.CryptoConfigPath + "foo"
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
+	}
+}
+
+func TestSubstCryptoConfigPrefix(t *testing.T) {
+	o := "foo${CRYPTOCONFIGPATH}"
+	s := substPathVars(o)
+	e := "foo" + metadata.CryptoConfigPath
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
+	}
+}
+func TestSubstCryptoConfigWithPostfix(t *testing.T) {
+	o := "${CRYPTOCONFIGPATH}foo"
+	s := substPathVars(o)
+	e := metadata.CryptoConfigPath + "foo"
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
+	}
+}
+
+func TestSubstCryptoConfigOnly(t *testing.T) {
+	o := "${CRYPTOCONFIGPATH}"
+	s := substPathVars(o)
+	e := metadata.CryptoConfigPath
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
+	}
+}
+
+func TestSubstAlmostVar1(t *testing.T) {
+	o := "${FOO}"
+	s := substPathVars(o)
+	e := o
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
+	}
+}
+
+func TestSubstAlmostVar2(t *testing.T) {
+	o := "${FOO${}${}$"
+	s := substPathVars(o)
+	e := o
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
+	}
+}
+
+func TestSubstNoVar(t *testing.T) {
+	o := "foo"
+	s := substPathVars(o)
+	e := o
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
+	}
+}
+
+func TestSubstEmptyVar(t *testing.T) {
+	o := ""
+	s := substPathVars(o)
+	e := o
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
+	}
+}
+
+func TestSubstGoPath1(t *testing.T) {
+	o := "foo${GOPATH}foo"
+	s := substPathVars(o)
+	e := "foo" + goPath() + "foo"
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
+	}
+}
+
+func TestSubstGoPath2(t *testing.T) {
+	o := "foo$GOPATHfoo"
+	s := substPathVars(o)
+	e := "foo" + goPath() + "foo"
+
+	if s != e {
+		t.Fatalf("Unexpected path substitution (%s, %s)", s, e)
 	}
 }
