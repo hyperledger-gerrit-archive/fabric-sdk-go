@@ -24,7 +24,7 @@ func TestChannelClient(t *testing.T) {
 		ConfigFile:      ConfigTestFile,
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   "../fixtures/fabric-v1.0/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
 

@@ -141,7 +141,7 @@ func TestClientMethods(t *testing.T) {
 func TestCreateChannel(t *testing.T) {
 	client := NewClient(mocks.NewMockConfig())
 
-	configTx, err := ioutil.ReadFile("../../test/fixtures/channel/mychannel.tx")
+	configTx, err := ioutil.ReadFile("../../test/fixtures/fabric-v1.1/channel/mychannel.tx")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

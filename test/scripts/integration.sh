@@ -16,13 +16,20 @@ echo "Running integration tests ..."
 RACEFLAG=""
 ARCH=$(uname -m)
 
-if [ "$ARCH" == "x86_64" ]
-then
+export BASE_ARCH=$ARCH
+
+if [ "$ARCH" == "x86_64" ]; then
     RACEFLAG="-race"
 fi
 
-if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]
-then
+if [ ! -z "$FABRIC_SDKGO_CODELEVEL" ]; then
+    echo "Testing with code level $FABRIC_SDKGO_CODELEVEL ..."
+    GO_TAGS="$GO_TAGS $FABRIC_SDKGO_CODELEVEL"
+else
+    echo "Testing with code level stable ..."
+fi
+
+if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
     echo "Testing with PKCS11 ..."
     GO_TAGS="$GO_TAGS testpkcs11"
 fi
