@@ -15,7 +15,7 @@ func TestDefaultConfig(t *testing.T) {
 		ConfigFile:      "../../pkg/config/config.yaml", // explicitly set default config.yaml as setup() sets config_test.yaml for all tests
 		ChannelID:       "mychannel",
 		OrgID:           org1Name,
-		ChannelConfig:   "../fixtures/channel/mychannel.tx",
+		ChannelConfig:   "../fixtures/fabric-v1.0/channel/mychannel.tx",
 		ConnectEventHub: true,
 	}
 

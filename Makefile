@@ -26,6 +26,15 @@ GO_DEP_CMD         ?= dep
 DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
+# Fabric versions used in the Makefile
+FABRIC_STABLE_VERSION           := 1.0.5
+FABRIC_STABLE_VERSION_MAJOR     := 1.0
+FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.2
+
+FABRIC_PRERELEASE_VERSION       := 1.1.0-preview
+FABRIC_PREV_VERSION             := 1.0.0
+FABRIC_DEV_VERSION_MAJOR        := 1.1
+
 # Build flags (overridable)
 GO_LDFLAGS                 ?= -ldflags=-s
 GO_TESTFLAGS               ?=
@@ -34,16 +43,21 @@ FABRIC_SDK_EXTRA_GO_TAGS   ?=
 FABRIC_SDK_POPULATE_VENDOR ?= true
 
 # Fabric tool versions (overridable)
-FABRIC_TOOLS_VERSION ?= 1.0.4
-FABRIC_BASE_VERSION  ?= 0.4.2
+FABRIC_TOOLS_VERSION ?= $(FABRIC_STABLE_VERSION)
+FABRIC_BASE_VERSION  ?= $(FABRIC_BASEIMAGE_STABLE_VERSION)
 
 # Fabric base docker image (overridable)
 FABRIC_BASE_IMAGE   ?= hyperledger/fabric-baseimage
 FABRIC_BASE_TAG     ?= $(ARCH)-$(FABRIC_BASE_VERSION)
 
 # Fabric tools docker image (overridable)
-FABRIC_TOOLS_IMAGE  ?= hyperledger/fabric-tools
-FABRIC_TOOLS_TAG    ?= $(ARCH)-$(FABRIC_TOOLS_VERSION)
+FABRIC_TOOLS_IMAGE ?= hyperledger/fabric-tools
+FABRIC_TOOLS_TAG   ?= $(ARCH)-$(FABRIC_TOOLS_VERSION)
+
+# Fabric docker registries (overridable)
+FABRIC_RELEASE_REGISTRY     ?= registry.hub.docker.com
+FABRIC_DEV_REGISTRY         ?= nexus3.hyperledger.org:10001
+FABRIC_DEV_REGISTRY_PRE_CMD ?= docker login -u docker -p docker nexus3.hyperledger.org:10001
 
 # Upstream fabric patching (overridable)
 THIRDPARTY_FABRIC_CA_BRANCH ?= master
@@ -54,10 +68,23 @@ THIRDPARTY_FABRIC_COMMIT    ?= 750c1393168aae3f910c8d7831860dbd6f259078
 # Force removal of images in cleanup
 FIXTURE_DOCKER_REMOVE_FORCE ?= false
 
+# Code level targets
+FABRIC_STABLE_CODELEVEL     := v$(FABRIC_STABLE_VERSION_MAJOR)
+FABRIC_PREV_CODELEVEL       := v$(FABRIC_PREV_VERSION)
+FABRIC_PRERELEASE_CODELEVEL := v$(FABRIC_PRERELEASE_VERSION)
+FABRIC_DEV_CODELEVEL        := v$(FABRIC_DEV_VERSION_MAJOR)
+FABRIC_CODELEVEL            ?= v$(FABRIC_STABLE_CODELEVEL)
+
 # Local variables used by makefile
 PACKAGE_NAME         := github.com/hyperledger/fabric-sdk-go
 ARCH                 := $(shell uname -m)
 FIXTURE_PROJECT_NAME := fabsdkgo
+
+# Fabric tool docker tags at code levels
+FABRIC_TOOLS_STABLE_TAG     := $(ARCH)-$(FABRIC_STABLE_VERSION)
+FABRIC_TOOLS_PREV_TAG       := $(ARCH)-$(FABRIC_PREV_VERSION)
+FABRIC_TOOLS_PRERELEASE_TAG := $(ARCH)-$(FABRIC_PRERELEASE_VERSION)
+FABRIC_TOOLS_DEV_TAG        := DEV_STABLE
 
 # The version of dep that will be installed by depend-install (or in the CI)
 GO_DEP_COMMIT := v0.3.1
@@ -77,6 +104,7 @@ endif
 export GO_CMD
 export GO_DEP_CMD
 export ARCH
+export BASE_ARCH=$(ARCH)
 export GO_LDFLAGS
 export GO_DEP_COMMIT
 export GO_TAGS
@@ -116,26 +144,79 @@ unit-test: checks depend populate
 unit-tests: unit-test
 
 integration-tests-nopkcs11: clean depend populate
-	@cd ./test/fixtures && $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
-	@cd test/fixtures && ../scripts/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+	@cd ./test/fixtures && \
+		FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd test/fixtures && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ ../scripts/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+
+integration-tests-prev-nopkcs11: clean depend populate
+	@. ./test/fixtures/prev-env.sh && \
+		cd ./test/fixtures && \
+		FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd test/fixtures && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ ../scripts/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+
+integration-tests-prerelease-nopkcs11: clean depend populate
+	@. ./test/fixtures/prerelease-env.sh && \
+		cd ./test/fixtures && \
+		FABRIC_SDKGO_CODELEVEL=prerelease FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd test/fixtures && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ ../scripts/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
+
+integration-tests-devstable-nopkcs11: clean depend populate
+	@. ./test/fixtures/devstable-env.sh && \
+		$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
+		cd ./test/fixtures && \
+		FABRIC_SDKGO_CODELEVEL=devstable FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd test/fixtures && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY)/ ../scripts/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
 
 integration-tests-pkcs11: clean depend populate build-softhsm2-image
-	@cd ./test/fixtures && $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-pkcs11-test.yaml up --force-recreate --abort-on-container-exit
-	@cd test/fixtures && ../scripts/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-pkcs11-test.yaml"
+	@cd ./test/fixtures && \
+		FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-pkcs11-test.yaml up --force-recreate --abort-on-container-exit
+	@cd test/fixtures && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ ../scripts/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-pkcs11-test.yaml"
 
-integration-test: integration-tests-nopkcs11 integration-tests-pkcs11
+integration-test: integration-tests-nopkcs11 integration-tests-pkcs11 integration-tests-prerelease-nopkcs11 integration-tests-devstable-nopkcs11 integration-tests-prev-nopkcs11
 
 mock-gen:
 	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apitxn ProposalProcessor | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apitxn/mocks/mockapitxn.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apiconfig Config | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apiconfig/mocks/mockconfig.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS)' github.com/hyperledger/fabric-sdk-go/api/apifabca FabricCAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > api/apifabca/mocks/mockfabriccaclient.gen.go
 
+
 channel-config-gen:
 	@echo "Generating test channel configuration transactions and blocks ..."
 	@$(DOCKER_CMD) run -i \
 		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) \
 		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_TAG) \
-		/bin/bash -c "/opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+		/bin/bash -c "FABRIC_VERSION_DIR=fabric-$(FABRIC_CODELEVEL)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+
+channel-config-all-gen: channel-config-stable-gen channel-config-prev-gen channel-config-prerelease-gen channel-config-devstable-gen
+
+channel-config-stable-gen:
+	@echo "Generating test channel configuration transactions and blocks (code level stable) ..."
+	@$(DOCKER_CMD) run -i \
+		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) \
+		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_STABLE_TAG) \
+		/bin/bash -c "FABRIC_VERSION_DIR=fabric-$(FABRIC_STABLE_CODELEVEL)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+
+channel-config-prev-gen:
+	@echo "Generating test channel configuration transactions and blocks (code level prev) ..."
+	$(DOCKER_CMD) run -i \
+		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) \
+		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_PREV_TAG) \
+		/bin/bash -c "FABRIC_VERSION_DIR=fabric-$(FABRIC_PREV_CODELEVEL)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+
+channel-config-prerelease-gen:
+	@echo "Generating test channel configuration transactions and blocks (code level prerelease) ..."
+	$(DOCKER_CMD) run -i \
+		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) \
+		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_PRERELEASE_TAG) \
+		/bin/bash -c "FABRIC_VERSION_DIR=fabric-$(FABRIC_PRERELEASE_CODELEVEL)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+
+channel-config-devstable-gen:
+	@echo "Generating test channel configuration transactions and blocks (code level devstable) ..."
+	@$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
+		$(DOCKER_CMD) run -i \
+			-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) \
+			$(FABRIC_DEV_REGISTRY)/$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_DEV_TAG) \
+			/bin/bash -c "FABRIC_VERSION_DIR=fabric-$(FABRIC_DEV_CODELEVEL)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
 
 thirdparty-pin:
 	@echo "Pinning third party packages ..."
