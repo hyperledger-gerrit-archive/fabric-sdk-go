@@ -61,7 +61,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 	// Create channel (or update if it already exists)
 	org1AdminUser := loadOrgUser(t, sdk, org1, "Admin")
-	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: "../../fixtures/channel/orgchannel.tx", SigningUser: org1AdminUser}
+	req := chmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: "../../fixtures/fabric-v1.0/channel/orgchannel.tx", SigningUser: org1AdminUser}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
