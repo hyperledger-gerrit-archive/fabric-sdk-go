@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
@@ -160,7 +161,7 @@ func loadDefaultConfig(myViper *viper.Viper) error {
 		return nil
 	}
 	// if set, use it to load default config
-	myViper.AddConfigPath(substGoPath(defaultPath))
+	myViper.AddConfigPath(substPathVars(defaultPath))
 	err := myViper.ReadInConfig() // Find and read the config file
 	if err != nil {               // Handle errors reading the config file
 		return errors.Wrap(err, "loading config file failed")
@@ -236,7 +237,7 @@ func (c *Config) CAServerCertPaths(org string) ([]string, error) {
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
-		certFileModPath[i] = substGoPath(v)
+		certFileModPath[i] = substPathVars(v)
 	}
 
 	return certFileModPath, nil
@@ -277,7 +278,7 @@ func (c *Config) CAClientKeyPath(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return substGoPath(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Keyfile), nil
+	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Keyfile), nil
 }
 
 // CAClientKeyPem Read configuration option for the fabric CA client key pem embedded in the client config
@@ -317,7 +318,7 @@ func (c *Config) CAClientCertPath(org string) (string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return substGoPath(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Certfile), nil
+	return substPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Certfile), nil
 }
 
 // CAClientCertPem Read configuration option for the fabric CA client cert pem embedded in the client config
@@ -439,7 +440,7 @@ func (c *Config) OrderersConfig() ([]apiconfig.OrdererConfig, error) {
 	for _, orderer := range config.Orderers {
 
 		if orderer.TLSCACerts.Path != "" {
-			orderer.TLSCACerts.Path = substGoPath(orderer.TLSCACerts.Path)
+			orderer.TLSCACerts.Path = substPathVars(orderer.TLSCACerts.Path)
 		} else if len(orderer.TLSCACerts.Pem) == 0 && c.configViper.GetBool("client.systemcertpool") == false {
 			errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
@@ -482,7 +483,7 @@ func (c *Config) OrdererConfig(name string) (*apiconfig.OrdererConfig, error) {
 	}
 
 	if orderer.TLSCACerts.Path != "" {
-		orderer.TLSCACerts.Path = substGoPath(orderer.TLSCACerts.Path)
+		orderer.TLSCACerts.Path = substPathVars(orderer.TLSCACerts.Path)
 	}
 
 	return &orderer, nil
@@ -505,7 +506,7 @@ func (c *Config) PeersConfig(org string) ([]apiconfig.PeerConfig, error) {
 			return nil, err
 		}
 		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = substGoPath(p.TLSCACerts.Path)
+			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
 		}
 
 		peers = append(peers, p)
@@ -537,7 +538,7 @@ func (c *Config) PeerConfig(org string, name string) (*apiconfig.PeerConfig, err
 	}
 
 	if peerConfig.TLSCACerts.Path != "" {
-		peerConfig.TLSCACerts.Path = substGoPath(peerConfig.TLSCACerts.Path)
+		peerConfig.TLSCACerts.Path = substPathVars(peerConfig.TLSCACerts.Path)
 	}
 	return &peerConfig, nil
 }
@@ -618,7 +619,7 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 		}
 
 		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = substGoPath(p.TLSCACerts.Path)
+			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
 		}
 
 		mspID, err := c.PeerMspID(peerName)
@@ -653,7 +654,7 @@ func (c *Config) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
 		}
 
 		if p.TLSCACerts.Path != "" {
-			p.TLSCACerts.Path = substGoPath(p.TLSCACerts.Path)
+			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
 		}
 
 		mspID, err := c.PeerMspID(name)
@@ -796,7 +797,7 @@ func (c *Config) SecurityProviderLabel() string {
 
 // KeyStorePath returns the keystore path used by BCCSP
 func (c *Config) KeyStorePath() string {
-	keystorePath := substGoPath(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
+	keystorePath := substPathVars(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
 	return path.Join(keystorePath, "keystore")
 }
 
@@ -804,12 +805,12 @@ func (c *Config) KeyStorePath() string {
 // 'keystore' directory added. This is done because the fabric-ca-client
 // adds this to the path
 func (c *Config) CAKeyStorePath() string {
-	return substGoPath(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
+	return substPathVars(c.configViper.GetString("client.credentialStore.cryptoStore.path"))
 }
 
 // CryptoConfigPath ...
 func (c *Config) CryptoConfigPath() string {
-	return substGoPath(c.configViper.GetString("client.cryptoconfig.path"))
+	return substPathVars(c.configViper.GetString("client.cryptoconfig.path"))
 }
 
 // loadCAKey
@@ -827,11 +828,72 @@ func loadCAKey(rawData []byte) (*x509.Certificate, error) {
 	return nil, errors.New("pem data missing")
 }
 
-// substGoPath replaces instances of '$GOPATH' with the GOPATH. If the system
+// goPath returns the current GOPATH. If the system
 // has multiple GOPATHs then the first is used.
-func substGoPath(s string) string {
+func goPath() string {
 	gpDefault := build.Default.GOPATH
 	gps := filepath.SplitList(gpDefault)
 
-	return strings.Replace(s, "$GOPATH", gps[0], -1)
+	return gps[0]
+}
+
+// substPathVars replaces instances of '${VARNAME}' (eg ${GOPATH}) with the variable.
+// As a special case, $GOPATH is also replaced.
+func substPathVars(path string) string {
+	splits := strings.Split(path, "$")
+
+	if len(splits) == 1 && path == splits[0] {
+		// No variables are in the path
+		return path
+	}
+
+	var buffer bytes.Buffer
+	buffer.WriteString(splits[0]) // first split precedes the first $ so should always be written
+	for _, s := range splits[1:] {
+		// special case for GOPATH
+		if strings.HasPrefix(s, "GOPATH") {
+			buffer.WriteString(goPath())
+			buffer.WriteString(s[6:]) // Skip "GOPATH"
+			continue
+		}
+
+		if !strings.HasPrefix(s, "{") {
+			// not a variable
+			buffer.WriteString("$")
+			buffer.WriteString(s)
+			continue
+		}
+
+		endPos := strings.Index(s, "}") // not worrying about embedded '{'
+		if endPos == -1 {
+			// not a variable
+			buffer.WriteString("$")
+			buffer.WriteString(s)
+			continue
+		}
+
+		subs, ok := substVar(s[1:endPos]) // fix if not ASCII variable names
+		if !ok {
+			// not a variable
+			buffer.WriteString("$")
+			buffer.WriteString(s)
+			continue
+		}
+
+		buffer.WriteString(subs)
+		buffer.WriteString(s[endPos+1:])
+	}
+	return buffer.String()
+}
+
+// substVar returns the substituted variable
+func substVar(v string) (s string, ok bool) {
+	// TODO: optimize if the number of variable names grows
+	switch v {
+	case "GOPATH":
+		return goPath(), true
+	case "CRYPTOCONFIGPATH":
+		return metadata.CryptoConfigPath, true
+	}
+	return "", false
 }
