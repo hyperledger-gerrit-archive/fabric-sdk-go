@@ -35,10 +35,6 @@ func NewMockConfigCustomized(tlsEnabled, mutualTLSEnabled, errorCase bool) confi
 // Client ...
 func (c *MockConfig) Client() (*config.ClientConfig, error) {
 	if c.mutualTLSEnabled {
-		if c.errorCase {
-			return &config.ClientConfig{MutualTLS: config.TLSType{Enabled: true}}, nil
-		}
-
 		mutualTLSCerts := config.MutualTLSConfig{
 			Client: struct {
 				KeyPem   string
@@ -48,7 +44,7 @@ func (c *MockConfig) Client() (*config.ClientConfig, error) {
 			}{KeyPem: "", Keyfile: "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem", CertPem: "", Certfile: "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"},
 		}
 
-		return &config.ClientConfig{MutualTLS: config.TLSType{Enabled: true}, MutualTLSCerts: mutualTLSCerts}, nil
+		return &config.ClientConfig{TLSCerts: mutualTLSCerts}, nil
 	}
 
 	return &config.ClientConfig{}, nil

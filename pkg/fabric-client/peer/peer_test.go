@@ -49,7 +49,7 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 
 	certPool := x509.NewCertPool()
 	url := "grpcs://0.0.0.0:1234"
-	clientConfig := &apiconfig.ClientConfig{MutualTLS: apiconfig.TLSType{Enabled: false}}
+	clientConfig := &apiconfig.ClientConfig{}
 
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)

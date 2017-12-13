@@ -43,7 +43,7 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 
 	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
-	clientConfig := &apiconfig.ClientConfig{MutualTLS: apiconfig.TLSType{Enabled: false}}
+	clientConfig := &apiconfig.ClientConfig{}
 
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
@@ -81,7 +81,7 @@ func TestNewPeerEndorserMutualTLS(t *testing.T) {
 
 	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
-	clientConfig := &apiconfig.ClientConfig{MutualTLS: apiconfig.TLSType{Enabled: true}, MutualTLSCerts: mutualTLSCerts}
+	clientConfig := &apiconfig.ClientConfig{TLSCerts: mutualTLSCerts}
 
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
@@ -110,7 +110,7 @@ func TestNewPeerEndorserMutualTLSNoClientCerts(t *testing.T) {
 
 	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
-	clientConfig := &apiconfig.ClientConfig{MutualTLS: apiconfig.TLSType{Enabled: true}}
+	clientConfig := &apiconfig.ClientConfig{}
 
 	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
 	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
@@ -118,10 +118,8 @@ func TestNewPeerEndorserMutualTLSNoClientCerts(t *testing.T) {
 	config.EXPECT().Client().Return(clientConfig, nil)
 
 	_, err := newPeerEndorser(url, "cert", "", true, config)
-	if err == nil {
-		t.Fatalf("Peer conn should have failed: %v", err)
-	} else if !strings.Contains(err.Error(), "Error loading cert/key pair for mutual TLS") {
-		t.Fatalf("Error should have been for missing client certs")
+	if err != nil {
+		t.Fatalf("Peer conn should be constructed: %v", err)
 	}
 }
 
