@@ -48,13 +48,18 @@ func NewOrderer(url string, certificate string, serverHostOverride string, confi
 
 		var certificates []tls.Certificate
 
-		// check if we need certs for mutual TLS
-		if clientConfig.MutualTLS.Enabled {
-			certsForMutual, err := tls.LoadX509KeyPair(clientConfig.MutualTLSCerts.Client.Certfile, clientConfig.MutualTLSCerts.Client.Keyfile)
+		if clientConfig.TLSCerts.Client.CertPem != "" {
+			clientCerts, err := tls.X509KeyPair([]byte(clientConfig.TLSCerts.Client.CertPem), []byte(clientConfig.TLSCerts.Client.KeyPem))
 			if err != nil {
-				return nil, errors.Errorf("Error loading cert/key pair for mutual TLS: %v", err)
+				return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
 			}
-			certificates = []tls.Certificate{certsForMutual}
+			certificates = []tls.Certificate{clientCerts}
+		} else if clientConfig.TLSCerts.Client.Certfile != "" {
+			clientCerts, err := tls.LoadX509KeyPair(clientConfig.TLSCerts.Client.Certfile, clientConfig.TLSCerts.Client.Keyfile)
+			if err != nil {
+				return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+			}
+			certificates = []tls.Certificate{clientCerts}
 		}
 
 		creds := credentials.NewTLS(&tls.Config{

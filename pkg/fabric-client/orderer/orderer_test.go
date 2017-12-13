@@ -248,9 +248,9 @@ func TestNewOrdererWithMutualTLS(t *testing.T) {
 		t.Fatalf("Testing NewOrderer with Mutual TLS failed, cause [%s]", err)
 	}
 	//Negative Test case
-	orderer, err = NewOrderer("grpcs://", "", "", mocks.NewMockConfigCustomized(true, true, true))
-	if orderer != nil || err == nil {
-		t.Fatalf("Testing NewOrderer with Mutual TLS was supposed to fail b/c no client certs")
+	orderer, err = NewOrderer("grpcs://", "../../test/fixtures/tls/fabricca/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false, false))
+	if orderer == nil || err != nil {
+		t.Fatalf("Testing NewOrderer with Mutual TLS failed, cause [%s]", err)
 	}
 }
 
