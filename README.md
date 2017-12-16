@@ -112,8 +112,13 @@ go test
 
 You need:
 
-- A working fabric and fabric-ca set up. It is recommended that you use the docker-compose file provided in `test/fixtures`. It is also recommended that you use the default .env settings provided in `test/fixtures`. See steps below.
+- A working fabric and fabric-ca set up. It is recommended that you use the docker-compose file provided in `test/fixtures/dockerenv`. It is also recommended that you use the default .env settings provided in `test/fixtures/dockerenv`. See steps below.
 - Customized settings in the `test/fixtures/config/config_test.yaml` in case your Hyperledger Fabric network is not running on `localhost` or is using different ports.
+
+#### Enable local hostnames
+
+You will need to set the following hosts to 127.0.0.1 (typically in /etc/hosts):
+ca_peerOrg1 ca_peerOrg2 peer0.org1.example.com peer1.org1.example.com peer0.org2.example.com peer1.org2.example.com orderer.example.com
 
 #### Testing with Fabric Images at Docker Hub
 
@@ -128,7 +133,7 @@ cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/
 make clean
 
 # Start fabric
-cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/
+cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/dockerenv
 docker-compose up --force-recreate
 ```
 
@@ -155,24 +160,11 @@ Note that this default config is used only if environment configuration yaml fil
 
 #### Testing with Local Build of Fabric (Advanced)
 
-Alternatively you can build and run Fabric on your own box using the following commands:
+Alternatively you can use a local build of Fabric using the following commands:
 
 ```bash
-# Build fabric:
-cd $GOPATH/src/github.com/hyperledger/
-git clone https://github.com/hyperledger/fabric
-cd $GOPATH/src/github.com/hyperledger/fabric/
-git checkout v1.0.4
-make docker
-
-# Build fabric-ca:
-cd $GOPATH/src/github.com/hyperledger/
-git clone https://github.com/hyperledger/fabric-ca
-cd $GOPATH/src/github.com/hyperledger/fabric-ca/
-git checkout v1.0.4
-make docker
-
 # Start fabric - latest-env.sh overrides the default docker tags in .env
+# Enables tests against fabric images tagged latest on the local box
 cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/
 (source latest-env.sh && docker-compose up --force-recreate)
 ```
