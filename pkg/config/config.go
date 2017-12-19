@@ -828,17 +828,43 @@ func (c *Config) TLSClientCerts() ([]tls.Certificate, error) {
 	var clientCerts tls.Certificate
 
 	if clientConfig.TLSCerts.Client.CertPem != "" {
-		clientCerts, err = tls.X509KeyPair([]byte(clientConfig.TLSCerts.Client.CertPem), []byte(clientConfig.TLSCerts.Client.KeyPem))
-		if err != nil {
-			return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+		if clientConfig.TLSCerts.Client.KeyPem != "" {
+			clientCerts, err = tls.X509KeyPair([]byte(clientConfig.TLSCerts.Client.CertPem), []byte(clientConfig.TLSCerts.Client.KeyPem))
+			if err != nil {
+				return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+			}
+		} else if clientConfig.TLSCerts.Client.Keyfile != "" {
+			kp, err := ioutil.ReadFile(clientConfig.TLSCerts.Client.Keyfile)
+			if err != nil {
+				return nil, errors.Errorf("Error loading key file from '%s' err: %v", clientConfig.TLSCerts.Client.Keyfile, err)
+			}
+			clientCerts, err = tls.X509KeyPair([]byte(clientConfig.TLSCerts.Client.CertPem), kp)
+			if err != nil {
+				return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+			}
+		} else {
+			return nil, errors.Errorf("Missing key for cert/key pair TLS client credentials. Ensure either the key file path or the key content is embedded in the client config.")
 		}
 
 	} else if clientConfig.TLSCerts.Client.Certfile != "" {
-		clientConfig.TLSCerts.Client.Keyfile = substPathVars(clientConfig.TLSCerts.Client.Keyfile)
-		clientConfig.TLSCerts.Client.Certfile = substPathVars(clientConfig.TLSCerts.Client.Certfile)
-		clientCerts, err = tls.LoadX509KeyPair(clientConfig.TLSCerts.Client.Certfile, clientConfig.TLSCerts.Client.Keyfile)
-		if err != nil {
-			return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+		if clientConfig.TLSCerts.Client.KeyPem != "" {
+			cp, err := ioutil.ReadFile(clientConfig.TLSCerts.Client.Certfile)
+			if err != nil {
+				return nil, errors.Errorf("Error loading cert file from '%s' err: %v", clientConfig.TLSCerts.Client.Certfile, err)
+			}
+			clientCerts, err = tls.X509KeyPair(cp, []byte(clientConfig.TLSCerts.Client.KeyPem))
+			if err != nil {
+				return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+			}
+		} else if clientConfig.TLSCerts.Client.Keyfile != "" {
+			clientConfig.TLSCerts.Client.Keyfile = substPathVars(clientConfig.TLSCerts.Client.Keyfile)
+			clientConfig.TLSCerts.Client.Certfile = substPathVars(clientConfig.TLSCerts.Client.Certfile)
+			clientCerts, err = tls.LoadX509KeyPair(clientConfig.TLSCerts.Client.Certfile, clientConfig.TLSCerts.Client.Keyfile)
+			if err != nil {
+				return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+			}
+		} else {
+			return nil, errors.Errorf("Missing key for cert/key pair TLS client credentials. Ensure either the key file path or the key content is embedded in the client config.")
 		}
 	}
 
