@@ -10,7 +10,7 @@
 
 [[constraint]]
   name = "github.com/spf13/viper"
-  version = "1.0.0"
+  revision = "1a0c4a370c3e8286b835467d2dfcdaf636c3538b"
 
 [[constraint]]
   name = "google.golang.org/grpc"
