@@ -4,12 +4,6 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package e2e
+package pkcs11
 
-import (
-	"testing"
-)
-
-func TestE2E(t *testing.T) {
-	runWithConfigFixture(t)
-}
+// See test/integration/pkcs11
