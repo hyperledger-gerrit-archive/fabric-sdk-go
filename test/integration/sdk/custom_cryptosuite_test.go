@@ -19,7 +19,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory"
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
@@ -95,7 +94,7 @@ type CustomCryptoSuiteProviderFactory struct {
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
 func (f *CustomCryptoSuiteProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
-	return cryptosuite.GetSuite(f.bccspProvider), nil
+	return getSuite(f.bccspProvider), nil
 }
 
 func getTestBCCSP(config apiconfig.Config) bccsp.BCCSP {
