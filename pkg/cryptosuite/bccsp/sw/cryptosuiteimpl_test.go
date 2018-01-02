@@ -1,12 +1,10 @@
-// +build !pkcs11
-
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
 
-package bccsp
+package sw
 
 import (
 	"testing"
