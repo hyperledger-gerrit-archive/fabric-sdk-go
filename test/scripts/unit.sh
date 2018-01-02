@@ -19,20 +19,27 @@ FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
 
 REPO="github.com/hyperledger/fabric-sdk-go"
 
-# Packages to exclude
+# Packages to include in test run
 PKGS=`$GO_CMD list $REPO... 2> /dev/null | \
       grep -v ^$REPO/api/ | \
       grep -v ^$REPO/pkg/fabric-ca-client/mocks | grep -v ^$REPO/pkg/fabric-client/mocks | \
       grep -v ^$REPO/internal/github.com/ | grep -v ^$REPO/third_party/ | \
+      grep -v ^$REPO/pkg/cryptosuite/bccsp/pkcs11 | grep -v ^$REPO/pkg/cryptosuite/bccsp/multisuite | \
       grep -v ^$REPO/vendor/ | grep -v ^$REPO/test/`
 echo "Running unit tests..."
 
 RACEFLAG=""
 ARCH=$(uname -m)
 
-if [ "$ARCH" == "x86_64" ]
-then
+if [ "$ARCH" == "x86_64" ]; then
     RACEFLAG="-race"
+fi
+
+# detect softhsm
+SOFTHSM=`softhsm2-util --show-slots 2> /dev/null | grep ForFabric` || SOFTHSM=""
+if [ "$SOFTHSM" != "" ]; then
+    echo "SoftHSM with ForFabric token detected - including PKCS11 unit tests (libltdl required) ..."
+    PKGS="$PKGS $REPO/pkg/cryptosuite/bccsp/pkcs11 $REPO/pkg/cryptosuite/bccsp/multisuite"
 fi
 
 echo "Testing with code level $FABRIC_SDKGO_CODELEVEL_TAG (Fabric ${FABRIC_SDKGO_CODELEVEL_VER}) ..."

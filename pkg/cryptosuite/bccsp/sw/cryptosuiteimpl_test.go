@@ -1,12 +1,10 @@
-// +build !pkcs11
-
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
 
-package bccsp
+package sw
 
 import (
 	"testing"
@@ -16,12 +14,6 @@ import (
 )
 
 func TestCryptoSuiteByConfigPKCS11Unsupported(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("was supposed to panic")
-		}
-	}()
-
 	//Prepare Config
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -31,6 +23,8 @@ func TestCryptoSuiteByConfigPKCS11Unsupported(t *testing.T) {
 	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
 
 	//Get cryptosuite using config
-	GetSuiteByConfig(mockConfig)
-	t.Fatalf("Getting cryptosuite with unsupported pkcs11 security provider supposed to panic")
+	_, err := GetSuiteByConfig(mockConfig)
+	if err == nil {
+		t.Fatalf("Getting cryptosuite with unsupported pkcs11 security provider supposed to error")
+	}
 }
