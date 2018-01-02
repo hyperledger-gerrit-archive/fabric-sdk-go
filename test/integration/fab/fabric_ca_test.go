@@ -24,7 +24,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 )
 
@@ -48,7 +47,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 	client := client.NewClient(testFabricConfig)
 
-	cryptoSuiteProvider, err := cryptosuite.GetSuiteByConfig(testFabricConfig)
+	cryptoSuiteProvider, err := getSuiteByConfig(testFabricConfig)
 	if err != nil {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
@@ -155,7 +154,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 func TestEnrollOrg2(t *testing.T) {
 
-	cryptoSuiteProvider, err := cryptosuite.GetSuiteByConfig(testFabricConfig)
+	cryptoSuiteProvider, err := getSuiteByConfig(testFabricConfig)
 	if err != nil {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
@@ -192,7 +191,7 @@ func TestEnrollAndTransact(t *testing.T) {
 		t.Fatalf("Failed to create peer from config : %s", err)
 	}
 
-	cryptoSuiteProvider, err := cryptosuite.GetSuiteByConfig(testFabricConfig)
+	cryptoSuiteProvider, err := getSuiteByConfig(testFabricConfig)
 	if err != nil {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package bccsp
+package internal
 
 import (
 	"errors"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
@@ -37,7 +36,7 @@ func TestCryptoSuite(t *testing.T) {
 	samplebccsp := getMockBCCSP(mockIdentifier)
 
 	//Get cryptosuite
-	samplecryptoSuite := GetSuite(samplebccsp)
+	samplecryptoSuite := NewCryptoSuite(samplebccsp)
 
 	//Verify CryptSuite
 	verifyCryptoSuite(t, samplecryptoSuite)
@@ -147,7 +146,7 @@ func TestCreateInvalidSecurityProviderPanic(t *testing.T) {
 	t.Fatalf("Getting cryptosuite with invalid security provider supposed to panic")
 }
 
-func verifyCryptoSuite(t *testing.T, samplecryptoSuite apicryptosuite.CryptoSuite) {
+func verifyCryptoSuite(t *testing.T, samplecryptoSuite CryptoSuite) {
 	//Test cryptosuite.Sign
 	signedBytes, err := samplecryptoSuite.Sign(GetKey(getMockKey(signingKey)), nil, nil)
 	utils.VerifyEmpty(t, err, "Not supposed to get any error for samplecryptoSuite.GetKey : %s", err)

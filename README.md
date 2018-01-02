@@ -68,7 +68,6 @@ make clean
 
 ### Go Tags
 The following Go tags can be supplied to enable additional functionality:
-- pkcs11: includes support for configuring BCCSP with PKCS11 provider. Note: libltdl must be installed.
 - experimental: includes support for experimental features.
 
 ## Contributing to the Go SDK
