@@ -208,7 +208,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	mychannelUser := selection.ChannelUser{ChannelID: "orgchannel", UserName: "User1", OrgName: "Org1"}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdkOptions.ProviderFactory = &DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}
+	sdkOptions.ServiceFactory = &DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}
 	sdk, err = fabapi.NewSDK(sdkOptions)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)

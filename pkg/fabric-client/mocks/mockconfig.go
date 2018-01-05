@@ -53,7 +53,11 @@ func (c *MockConfig) Client() (*config.ClientConfig, error) {
 
 // CAConfig not implemented
 func (c *MockConfig) CAConfig(org string) (*config.CAConfig, error) {
-	return nil, nil
+	caConfig := config.CAConfig{
+		CAName: "org1",
+	}
+
+	return &caConfig, nil
 }
 
 //CAServerCertPems Read configuration option for the server certificate embedded pems
@@ -166,7 +170,7 @@ func (c *MockConfig) KeyStorePath() string {
 
 // CAKeyStorePath not implemented
 func (c *MockConfig) CAKeyStorePath() string {
-	return ""
+	return "/tmp/fabsdkgo_test"
 }
 
 // CryptoConfigPath ...
