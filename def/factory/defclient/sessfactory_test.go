@@ -17,13 +17,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/mocks"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 	chmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
 	resmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/opt"
 )
 
 /*
