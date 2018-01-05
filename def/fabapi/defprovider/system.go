@@ -10,11 +10,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/context"
 )
 
 // FabricSystemFactory represents the default implementation of a session client.
