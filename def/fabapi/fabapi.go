@@ -37,9 +37,10 @@ type Options struct {
 	StateStoreOpts opt.StateStoreOpts
 
 	// Factories to create clients and providers
-	ProviderFactory context.SDKProviderFactory
-	ContextFactory  context.OrgClientFactory
-	SessionFactory  context.SessionClientFactory
+	ProviderFactory     context.SDKProviderFactory
+	ContextFactory      context.OrgClientFactory
+	SessionFactory      context.SessionClientFactory
+	FabricSystemFactory context.FabricSystemFactory
 
 	// Factories for creating package-level utilities (keep this to a minimum)
 	// TODO: Should the logger actually be in ProviderFactory
@@ -112,6 +113,9 @@ func NewSDK(options Options) (*FabricSDK, error) {
 	if sdk.SessionFactory == nil {
 		sdk.SessionFactory = defprovider.NewSessionClientFactory()
 	}
+	if sdk.FabricSystemFactory == nil {
+		sdk.FabricSystemFactory = defprovider.NewFabricSystemFactory()
+	}
 
 	// Initialize config provider
 	config, err := sdk.ProviderFactory.NewConfigProvider(sdk.ConfigOpts, sdkOpts)
@@ -140,6 +144,9 @@ func NewSDK(options Options) (*FabricSDK, error) {
 		return nil, errors.WithMessage(err, "failed to initialize signing manager")
 	}
 	sdk.signingManager = signingMgr
+
+	// Initialize system provider
+	//	systemProvider, err := sdk.ProviderFactory.
 
 	// Initialize discovery provider
 	discoveryProvider, err := sdk.ProviderFactory.NewDiscoveryProvider(sdk.configProvider)
@@ -202,6 +209,11 @@ func (sdk *FabricSDK) NewContext(orgID string) (*OrgContext, error) {
 // NewSession creates a session from a context and a user (TODO)
 func (sdk *FabricSDK) NewSession(c context.Org, user apifabclient.User) (*Session, error) {
 	return NewSession(user, sdk.SessionFactory), nil
+}
+
+// SystemFactory provides system objects such as peer and user
+func (sdk *FabricSDK) SystemFactory() context.FabricSystemFactory {
+	return sdk.FabricSystemFactory
 }
 
 // NewSystemClient returns a new client for the system (operations not on a channel)
