@@ -16,14 +16,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/mocks"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 	chmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
 	resmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/apicontext"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/mocks"
 )
 
 /*
@@ -188,8 +188,8 @@ func newMockProviders(t *testing.T) *mockProviders {
 	coreFactory := defcore.NewProviderFactory()
 	svcFactory := defsvc.NewProviderFactory()
 
-	configOpts := opt.ConfigOpts{}
-	sdkOpts := opt.SDKOpts{
+	configOpts := apicontext.ConfigOpts{}
+	sdkOpts := apicontext.SDKOpts{
 		ConfigFile: "../../../test/fixtures/config/config_test.yaml",
 	}
 	config, err := coreFactory.NewConfigProvider(configOpts, sdkOpts)
@@ -201,7 +201,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	storeOpts := opt.StateStoreOpts{}
+	storeOpts := apicontext.StateStoreOpts{}
 	stateStore, err := coreFactory.NewStateStoreProvider(storeOpts, config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)

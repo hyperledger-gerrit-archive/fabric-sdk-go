@@ -13,7 +13,6 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/def/provider/fabpvdr"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
@@ -21,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/apicontext"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
@@ -34,7 +34,7 @@ func NewProviderFactory() *ProviderFactory {
 }
 
 // NewConfigProvider creates a Config using the SDK's default implementation
-func (f *ProviderFactory) NewConfigProvider(o opt.ConfigOpts, a opt.SDKOpts) (apiconfig.Config, error) {
+func (f *ProviderFactory) NewConfigProvider(o apicontext.ConfigOpts, a apicontext.SDKOpts) (apiconfig.Config, error) {
 	// configBytes takes precedence over configFile
 	if a.ConfigBytes != nil && len(a.ConfigBytes) > 0 {
 		return configImpl.InitConfigFromBytes(a.ConfigBytes, a.ConfigType)
@@ -43,7 +43,7 @@ func (f *ProviderFactory) NewConfigProvider(o opt.ConfigOpts, a opt.SDKOpts) (ap
 }
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation
-func (f *ProviderFactory) NewStateStoreProvider(o opt.StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error) {
+func (f *ProviderFactory) NewStateStoreProvider(o apicontext.StateStoreOpts, config apiconfig.Config) (fab.KeyValueStore, error) {
 
 	var stateStorePath = o.Path
 	if stateStorePath == "" {
