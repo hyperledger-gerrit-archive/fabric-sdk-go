@@ -15,7 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
+	"github.com/hyperledger/fabric-sdk-go/def/fabapi/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection/pgresolver"

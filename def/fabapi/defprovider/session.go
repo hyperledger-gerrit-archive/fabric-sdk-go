@@ -13,7 +13,7 @@ import (
 
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/context"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"

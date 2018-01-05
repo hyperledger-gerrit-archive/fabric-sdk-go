@@ -11,7 +11,6 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
@@ -20,6 +19,7 @@ import (
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/staticdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/staticselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/opt"
 )
 
 // DefaultProviderFactory represents the default SDK provider factory.
