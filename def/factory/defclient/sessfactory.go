@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package defprovider
+package defclient
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -34,15 +34,9 @@ func NewSessionClientFactory() *SessionClientFactory {
 }
 
 // NewSystemClient returns a new FabricClient.
+// TODO: duplicate of core factory method or rename?
 func (f *SessionClientFactory) NewSystemClient(sdk context.SDK, session context.Session, config apiconfig.Config) (fab.FabricClient, error) {
-	client := clientImpl.NewClient(config)
-
-	client.SetCryptoSuite(sdk.CryptoSuiteProvider())
-	client.SetStateStore(sdk.StateStoreProvider())
-	client.SetUserContext(session.Identity())
-	client.SetSigningManager(sdk.SigningManager())
-
-	return client, nil
+	return sdk.FabricProvider().NewClient(session.Identity())
 }
 
 // NewChannelMgmtClient returns a client that manages channels (create/join channel)
@@ -73,8 +67,8 @@ func (f *SessionClientFactory) NewResourceMgmtClient(sdk context.SDK, session co
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel
+// TODO - better refactoring for testing and/or extract getChannelImpl to another package
 func (f *SessionClientFactory) NewChannelClient(sdk context.SDK, session context.Session, config apiconfig.Config, channelID string) (apitxn.ChannelClient, error) {
-
 	// TODO: Add capablity to override sdk's selection and discovery provider
 
 	client := clientImpl.NewClient(sdk.ConfigProvider())
