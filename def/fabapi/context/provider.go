@@ -41,3 +41,12 @@ type SessionClientFactory interface {
 	NewResourceMgmtClient(context SDK, session Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
 	NewChannelClient(context SDK, session Session, config apiconfig.Config, channelID string) (txn.ChannelClient, error)
 }
+
+// FabricSystemFactory allows overriding of fabric system objects such as peer and user
+type FabricSystemFactory interface {
+	NewClient(context SDK, session Session, config apiconfig.Config) (fab.FabricClient, error)
+	NewPeer(url string, certificate string, serverHostOverride string, config apiconfig.Config) (fab.Peer, error)
+	NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer, config apiconfig.Config) (fab.Peer, error)
+	NewUser(config apiconfig.Config, msp fabca.FabricCAClient, name string, pwd string, mspID string) (fabca.User, error)
+	NewPreEnrolledUser(config apiconfig.Config, name string, signingIdentity *fab.SigningIdentity) (fabca.User, error)
+}

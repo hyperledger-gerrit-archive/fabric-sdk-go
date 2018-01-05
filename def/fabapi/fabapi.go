@@ -37,9 +37,10 @@ type Options struct {
 	StateStoreOpts opt.StateStoreOpts
 
 	// Factories to create clients and providers
-	ProviderFactory context.SDKProviderFactory
-	ContextFactory  context.OrgClientFactory
-	SessionFactory  context.SessionClientFactory
+	ProviderFactory     context.SDKProviderFactory
+	ContextFactory      context.OrgClientFactory
+	SessionFactory      context.SessionClientFactory
+	FabricSystemFactory context.FabricSystemFactory
 
 	// Factories for creating package-level utilities (keep this to a minimum)
 	// TODO: Should the logger actually be in ProviderFactory
@@ -111,6 +112,9 @@ func NewSDK(options Options) (*FabricSDK, error) {
 	}
 	if sdk.SessionFactory == nil {
 		sdk.SessionFactory = defprovider.NewSessionClientFactory()
+	}
+	if sdk.FabricSystemFactory == nil {
+		sdk.FabricSystemFactory = defprovider.NewFabricSystemFactory()
 	}
 
 	// Initialize config provider
@@ -204,18 +208,16 @@ func (sdk *FabricSDK) NewSession(c context.Org, user apifabclient.User) (*Sessio
 	return NewSession(user, sdk.SessionFactory), nil
 }
 
+// SystemFactory provides system objects such as peer and user
+func (sdk *FabricSDK) SystemFactory() context.FabricSystemFactory {
+	return sdk.FabricSystemFactory
+}
+
 // NewSystemClient returns a new client for the system (operations not on a channel)
 // TODO: Reduced immutable interface
 // TODO: Parameter for setting up the peers
 func (sdk *FabricSDK) NewSystemClient(s context.Session) (apifabclient.FabricClient, error) {
-	client := NewSystemClient(sdk.configProvider)
-
-	client.SetCryptoSuite(sdk.cryptoSuite)
-	client.SetStateStore(sdk.stateStore)
-	client.SetUserContext(s.Identity())
-	client.SetSigningManager(sdk.signingManager)
-
-	return client, nil
+	return sdk.FabricSystemFactory.NewClient(sdk, s, sdk.configProvider)
 }
 
 // NewChannelMgmtClient returns a new client for managing channels
@@ -360,7 +362,7 @@ func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabc
 		return nil, errors.WithMessage(err, "failed to get signing identity")
 	}
 
-	user, err := NewPreEnrolledUser(sdk.ConfigProvider(), userName, signingIdentity)
+	user, err := sdk.FabricSystemFactory.NewPreEnrolledUser(sdk.ConfigProvider(), userName, signingIdentity)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewPreEnrolledUser returned error")
 	}
