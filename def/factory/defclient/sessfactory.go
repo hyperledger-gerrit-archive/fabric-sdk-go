@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package defprovider
+package defclient
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -35,14 +35,7 @@ func NewSessionClientFactory() *SessionClientFactory {
 
 // NewSystemClient returns a new FabricClient.
 func (f *SessionClientFactory) NewSystemClient(sdk context.SDK, session context.Session, config apiconfig.Config) (fab.FabricClient, error) {
-	client := clientImpl.NewClient(config)
-
-	client.SetCryptoSuite(sdk.CryptoSuiteProvider())
-	client.SetStateStore(sdk.StateStoreProvider())
-	client.SetUserContext(session.Identity())
-	client.SetSigningManager(sdk.SigningManager())
-
-	return client, nil
+	return sdk.FabricProvider().NewClient(session.Identity())
 }
 
 // NewChannelMgmtClient returns a client that manages channels (create/join channel)

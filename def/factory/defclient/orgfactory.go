@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package defprovider
+package defclient
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
