@@ -35,14 +35,7 @@ func NewSessionClientFactory() *SessionClientFactory {
 
 // NewSystemClient returns a new FabricClient.
 func (f *SessionClientFactory) NewSystemClient(sdk context.SDK, session context.Session, config apiconfig.Config) (fab.FabricClient, error) {
-	client := clientImpl.NewClient(config)
-
-	client.SetCryptoSuite(sdk.CryptoSuiteProvider())
-	client.SetStateStore(sdk.StateStoreProvider())
-	client.SetUserContext(session.Identity())
-	client.SetSigningManager(sdk.SigningManager())
-
-	return client, nil
+	return sdk.FabricCore().NewClient(sdk, session, config)
 }
 
 // NewChannelMgmtClient returns a client that manages channels (create/join channel)

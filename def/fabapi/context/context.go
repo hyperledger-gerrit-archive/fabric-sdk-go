@@ -20,6 +20,7 @@ type SDK interface {
 	DiscoveryProvider() fab.DiscoveryProvider
 	SelectionProvider() fab.SelectionProvider
 	SigningManager() fab.SigningManager
+	FabricCore() FabricCoreFactory
 }
 
 // Org represents the organization context

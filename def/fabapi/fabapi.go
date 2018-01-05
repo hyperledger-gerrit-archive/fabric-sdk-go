@@ -15,11 +15,11 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
+	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defcore"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
@@ -37,9 +37,10 @@ type Options struct {
 	StateStoreOpts opt.StateStoreOpts
 
 	// Factories to create clients and providers
-	ProviderFactory context.SDKProviderFactory
-	ContextFactory  context.OrgClientFactory
-	SessionFactory  context.SessionClientFactory
+	ProviderFactory   context.SDKProviderFactory
+	ContextFactory    context.OrgClientFactory
+	SessionFactory    context.SessionClientFactory
+	FabricCoreFactory context.FabricCoreFactory
 
 	// Factories for creating package-level utilities (keep this to a minimum)
 	// TODO: Should the logger actually be in ProviderFactory
@@ -98,7 +99,7 @@ func NewSDK(options Options) (*FabricSDK, error) {
 
 	// Initialize logging provider with default logging provider (if needed)
 	if sdk.LoggerFactory == nil {
-		sdk.LoggerFactory = deflogger.LoggerProvider()
+		sdk.LoggerFactory = defcore.LoggerProvider()
 	}
 	logging.InitLogger(sdk.LoggerFactory)
 
@@ -111,6 +112,9 @@ func NewSDK(options Options) (*FabricSDK, error) {
 	}
 	if sdk.SessionFactory == nil {
 		sdk.SessionFactory = defprovider.NewSessionClientFactory()
+	}
+	if sdk.FabricCoreFactory == nil {
+		sdk.FabricCoreFactory = defcore.NewFabricFactory()
 	}
 
 	// Initialize config provider
@@ -204,18 +208,16 @@ func (sdk *FabricSDK) NewSession(c context.Org, user apifabclient.User) (*Sessio
 	return NewSession(user, sdk.SessionFactory), nil
 }
 
+// FabricCore provides fabric objects such as peer and user
+func (sdk *FabricSDK) FabricCore() context.FabricCoreFactory {
+	return sdk.FabricCoreFactory
+}
+
 // NewSystemClient returns a new client for the system (operations not on a channel)
 // TODO: Reduced immutable interface
 // TODO: Parameter for setting up the peers
 func (sdk *FabricSDK) NewSystemClient(s context.Session) (apifabclient.FabricClient, error) {
-	client := NewSystemClient(sdk.configProvider)
-
-	client.SetCryptoSuite(sdk.cryptoSuite)
-	client.SetStateStore(sdk.stateStore)
-	client.SetUserContext(s.Identity())
-	client.SetSigningManager(sdk.signingManager)
-
-	return client, nil
+	return sdk.FabricCore().NewClient(sdk, s, sdk.configProvider)
 }
 
 // NewChannelMgmtClient returns a new client for managing channels
@@ -360,7 +362,7 @@ func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabc
 		return nil, errors.WithMessage(err, "failed to get signing identity")
 	}
 
-	user, err := NewPreEnrolledUser(sdk.ConfigProvider(), userName, signingIdentity)
+	user, err := sdk.FabricCore().NewPreEnrolledUser(sdk.ConfigProvider(), userName, signingIdentity)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewPreEnrolledUser returned error")
 	}
