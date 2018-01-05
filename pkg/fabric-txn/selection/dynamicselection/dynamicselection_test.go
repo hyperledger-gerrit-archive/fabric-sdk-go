@@ -349,8 +349,8 @@ func TestDynamicSelection(t *testing.T) {
 
 	// Create SDK setup for channel client with dynamic selection
 	sdkOptions := fabapi.Options{
-		ConfigFile:      "../../../../test/fixtures/config/config_test.yaml",
-		ProviderFactory: &DynamicSelectionProviderFactory{ChannelUsers: []ChannelUser{mychannelUser}},
+		ConfigFile:             "../../../../test/fixtures/config/config_test.yaml",
+		ServiceProviderFactory: &DynamicSelectionProviderFactory{ChannelUsers: []ChannelUser{mychannelUser}},
 	}
 
 	sdk, err := fabapi.NewSDK(sdkOptions)
