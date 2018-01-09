@@ -19,8 +19,14 @@ FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
 # TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
 # Packages to include in test run
-PKGS=`$GO_CMD list github.com/hyperledger/fabric-sdk-go/test/integration/... 2> /dev/null | \
-                                                  grep -v /vendor/`
+if [ "$FABRIC_SDK_SECONDPEER" == "true" ]; then
+    echo "Setting pkgs for secondpeer test"
+    PKGS=`$GO_CMD list github.com/hyperledger/fabric-sdk-go/test/integration/... 2> /dev/null | \
+                                                  grep -v /vendor/ | grep secondpeer`
+else
+    PKGS=`$GO_CMD list github.com/hyperledger/fabric-sdk-go/test/integration/... 2> /dev/null | \
+                                                  grep -v /vendor/ | grep -v secondpeer`
+fi
 
 echo "Running integration tests ..."
 RACEFLAG=""

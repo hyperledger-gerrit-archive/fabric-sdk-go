@@ -248,6 +248,19 @@ integration-tests-stable-pkcs11: clean depend populate build-softhsm2-image
 		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-pkcs11-test.yaml up --force-recreate --abort-on-container-exit
 	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-pkcs11-test.yaml"
 
+.PHONY: integration-tests-stable-secondpeer
+integration-tests-stable-secondpeer: clean depend populate
+	@cd $(FIXTURE_DOCKERENV_PATH) && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-secondpeer.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-secondpeer.yaml"
+
+.PHONY: integration-tests-prev-secondpeer
+integration-tests-prev-secondpeer: clean depend populate
+	@. $(FIXTURE_DOCKERENV_PATH)/prev-env.sh && \
+		cd $(FIXTURE_DOCKERENV_PATH) && \
+		FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_PREV_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_PREV_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-secondpeer.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY)/ $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-secondpeer.yaml"
+
 # Additional test cases that aren't currently run by the CI
 .PHONY: integration-tests-devstable-nomutualtls
 integration-tests-devstable-nomutualtls: clean depend populate
