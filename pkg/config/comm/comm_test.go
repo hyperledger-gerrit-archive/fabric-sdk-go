@@ -19,6 +19,7 @@ import (
 	"reflect"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
@@ -29,7 +30,7 @@ func TestTLSConfigEmptyCertPoolAndCertificate(t *testing.T) {
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
 	// nil cert pool
-	config.EXPECT().TLSCACertPool("").Return(nil, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(nil, nil)
 
 	_, err := TLSConfig("", "", config)
 	if err == nil {
@@ -38,7 +39,7 @@ func TestTLSConfigEmptyCertPoolAndCertificate(t *testing.T) {
 
 	// empty cert pool
 	certPool := x509.NewCertPool()
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
 
 	_, err = TLSConfig("", "", config)
 	if err == nil {
@@ -54,9 +55,12 @@ func TestTLSConfigErrorAddingCertificate(t *testing.T) {
 	// empty cert pool and invalid certificate
 	certificate := "invalid certificate"
 	errMsg := "Error adding certificate to cert pool"
+	certConfig := apiconfig.TLSConfig{Path: certificate}
+
 	certPool := x509.NewCertPool()
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool(certificate).Return(certPool, errors.Errorf(errMsg))
+
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(certConfig).Return(certPool, errors.Errorf(errMsg))
 
 	_, err := TLSConfig(certificate, "", config)
 	if err == nil {
@@ -76,8 +80,8 @@ func TestTLSConfigErrorFromClientCerts(t *testing.T) {
 	certificate := "testCertificate"
 	errMsg := "Error loading client certs"
 	certPool := x509.NewCertPool()
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool(certificate).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{Path: certificate}).Return(certPool, nil)
 	config.EXPECT().TLSClientCerts().Return(nil, errors.Errorf(errMsg))
 
 	_, err := TLSConfig(certificate, "", config)
@@ -99,8 +103,8 @@ func TestTLSConfigHappyPath(t *testing.T) {
 	emptyCert := tls.Certificate{}
 	serverHostOverride := "servernamebeingoverriden"
 	certPool := x509.NewCertPool()
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool(certificate).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{Path: certificate}).Return(certPool, nil)
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{emptyCert}, nil)
 
 	tlsConfig, err := TLSConfig(certificate, serverHostOverride, config)

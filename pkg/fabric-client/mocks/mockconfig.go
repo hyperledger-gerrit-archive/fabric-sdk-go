@@ -113,6 +113,14 @@ func (c *MockConfig) TLSCACertPool(tlsCertificate string) (*x509.CertPool, error
 	return nil, nil
 }
 
+// TLSCACertPoolFromTLSConfig ...
+func (c *MockConfig) TLSCACertPoolFromTLSConfig(certConfig config.TLSConfig) (*x509.CertPool, error) {
+	if c.errorCase {
+		return nil, errors.New("just to test error scenario")
+	}
+	return nil, nil
+}
+
 // SetTLSCACertPool ...
 func (c *MockConfig) SetTLSCACertPool(pool *x509.CertPool) {
 }

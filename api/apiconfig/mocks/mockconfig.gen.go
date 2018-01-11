@@ -463,6 +463,19 @@ func (_mr *MockConfigMockRecorder) TLSCACertPool(arg0 interface{}) *gomock.Call 
 	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "TLSCACertPool", reflect.TypeOf((*MockConfig)(nil).TLSCACertPool), arg0)
 }
 
+// TLSCACertPoolFromTLSConfig mocks base method
+func (_m *MockConfig) TLSCACertPoolFromTLSConfig(_param0 apiconfig.TLSConfig) (*x509.CertPool, error) {
+	ret := _m.ctrl.Call(_m, "TLSCACertPoolFromTLSConfig", _param0)
+	ret0, _ := ret[0].(*x509.CertPool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TLSCACertPoolFromTLSConfig indicates an expected call of TLSCACertPoolFromTLSConfig
+func (_mr *MockConfigMockRecorder) TLSCACertPoolFromTLSConfig(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "TLSCACertPoolFromTLSConfig", reflect.TypeOf((*MockConfig)(nil).TLSCACertPoolFromTLSConfig), arg0)
+}
+
 // TLSClientCerts mocks base method
 func (_m *MockConfig) TLSClientCerts() ([]tls.Certificate, error) {
 	ret := _m.ctrl.Call(_m, "TLSClientCerts")

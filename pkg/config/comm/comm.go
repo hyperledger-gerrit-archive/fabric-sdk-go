@@ -15,15 +15,21 @@ import (
 )
 
 // TLSConfig returns the appropriate config for TLS including the root CAs,
-// certs for mutual TLS, and server host override
-func TLSConfig(certificate string, serverhostoverride string, config apiconfig.Config) (*tls.Config, error) {
-	certPool, _ := config.TLSCACertPool("")
+// certs for mutual TLS, and server host override. Works only with certs loaded from a path.
+func TLSConfig(certPath string, serverhostoverride string, config apiconfig.Config) (*tls.Config, error) {
+	return NewTLSConfig(apiconfig.TLSConfig{Path: certPath}, serverhostoverride, config)
+}
 
-	if len(certificate) == 0 && (certPool == nil || len(certPool.Subjects()) == 0) {
+// NewTLSConfig returns the appropriate config for TLS including the root CAs,
+// certs for mutual TLS, and server host override. Works with certs loaded either from a path or embedded pem.
+func NewTLSConfig(certConfig apiconfig.TLSConfig, serverhostoverride string, config apiconfig.Config) (*tls.Config, error) {
+	certPool, _ := config.TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{})
+
+	if len(certConfig.Pem) == 0 && len(certConfig.Path) == 0 && (certPool == nil || len(certPool.Subjects()) == 0) {
 		return nil, errors.New("certificate is required")
 	}
 
-	tlsCaCertPool, err := config.TLSCACertPool(certificate)
+	tlsCaCertPool, err := config.TLSCACertPoolFromTLSConfig(certConfig)
 	if err != nil {
 		return nil, err
 	}

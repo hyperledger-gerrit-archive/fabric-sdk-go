@@ -9,17 +9,17 @@ package orderer
 import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
-	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
+	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"google.golang.org/grpc/credentials"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -31,11 +31,16 @@ type Orderer struct {
 }
 
 // NewOrderer Returns a Orderer instance
-func NewOrderer(url string, certificate string, serverHostOverride string, config apiconfig.Config) (*Orderer, error) {
+func NewOrderer(url string, certPath string, serverHostOverride string, config apiconfig.Config) (*Orderer, error) {
+	return NewOrdererFromTLSConfig(url, apiconfig.TLSConfig{Path: certPath}, serverHostOverride, config)
+}
+
+// NewOrdererFromTLSConfig Returns an Orderer instance from a apiconfig.TLSConfig struct
+func NewOrdererFromTLSConfig(url string, tlsConfig apiconfig.TLSConfig, serverHostOverride string, config apiconfig.Config) (*Orderer, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.OrdererConnection)))
 	if urlutil.IsTLSEnabled(url) {
-		tlsConfig, err := comm.TLSConfig(certificate, serverHostOverride, config)
+		tlsConfig, err := comm.NewTLSConfig(tlsConfig, serverHostOverride, config)
 		if err != nil {
 			return nil, err
 		}
@@ -55,7 +60,7 @@ func NewOrdererFromConfig(ordererCfg *apiconfig.OrdererConfig, config apiconfig.
 		serverHostOverride = str
 	}
 
-	return NewOrderer(ordererCfg.URL, ordererCfg.TLSCACerts.Path, serverHostOverride, config)
+	return NewOrdererFromTLSConfig(ordererCfg.URL, ordererCfg.TLSCACerts, serverHostOverride, config)
 }
 
 // URL Get the Orderer url. Required property for the instance objects.
