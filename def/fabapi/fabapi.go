@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/context/defprovider"
 	"github.com/hyperledger/fabric-sdk-go/def/fabapi/opt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
@@ -121,11 +122,15 @@ func NewSDK(options Options) (*FabricSDK, error) {
 	sdk.configProvider = config
 
 	// Initialize crypto provider
-	cryptosuite, err := sdk.ProviderFactory.NewCryptoSuiteProvider(sdk.configProvider)
+	cs, err := sdk.ProviderFactory.NewCryptoSuiteProvider(sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize crypto suite")
 	}
-	sdk.cryptoSuite = cryptosuite
+
+	//Setting this cryptosuite as a factory default too
+	cryptosuite.SetDefault(cs)
+
+	sdk.cryptoSuite = cs
 
 	// Initialize state store
 	store, err := sdk.ProviderFactory.NewStateStoreProvider(sdk.StateStoreOpts, sdk.configProvider)
