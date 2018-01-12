@@ -15,11 +15,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
+	"github.com/hyperledger/fabric-sdk-go/def/pkgsuite/defpkgsuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
@@ -55,12 +57,14 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 	customBccspProvider := getTestBCCSP(defaultConfig)
 
 	// Create SDK setup with custom cryptosuite provider factory
-	sdkOptions := fabapi.Options{
-		ConfigFile:  testSetup.ConfigFile,
-		CoreFactory: &CustomCryptoSuiteProviderFactory{bccspProvider: customBccspProvider},
-	}
+	pkgSuiteOpt := fabsdk.PkgSuiteAsOpt(apisdk.PkgSuite{
+		Core: &CustomCryptoSuiteProviderFactory{bccspProvider: customBccspProvider},
+	})
 
-	sdk, err := fabapi.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(fabsdk.ConfigFile(testSetup.ConfigFile),
+		defpkgsuite.SDKOpt(),
+		pkgSuiteOpt)
+
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -144,13 +148,13 @@ func TestCustomCryptoSuite(t *testing.T) {
 	//Get BCCSP custom wrapper for Test BCCSP
 	customBccspWrapper := getBCCSPWrapper(customBccspProvider)
 
-	// Create SDK setup with custom cryptosuite provider factory
-	sdkOptions := fabapi.Options{
-		ConfigFile:  testSetup.ConfigFile,
-		CoreFactory: &CustomCryptoSuiteProviderFactory{bccspProvider: customBccspWrapper},
-	}
+	pkgSuiteOpt := fabsdk.PkgSuiteAsOpt(apisdk.PkgSuite{
+		Core: &CustomCryptoSuiteProviderFactory{bccspProvider: customBccspWrapper},
+	})
 
-	sdk, err := fabapi.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(fabsdk.ConfigFile(testSetup.ConfigFile),
+		defpkgsuite.SDKOpt(),
+		pkgSuiteOpt)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

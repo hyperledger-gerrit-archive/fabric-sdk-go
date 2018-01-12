@@ -14,11 +14,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/def/pkgsuite/defpkgsuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection/pgresolver"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -348,12 +350,13 @@ func TestDynamicSelection(t *testing.T) {
 	}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdkOptions := fabapi.Options{
-		ConfigFile:     "../../../../test/fixtures/config/config_test.yaml",
-		ServiceFactory: &DynamicSelectionProviderFactory{ChannelUsers: []ChannelUser{mychannelUser}},
-	}
+	pkgSuiteOpt := fabsdk.PkgSuiteAsOpt(apisdk.PkgSuite{
+		Service: &DynamicSelectionProviderFactory{ChannelUsers: []ChannelUser{mychannelUser}},
+	})
 
-	sdk, err := fabapi.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(fabsdk.ConfigFile("../../../../test/fixtures/config/config_test.yaml"),
+		defpkgsuite.SDKOpt(),
+		pkgSuiteOpt)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

@@ -20,12 +20,13 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/def/pkgsuite/defpkgsuite"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
@@ -50,11 +51,7 @@ var orgTestPeer1 fab.Peer
 func TestOrgsEndToEnd(t *testing.T) {
 
 	// Create SDK setup for the integration tests
-	sdkOptions := fabapi.Options{
-		ConfigFile: "../" + integration.ConfigTestFile,
-	}
-
-	sdk, err := fabapi.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(fabsdk.ConfigFile("../"+integration.ConfigTestFile), defpkgsuite.SDKOpt())
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -209,8 +206,13 @@ func TestOrgsEndToEnd(t *testing.T) {
 	mychannelUser := selection.ChannelUser{ChannelID: "orgchannel", UserName: "User1", OrgName: "Org1"}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdkOptions.ServiceFactory = &DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}
-	sdk, err = fabapi.NewSDK(sdkOptions)
+	pkgSuiteOpt := fabsdk.PkgSuiteAsOpt(apisdk.PkgSuite{
+		Service: &DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}},
+	})
+
+	sdk, err = fabsdk.New(fabsdk.ConfigFile("../"+integration.ConfigTestFile),
+		defpkgsuite.SDKOpt(),
+		pkgSuiteOpt)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

@@ -18,10 +18,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/def/pkgsuite/defpkgsuite"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	deffab "github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
@@ -85,11 +85,7 @@ func ExampleCCUpgradeArgs() [][]byte {
 // Initialize reads configuration from file and sets up client, channel and event hub
 func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	// Create SDK setup for the integration tests
-	sdkOptions := deffab.Options{
-		ConfigFile: setup.ConfigFile,
-	}
-
-	sdk, err := deffab.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(fabsdk.ConfigFile(setup.ConfigFile), defpkgsuite.SDKOpt())
 	if err != nil {
 		return errors.WithMessage(err, "SDK init failed")
 	}

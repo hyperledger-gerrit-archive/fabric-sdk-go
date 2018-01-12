@@ -12,8 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/def/pkgsuite/defpkgsuite"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -33,18 +34,13 @@ const (
 )
 
 func runWithConfigFixture(t *testing.T) {
-	// Create SDK setup for the integration tests
-	sdkOptions := fabapi.Options{
-		ConfigFile: "../" + integration.ConfigTestFile,
-	}
-
-	Run(t, sdkOptions)
+	Run(t, fabsdk.ConfigFile("../"+integration.ConfigTestFile), defpkgsuite.SDKOpt())
 }
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
-func Run(t *testing.T, sdkOptions fabapi.Options) {
+func Run(t *testing.T, sdkOpts ...fabsdk.SDKOption) {
 
-	sdk, err := fabapi.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(sdkOpts...)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

@@ -9,17 +9,15 @@ package dynamicselection
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/def/fabapi"
+	"github.com/hyperledger/fabric-sdk-go/def/pkgsuite/defpkgsuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
 func TestCCPolicyProvider(t *testing.T) {
 
 	// Create SDK setup for channel client with dynamic selection
-	sdkOptions := fabapi.Options{
-		ConfigFile: "../../../../test/fixtures/config/config_test.yaml",
-	}
-
-	sdk, err := fabapi.NewSDK(sdkOptions)
+	sdk, err := fabsdk.New(fabsdk.ConfigFile("../../../../test/fixtures/config/config_test.yaml"),
+		defpkgsuite.SDKOpt())
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

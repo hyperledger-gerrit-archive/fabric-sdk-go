@@ -198,7 +198,7 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 	// new SDK expected to panic due to wrong config type which didn't load the configs
 	_, err = New(ConfigBytes(cBytes, "json"), StateStorePath("/tmp/state"), defPkgSuite())
 	if err == nil {
-		t.Fatalf("NewSDK should have returned error due to bad config")
+		t.Fatalf("New should have returned error due to bad config")
 	}
 
 }
