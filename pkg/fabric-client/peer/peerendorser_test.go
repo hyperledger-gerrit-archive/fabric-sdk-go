@@ -45,8 +45,8 @@ func TestNewPeerEndorserTLS(t *testing.T) {
 	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{Path: "cert"}).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
 
@@ -82,8 +82,8 @@ func TestNewPeerEndorserMutualTLS(t *testing.T) {
 	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{Path: "cert"}).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
 
@@ -110,8 +110,8 @@ func TestNewPeerEndorserMutualTLSNoClientCerts(t *testing.T) {
 	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{Path: "cert"}).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
 
@@ -131,8 +131,8 @@ func TestNewPeerEndorserTLSBadPool(t *testing.T) {
 	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, errors.New("ohoh"))
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{Path: "cert"}).Return(certPool, errors.New("ohoh"))
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	_, err := newPeerEndorser(url, "cert", "", true, config)
@@ -250,7 +250,7 @@ func TestNewPeerEndorserTLSBad(t *testing.T) {
 	url := "grpcs://0.0.0.0:1234"
 	certPool := x509.NewCertPool()
 
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	_, err := newPeerEndorser(url, "", "", true, config)

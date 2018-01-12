@@ -51,8 +51,8 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 	certPool := x509.NewCertPool()
 	url := "grpcs://0.0.0.0:1234"
 
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{Path: "cert"}).Return(certPool, nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
 
@@ -83,7 +83,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	config.EXPECT().TLSCACertPool("").Return(x509.NewCertPool(), nil)
+	config.EXPECT().TLSCACertPoolFromTLSConfig(apiconfig.TLSConfig{}).Return(x509.NewCertPool(), nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	url := "grpcs://0.0.0.0:1234"
