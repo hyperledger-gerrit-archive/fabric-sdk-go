@@ -1,0 +1,10 @@
+Code-Review+1: Bob Stasyszyn <bob.stasyszyn@securekey.com>
+Code-Review+1: Sandra Vrtikapa <sandra.vrtikapa@securekey.com>
+Code-Review+1: Baha A Shaaban <baha.shaaban@securekey.com>
+Code-Review+2: Firas Qutishat <firas.qutishat@securekey.com>
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Submitted-by: Troy Ronda <troy@troyronda.com>
+Submitted-at: Fri, 12 Jan 2018 17:29:20 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/16791
+Project: fabric-sdk-go
+Branch: refs/heads/master
