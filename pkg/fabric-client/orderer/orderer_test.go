@@ -18,6 +18,10 @@ import (
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
+	"os"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -54,7 +58,7 @@ func TestOrdererViaChain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	orderer, _ := NewOrderer("localhost:7050", "", "", mocks.NewMockConfig())
+	orderer, _ := NewOrderer(mocks.NewMockConfig(), FromParams("localhost:7050", nil, ""))
 	err = chain.AddOrderer(orderer)
 	if err != nil {
 		t.Fatalf("Error adding orderer: %v", err)
@@ -65,7 +69,7 @@ func TestOrdererViaChain(t *testing.T) {
 		t.Fatalf("Failed to retieve the new orderer URL from the chain")
 	}
 	chain.RemoveOrderer(orderer)
-	orderer2, err := NewOrderer("localhost:7054", "", "", mocks.NewMockConfig())
+	orderer2, err := NewOrderer(mocks.NewMockConfig(), FromParams("localhost:7054", nil, ""))
 	if err != nil {
 		t.Fatalf("Failed to create NewOrderer error(%v)", err)
 	}
@@ -117,7 +121,8 @@ func TestOrdererViaChainNilData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from NewChain %v", err)
 	}
-	orderer, err := NewOrderer("localhost:7050", "", "", mocks.NewMockConfig())
+	orderer, err := NewOrderer(mocks.NewMockConfig(), FromParams("localhost:7050", nil, ""))
+
 	if err != nil {
 		t.Fatalf("Failed to create NewOrderer error(%v)", err)
 	}
@@ -140,7 +145,8 @@ func TestSendDeliver(t *testing.T) {
 	defer grpcServer.Stop()
 	mockServer, addr := startMockServer(t, grpcServer)
 
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
+	orderer, _ := NewOrderer(mocks.NewMockConfig(), FromParams(addr, nil, ""))
+
 	// Test deliver happy path
 	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
@@ -182,7 +188,7 @@ func TestSendDeliver(t *testing.T) {
 		t.Fatalf("Did not receive block or error from SendDeliver")
 	}
 
-	orderer, _ = NewOrderer(testOrdererURL+"invalid-test", "", "", mocks.NewMockConfig())
+	orderer, _ = NewOrderer(mocks.NewMockConfig(), FromParams(testOrdererURL+"invalid-test", nil, ""))
 	// Test deliver happy path
 	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
 	select {
@@ -229,13 +235,24 @@ func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.
 
 func TestNewOrdererWithTLS(t *testing.T) {
 	//Positive Test case
-	orderer, err := NewOrderer("grpcs://", "../../test/fixtures/fabricca/tls/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false, false))
+	spew.Dump(os.Getwd())
+	tlsConfig := apiconfig.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+
+	cert, err := tlsConfig.TLSCert()
+
+	if err != nil {
+		t.Fatalf("Testing NewOrderer with TLS failed, cause [%s]", err)
+	}
+
+	orderer, err := NewOrderer(mocks.NewMockConfigCustomized(true, false, false), FromParams("grpcs://", cert, ""))
+
 	if orderer == nil || err != nil {
 		t.Fatalf("Testing NewOrderer with TLS failed, cause [%s]", err)
 	}
 
 	//Negative Test case
-	orderer, err = NewOrderer("grpcs://", "", "", mocks.NewMockConfigCustomized(true, false, true))
+	orderer, err = NewOrderer(mocks.NewMockConfigCustomized(true, false, true), FromParams("grpcs://", nil, ""))
+
 	if orderer != nil || err == nil {
 		t.Fatalf("Testing NewOrderer with TLS was supposed to fail")
 	}
@@ -243,12 +260,22 @@ func TestNewOrdererWithTLS(t *testing.T) {
 
 func TestNewOrdererWithMutualTLS(t *testing.T) {
 	//Positive Test case
-	orderer, err := NewOrderer("grpcs://", "../../test/fixtures/tls/fabricca/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, true, false))
+	tlsConfig := apiconfig.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+
+	cert, err := tlsConfig.TLSCert()
+
+	if err != nil {
+		t.Fatalf("Testing NewOrderer with TLS failed, cause [%s]", err)
+	}
+
+	orderer, err := NewOrderer(mocks.NewMockConfigCustomized(true, true, false), FromParams("grpcs://", cert, ""))
+
 	if orderer == nil || err != nil {
 		t.Fatalf("Testing NewOrderer with Mutual TLS failed, cause [%s]", err)
 	}
 	//Negative Test case
-	orderer, err = NewOrderer("grpcs://", "../../test/fixtures/tls/fabricca/ca/ca_root.pem", "", mocks.NewMockConfigCustomized(true, false, false))
+	orderer, err = NewOrderer(mocks.NewMockConfigCustomized(true, false, false), FromParams("grpcs://", cert, ""))
+
 	if orderer == nil || err != nil {
 		t.Fatalf("Testing NewOrderer with Mutual TLS failed, cause [%s]", err)
 	}
@@ -259,14 +286,15 @@ func TestSendBroadcast(t *testing.T) {
 	defer grpcServer.Stop()
 	_, addr := startMockServer(t, grpcServer)
 
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
+	orderer, _ := NewOrderer(mocks.NewMockConfig(), FromParams(addr, nil, ""))
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
 	if err != nil {
 		t.Fatalf("Test SendBroadcast was not supposed to fail")
 	}
 
-	orderer, _ = NewOrderer(testOrdererURL+"Test", "", "", mocks.NewMockConfig())
+	orderer, _ = NewOrderer(mocks.NewMockConfig(), FromParams(testOrdererURL+"Test", nil, ""))
+
 	_, err = orderer.SendBroadcast(&fab.SignedEnvelope{})
 
 	if err == nil || !strings.HasPrefix(err.Error(), "NewAtomicBroadcastClient") {
@@ -288,7 +316,7 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
+	orderer, _ := NewOrderer(mocks.NewMockConfig(), FromParams(addr, nil, ""))
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -318,7 +346,7 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
+	orderer, _ := NewOrderer(mocks.NewMockConfig(), FromParams(addr, nil, ""))
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -343,7 +371,7 @@ func TestSendDeliverFailure(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
+	orderer, _ := NewOrderer(mocks.NewMockConfig(), FromParams(addr, nil, ""))
 
 	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
 
@@ -368,7 +396,7 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
+	orderer, _ := NewOrderer(mocks.NewMockConfig(), FromParams(addr, nil, ""))
 
 	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
@@ -389,7 +417,7 @@ func TestSendBroadcastError(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
-	orderer, _ := NewOrderer(addr, "", "", mocks.NewMockConfig())
+	orderer, _ := NewOrderer(mocks.NewMockConfig(), FromParams(addr, nil, ""))
 
 	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 
