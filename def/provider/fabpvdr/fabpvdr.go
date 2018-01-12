@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fabpvdr
 
 import (
+	"crypto/x509"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabca"
@@ -65,7 +67,7 @@ func (f *FabricProvider) NewUser(name string, signingIdentity *apifabclient.Sign
 }
 
 // NewPeer returns a new default implementation of Peer
-func (f *FabricProvider) NewPeer(url string, certificate string, serverHostOverride string) (apifabclient.Peer, error) {
+func (f *FabricProvider) NewPeer(url string, certificate *x509.Certificate, serverHostOverride string) (apifabclient.Peer, error) {
 	return peerImpl.NewPeerTLSFromCert(url, certificate, serverHostOverride, f.config)
 }
 
