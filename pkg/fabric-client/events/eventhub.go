@@ -21,6 +21,8 @@ import (
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"crypto/x509"
+
 	cnsmr "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	consumer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events/consumer"
@@ -44,7 +46,7 @@ type EventHub struct {
 	// peer addr to connect to
 	peerAddr string
 	// peer tls certificate
-	peerTLSCertificate string
+	peerTLSCertificate *x509.Certificate
 	// peer tls server host override
 	peerTLSServerHostOverride string
 	// grpc event client interface
@@ -61,13 +63,13 @@ type EventHub struct {
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(client fab.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error)
+	newEventsClient(client fab.FabricClient, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(client fab.FabricClient, peerAddress string, certificate string, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error) {
+func (ccf *consumerClientFactory) newEventsClient(client fab.FabricClient, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error) {
 	return consumer.NewEventsClient(client, peerAddress, certificate, serverHostOverride, regTimeout, adapter)
 }
 
@@ -102,7 +104,12 @@ func NewEventHubFromConfig(client fab.FabricClient, peerCfg *apiconfig.PeerConfi
 	}
 
 	eventHub.peerAddr = peerCfg.EventURL
-	eventHub.peerTLSCertificate = peerCfg.TLSCACerts.Path
+	eventHub.peerTLSCertificate, err = peerCfg.TLSCACerts.TLSCert()
+
+	if err != nil {
+		return nil, err
+	}
+
 	eventHub.peerTLSServerHostOverride = serverHostOverride
 
 	return eventHub, nil
@@ -233,7 +240,7 @@ func (eventHub *EventHub) removeChaincodeInterest(ChaincodeID string, EventName 
 // peeraddr peer url
 // peerTLSCertificate peer tls certificate
 // peerTLSServerHostOverride tls serverhostoverride
-func (eventHub *EventHub) SetPeerAddr(peerURL string, peerTLSCertificate string, peerTLSServerHostOverride string) {
+func (eventHub *EventHub) SetPeerAddr(peerURL string, peerTLSCertificate *x509.Certificate, peerTLSServerHostOverride string) {
 	eventHub.peerAddr = peerURL
 	eventHub.peerTLSCertificate = peerTLSCertificate
 	eventHub.peerTLSServerHostOverride = peerTLSServerHostOverride
