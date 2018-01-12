@@ -51,13 +51,15 @@ func TestNewPeerTLSFromCert(t *testing.T) {
 	certPool := x509.NewCertPool()
 	url := "grpcs://0.0.0.0:1234"
 
-	config.EXPECT().TLSCACertPool("cert").Return(certPool, nil)
-	config.EXPECT().TLSCACertPool("").Return(certPool, nil)
+	cert := &x509.Certificate{}
+
+	config.EXPECT().TLSCACertPool(cert).Return(certPool, nil)
+	config.EXPECT().TLSCACertPool(apiconfig.TLSConfig{}).Return(certPool, nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{}, nil)
 
 	// TODO - test actual parameters and test server name override
-	_, err := NewPeerTLSFromCert(url, "cert", "", config)
+	_, err := NewPeerTLSFromCert(url, cert, "", config)
 
 	if err != nil {
 		t.Fatalf("Expected peer to be constructed")
@@ -83,11 +85,11 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 
-	config.EXPECT().TLSCACertPool("").Return(x509.NewCertPool(), nil)
+	config.EXPECT().TLSCACertPool(apiconfig.TLSConfig{}).Return(x509.NewCertPool(), nil)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 
 	url := "grpcs://0.0.0.0:1234"
-	_, err := NewPeerTLSFromCert(url, "", "", config)
+	_, err := NewPeerTLSFromCert(url, nil, "", config)
 
 	if err == nil {
 		t.Fatalf("Expected peer construction to fail")
