@@ -255,9 +255,9 @@ func (setup *BaseSetupImpl) GetChannel(sdk *deffab.FabricSDK, client fab.FabricC
 		return nil, errors.WithMessage(err, "RandomOrdererConfig failed")
 	}
 
-	orderer, err := orderer.NewOrdererFromConfig(ordererConfig, client.Config())
+	orderer, err := orderer.New(client.Config(), orderer.FromOrdererConfig(ordererConfig))
 	if err != nil {
-		return nil, errors.WithMessage(err, "NewOrderer failed")
+		return nil, errors.WithMessage(err, "New failed")
 	}
 	err = channel.AddOrderer(orderer)
 	if err != nil {
@@ -369,7 +369,14 @@ func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.FabricClient) (
 			if str, ok := p.GRPCOptions["ssl-target-name-override"].(string); ok {
 				serverHostOverride = str
 			}
-			eventHub.SetPeerAddr(p.EventURL, p.TLSCACerts.Path, serverHostOverride)
+
+			cert, err := p.TLSCACerts.TLSCert()
+
+			if err != nil {
+				return nil, err
+			}
+
+			eventHub.SetPeerAddr(p.EventURL, cert, serverHostOverride)
 			foundEventHub = true
 			break
 		}
