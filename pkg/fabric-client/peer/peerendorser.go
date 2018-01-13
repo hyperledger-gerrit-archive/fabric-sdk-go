@@ -18,6 +18,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"crypto/x509"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
@@ -35,7 +37,7 @@ type TransactionProposalError struct {
 	Err      error
 }
 
-func newPeerEndorser(target string, certificate string, serverHostOverride string,
+func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOverride string,
 	dialBlocking bool, config apiconfig.Config) (
 	peerEndorser, error) {
 	if len(target) == 0 {
