@@ -15,9 +15,9 @@ import (
 func TestNewSDK(t *testing.T) {
 	setup := Options{
 		ConfigFile: "../../test/fixtures/config/invalid.yaml",
-		StateStoreOpts: StateStoreOpts{
-			Path: "/tmp/state",
-		},
+		//		StateStoreOpts: StateStoreOpts{
+		//			Path: "/tmp/state",
+		//		},
 	}
 
 	// Test new SDK with invalid config file
