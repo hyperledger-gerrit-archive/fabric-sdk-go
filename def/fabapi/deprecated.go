@@ -12,10 +12,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/def/pkgsuite/defpkgsuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -44,13 +46,28 @@ type StateStoreOpts struct {
 	Path string
 }
 
+func configSDKOpt(options *Options) (fabsdk.Option, error) {
+	if options.ConfigByte != nil {
+		return defpkgsuite.WithConfigRaw(options.ConfigByte, options.ConfigType), nil
+	}
+
+	if options.ConfigFile != "" {
+		return defpkgsuite.WithConfigFile(options.ConfigFile), nil
+	}
+
+	return nil, errors.New("No configuration provided")
+}
+
 // NewSDK wraps the NewSDK func moved to the pkg folder.
 // Notice: this wrapper is deprecated and will be removed.
 func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
+	configOpt, err := configSDKOpt(&options)
+	if err != nil {
+		return nil, err
+	}
+
 	sdk, err := fabsdk.New(
-		fabsdk.ConfigBytes(options.ConfigByte, options.ConfigType),
-		fabsdk.ConfigFile(options.ConfigFile),
-		fabsdk.StateStorePath(options.StateStoreOpts.Path),
+		configOpt,
 		pkgSuiteFromOptions(options))
 
 	if err != nil {
@@ -62,12 +79,15 @@ func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
 	return sdk, nil
 }
 
-func pkgSuiteFromOptions(options Options) fabsdk.SDKOption {
+func pkgSuiteFromOptions(options Options) fabsdk.Option {
 	impl := apisdk.PkgSuite{}
 	if options.CoreFactory != nil {
 		impl.Core = options.CoreFactory
 	} else {
-		impl.Core = defcore.NewProviderFactory()
+		stateStoreOpts := defcore.StateStoreOptsDeprecated{
+			Path: options.StateStoreOpts.Path,
+		}
+		impl.Core = defcore.NewProviderFactoryDeprecated(stateStoreOpts)
 	}
 
 	if options.ServiceFactory != nil {
@@ -94,5 +114,5 @@ func pkgSuiteFromOptions(options Options) fabsdk.SDKOption {
 		impl.Logger = deflogger.LoggerProvider()
 	}
 
-	return fabsdk.PkgSuiteAsOpt(impl)
+	return fabsdk.FromPkgSuite(impl)
 }
