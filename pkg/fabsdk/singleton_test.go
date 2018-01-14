@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
-func dePkgSuiteWithLogger(logger apilogging.LoggerProvider) SDKOption {
+func dePkgSuiteWithLogger(logger apilogging.LoggerProvider) Option {
 	pkgSuite := apisdk.PkgSuite{
 		Core:    defcore.NewProviderFactory(),
 		Service: defsvc.NewProviderFactory(),
@@ -34,7 +34,7 @@ func TestDefLoggerFactory(t *testing.T) {
 	// Cleanup logging singleton
 	logging.UnsafeReset()
 
-	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), defPkgSuite())
+	_, err := New(UseConfigFile("../../test/fixtures/config/config_test.yaml"), defPkgSuite())
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -72,7 +72,7 @@ func TestOptLoggerFactory(t *testing.T) {
 
 	lf := NewMockLoggerFactory()
 
-	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), dePkgSuiteWithLogger(lf))
+	_, err := New(UseConfigFile("../../test/fixtures/config/config_test.yaml"), dePkgSuiteWithLogger(lf))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

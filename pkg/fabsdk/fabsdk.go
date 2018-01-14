@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package fabsdk enables client usage of a Hyperledger Fabric network
+// Package fabsdk enables client usage of a Hyperledger Fabric network.
 package fabsdk
 
 import (
@@ -22,7 +22,7 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 )
 
-// FabricSDK provides access (and context) to clients being managed by the SDK
+// FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
 	pkgSuite       apisdk.PkgSuite
 	opts           apisdk.SDKOpts
@@ -37,12 +37,12 @@ type FabricSDK struct {
 	fabricProvider    apicore.FabricProvider
 }
 
-// SDKOption provides an option for the SDK contructor
-type SDKOption func(sdk *FabricSDK) (*FabricSDK, error)
+// Option configures the SDK.
+type Option func(sdk *FabricSDK) (*FabricSDK, error)
 
-// PkgSuiteAsOpt injects an implementation of primitives, providers and clients into the SDK
-// Curated implementations are held under the def folder
-func PkgSuiteAsOpt(pkgSuite apisdk.PkgSuite) SDKOption {
+// PkgSuiteAsOpt injects an implementation of primitives, providers and clients into the SDK.
+// Curated implementations are held under the def folder.
+func PkgSuiteAsOpt(pkgSuite apisdk.PkgSuite) Option {
 	return func(sdk *FabricSDK) (*FabricSDK, error) {
 		if pkgSuite.Core != nil {
 			sdk.pkgSuite.Core = pkgSuite.Core
@@ -64,16 +64,16 @@ func PkgSuiteAsOpt(pkgSuite apisdk.PkgSuite) SDKOption {
 	}
 }
 
-// ConfigFile sets the SDK to use configFile for loading configuration
-func ConfigFile(configFile string) SDKOption {
+// UseConfigFile sets the SDK to use configFile for loading configuration.
+func UseConfigFile(configFile string) Option {
 	return func(sdk *FabricSDK) (*FabricSDK, error) {
 		sdk.opts.ConfigFile = configFile
 		return sdk, nil
 	}
 }
 
-// ConfigBytes sets the SDK to load configuration from the passed bytes
-func ConfigBytes(configBytes []byte, configType string) SDKOption {
+// UseConfigBytes sets the SDK to load configuration from the passed bytes.
+func UseConfigBytes(configBytes []byte, configType string) Option {
 	return func(sdk *FabricSDK) (*FabricSDK, error) {
 		sdk.opts.ConfigBytes = configBytes
 		sdk.opts.ConfigType = configType
@@ -81,8 +81,8 @@ func ConfigBytes(configBytes []byte, configType string) SDKOption {
 	}
 }
 
-// StateStorePath sets the SDK to use path when configuring the state store
-func StateStorePath(path string) SDKOption {
+// WithStateStorePath sets the SDK to use path when configuring the state store.
+func WithStateStorePath(path string) Option {
 	return func(sdk *FabricSDK) (*FabricSDK, error) {
 		sdk.stateStoreOpts.Path = path
 		return sdk, nil
@@ -113,11 +113,11 @@ type ProviderInit interface {
 	Initialize(sdk *FabricSDK) error
 }
 
-// New initializes the SDK based on the set of options provided
+// New initializes the SDK based on the set of options provided.
 // A package suite containing the SDK implementation must be provided as an option.
 // For example using the basic defaults: defpkgsuite.SDKOpt() in def/pkgsuite/defpkgsuite:
 // fabsdk.New(defpkgsuite.SDKOpt())
-func New(options ...SDKOption) (*FabricSDK, error) {
+func New(options ...Option) (*FabricSDK, error) {
 	sdk := FabricSDK{
 		pkgSuite:       apisdk.PkgSuite{},
 		opts:           apisdk.SDKOpts{},

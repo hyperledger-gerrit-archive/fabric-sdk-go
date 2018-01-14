@@ -8,6 +8,8 @@ SPDX-License-Identifier: Apache-2.0
 package fabapi
 
 import (
+	"errors"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
@@ -44,13 +46,26 @@ type StateStoreOpts struct {
 	Path string
 }
 
+func configSDKOpt(options *Options) fabsdk.Option {
+	if options.ConfigByte != nil {
+		return fabsdk.UseConfigBytes(options.ConfigByte, options.ConfigType)
+	}
+
+	if options.ConfigFile != "" {
+		return fabsdk.UseConfigFile(options.ConfigFile)
+	}
+
+	return func(sdk *fabsdk.FabricSDK) (*fabsdk.FabricSDK, error) {
+		return sdk, errors.New("No configuration provided")
+	}
+}
+
 // NewSDK wraps the NewSDK func moved to the pkg folder.
 // Notice: this wrapper is deprecated and will be removed.
 func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
 	sdk, err := fabsdk.New(
-		fabsdk.ConfigBytes(options.ConfigByte, options.ConfigType),
-		fabsdk.ConfigFile(options.ConfigFile),
-		fabsdk.StateStorePath(options.StateStoreOpts.Path),
+		configSDKOpt(&options),
+		fabsdk.WithStateStorePath(options.StateStoreOpts.Path),
 		pkgSuiteFromOptions(options))
 
 	if err != nil {
@@ -62,7 +77,7 @@ func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
 	return sdk, nil
 }
 
-func pkgSuiteFromOptions(options Options) fabsdk.SDKOption {
+func pkgSuiteFromOptions(options Options) fabsdk.Option {
 	impl := apisdk.PkgSuite{}
 	if options.CoreFactory != nil {
 		impl.Core = options.CoreFactory
