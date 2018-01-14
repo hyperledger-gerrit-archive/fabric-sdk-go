@@ -27,9 +27,9 @@ import (
 func TestNewConfigProvider(t *testing.T) {
 	factory := NewProviderFactory()
 
-	sdkOpts := apisdk.SDKOpts{}
+	opts := apisdk.ConfigOpts{}
 
-	config, err := factory.NewConfigProvider(sdkOpts)
+	config, err := factory.NewConfigProvider(opts)
 	if err != nil {
 		t.Fatalf("Unexpected error creating config provider %v", err)
 	}

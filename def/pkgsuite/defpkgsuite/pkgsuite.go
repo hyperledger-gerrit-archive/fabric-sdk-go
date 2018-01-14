@@ -17,7 +17,7 @@ import (
 )
 
 // SDKOpt provides the default implementation for the SDK
-func SDKOpt() fabsdk.SDKOption {
+func SDKOpt() fabsdk.Option {
 	return fabsdk.PkgSuiteAsOpt(newPkgSuite())
 }
 

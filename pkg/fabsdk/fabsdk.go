@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package fabsdk enables client usage of a Hyperledger Fabric network
+// Package fabsdk enables client usage of a Hyperledger Fabric network.
 package fabsdk
 
 import (
@@ -22,11 +22,9 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 )
 
-// FabricSDK provides access (and context) to clients being managed by the SDK
+// FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
-	pkgSuite       apisdk.PkgSuite
-	opts           apisdk.SDKOpts
-	stateStoreOpts apisdk.StateStoreOpts
+	opts options
 
 	configProvider    apiconfig.Config
 	stateStore        apifabclient.KeyValueStore
@@ -37,55 +35,61 @@ type FabricSDK struct {
 	fabricProvider    apicore.FabricProvider
 }
 
-// SDKOption provides an option for the SDK contructor
-type SDKOption func(sdk *FabricSDK) (*FabricSDK, error)
+type options struct {
+	pkgSuite   apisdk.PkgSuite
+	config     apisdk.ConfigOpts
+	stateStore apisdk.StateStoreOpts
+}
 
-// PkgSuiteAsOpt injects an implementation of primitives, providers and clients into the SDK
-// Curated implementations are held under the def folder
-func PkgSuiteAsOpt(pkgSuite apisdk.PkgSuite) SDKOption {
-	return func(sdk *FabricSDK) (*FabricSDK, error) {
+// Option configures the SDK.
+type Option func(opts *options) error
+
+// PkgSuiteAsOpt injects an implementation of primitives, providers and clients into the SDK.
+// Curated implementations are held under the def folder.
+func PkgSuiteAsOpt(pkgSuite apisdk.PkgSuite) Option {
+	return func(opts *options) error {
 		if pkgSuite.Core != nil {
-			sdk.pkgSuite.Core = pkgSuite.Core
+			opts.pkgSuite.Core = pkgSuite.Core
 		}
 		if pkgSuite.Service != nil {
-			sdk.pkgSuite.Service = pkgSuite.Service
+			opts.pkgSuite.Service = pkgSuite.Service
 		}
 		if pkgSuite.Context != nil {
-			sdk.pkgSuite.Context = pkgSuite.Context
+			opts.pkgSuite.Context = pkgSuite.Context
 		}
 		if pkgSuite.Session != nil {
-			sdk.pkgSuite.Session = pkgSuite.Session
+			opts.pkgSuite.Session = pkgSuite.Session
 		}
 		if pkgSuite.Logger != nil {
-			sdk.pkgSuite.Logger = pkgSuite.Logger
+			opts.pkgSuite.Logger = pkgSuite.Logger
 		}
 
-		return sdk, nil
+		return nil
 	}
 }
 
-// ConfigFile sets the SDK to use configFile for loading configuration
-func ConfigFile(configFile string) SDKOption {
-	return func(sdk *FabricSDK) (*FabricSDK, error) {
-		sdk.opts.ConfigFile = configFile
-		return sdk, nil
+// ConfigFile sets the SDK to use the named file for loading configuration.
+func ConfigFile(name string) Option {
+	return func(opts *options) error {
+		opts.config.FileName = name
+		return nil
 	}
 }
 
-// ConfigBytes sets the SDK to load configuration from the passed bytes
-func ConfigBytes(configBytes []byte, configType string) SDKOption {
-	return func(sdk *FabricSDK) (*FabricSDK, error) {
-		sdk.opts.ConfigBytes = configBytes
-		sdk.opts.ConfigType = configType
-		return sdk, nil
+// ConfigRaw sets the SDK to load configuration from the passed bytes.
+func ConfigRaw(raw []byte, format string) Option {
+	return func(opts *options) error {
+		opts.config.Raw = raw
+		opts.config.Format = format
+		return nil
 	}
 }
 
-// StateStorePath sets the SDK to use path when configuring the state store
-func StateStorePath(path string) SDKOption {
-	return func(sdk *FabricSDK) (*FabricSDK, error) {
-		sdk.stateStoreOpts.Path = path
-		return sdk, nil
+// WithStateStorePath sets the SDK to use path when configuring the state store.
+func WithStateStorePath(path string) Option {
+	return func(opts *options) error {
+		opts.stateStore.Path = path
+		return nil
 	}
 }
 
@@ -113,81 +117,83 @@ type ProviderInit interface {
 	Initialize(sdk *FabricSDK) error
 }
 
-// New initializes the SDK based on the set of options provided
+// New initializes the SDK based on the set of options provided.
 // A package suite containing the SDK implementation must be provided as an option.
 // For example using the basic defaults: defpkgsuite.SDKOpt() in def/pkgsuite/defpkgsuite:
 // fabsdk.New(defpkgsuite.SDKOpt())
-func New(options ...SDKOption) (*FabricSDK, error) {
+func New(opts ...Option) (*FabricSDK, error) {
 	sdk := FabricSDK{
-		pkgSuite:       apisdk.PkgSuite{},
-		opts:           apisdk.SDKOpts{},
-		stateStoreOpts: apisdk.StateStoreOpts{},
+		opts: options{
+			pkgSuite:   apisdk.PkgSuite{},
+			config:     apisdk.ConfigOpts{},
+			stateStore: apisdk.StateStoreOpts{},
+		},
 	}
 
-	for _, option := range options {
-		_, err := option(&sdk)
+	for _, option := range opts {
+		err := option(&sdk.opts)
 		if err != nil {
 			return nil, errors.WithMessage(err, "Error in option passed to New")
 		}
 	}
 
 	// Initialize logging provider with default logging provider (if needed)
-	if sdk.pkgSuite.Logger == nil {
+	if sdk.opts.pkgSuite.Logger == nil {
 		return nil, errors.New("Missing logger from pkg suite")
 	}
-	logging.InitLogger(sdk.pkgSuite.Logger)
+	logging.InitLogger(sdk.opts.pkgSuite.Logger)
 
 	// Initialize default factories (if needed)
-	if sdk.pkgSuite.Core == nil {
+	if sdk.opts.pkgSuite.Core == nil {
 		return nil, errors.New("Missing core from pkg suite")
 	}
-	if sdk.pkgSuite.Service == nil {
+	if sdk.opts.pkgSuite.Service == nil {
 		return nil, errors.New("Missing service from pkg suite")
 	}
-	if sdk.pkgSuite.Context == nil {
+	if sdk.opts.pkgSuite.Context == nil {
 		return nil, errors.New("Missing context from pkg suite")
 	}
-	if sdk.pkgSuite.Session == nil {
+	if sdk.opts.pkgSuite.Session == nil {
 		return nil, errors.New("Missing session from pkg suite")
 	}
 
 	// Initialize config provider
-	config, err := sdk.pkgSuite.Core.NewConfigProvider(sdk.opts)
+	config, err := sdk.opts.pkgSuite.Core.NewConfigProvider(sdk.opts.config)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize config")
 	}
 	sdk.configProvider = config
 
 	// Initialize crypto provider
-	cryptosuite, err := sdk.pkgSuite.Core.NewCryptoSuiteProvider(sdk.configProvider)
+	cryptosuite, err := sdk.opts.pkgSuite.Core.NewCryptoSuiteProvider(sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize crypto suite")
 	}
 	sdk.cryptoSuite = cryptosuite
 
 	// Initialize state store
-	store, err := sdk.pkgSuite.Core.NewStateStoreProvider(sdk.stateStoreOpts, sdk.configProvider)
+	store, err := sdk.opts.pkgSuite.Core.NewStateStoreProvider(sdk.opts.stateStore, sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize state store")
 	}
 	sdk.stateStore = store
 
 	// Initialize Signing Manager
-	signingMgr, err := sdk.pkgSuite.Core.NewSigningManager(sdk.CryptoSuiteProvider(), sdk.configProvider)
+	signingMgr, err := sdk.opts.pkgSuite.Core.NewSigningManager(sdk.CryptoSuiteProvider(), sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize signing manager")
 	}
 	sdk.signingManager = signingMgr
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.pkgSuite.Core.NewFabricProvider(sdk.configProvider, sdk.stateStore, sdk.cryptoSuite, sdk.signingManager)
+	fabricProvider, err := sdk.opts.pkgSuite.Core.NewFabricProvider(sdk.configProvider, sdk.stateStore, sdk.cryptoSuite, sdk.signingManager)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
 	sdk.fabricProvider = fabricProvider
 
 	// Initialize discovery provider
-	discoveryProvider, err := sdk.pkgSuite.Service.NewDiscoveryProvider(sdk.configProvider)
+	discoveryProvider, err := sdk.opts.pkgSuite.Service.NewDiscoveryProvider(sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize discovery provider")
 	}
@@ -197,7 +203,7 @@ func New(options ...SDKOption) (*FabricSDK, error) {
 	sdk.discoveryProvider = discoveryProvider
 
 	// Initialize selection provider (for selecting endorsing peers)
-	selectionProvider, err := sdk.pkgSuite.Service.NewSelectionProvider(sdk.configProvider)
+	selectionProvider, err := sdk.opts.pkgSuite.Service.NewSelectionProvider(sdk.configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to initialize selection provider")
 	}
@@ -246,12 +252,12 @@ func (sdk *FabricSDK) FabricProvider() apicore.FabricProvider {
 
 // NewContext creates a context from an org
 func (sdk *FabricSDK) NewContext(orgID string) (*OrgContext, error) {
-	return newOrgContext(sdk.pkgSuite.Context, orgID, sdk.configProvider)
+	return newOrgContext(sdk.opts.pkgSuite.Context, orgID, sdk.configProvider)
 }
 
 // NewSession creates a session from a context and a user (TODO)
 func (sdk *FabricSDK) NewSession(c apisdk.Org, user apifabclient.User) (*Session, error) {
-	return newSession(user, sdk.pkgSuite.Session), nil
+	return newSession(user, sdk.opts.pkgSuite.Session), nil
 }
 
 // NewSystemClient returns a new client for the system (operations not on a channel)
@@ -296,7 +302,7 @@ func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *Channel
 		configProvider = opt.ConfigProvider
 	}
 
-	client, err := sdk.pkgSuite.Session.NewChannelMgmtClient(sdk, session, configProvider)
+	client, err := sdk.opts.pkgSuite.Session.NewChannelMgmtClient(sdk, session, configProvider)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create new channel management client")
 	}
@@ -339,7 +345,7 @@ func (sdk *FabricSDK) NewResourceMgmtClientWithOpts(userName string, opt *Resour
 		configProvider = opt.ConfigProvider
 	}
 
-	client, err := sdk.pkgSuite.Session.NewResourceMgmtClient(sdk, session, configProvider, opt.TargetFilter)
+	client, err := sdk.opts.pkgSuite.Session.NewResourceMgmtClient(sdk, session, configProvider, opt.TargetFilter)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to created new resource management client")
 	}
@@ -382,7 +388,7 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 		configProvider = opt.ConfigProvider
 	}
 
-	client, err := sdk.pkgSuite.Session.NewChannelClient(sdk, session, configProvider, channelID)
+	client, err := sdk.opts.pkgSuite.Session.NewChannelClient(sdk, session, configProvider, channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to created new channel client")
 	}
@@ -394,7 +400,7 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 // TODO: Rename this func to NewUser
 func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabclient.User, error) {
 
-	credentialMgr, err := sdk.pkgSuite.Context.NewCredentialManager(orgID, sdk.ConfigProvider(), sdk.CryptoSuiteProvider())
+	credentialMgr, err := sdk.opts.pkgSuite.Context.NewCredentialManager(orgID, sdk.ConfigProvider(), sdk.CryptoSuiteProvider())
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get credential manager")
 	}

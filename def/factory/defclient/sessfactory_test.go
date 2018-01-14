@@ -188,10 +188,10 @@ func newMockProviders(t *testing.T) *mockProviders {
 	coreFactory := defcore.NewProviderFactory()
 	svcFactory := defsvc.NewProviderFactory()
 
-	sdkOpts := apisdk.SDKOpts{
-		ConfigFile: "../../../test/fixtures/config/config_test.yaml",
+	opts := apisdk.ConfigOpts{
+		FileName: "../../../test/fixtures/config/config_test.yaml",
 	}
-	config, err := coreFactory.NewConfigProvider(sdkOpts)
+	config, err := coreFactory.NewConfigProvider(opts)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

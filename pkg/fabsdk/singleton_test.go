@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
-func dePkgSuiteWithLogger(logger apilogging.LoggerProvider) SDKOption {
+func dePkgSuiteWithLogger(logger apilogging.LoggerProvider) Option {
 	pkgSuite := apisdk.PkgSuite{
 		Core:    defcore.NewProviderFactory(),
 		Service: defsvc.NewProviderFactory(),

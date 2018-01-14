@@ -15,7 +15,7 @@ import (
 func TestSDKOpt(t *testing.T) {
 	opt := SDKOpt()
 
-	_, err := fabsdk.New(opt, fabsdk.ConfigFile("../../../test/fixtures/config/config_test.yaml"))
+	_, err := fabsdk.New(fabsdk.ConfigFile("../../../test/fixtures/config/config_test.yaml"), opt)
 	if err != nil {
 		t.Fatalf("Unexpected error constructing SDK: %v", err)
 	}

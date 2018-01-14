@@ -34,12 +34,12 @@ func NewProviderFactory() *ProviderFactory {
 }
 
 // NewConfigProvider creates a Config using the SDK's default implementation
-func (f *ProviderFactory) NewConfigProvider(sdkOpts apisdk.SDKOpts) (apiconfig.Config, error) {
-	// configBytes takes precedence over configFile
-	if sdkOpts.ConfigBytes != nil && len(sdkOpts.ConfigBytes) > 0 {
-		return configImpl.InitConfigFromBytes(sdkOpts.ConfigBytes, sdkOpts.ConfigType)
+func (f *ProviderFactory) NewConfigProvider(opts apisdk.ConfigOpts) (apiconfig.Config, error) {
+	// raw config takes precedence over configFile
+	if opts.Raw != nil && len(opts.Raw) > 0 {
+		return configImpl.InitConfigFromBytes(opts.Raw, opts.Format)
 	}
-	return configImpl.InitConfig(sdkOpts.ConfigFile)
+	return configImpl.InitConfig(opts.FileName)
 }
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation
