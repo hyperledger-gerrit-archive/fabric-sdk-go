@@ -13,12 +13,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
+	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
-func defPkgSuite() SDKOption {
+func fromPkgSuite() Option {
 	pkgSuite := apisdk.PkgSuite{
 		Core:    defcore.NewProviderFactory(),
 		Service: defsvc.NewProviderFactory(),
@@ -26,43 +27,60 @@ func defPkgSuite() SDKOption {
 		Session: defclient.NewSessionClientFactory(),
 		Logger:  deflogger.LoggerProvider(),
 	}
-	return PkgSuiteAsOpt(pkgSuite)
+	return FromPkgSuite(pkgSuite)
+}
+
+func withConfigFile(name string) Option {
+	config, err := configImpl.InitConfig(name)
+	if err != nil {
+		return ErrorAsOpt(errors.WithMessage(err, "Unable to initialize configuration"))
+	}
+	return WithConfig(config)
+}
+
+// WithConfigRaw sets the SDK to load configuration from the passed bytes.
+func withConfigRaw(raw []byte, format string) Option {
+	config, err := configImpl.InitConfigFromBytes(raw, format)
+	if err != nil {
+		return ErrorAsOpt(errors.WithMessage(err, "Unable to initialize configuration"))
+	}
+	return WithConfig(config)
 }
 
 func TestNewGoodOpt(t *testing.T) {
-	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), goodOpt(), defPkgSuite())
+	_, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite(), goodOpt())
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 }
 
-func goodOpt() SDKOption {
-	return func(sdk *FabricSDK) (*FabricSDK, error) {
-		return sdk, nil
+func goodOpt() Option {
+	return func(opts *options) error {
+		return nil
 	}
 }
 
 func TestNewBadOpt(t *testing.T) {
-	_, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), badOpt(), defPkgSuite())
+	_, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite(), badOpt())
 	if err == nil {
 		t.Fatalf("Expected error from New")
 	}
 }
 
-func badOpt() SDKOption {
-	return func(sdk *FabricSDK) (*FabricSDK, error) {
-		return sdk, errors.New("Bad Opt")
+func badOpt() Option {
+	return func(opts *options) error {
+		return errors.New("Bad Opt")
 	}
 }
 func TestNewDefaultSDK(t *testing.T) {
 	// Test new SDK with invalid config file
-	_, err := New(ConfigFile("../../test/fixtures/config/invalid.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	_, err := New(withConfigFile("../../test/fixtures/config/invalid.yaml"), fromPkgSuite())
 	if err == nil {
 		t.Fatalf("Should have failed for invalid config file")
 	}
 
 	// Test New SDK with valid config file
-	sdk, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	sdk, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite())
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -89,7 +107,7 @@ func TestNewDefaultSDK(t *testing.T) {
 
 func TestNewChannelMgmtClient(t *testing.T) {
 
-	sdk, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	sdk, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite())
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -122,7 +140,7 @@ func TestNewChannelMgmtClient(t *testing.T) {
 
 func TestNewResourceMgmtClient(t *testing.T) {
 
-	sdk, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	sdk, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite())
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -153,12 +171,12 @@ func TestNewResourceMgmtClient(t *testing.T) {
 }
 
 func TestNewDefaultTwoValidSDK(t *testing.T) {
-	sdk1, err := New(ConfigFile("../../test/fixtures/config/config_test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	sdk1, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite())
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
-	sdk2, err := New(ConfigFile("./testdata/test.yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	sdk2, err := New(withConfigFile("./testdata/test.yaml"), fromPkgSuite())
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -212,7 +230,7 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 		t.Fatalf("Failed to load sample bytes from File. Error: %s", err)
 	}
 
-	sdk, err := New(ConfigBytes(cBytes, "yaml"), StateStorePath("/tmp/state"), defPkgSuite())
+	sdk, err := New(withConfigRaw(cBytes, "yaml"), fromPkgSuite())
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -222,7 +240,7 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 	}
 
 	// new SDK expected to panic due to wrong config type which didn't load the configs
-	_, err = New(ConfigBytes(cBytes, "json"), StateStorePath("/tmp/state"), defPkgSuite())
+	_, err = New(withConfigRaw(cBytes, "json"), fromPkgSuite())
 	if err == nil {
 		t.Fatalf("NewSDK should have returned error due to bad config")
 	}
