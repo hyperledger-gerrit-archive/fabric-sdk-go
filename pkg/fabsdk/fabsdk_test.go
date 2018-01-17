@@ -10,52 +10,19 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 )
 
-func fromPkgSuite() Option {
-	pkgSuite := apisdk.PkgSuite{
-		Core:    defcore.NewProviderFactory(),
-		Service: defsvc.NewProviderFactory(),
-		Context: defclient.NewOrgClientFactory(),
-		Session: defclient.NewSessionClientFactory(),
-		Logger:  deflogger.LoggerProvider(),
-	}
-	return FromPkgSuite(pkgSuite)
-}
-
-func withConfigFile(name string) Option {
-	return func(opts *Options) error {
-		config, err := configImpl.InitConfig(name)
-
-		if err != nil {
-			return errors.WithMessage(err, "Unable to initialize configuration")
-		}
-
-		return WithConfig(config)(opts)
-	}
-}
-
-func withConfigRaw(raw []byte, format string) Option {
-	return func(opts *Options) error {
-		config, err := configImpl.InitConfigFromBytes(raw, format)
-
-		if err != nil {
-			return errors.WithMessage(err, "Unable to initialize configuration")
-		}
-
-		return WithConfig(config)(opts)
-	}
-}
-
 func TestNewGoodOpt(t *testing.T) {
-	_, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite(), goodOpt())
+	config, err := configImpl.InitConfig("../../test/fixtures/config/config_test.yaml")
+
+	if err != nil {
+		t.Fatalf("Expected no error, but got %v", err)
+	}
+
+	_, err = New(config, goodOpt())
+
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -68,7 +35,13 @@ func goodOpt() Option {
 }
 
 func TestNewBadOpt(t *testing.T) {
-	_, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite(), badOpt())
+	config, err := configImpl.InitConfig("../../test/fixtures/config/config_test.yaml")
+
+	if err != nil {
+		t.Fatalf("Expected no error, but got %v", err)
+	}
+	_, err = New(config, badOpt())
+
 	if err == nil {
 		t.Fatalf("Expected error from New")
 	}
@@ -81,13 +54,27 @@ func badOpt() Option {
 }
 func TestNewDefaultSDK(t *testing.T) {
 	// Test new SDK with invalid config file
-	_, err := New(withConfigFile("../../test/fixtures/config/invalid.yaml"), fromPkgSuite())
+	config, err := configImpl.InitConfig("../../test/fixtures/config/invalid.yaml")
+
+	if err == nil {
+		t.Fatalf("Should have failed for invalid config file")
+	}
+
+	_, err = New(config)
+
 	if err == nil {
 		t.Fatalf("Should have failed for invalid config file")
 	}
 
 	// Test New SDK with valid config file
-	sdk, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite())
+	config2, err := configImpl.InitConfig("../../test/fixtures/config/config_test.yaml")
+
+	if err != nil {
+		t.Fatalf("Expected no error, but got %v", err)
+	}
+
+	sdk, err := New(config2)
+
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -113,8 +100,14 @@ func TestNewDefaultSDK(t *testing.T) {
 }
 
 func TestNewChannelMgmtClient(t *testing.T) {
+	config, err := configImpl.InitConfig("../../test/fixtures/config/config_test.yaml")
 
-	sdk, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite())
+	if err != nil {
+		t.Fatalf("Expected no error, but got %v", err)
+	}
+
+	sdk, err := New(config)
+
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -146,8 +139,14 @@ func TestNewChannelMgmtClient(t *testing.T) {
 }
 
 func TestNewResourceMgmtClient(t *testing.T) {
+	config, err := configImpl.InitConfig("../../test/fixtures/config/config_test.yaml")
 
-	sdk, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite())
+	if err != nil {
+		t.Fatalf("Expected no error, but got %v", err)
+	}
+
+	sdk, err := New(config)
+
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -178,12 +177,26 @@ func TestNewResourceMgmtClient(t *testing.T) {
 }
 
 func TestNewDefaultTwoValidSDK(t *testing.T) {
-	sdk1, err := New(withConfigFile("../../test/fixtures/config/config_test.yaml"), fromPkgSuite())
+	config, err := configImpl.InitConfig("../../test/fixtures/config/config_test.yaml")
+
+	if err != nil {
+		t.Fatalf("Expected no error, but got %v", err)
+	}
+
+	sdk1, err := New(config)
+
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
-	sdk2, err := New(withConfigFile("./testdata/test.yaml"), fromPkgSuite())
+	config2, err := configImpl.InitConfig("./testdata/test.yaml")
+
+	if err != nil {
+		t.Fatalf("Expected no error, but got %v", err)
+	}
+
+	sdk2, err := New(config2)
+
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -237,7 +250,13 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 		t.Fatalf("Failed to load sample bytes from File. Error: %s", err)
 	}
 
-	sdk, err := New(withConfigRaw(cBytes, "yaml"), fromPkgSuite())
+	config, err := configImpl.InitConfigFromBytes(cBytes, "yaml")
+
+	if err != nil {
+		t.Fatalf("Error loading config: %s", err)
+	}
+
+	sdk, err := New(config)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -247,7 +266,10 @@ func TestNewDefaultSDKFromByte(t *testing.T) {
 	}
 
 	// new SDK expected to panic due to wrong config type which didn't load the configs
-	_, err = New(withConfigRaw(cBytes, "json"), fromPkgSuite())
+	config2, _ := configImpl.InitConfigFromBytes(cBytes, "json")
+
+	_, err = New(config2)
+
 	if err == nil {
 		t.Fatalf("NewSDK should have returned error due to bad config")
 	}

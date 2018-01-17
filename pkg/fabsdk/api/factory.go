@@ -11,7 +11,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
@@ -45,22 +44,3 @@ type SessionClientFactory interface {
 	NewResourceMgmtClient(context SDK, session Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
 	NewChannelClient(context SDK, session Session, config apiconfig.Config, channelID string) (txn.ChannelClient, error)
 }
-
-// PkgSuite holds the package factories that create clients and providers
-type PkgSuite struct {
-	Core    CoreProviderFactory
-	Service ServiceProviderFactory
-	Context OrgClientFactory
-	Session SessionClientFactory
-	Logger  apilogging.LoggerProvider
-}
-
-/*
-type PkgSuite interface {
-	Core()    (CoreProviderFactory, error)
-	Service() (ServiceProviderFactory, error)
-	Context() (OrgClientFactory, error)
-	Session() (SessionClientFactory, error)
-	Logger()  (apilogging.LoggerProvider, error)
-}
-*/

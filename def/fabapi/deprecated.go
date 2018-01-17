@@ -8,15 +8,13 @@ SPDX-License-Identifier: Apache-2.0
 package fabapi
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defcore"
-	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
-	"github.com/hyperledger/fabric-sdk-go/def/pkgsuite/defpkgsuite"
+	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
 	"github.com/pkg/errors"
 )
 
@@ -46,13 +44,25 @@ type StateStoreOpts struct {
 	Path string
 }
 
-func configSDKOpt(options *Options) (fabsdk.Option, error) {
+func optionsToSDKConfig(options *Options) (apiconfig.Config, error) {
 	if options.ConfigByte != nil {
-		return defpkgsuite.WithConfigRaw(options.ConfigByte, options.ConfigType), nil
+		config, err := configImpl.InitConfigFromBytes(options.ConfigByte, options.ConfigType)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return config, nil
 	}
 
 	if options.ConfigFile != "" {
-		return defpkgsuite.WithConfigFile(options.ConfigFile), nil
+		config, err := configImpl.InitConfig(options.ConfigFile)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return config, nil
 	}
 
 	return nil, errors.New("No configuration provided")
@@ -61,14 +71,13 @@ func configSDKOpt(options *Options) (fabsdk.Option, error) {
 // NewSDK wraps the NewSDK func moved to the pkg folder.
 // Notice: this wrapper is deprecated and will be removed.
 func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
-	configOpt, err := configSDKOpt(&options)
+	config, err := optionsToSDKConfig(&options)
+
 	if err != nil {
 		return nil, err
 	}
 
-	sdk, err := fabsdk.New(
-		configOpt,
-		pkgSuiteFromOptions(options))
+	sdk, err := fabsdk.New(config, optionsToSDKOptions(options)...)
 
 	if err != nil {
 		return nil, err
@@ -79,40 +88,34 @@ func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
 	return sdk, nil
 }
 
-func pkgSuiteFromOptions(options Options) fabsdk.Option {
-	impl := apisdk.PkgSuite{}
+func optionsToSDKOptions(options Options) []fabsdk.Option {
+	var opts []fabsdk.Option
+
 	if options.CoreFactory != nil {
-		impl.Core = options.CoreFactory
+		opts = append(opts, fabsdk.WithCoreProvider(options.CoreFactory))
 	} else {
 		stateStoreOpts := defcore.StateStoreOptsDeprecated{
 			Path: options.StateStoreOpts.Path,
 		}
-		impl.Core = defcore.NewProviderFactoryDeprecated(stateStoreOpts)
+
+		opts = append(opts, fabsdk.WithCoreProvider(defcore.NewProviderFactoryDeprecated(stateStoreOpts)))
 	}
 
 	if options.ServiceFactory != nil {
-		impl.Service = options.ServiceFactory
-	} else {
-		impl.Service = defsvc.NewProviderFactory()
+		opts = append(opts, fabsdk.WithServiceProvider(options.ServiceFactory))
 	}
 
 	if options.ContextFactory != nil {
-		impl.Context = options.ContextFactory
-	} else {
-		impl.Context = defclient.NewOrgClientFactory()
+		opts = append(opts, fabsdk.WithContextProvider(options.ContextFactory))
 	}
 
 	if options.SessionFactory != nil {
-		impl.Session = options.SessionFactory
-	} else {
-		impl.Session = defclient.NewSessionClientFactory()
+		opts = append(opts, fabsdk.WithSessionProvider(options.SessionFactory))
 	}
 
 	if options.LoggerFactory != nil {
-		impl.Logger = options.LoggerFactory
-	} else {
-		impl.Logger = deflogger.LoggerProvider()
+		opts = append(opts, fabsdk.WithLoggerProvider(options.LoggerFactory))
 	}
 
-	return fabsdk.FromPkgSuite(impl)
+	return opts
 }
