@@ -15,7 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modulledlogger"
 )
 
 func defPkgSuite() SDKOption {
@@ -24,7 +24,7 @@ func defPkgSuite() SDKOption {
 		Service: defsvc.NewProviderFactory(),
 		Context: defclient.NewOrgClientFactory(),
 		Session: defclient.NewSessionClientFactory(),
-		Logger:  deflogger.LoggerProvider(),
+		Logger:  modulledlogger.LoggerProvider(),
 	}
 	return PkgSuiteAsOpt(pkgSuite)
 }
