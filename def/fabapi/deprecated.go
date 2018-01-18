@@ -15,7 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/moduled"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -91,7 +91,7 @@ func pkgSuiteFromOptions(options Options) fabsdk.SDKOption {
 	if options.LoggerFactory != nil {
 		impl.Logger = options.LoggerFactory
 	} else {
-		impl.Logger = deflogger.LoggerProvider()
+		impl.Logger = moduled.LoggerProvider()
 	}
 
 	return fabsdk.PkgSuiteAsOpt(impl)

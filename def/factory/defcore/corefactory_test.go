@@ -21,7 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/moduled"
 )
 
 func TestNewConfigProvider(t *testing.T) {
@@ -188,7 +188,7 @@ func TestNewFactoryFabricProvider(t *testing.T) {
 func TestNewLoggingProvider(t *testing.T) {
 	logger := NewLoggerProvider()
 
-	_, ok := logger.(*deflogger.Provider)
+	_, ok := logger.(*moduled.Provider)
 	if !ok {
 		t.Fatalf("Unexpected logger provider created")
 	}

@@ -13,7 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/def/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	sdkapi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/moduled"
 )
 
 // SDKOpt provides the default implementation for the SDK
@@ -27,7 +27,7 @@ func newPkgSuite() sdkapi.PkgSuite {
 		Service: defsvc.NewProviderFactory(),
 		Context: defclient.NewOrgClientFactory(),
 		Session: defclient.NewSessionClientFactory(),
-		Logger:  deflogger.LoggerProvider(),
+		Logger:  moduled.LoggerProvider(),
 	}
 	return pkgSuite
 }
