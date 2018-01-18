@@ -20,7 +20,7 @@ import (
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/deflogger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
 // ProviderFactory represents the default SDK provider factory.
@@ -79,5 +79,5 @@ func (f *ProviderFactory) NewFabricProvider(config apiconfig.Config, stateStore 
 // NewLoggerProvider returns a new default implementation of a logger backend
 // This function is separated from the factory to allow logger creation first.
 func NewLoggerProvider() apilogging.LoggerProvider {
-	return deflogger.LoggerProvider()
+	return modlog.LoggerProvider()
 }
