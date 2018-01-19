@@ -19,12 +19,8 @@ const (
 )
 
 func TestWithUserValid(t *testing.T) {
-	c, err := configImpl.FromFile(identityOptConfigFile)
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(
+		WithConfig(configImpl.FromFile(identityOptConfigFile)))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -41,12 +37,8 @@ func TestWithUserValid(t *testing.T) {
 }
 
 func TestWithUserInvalid(t *testing.T) {
-	c, err := configImpl.FromFile(identityOptConfigFile)
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(
+		WithConfig(configImpl.FromFile(identityOptConfigFile)))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -63,12 +55,8 @@ func TestWithUserInvalid(t *testing.T) {
 }
 
 func TestWithIdentity(t *testing.T) {
-	c, err := configImpl.FromFile(identityOptConfigFile)
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	sdk, err := New(c)
+	sdk, err := New(
+		WithConfig(configImpl.FromFile(identityOptConfigFile)))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
