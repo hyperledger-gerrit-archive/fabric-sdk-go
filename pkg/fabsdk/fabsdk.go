@@ -49,9 +49,45 @@ type ProviderInit interface {
 	Initialize(sdk *FabricSDK) error
 }
 
+type configOptions struct {
+	ok     bool
+	config apiconfig.Config
+}
+
+// ConfigOption provides parameters for creating a session (primarily from a fabric identity/user)
+type ConfigOption func(*configOptions) error
+
+func newConfig(options ...ConfigOption) (apiconfig.Config, error) {
+	opts := configOptions{}
+
+	for _, option := range options {
+		err := option(&opts)
+		if err != nil {
+			return nil, errors.WithMessage(err, "Error in option passed to client")
+		}
+	}
+
+	if !opts.ok {
+		return nil, errors.New("Missing configuration")
+	}
+
+	return opts.config, nil
+}
+
 // New initializes the SDK based on the set of options provided.
 // configProvider provides the application configuration and is required.
-func New(configProvider apiconfig.Config, opts ...Option) (*FabricSDK, error) {
+func New(configOpt ConfigOption, opts ...Option) (*FabricSDK, error) {
+	pkgSuite := defPkgSuite{}
+	configProvider, err := newConfig(configOpt)
+	if err != nil {
+		return nil, errors.New("unable to load configuration")
+	}
+	return fromPkgSuite(configProvider, &pkgSuite, opts...)
+}
+
+// FromConfig initializes the SDK based on the set of options provided.
+// configProvider provides the application configuration and is required.
+func FromConfig(configProvider apiconfig.Config, opts ...Option) (*FabricSDK, error) {
 	pkgSuite := defPkgSuite{}
 	return fromPkgSuite(configProvider, &pkgSuite, opts...)
 }
@@ -101,6 +137,22 @@ func fromPkgSuite(configProvider apiconfig.Config, pkgSuite apisdk.PkgSuite, opt
 	}
 
 	return &sdk, err
+}
+
+// WithConfig provides the configuration to the SDK
+func WithConfig(config apiconfig.Config, err error) ConfigOption {
+	return func(o *configOptions) error {
+		if err != nil {
+			return err
+		}
+
+		if o.ok {
+			return errors.New("Config already determined")
+		}
+		o.config = config
+		o.ok = true
+		return nil
+	}
 }
 
 // WithCorePkg injects the core implementation into the SDK.

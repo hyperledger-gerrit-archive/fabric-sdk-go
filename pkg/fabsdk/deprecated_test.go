@@ -25,7 +25,7 @@ func TestNewChannelMgmtWithOptsClient(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -62,7 +62,7 @@ func TestNewResourceMgmtWithOptsClient(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -98,7 +98,7 @@ func TestNewPreEnrolledUserSession(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

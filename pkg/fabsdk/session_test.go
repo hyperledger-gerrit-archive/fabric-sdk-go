@@ -24,7 +24,7 @@ func TestWithUserValid(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -46,7 +46,7 @@ func TestWithUserInvalid(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -68,7 +68,7 @@ func TestWithIdentity(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
