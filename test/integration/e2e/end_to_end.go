@@ -46,7 +46,7 @@ func runWithConfigFixture(t *testing.T) {
 // Run enables testing an end-to-end scenario against the supplied SDK options
 func Run(t *testing.T, config apiconfig.Config, sdkOpts ...fabsdk.Option) {
 
-	sdk, err := fabsdk.New(config, sdkOpts...)
+	sdk, err := fabsdk.FromConfig(config, sdkOpts...)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
