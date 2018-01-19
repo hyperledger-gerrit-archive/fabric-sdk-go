@@ -16,6 +16,7 @@ import (
 
 const (
 	clientConfigFile     = "testdata/test.yaml"
+	clientValidAdmin     = "Admin"
 	clientValidUser      = "User1"
 	clientValidExtraOrg  = "OrgX"
 	clientValidExtraUser = "OrgXUser"
@@ -174,7 +175,7 @@ func TestNewChannelMgmtClient(t *testing.T) {
 	}
 
 	// Test valid configuration for channel management client
-	_, err = sdk.NewChannelMgmtClient(txValidClientAdmin)
+	_, err = sdk.NewChannelMgmtClient(clientValidAdmin)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -198,7 +199,7 @@ func TestNewResourceMgmtClient(t *testing.T) {
 	}
 
 	// Test valid configuration for resource management client
-	_, err = sdk.NewResourceMgmtClient(txValidClientAdmin)
+	_, err = sdk.NewResourceMgmtClient(clientValidAdmin)
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}

@@ -51,9 +51,15 @@ func Run(t *testing.T, config apiconfig.Config, sdkOpts ...fabsdk.Option) {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
 
+	// Client provides access to APIs for transacting with Fabric
+	clientOrderer, err := sdk.Client(fabsdk.FromName("Admin"), fabsdk.WithOrg("ordererorg"))
+	if err != nil {
+		t.Fatalf("Failed to create client: %s", err)
+	}
+
 	// Channel management client is responsible for managing channels (create/update channel)
 	// Supply user that has privileges to create channel (in this case orderer admin)
-	chMgmtClient, err := sdk.NewChannelMgmtClientWithOpts("Admin", &fabsdk.ChannelMgmtClientOpts{OrgName: "ordererorg"})
+	chMgmtClient, err := clientOrderer.ChannelMgmt()
 	if err != nil {
 		t.Fatalf("Failed to create channel management client: %s", err)
 	}
@@ -73,8 +79,14 @@ func Run(t *testing.T, config apiconfig.Config, sdkOpts ...fabsdk.Option) {
 	// Allow orderer to process channel creation
 	time.Sleep(time.Second * 3)
 
-	// Org resource management client (Org1 is default org)
-	orgResMgmt, err := sdk.NewResourceMgmtClient(orgAdmin)
+	// Client provides access to APIs for transacting with Fabric (Org1 is default org)
+	adminClient, err := sdk.Client(fabsdk.FromName(orgAdmin))
+	if err != nil {
+		t.Fatalf("Failed to create client: %s", err)
+	}
+
+	// Org resource management client
+	orgResMgmt, err := adminClient.ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
@@ -108,8 +120,14 @@ func Run(t *testing.T, config apiconfig.Config, sdkOpts ...fabsdk.Option) {
 
 	// ************ Test setup complete ************** //
 
+	// Client provides access to APIs for transacting with Fabric (Org1 is default org)
+	client, err := sdk.Client(fabsdk.FromName("User1"))
+	if err != nil {
+		t.Fatalf("Failed to create client: %s", err)
+	}
+
 	// Channel client is used to query and execute transactions
-	chClient, err := sdk.NewChannelClient(channelID, "User1")
+	chClient, err := client.Channel(channelID)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
