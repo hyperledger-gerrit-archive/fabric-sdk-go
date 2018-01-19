@@ -7,15 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
+/*
 // ChannelClientOpts provides options for creating channel client
 type ChannelClientOpts struct {
 	OrgName        string
@@ -33,14 +29,6 @@ type ResourceMgmtClientOpts struct {
 	OrgName        string
 	TargetFilter   resmgmt.TargetFilter
 	ConfigProvider apiconfig.Config
-}
-
-// NewSystemClient returns a new client for the system (operations not on a channel)
-// TODO: Reduced immutable interface
-// TODO: Parameter for setting up the peers
-// This function is deprecated.
-func (sdk *FabricSDK) NewSystemClient(s apisdk.Session) (apifabclient.FabricClient, error) {
-	return sdk.FabricProvider().NewClient(s.Identity())
 }
 
 // NewChannelMgmtClient returns a new client for managing channels
@@ -134,6 +122,15 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 	}
 
 	return c.Channel(channelID)
+}
+*/
+
+// NewSystemClient returns a new client for the system (operations not on a channel)
+// TODO: Reduced immutable interface
+// TODO: Parameter for setting up the peers
+// This function is deprecated.
+func (sdk *FabricSDK) NewSystemClient(s apisdk.Session) (apifabclient.FabricClient, error) {
+	return sdk.FabricProvider().NewClient(s.Identity())
 }
 
 // NewPreEnrolledUserSession returns a new pre-enrolled user session

@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package fabsdk
 
+/*
 import (
 	"testing"
 
@@ -113,3 +114,4 @@ func TestNewPreEnrolledUserSession(t *testing.T) {
 		t.Fatal("Expected error loading user session from fake org")
 	}
 }
+*/
