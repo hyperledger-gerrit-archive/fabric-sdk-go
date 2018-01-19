@@ -348,7 +348,10 @@ func TestDynamicSelection(t *testing.T) {
 	}
 
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(config, fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []ChannelUser{mychannelUser}}))
+	// TODO: To make this cleaner, either use FromConfig or have another WithConfig without the error argument.
+	sdk, err := fabsdk.New(
+		fabsdk.WithConfig(config, nil),
+		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []ChannelUser{mychannelUser}}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

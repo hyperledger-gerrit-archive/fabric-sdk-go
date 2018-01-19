@@ -49,9 +49,29 @@ type ProviderInit interface {
 	Initialize(sdk *FabricSDK) error
 }
 
+type configOptions struct {
+	ok     bool
+	config apiconfig.Config
+}
+
+// ConfigOption provides parameters for creating a session (primarily from a fabric identity/user)
+type ConfigOption func(*configOptions) error
+
 // New initializes the SDK based on the set of options provided.
 // configProvider provides the application configuration and is required.
-func New(configProvider apiconfig.Config, opts ...Option) (*FabricSDK, error) {
+func New(configOpt ConfigOption, opts ...Option) (*FabricSDK, error) {
+	pkgSuite := defPkgSuite{}
+	configProvider, err := newConfig(configOpt)
+	if err != nil {
+		return nil, errors.New("unable to load configuration")
+	}
+	return fromPkgSuite(configProvider, &pkgSuite, opts...)
+}
+
+// fromConfig initializes the SDK based on the set of options provided.
+// configProvider provides the application configuration and is required.
+// TODO: For now leaving this method as private until we have more feedback.
+func fromConfig(configProvider apiconfig.Config, opts ...Option) (*FabricSDK, error) {
 	pkgSuite := defPkgSuite{}
 	return fromPkgSuite(configProvider, &pkgSuite, opts...)
 }
@@ -101,6 +121,22 @@ func fromPkgSuite(configProvider apiconfig.Config, pkgSuite apisdk.PkgSuite, opt
 	}
 
 	return &sdk, err
+}
+
+// WithConfig provides the configuration to the SDK
+func WithConfig(config apiconfig.Config, err error) ConfigOption {
+	return func(o *configOptions) error {
+		if err != nil {
+			return err
+		}
+
+		if o.ok {
+			return errors.New("Config already determined")
+		}
+		o.config = config
+		o.ok = true
+		return nil
+	}
 }
 
 // WithCorePkg injects the core implementation into the SDK.
@@ -210,6 +246,23 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.selectionProvider = selectionProvider
 
 	return nil
+}
+
+func newConfig(options ...ConfigOption) (apiconfig.Config, error) {
+	opts := configOptions{}
+
+	for _, option := range options {
+		err := option(&opts)
+		if err != nil {
+			return nil, errors.WithMessage(err, "Error in option passed to client")
+		}
+	}
+
+	if !opts.ok {
+		return nil, errors.New("Missing configuration")
+	}
+
+	return opts.config, nil
 }
 
 // ConfigProvider returns the Config provider of sdk.

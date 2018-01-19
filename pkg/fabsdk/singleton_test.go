@@ -21,12 +21,8 @@ func TestDefLoggerFactory(t *testing.T) {
 	// Cleanup logging singleton
 	logging.UnsafeReset()
 
-	c, err := configImpl.FromFile(sdkConfigFile)
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	_, err = New(c)
+	_, err := New(
+		WithConfig(configImpl.FromFile(sdkConfigFile)))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -64,12 +60,8 @@ func TestOptLoggerFactory(t *testing.T) {
 
 	lf := NewMockLoggerFactory()
 
-	c, err := configImpl.FromFile(sdkConfigFile)
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-
-	_, err = New(c, WithLoggerPkg(lf))
+	_, err := New(
+		WithConfig(configImpl.FromFile(sdkConfigFile)))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

@@ -60,13 +60,8 @@ func configFromOptions(options *Options) (apiconfig.Config, error) {
 // NewSDK wraps the NewSDK func moved to the pkg folder.
 // Notice: this wrapper is deprecated and will be removed.
 func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
-	configProvider, err := configFromOptions(&options)
-	if err != nil {
-		return nil, err
-	}
-
 	sdk, err := fabsdk.New(
-		configProvider,
+		fabsdk.WithConfig(configFromOptions(&options)),
 		sdkOptionsFromDeprecatedOptions(options)...)
 
 	if err != nil {
