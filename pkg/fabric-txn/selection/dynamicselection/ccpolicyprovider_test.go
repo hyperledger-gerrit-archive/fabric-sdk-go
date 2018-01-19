@@ -20,7 +20,7 @@ func TestCCPolicyProvider(t *testing.T) {
 		t.Fatalf("Failed to load config: %s", err)
 	}
 
-	sdk, err := fabsdk.New(c)
+	sdk, err := fabsdk.FromConfig(c)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

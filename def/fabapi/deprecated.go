@@ -65,7 +65,7 @@ func NewSDK(options Options) (*fabsdk.FabricSDK, error) {
 		return nil, err
 	}
 
-	sdk, err := fabsdk.New(
+	sdk, err := fabsdk.FromConfig(
 		configProvider,
 		sdkOptionsFromDeprecatedOptions(options)...)
 

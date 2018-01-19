@@ -22,13 +22,25 @@ const (
 	clientValidExtraUser = "OrgXUser"
 )
 
+func TestSimpleNewGoodClientOpt(t *testing.T) {
+	sdk, err := New(WithConfig(configImpl.FromFile(clientConfigFile)))
+	if err != nil {
+		t.Fatalf("Expected no error from New, but got %v", err)
+	}
+
+	_, err = sdk.NewClient(WithUser(clientValidUser), goodClientOpt())
+	if err != nil {
+		t.Fatalf("Expected no error from Client, but got %v", err)
+	}
+}
+
 func TestNewGoodClientOpt(t *testing.T) {
 	c, err := configImpl.FromFile(clientConfigFile)
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -51,7 +63,7 @@ func TestNewBadClientOpt(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -74,7 +86,7 @@ func TestClient(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -91,7 +103,7 @@ func TestWithOrg(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -146,7 +158,7 @@ func TestNoIdentity(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
@@ -163,7 +175,7 @@ func TestNewChannelMgmtClient(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -187,7 +199,7 @@ func TestNewResourceMgmtClient(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	sdk, err := New(c)
+	sdk, err := FromConfig(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

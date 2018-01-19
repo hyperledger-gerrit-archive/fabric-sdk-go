@@ -26,7 +26,7 @@ func TestDefLoggerFactory(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	_, err = New(c)
+	_, err = FromConfig(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -69,7 +69,7 @@ func TestOptLoggerFactory(t *testing.T) {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}
 
-	_, err = New(c, WithLoggerPkg(lf))
+	_, err = FromConfig(c, WithLoggerPkg(lf))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}

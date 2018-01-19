@@ -86,12 +86,8 @@ func ExampleCCUpgradeArgs() [][]byte {
 // Initialize reads configuration from file and sets up client, channel and event hub
 func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	// Create SDK setup for the integration tests
-	c, err := config.FromFile(setup.ConfigFile)
-	if err != nil {
-		t.Fatalf("Failed to load config: %s", err)
-	}
-
-	sdk, err := fabsdk.New(c)
+	sdk, err := fabsdk.New(
+		fabsdk.WithConfig(config.FromFile(setup.ConfigFile)))
 	if err != nil {
 		return errors.WithMessage(err, "SDK init failed")
 	}
