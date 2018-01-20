@@ -46,12 +46,12 @@ type eventsClient struct {
 	TLSServerHostOverride  string
 	tlsCertHash            []byte
 	clientConn             *grpc.ClientConn
-	client                 fab.FabricClient
+	client                 fab.SystemClient
 	processEventsCompleted chan struct{}
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(client fab.FabricClient, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
+func NewEventsClient(client fab.SystemClient, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond
@@ -99,10 +99,7 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 	ec.Lock()
 	defer ec.Unlock()
 
-	user, err := ec.client.LoadUserFromStateStore("")
-	if err != nil {
-		return errors.WithMessage(err, "LoadUserFromStateStore failed")
-	}
+	user := ec.client.UserContext()
 	payload, err := proto.Marshal(emsg)
 	if err != nil {
 		return errors.Wrap(err, "marshal event failed")

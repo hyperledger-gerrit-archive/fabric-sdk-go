@@ -176,7 +176,7 @@ func testQueryBlock(t *testing.T, channel fab.Channel) {
 
 }
 
-func testQueryChannels(t *testing.T, channel fab.Channel, client fab.FabricClient) {
+func testQueryChannels(t *testing.T, channel fab.Channel, client fab.SystemClient) {
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
@@ -192,7 +192,7 @@ func testQueryChannels(t *testing.T, channel fab.Channel, client fab.FabricClien
 
 }
 
-func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.FabricClient, testSetup *integration.BaseSetupImpl) {
+func testInstalledChaincodes(t *testing.T, channel fab.Channel, client fab.SystemClient, testSetup *integration.BaseSetupImpl) {
 
 	// Our target will be primary peer on this channel
 	target := channel.PrimaryPeer()
