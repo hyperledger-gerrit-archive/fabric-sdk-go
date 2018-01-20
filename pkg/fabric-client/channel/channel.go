@@ -56,8 +56,7 @@ func NewChannel(name string, client fab.FabricClient) (*Channel, error) {
 	o := make(map[string]fab.Orderer)
 	c := Channel{name: name, peers: p,
 		orderers: o, clientContext: client, mspManager: msp.NewMSPManager()}
-	logger.Infof("Constructed channel instance for channel %s", c.name)
-	logger.Debugf("Constructed channel instance: %V", c)
+	logger.Debugf("Constructed channel instance for channel %s: %v", c.name, c)
 
 	return &c, nil
 }

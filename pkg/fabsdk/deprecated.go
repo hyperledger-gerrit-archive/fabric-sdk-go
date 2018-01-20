@@ -1,3 +1,5 @@
+// +build deprecated
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -8,7 +10,7 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
@@ -16,21 +18,24 @@ import (
 )
 
 // ChannelClientOpts provides options for creating channel client
-// This struct is deprecated.
+//
+// Deprecated: Use NewClient instead.
 type ChannelClientOpts struct {
 	OrgName        string
 	ConfigProvider apiconfig.Config
 }
 
 // ChannelMgmtClientOpts provides options for creating channel management client
-// This struct is deprecated.
+//
+// Deprecated: Use NewClient instead.
 type ChannelMgmtClientOpts struct {
 	OrgName        string
 	ConfigProvider apiconfig.Config
 }
 
 // ResourceMgmtClientOpts provides options for creating resource management client
-// This struct is deprecated.
+//
+// Deprecated: Use NewClient instead.
 type ResourceMgmtClientOpts struct {
 	OrgName        string
 	TargetFilter   resmgmt.TargetFilter
@@ -38,7 +43,8 @@ type ResourceMgmtClientOpts struct {
 }
 
 // NewChannelMgmtClientWithOpts returns a new client for managing channels with options
-// This function is deprecated.
+//
+// Deprecated: Use NewClient instead.
 func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *ChannelMgmtClientOpts) (chmgmt.ChannelMgmtClient, error) {
 	o := []ClientOption{}
 	if opt.OrgName != "" {
@@ -53,7 +59,8 @@ func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *Channel
 }
 
 // NewResourceMgmtClientWithOpts returns a new resource management client (user has to be pre-enrolled)
-// This function is deprecated.
+//
+// Deprecated: Use NewClient instead.
 func (sdk *FabricSDK) NewResourceMgmtClientWithOpts(userName string, opt *ResourceMgmtClientOpts) (resmgmt.ResourceMgmtClient, error) {
 	o := []ClientOption{}
 	if opt.OrgName != "" {
@@ -71,7 +78,8 @@ func (sdk *FabricSDK) NewResourceMgmtClientWithOpts(userName string, opt *Resour
 }
 
 // NewChannelClientWithOpts returns a new client for a channel (user has to be pre-enrolled)
-// This function is deprecated.
+//
+// Deprecated: Use NewClient instead.
 func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string, opt *ChannelClientOpts) (apitxn.ChannelClient, error) {
 	o := []ClientOption{}
 	if opt.OrgName != "" {
@@ -86,36 +94,39 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 }
 
 // NewChannelMgmtClient returns a new client for managing channels
-// This function is deprecated.
+//
+// Deprecated: Use NewClient instead.
 func (sdk *FabricSDK) NewChannelMgmtClient(userName string, opts ...ClientOption) (chmgmt.ChannelMgmtClient, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.ChannelMgmt()
 }
 
 // NewResourceMgmtClient returns a new client for managing system resources
-// This function is deprecated.
+//
+// Deprecated: Use NewClient instead.
 func (sdk *FabricSDK) NewResourceMgmtClient(userName string, opts ...ClientOption) (resmgmt.ResourceMgmtClient, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.ResourceMgmt()
 }
 
 // NewChannelClient returns a new client for a channel
-// This function is deprecated.
+//
+// Deprecated: Use NewClient instead.
 func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts ...ClientOption) (apitxn.ChannelClient, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.Channel(channelID)
 }
 
-// NewSystemClient returns a new client for the system (operations not on a channel)
-// TODO: Reduced immutable interface
-// TODO: Parameter for setting up the peers
-// This function is deprecated.
-func (sdk *FabricSDK) NewSystemClient(s apisdk.Session) (apifabclient.FabricClient, error) {
-	return sdk.FabricProvider().NewClient(s.Identity())
+// NewPreEnrolledUserSession returns a new pre-enrolled user session
+//
+// Deprecated: Use NewClient instead.
+func (sdk *FabricSDK) NewPreEnrolledUserSession(orgID string, id string) (apisdk.Session, error) {
+	return sdk.newSessionFromIdentityName(orgID, id)
 }
 
-// NewPreEnrolledUserSession returns a new pre-enrolled user session
-// This function is deprecated.
-func (sdk *FabricSDK) NewPreEnrolledUserSession(orgID string, id string) (*Session, error) {
-	return sdk.newSessionFromIdentityName(orgID, id)
+// FabricProvider provides fabric objects such as peer and user
+//
+// Deprecated: TBD. Use NewClient instead.
+func (sdk *FabricSDK) FabricProvider() apicore.FabricProvider {
+	return sdk.fabricProvider
 }

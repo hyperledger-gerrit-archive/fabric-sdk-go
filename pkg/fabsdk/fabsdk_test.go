@@ -221,12 +221,13 @@ func TestWithSessionPkg(t *testing.T) {
 	}
 
 	session := newSession(identity)
+	sdkContext := sdk.context()
 
-	cm, err := sessPkg.NewChannelMgmtClient(sdk, session, c)
+	cm, err := sessPkg.NewChannelMgmtClient(sdkContext, session, c)
 	if err != nil {
 		t.Fatalf("Unexpected error getting credential manager: %s", err)
 	}
-	factory.EXPECT().NewChannelMgmtClient(sdk, gomock.Any(), c).Return(cm, nil)
+	factory.EXPECT().NewChannelMgmtClient(sdkContext, gomock.Any(), c).Return(cm, nil)
 
 	// Use a method that invokes credential manager (e.g., new user)
 	_, err = sdk.NewClient(WithUser(sdkValidClientUser)).ChannelMgmt()
