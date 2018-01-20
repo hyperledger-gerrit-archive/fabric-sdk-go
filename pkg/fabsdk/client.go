@@ -35,7 +35,7 @@ type clientProvider func() (*clientContext, error)
 type clientContext struct {
 	opts          *clientOptions
 	identity      apifabclient.User
-	providers     apisdk.SDK
+	providers     apisdk.Providers
 	clientFactory apisdk.SessionClientFactory
 }
 
@@ -69,7 +69,7 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ClientOption
 	// delay execution of the following logic to avoid error return from this function.
 	// this is done to allow a cleaner API - i.e., client, err := sdk.NewClient(args).<Desired Interface>(extra args)
 	provider := func() (*clientContext, error) {
-		o, err := newClientOptions(sdk.ConfigProvider(), opts)
+		o, err := newClientOptions(sdk.configProvider, opts)
 		if err != nil {
 			return nil, errors.WithMessage(err, "unable to retrieve configuration from SDK")
 		}
@@ -82,7 +82,7 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ClientOption
 		cc := clientContext{
 			opts:          o,
 			identity:      identity,
-			providers:     sdk,
+			providers:     sdk.context(),
 			clientFactory: sdk.opts.Session,
 		}
 		return &cc, nil
@@ -165,4 +165,14 @@ func (c *Client) Channel(id string) (apitxn.ChannelClient, error) {
 	}
 
 	return client, nil
+}
+
+// Identity returns the identity associated with this client
+// TBD
+func (c *Client) Identity() (apifabclient.User, error) {
+	p, err := c.provider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to get client provider context")
+	}
+	return p.identity, nil
 }

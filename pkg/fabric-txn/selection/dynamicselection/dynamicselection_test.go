@@ -347,15 +347,18 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Should have failed since sdk not provided")
 	}
 
+	factory := DynamicSelectionProviderFactory{
+		selectionProvider: selectionProvider,
+	}
+
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(
+	// This step is performed during the test to allow normal SDK-based initialized of the selection provider
+	_, err = fabsdk.New(
 		config.FromFile("../../../../test/fixtures/config/config_test.yaml"),
-		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []ChannelUser{mychannelUser}}))
+		fabsdk.WithServicePkg(&factory))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
-
-	selectionProvider.Initialize(sdk)
 
 	selectionService, err = selectionProvider.NewSelectionService("mychannel")
 	if err != nil {
@@ -411,12 +414,12 @@ func TestDynamicSelection(t *testing.T) {
 // DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
 type DynamicSelectionProviderFactory struct {
 	defsvc.ProviderFactory
-	ChannelUsers []ChannelUser
+	selectionProvider apifabclient.SelectionProvider
 }
 
 // NewSelectionProvider returns a new implementation of dynamic selection provider
 func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config apiconfig.Config) (apifabclient.SelectionProvider, error) {
-	return NewSelectionProvider(config, f.ChannelUsers, nil)
+	return f.selectionProvider, nil
 }
 
 type customLBP struct {

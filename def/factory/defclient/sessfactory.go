@@ -42,7 +42,7 @@ func (f *SessionClientFactory) NewSystemClient(sdk apisdk.SDK, session apisdk.Se
 */
 
 // NewChannelMgmtClient returns a client that manages channels (create/join channel)
-func (f *SessionClientFactory) NewChannelMgmtClient(sdk apisdk.SDK, session apisdk.Session, config apiconfig.Config) (chmgmt.ChannelMgmtClient, error) {
+func (f *SessionClientFactory) NewChannelMgmtClient(sdk apisdk.Providers, session apisdk.Session, config apiconfig.Config) (chmgmt.ChannelMgmtClient, error) {
 	// For now settings are the same as for system client
 	client, err := sdk.FabricProvider().NewClient(session.Identity())
 	if err != nil {
@@ -52,7 +52,7 @@ func (f *SessionClientFactory) NewChannelMgmtClient(sdk apisdk.SDK, session apis
 }
 
 // NewResourceMgmtClient returns a client that manages resources
-func (f *SessionClientFactory) NewResourceMgmtClient(sdk apisdk.SDK, session apisdk.Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error) {
+func (f *SessionClientFactory) NewResourceMgmtClient(sdk apisdk.Providers, session apisdk.Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error) {
 
 	// For now settings are the same as for system client
 	client, err := sdk.FabricProvider().NewClient(session.Identity())
@@ -70,7 +70,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(sdk apisdk.SDK, session api
 
 // NewChannelClient returns a client that can execute transactions on specified channel
 // TODO - better refactoring for testing and/or extract getChannelImpl to another package
-func (f *SessionClientFactory) NewChannelClient(sdk apisdk.SDK, session apisdk.Session, config apiconfig.Config, channelID string) (apitxn.ChannelClient, error) {
+func (f *SessionClientFactory) NewChannelClient(sdk apisdk.Providers, session apisdk.Session, config apiconfig.Config, channelID string) (apitxn.ChannelClient, error) {
 	// TODO: Add capablity to override sdk's selection and discovery provider
 
 	client := clientImpl.NewClient(sdk.ConfigProvider())
