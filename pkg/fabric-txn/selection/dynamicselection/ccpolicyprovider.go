@@ -17,7 +17,6 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -50,18 +49,17 @@ func newCCPolicyProvider(sdk *fabsdk.FabricSDK, channelID string, userName strin
 		return nil, errors.New("Must provide sdk")
 	}
 
-	user, err := sdk.NewPreEnrolledUser(orgName, userName)
+	session, err := sdk.NewPreEnrolledUserSession(orgName, userName)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get pre-enrolled user")
 	}
 
 	// TODO: Replace with channel client when setting custom selection
 	// and discovery provider at channel client level becomes available
-	client := clientImpl.NewClient(sdk.ConfigProvider())
-	client.SetCryptoSuite(sdk.CryptoSuiteProvider())
-	client.SetStateStore(sdk.StateStoreProvider())
-	client.SetUserContext(user)
-	client.SetSigningManager(sdk.SigningManager())
+	client, err := sdk.NewSystemClient(session)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get system client")
+	}
 
 	// TODO: Add option to use anchor peers instead of config
 	targetPeers, err := sdk.ConfigProvider().ChannelPeers(channelID)

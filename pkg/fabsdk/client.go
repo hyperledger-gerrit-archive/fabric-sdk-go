@@ -69,7 +69,7 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ClientOption
 	// delay execution of the following logic to avoid error return from this function.
 	// this is done to allow a cleaner API - i.e., client, err := sdk.NewClient(args).<Desired Interface>(extra args)
 	provider := func() (*clientContext, error) {
-		o, err := newClientOptions(sdk.ConfigProvider(), opts)
+		o, err := newClientOptions(sdk.configProvider, opts)
 		if err != nil {
 			return nil, errors.WithMessage(err, "unable to retrieve configuration from SDK")
 		}
@@ -82,7 +82,7 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ClientOption
 		cc := clientContext{
 			opts:          o,
 			identity:      identity,
-			providers:     sdk,
+			providers:     sdk.context(),
 			clientFactory: sdk.opts.Session,
 		}
 		return &cc, nil
