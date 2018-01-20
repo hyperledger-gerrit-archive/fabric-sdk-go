@@ -8,43 +8,53 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apicore"
+	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
-// OrgContext currently represents the clients for an organization that the app is dealing with.
-// TODO: better decription (e.g., possibility of holding discovery resources for the org & peers).
-type OrgContext struct {
-	mspClient fabca.FabricCAClient
+type sdkContext struct {
+	sdk *FabricSDK
 }
 
-// newOrgContext creates a context based on the providers in the SDK
-func newOrgContext(factory apisdk.OrgClientFactory, orgID string, config apiconfig.Config) (*OrgContext, error) {
-	c := OrgContext{}
-
-	// TODO: Evaluate context contents during credential client design
-
-	/*
-		// Initialize MSP client
-		client, err := factory.NewMSPClient(orgID, config)
-		if err != nil {
-			return nil, errors.WithMessage(err, "MSP client init failed")
-		}
-		c.mspClient = client
-	*/
-
-	return &c, nil
+// ConfigProvider returns the Config provider of sdk.
+func (c *sdkContext) ConfigProvider() apiconfig.Config {
+	return c.sdk.configProvider
 }
 
-// MSPClient provides the MSP client of the context.
-func (c *OrgContext) MSPClient() fabca.FabricCAClient {
-	return c.mspClient
+// CryptoSuiteProvider returns the BCCSP provider of sdk.
+func (c *sdkContext) CryptoSuiteProvider() apicryptosuite.CryptoSuite {
+	return c.sdk.cryptoSuite
+}
+
+// StateStoreProvider returns state store
+func (c *sdkContext) StateStoreProvider() apifabclient.KeyValueStore {
+	return c.sdk.stateStore
+}
+
+// DiscoveryProvider returns discovery provider
+func (c *sdkContext) DiscoveryProvider() apifabclient.DiscoveryProvider {
+	return c.sdk.discoveryProvider
+}
+
+// SelectionProvider returns selection provider
+func (c *sdkContext) SelectionProvider() apifabclient.SelectionProvider {
+	return c.sdk.selectionProvider
+}
+
+// SigningManager returns signing manager
+func (c *sdkContext) SigningManager() apifabclient.SigningManager {
+	return c.sdk.signingManager
+}
+
+// FabricProvider provides fabric objects such as peer and user
+func (c *sdkContext) FabricProvider() apicore.FabricProvider {
+	return c.sdk.fabricProvider
 }
 
 type identityOptions struct {
-	identity fab.User
+	identity apifabclient.User
 	ok       bool
 }
 
@@ -70,7 +80,7 @@ func WithUser(name string) IdentityOption {
 }
 
 // WithIdentity uses a pre-constructed identity object as the credential for the session
-func WithIdentity(identity fab.User) IdentityOption {
+func WithIdentity(identity apifabclient.User) IdentityOption {
 	return func(o *identityOptions, sdk *FabricSDK, orgName string) error {
 		if o.ok {
 			return errors.New("Identity already determined")
@@ -81,7 +91,7 @@ func WithIdentity(identity fab.User) IdentityOption {
 	}
 }
 
-func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (fab.User, error) {
+func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (apifabclient.User, error) {
 	opts := identityOptions{}
 
 	for _, option := range options {
@@ -98,16 +108,16 @@ func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (fa
 	return opts.identity, nil
 }
 
-// Session represents an identity being used with clients.
+// session represents an identity being used with clients.
 // TODO: Better description
 // TODO: consider removing this extra wrapper.
-type Session struct {
-	user fab.User
+type session struct {
+	user apifabclient.User
 }
 
 // newSession creates a session from a context and a user (TODO)
-func newSession(user fab.User) *Session {
-	s := Session{
+func newSession(user apifabclient.User) *session {
+	s := session{
 		user: user,
 	}
 
@@ -116,6 +126,6 @@ func newSession(user fab.User) *Session {
 
 // Identity returns the User in the session.
 // TODO: reduce interface to identity
-func (s *Session) Identity() fab.User {
+func (s *session) Identity() apifabclient.User {
 	return s.user
 }
