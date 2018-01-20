@@ -60,23 +60,23 @@ type EventHub struct {
 	// Factory that creates EventsClient
 	eventsClientFactory eventClientFactory
 	// FabricClient
-	client fab.FabricClient
+	client fab.SystemClient
 }
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(client fab.FabricClient, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error)
+	newEventsClient(client fab.SystemClient, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(client fab.FabricClient, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error) {
+func (ccf *consumerClientFactory) newEventsClient(client fab.SystemClient, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error) {
 	return consumer.NewEventsClient(client, peerAddress, certificate, serverHostOverride, regTimeout, adapter)
 }
 
 // NewEventHub ...
-func NewEventHub(client fab.FabricClient) (*EventHub, error) {
+func NewEventHub(client fab.SystemClient) (*EventHub, error) {
 
 	if client == nil {
 		return nil, errors.New("Client is required")
@@ -93,7 +93,7 @@ func NewEventHub(client fab.FabricClient) (*EventHub, error) {
 }
 
 // NewEventHubFromConfig creates new event hub from client and peer config
-func NewEventHubFromConfig(client fab.FabricClient, peerCfg *apiconfig.PeerConfig) (*EventHub, error) {
+func NewEventHubFromConfig(client fab.SystemClient, peerCfg *apiconfig.PeerConfig) (*EventHub, error) {
 
 	eventHub, err := NewEventHub(client)
 	if err != nil {

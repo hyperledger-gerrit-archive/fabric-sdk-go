@@ -1,3 +1,5 @@
+// +build deprecateds
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
