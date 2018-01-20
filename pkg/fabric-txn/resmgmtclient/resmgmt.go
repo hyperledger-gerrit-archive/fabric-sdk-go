@@ -27,7 +27,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // ResourceMgmtClient enables managing resources in Fabric network.
 type ResourceMgmtClient struct {
-	client    fab.FabricClient
+	client    fab.SystemClient
 	config    config.Config
 	filter    resmgmt.TargetFilter
 	discovery fab.DiscoveryService  // global discovery service (detects all peers on the network)
@@ -54,7 +54,7 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 }
 
 // NewResourceMgmtClient returns a ResourceMgmtClient instance
-func NewResourceMgmtClient(client fab.FabricClient, provider fab.DiscoveryProvider, filter resmgmt.TargetFilter, config config.Config) (*ResourceMgmtClient, error) {
+func NewResourceMgmtClient(client fab.SystemClient, provider fab.DiscoveryProvider, filter resmgmt.TargetFilter, config config.Config) (*ResourceMgmtClient, error) {
 
 	if client.UserContext() == nil {
 		return nil, errors.New("must provide client identity")

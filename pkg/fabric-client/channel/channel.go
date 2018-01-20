@@ -34,7 +34,7 @@ type Channel struct {
 
 // ClientContext ...
 type ClientContext interface {
-	UserContext() fab.User
+	UserContext() fab.IdentityContext
 	SigningManager() fab.SigningManager
 	NewTxnID() (apitxn.TransactionID, error)
 	Config() config.Config
@@ -45,7 +45,7 @@ type ClientContext interface {
 // name: used to identify different channel instances. The naming of channel instances
 // is enforced by the ordering service and must be unique within the blockchain network.
 // client: Provides operational context such as submitting User etc.
-func NewChannel(name string, client fab.FabricClient) (*Channel, error) {
+func NewChannel(name string, client fab.SystemClient) (*Channel, error) {
 	if name == "" {
 		return nil, errors.Errorf("name is required")
 	}
@@ -56,8 +56,7 @@ func NewChannel(name string, client fab.FabricClient) (*Channel, error) {
 	o := make(map[string]fab.Orderer)
 	c := Channel{name: name, peers: p,
 		orderers: o, clientContext: client, mspManager: msp.NewMSPManager()}
-	logger.Infof("Constructed channel instance for channel %s", c.name)
-	logger.Debugf("Constructed channel instance: %V", c)
+	logger.Debugf("Constructed channel instance for channel %s: %v", c.name, c)
 
 	return &c, nil
 }

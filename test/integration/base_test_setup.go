@@ -34,7 +34,7 @@ import (
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	Client          fab.FabricClient
+	Client          fab.SystemClient
 	Channel         fab.Channel
 	EventHub        fab.EventHub
 	ConnectEventHub bool
@@ -91,7 +91,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 		return errors.WithMessage(err, "SDK init failed")
 	}
 
-	session, err := sdk.NewPreEnrolledUserSession(setup.OrgID, "Admin")
+	session, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(setup.OrgID)).Session()
 	if err != nil {
 		return errors.WithMessage(err, "failed getting admin user session for org")
 	}
@@ -163,7 +163,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	return nil
 }
 
-func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client fab.FabricClient) error {
+func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client fab.SystemClient) error {
 	eventHub, err := setup.getEventHub(t, client)
 	if err != nil {
 		return err
@@ -237,7 +237,7 @@ func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, g
 }
 
 // GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, client fab.FabricClient, channelID string, orgs []string) (fab.Channel, error) {
+func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, client fab.SystemClient, channelID string, orgs []string) (fab.Channel, error) {
 
 	channel, err := client.NewChannel(channelID)
 	if err != nil {
@@ -346,7 +346,7 @@ func (setup *BaseSetupImpl) RegisterTxEvent(t *testing.T, txID apitxn.Transactio
 }
 
 // getEventHub initilizes the event hub
-func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.FabricClient) (fab.EventHub, error) {
+func (setup *BaseSetupImpl) getEventHub(t *testing.T, client fab.SystemClient) (fab.EventHub, error) {
 	eventHub, err := events.NewEventHub(client)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewEventHub failed")

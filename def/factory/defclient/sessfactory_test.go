@@ -56,7 +56,7 @@ func TestNewChannelMgmtClient(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().FabricProvider().Return(p.FabricProvider)
 
@@ -79,7 +79,7 @@ func TestNewResourceMgmtClient(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().FabricProvider().Return(p.FabricProvider)
 	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
@@ -103,7 +103,7 @@ func TestNewChannelClient(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
 	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
@@ -131,7 +131,7 @@ func TestNewChannelClientBadChannel(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
 	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
@@ -152,7 +152,7 @@ func TestNewChannelClientBadOrg(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockSDK := mockapisdk.NewMockSDK(mockCtrl)
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
 	mockSDK.EXPECT().ConfigProvider().Return(p.ConfigProvider)
 	mockSDK.EXPECT().CryptoSuiteProvider().Return(p.CryptosuiteProvider)
@@ -170,7 +170,7 @@ func TestNewChannelClientBadOrg(t *testing.T) {
 	}
 }
 
-func getChannelMock(client apifabclient.FabricClient, channelID string) (apifabclient.Channel, error) {
+func getChannelMock(client apifabclient.SystemClient, channelID string) (apifabclient.Channel, error) {
 	return channel.NewChannel("channel", client)
 }
 
