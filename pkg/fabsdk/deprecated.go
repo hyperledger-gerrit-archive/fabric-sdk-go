@@ -8,6 +8,7 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
@@ -118,4 +119,10 @@ func (sdk *FabricSDK) NewSystemClient(s apisdk.Session) (apifabclient.FabricClie
 // This function is deprecated.
 func (sdk *FabricSDK) NewPreEnrolledUserSession(orgID string, id string) (*Session, error) {
 	return sdk.newSessionFromIdentityName(orgID, id)
+}
+
+// FabricProvider provides fabric objects such as peer and user
+// This method is deprecated.
+func (sdk *FabricSDK) FabricProvider() apicore.FabricProvider {
+	return sdk.fabricProvider
 }
