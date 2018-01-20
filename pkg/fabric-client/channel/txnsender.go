@@ -356,7 +356,7 @@ func (c *Channel) SendEnvelope(envelope *fab.SignedEnvelope) (*common.Block, err
 				}
 				mutex.Unlock()
 
-			case <-time.After(c.ClientContext().Config().TimeoutOrDefault(apiconfig.OrdererResponse)):
+			case <-time.After(c.clientContext.Config().TimeoutOrDefault(apiconfig.OrdererResponse)):
 				mutex.Lock()
 				if errorResponse == nil {
 					errorResponse = errors.New("timeout waiting for response from orderer")

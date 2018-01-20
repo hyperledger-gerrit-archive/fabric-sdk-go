@@ -27,7 +27,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // ResourceMgmtClient enables managing resources in Fabric network.
 type ResourceMgmtClient struct {
-	client    fab.FabricClient
+	client    fab.Resource
 	config    config.Config
 	filter    resmgmt.TargetFilter
 	discovery fab.DiscoveryService  // global discovery service (detects all peers on the network)
@@ -54,7 +54,7 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 }
 
 // NewResourceMgmtClient returns a ResourceMgmtClient instance
-func NewResourceMgmtClient(client fab.FabricClient, provider fab.DiscoveryProvider, filter resmgmt.TargetFilter, config config.Config) (*ResourceMgmtClient, error) {
+func NewResourceMgmtClient(client fab.Resource, provider fab.DiscoveryProvider, filter resmgmt.TargetFilter, config config.Config) (*ResourceMgmtClient, error) {
 
 	if client.UserContext() == nil {
 		return nil, errors.New("must provide client identity")
@@ -115,30 +115,19 @@ func (rc *ResourceMgmtClient) JoinChannelWithOpts(channelID string, opts resmgmt
 		return errors.New("No targets available")
 	}
 
-	txnid, err := rc.client.NewTxnID()
-	if err != nil {
-		return errors.WithMessage(err, "NewTxnID failed")
-	}
-
 	channel, err := rc.getChannel(channelID)
 	if err != nil {
 		return errors.WithMessage(err, "get channel failed")
 	}
 
-	genesisBlock, err := channel.GenesisBlock(&fab.GenesisBlockRequest{TxnID: txnid})
+	genesisBlock, err := channel.GenesisBlock(&fab.GenesisBlockRequest{})
 	if err != nil {
 		return errors.WithMessage(err, "genesis block retrieval failed")
-	}
-
-	txnid2, err := rc.client.NewTxnID()
-	if err != nil {
-		return errors.WithMessage(err, "NewTxnID failed")
 	}
 
 	joinChannelRequest := &fab.JoinChannelRequest{
 		Targets:      targets,
 		GenesisBlock: genesisBlock,
-		TxnID:        txnid2,
 	}
 
 	err = channel.JoinChannel(joinChannelRequest)

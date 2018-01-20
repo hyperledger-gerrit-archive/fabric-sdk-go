@@ -9,6 +9,8 @@ package channel
 import (
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+
 	"github.com/golang/protobuf/proto"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -35,21 +37,18 @@ func (c *Channel) GenesisBlock(request *fab.GenesisBlockRequest) (*common.Block,
 	if len(c.Orderers()) == 0 {
 		return nil, errors.New("GenesisBlock missing orderer assigned to this channel for the GenesisBlock request")
 	}
-	// verify that we have transaction id
-	if request.TxnID.ID == "" {
-		return nil, errors.New("GenesisBlock missing txId input parameter with the required transaction identifier")
-	}
-	// verify that we have the nonce
-	if request.TxnID.Nonce == nil {
-		return nil, errors.New("GenesisBlock missing nonce input parameter with the required single use number")
-	}
-
 	if c.clientContext.UserContext() == nil {
 		return nil, errors.New("user context required")
 	}
+
 	creator, err := c.clientContext.UserContext().Identity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get creator identity")
+	}
+
+	request.TxnID, err = internal.NewTxnID(c.clientContext.UserContext())
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to calculate transaction id")
 	}
 
 	// now build the seek info , will be used once the channel is created
