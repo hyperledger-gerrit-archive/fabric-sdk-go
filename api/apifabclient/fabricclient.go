@@ -14,7 +14,39 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-// FabricClient ...
+// Resource is a client that provides access to fabric resources such as chaincode.
+type Resource interface {
+	providers
+	client
+}
+
+type client interface {
+	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
+	InstallChaincode(request InstallChaincodeRequest) ([]*txn.TransactionProposalResponse, string, error)
+	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
+	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
+
+	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
+	SignChannelConfig(config []byte, signer IdentityContext) (*common.ConfigSignature, error)
+
+	UserContext() IdentityContext
+	NewTxnID() (txn.TransactionID, error)
+}
+
+type providers interface {
+	StateStore() KeyValueStore
+	SigningManager() SigningManager
+	Config() config.Config
+	CryptoSuite() apicryptosuite.CryptoSuite
+
+	// TODO refactor into channel provider
+	NewChannel(name string) (Channel, error)
+	Channel(name string) Channel
+}
+
+// FabricClient provides access to infrastructure functionality.
+//
+// Deprecated: this interface has been renamed.
 /*
  * Main interaction handler with end user. A client instance provides a handler to interact
  * with a network of peers, orderers and optionally member services. An application using the
@@ -32,24 +64,13 @@ import (
  *
  */
 type FabricClient interface {
-	NewChannel(name string) (Channel, error)
-	Channel(name string) Channel
-	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
-	SignChannelConfig(config []byte, signer User) (*common.ConfigSignature, error)
-	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
+	Resource
+
 	QueryChannelInfo(name string, peers []Peer) (Channel, error)
-	StateStore() KeyValueStore
-	SigningManager() SigningManager
-	CryptoSuite() apicryptosuite.CryptoSuite
-	SaveUserToStateStore(user User, skipPersistence bool) error
+
+	SetUserContext(user IdentityContext)
+	SaveUserToStateStore(user User) error
 	LoadUserFromStateStore(name string) (User, error)
-	InstallChaincode(request InstallChaincodeRequest) ([]*txn.TransactionProposalResponse, string, error)
-	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
-	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
-	UserContext() User
-	SetUserContext(user User)
-	Config() config.Config // TODO: refactor to a fab client config interface
-	NewTxnID() (txn.TransactionID, error)
 }
 
 // CreateChannelRequest requests channel creation on the network

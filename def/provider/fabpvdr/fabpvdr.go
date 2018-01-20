@@ -39,7 +39,7 @@ func NewFabricProvider(config apiconfig.Config, stateStore apifabclient.KeyValue
 }
 
 // NewClient returns a new FabricClient initialized for the current instance of the SDK
-func (f *FabricProvider) NewClient(user apifabclient.User) (apifabclient.FabricClient, error) {
+func (f *FabricProvider) NewClient(user apifabclient.IdentityContext) (apifabclient.Resource, error) {
 	client := clientImpl.NewClient(f.config)
 
 	client.SetCryptoSuite(f.cryptoSuite)

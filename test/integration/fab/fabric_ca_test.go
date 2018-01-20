@@ -98,7 +98,7 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		adminUser2 := identity.NewUser("admin", mspID)
 		adminUser2.SetPrivateKey(key)
 		adminUser2.SetEnrollmentCertificate(cert)
-		err = client.SaveUserToStateStore(adminUser2, false)
+		err = client.SaveUserToStateStore(adminUser2)
 		if err != nil {
 			t.Fatalf("client.SaveUserToStateStore return error: %v", err)
 		}

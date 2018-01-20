@@ -23,12 +23,12 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // ChannelMgmtClient enables managing channels in Fabric network.
 type ChannelMgmtClient struct {
-	client fab.FabricClient
+	client fab.Resource
 	config config.Config
 }
 
 // NewChannelMgmtClient returns a channel management client instance
-func NewChannelMgmtClient(client fab.FabricClient, config config.Config) (*ChannelMgmtClient, error) {
+func NewChannelMgmtClient(client fab.Resource, config config.Config) (*ChannelMgmtClient, error) {
 	cc := &ChannelMgmtClient{client: client, config: config}
 	return cc, nil
 }
