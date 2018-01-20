@@ -103,14 +103,8 @@ func Run(t *testing.T, configOpt apiconfig.ConfigProvider, sdkOpts ...fabsdk.Opt
 
 	// ************ Test setup complete ************** //
 
-	// Client provides access to APIs for transacting with Fabric (Org1 is default org)
-	client, err := sdk.NewClient(fabsdk.WithUser("User1"))
-	if err != nil {
-		t.Fatalf("Failed to create client: %s", err)
-	}
-
-	// Channel client is used to query and execute transactions
-	chClient, err := client.Channel(channelID)
+	// Channel client is used to query and execute transactions (Org1 is default org)
+	chClient, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(channelID)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
