@@ -24,7 +24,7 @@ type MockClient struct {
 	channels       map[string]fab.Channel
 	cryptoSuite    apicryptosuite.CryptoSuite
 	stateStore     fab.KeyValueStore
-	userContext    fab.User
+	userContext    fab.IdentityContext
 	config         config.Config
 	errorScenario  bool
 	signingManager fab.SigningManager
@@ -129,7 +129,7 @@ func (c *MockClient) ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
 }
 
 // SignChannelConfig ...
-func (c *MockClient) SignChannelConfig(config []byte, signer fab.User) (*common.ConfigSignature, error) {
+func (c *MockClient) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
 	if bytes.Compare(config, []byte("SignChannelConfigError")) == 0 {
 		return nil, errors.New("Mock sign channel config error")
 	}
@@ -178,12 +178,12 @@ func (c *MockClient) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitx
 }
 
 // UserContext ...
-func (c *MockClient) UserContext() fab.User {
+func (c *MockClient) UserContext() fab.IdentityContext {
 	return c.userContext
 }
 
 // SetUserContext ...
-func (c *MockClient) SetUserContext(user fab.User) {
+func (c *MockClient) SetUserContext(user fab.IdentityContext) {
 	c.userContext = user
 }
 

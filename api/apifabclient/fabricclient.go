@@ -35,7 +35,7 @@ type FabricClient interface {
 	NewChannel(name string) (Channel, error)
 	Channel(name string) Channel
 	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
-	SignChannelConfig(config []byte, signer User) (*common.ConfigSignature, error)
+	SignChannelConfig(config []byte, signer IdentityContext) (*common.ConfigSignature, error)
 	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
 	QueryChannelInfo(name string, peers []Peer) (Channel, error)
 	StateStore() KeyValueStore
@@ -46,8 +46,8 @@ type FabricClient interface {
 	InstallChaincode(request InstallChaincodeRequest) ([]*txn.TransactionProposalResponse, string, error)
 	QueryChannels(peer Peer) (*pb.ChannelQueryResponse, error)
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
-	UserContext() User
-	SetUserContext(user User)
+	UserContext() IdentityContext
+	SetUserContext(user IdentityContext)
 	Config() config.Config // TODO: refactor to a fab client config interface
 	NewTxnID() (txn.TransactionID, error)
 }

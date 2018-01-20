@@ -36,18 +36,19 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // Client enables access to a Fabric network.
 type Client struct {
-	channels       map[string]fab.Channel
-	cryptoSuite    apicryptosuite.CryptoSuite
-	stateStore     fab.KeyValueStore
-	userContext    fab.User
-	config         config.Config
-	signingManager fab.SigningManager
+	channels        map[string]fab.Channel
+	cryptoSuite     apicryptosuite.CryptoSuite
+	stateStore      fab.KeyValueStore
+	cachedUser      fab.User
+	signingIdentity fab.IdentityContext
+	config          config.Config
+	signingManager  fab.SigningManager
 }
 
 // NewClient returns a Client instance.
 func NewClient(config config.Config) *Client {
 	channels := make(map[string]fab.Channel)
-	c := Client{channels: channels, cryptoSuite: nil, stateStore: nil, userContext: nil, config: config}
+	c := Client{channels: channels, config: config}
 	return &c
 }
 
@@ -140,7 +141,11 @@ func (c *Client) SaveUserToStateStore(user fab.User, skipPersistence bool) error
 	if user.Name() == "" {
 		return errors.New("user name is empty")
 	}
-	c.userContext = user
+
+	// TODO: remove cachedUser
+	c.cachedUser = user
+	c.signingIdentity = user
+
 	if !skipPersistence {
 		if c.stateStore == nil {
 			return errors.New("stateStore is nil")
@@ -171,8 +176,9 @@ func (c *Client) SaveUserToStateStore(user fab.User, skipPersistence bool) error
  * does not exist in the state store, returns null without rejecting the promise
  */
 func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
-	if c.userContext != nil {
-		return c.userContext, nil
+	// TODO remove
+	if c.cachedUser != nil {
+		return c.cachedUser, nil
 	}
 	if name == "" {
 		return nil, nil
@@ -200,8 +206,13 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
 		return nil, errors.Wrap(err, "cryptoSuite GetKey failed")
 	}
 	user.SetPrivateKey(key)
-	c.userContext = user
-	return c.userContext, nil
+
+	// TODO remove
+	c.SetUserContext(user)
+
+	// TODO remove cachedUser
+	c.cachedUser = user
+	return user, nil
 }
 
 // ExtractChannelConfig ...
@@ -244,7 +255,7 @@ func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
  * @param {byte[]} config - The Configuration Update in byte form
  * @return {ConfigSignature} - The signature of the current user on the config bytes
  */
-func (c *Client) SignChannelConfig(config []byte, signer fab.User) (*common.ConfigSignature, error) {
+func (c *Client) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
@@ -254,7 +265,7 @@ func (c *Client) SignChannelConfig(config []byte, signer fab.User) (*common.Conf
 	signingUser := signer
 	// If signing user is not provided default to client's user context
 	if signingUser == nil {
-		signingUser = c.userContext
+		signingUser = c.signingIdentity
 	}
 
 	if signingUser == nil {
@@ -392,10 +403,10 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 		if err != nil {
 			return errors.WithMessage(err, "BuildChannelHeader failed")
 		}
-		if c.userContext == nil {
-			return errors.New("user context is nil")
+		if c.signingIdentity == nil {
+			return errors.New("identity context is nil")
 		}
-		creator, err := c.userContext.Identity()
+		creator, err := c.signingIdentity.Identity()
 		if err != nil {
 			return errors.WithMessage(err, "getting creator failed")
 		}
@@ -422,7 +433,7 @@ func (c *Client) createOrUpdateChannel(request fab.CreateChannelRequest, haveEnv
 			return errors.New("signing manager is nil")
 		}
 
-		signature, err = signingMgr.Sign(payloadBytes, c.UserContext().PrivateKey())
+		signature, err = signingMgr.Sign(payloadBytes, c.signingIdentity.PrivateKey())
 		if err != nil {
 			return errors.WithMessage(err, "signing payload failed")
 		}
@@ -501,10 +512,10 @@ func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.Tr
 		Type: req.Package.Type, ChaincodeId: &pb.ChaincodeID{Name: req.Name, Path: req.Path, Version: req.Version}},
 		CodePackage: req.Package.Code, EffectiveDate: &google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}}
 
-	if c.userContext == nil {
-		return nil, "", errors.New("user context required")
+	if c.signingIdentity == nil {
+		return nil, "", errors.New("signing identity required")
 	}
-	creator, err := c.userContext.Identity()
+	creator, err := c.signingIdentity.Identity()
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to get creator identity")
 	}
@@ -518,7 +529,7 @@ func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.Tr
 	if err != nil {
 		return nil, "", err
 	}
-	user := c.UserContext()
+	user := c.signingIdentity
 	if user == nil {
 		return nil, "", errors.New("User context is nil")
 	}
@@ -547,13 +558,13 @@ func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.Tr
 }
 
 // UserContext returns the current User.
-func (c *Client) UserContext() fab.User {
-	return c.userContext
+func (c *Client) UserContext() fab.IdentityContext {
+	return c.signingIdentity
 }
 
 // SetUserContext ...
-func (c *Client) SetUserContext(user fab.User) {
-	c.userContext = user
+func (c *Client) SetUserContext(user fab.IdentityContext) {
+	c.signingIdentity = user
 }
 
 // NewTxnID computes a TransactionID for the current user context
@@ -564,10 +575,10 @@ func (c *Client) NewTxnID() (apitxn.TransactionID, error) {
 		return apitxn.TransactionID{}, err
 	}
 
-	if c.userContext == nil {
+	if c.signingIdentity == nil {
 		return apitxn.TransactionID{}, errors.New("user context is nil")
 	}
-	creator, err := c.userContext.Identity()
+	creator, err := c.signingIdentity.Identity()
 	if err != nil {
 		return apitxn.TransactionID{}, err
 	}

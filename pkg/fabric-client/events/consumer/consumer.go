@@ -99,10 +99,7 @@ func (ec *eventsClient) send(emsg *ehpb.Event) error {
 	ec.Lock()
 	defer ec.Unlock()
 
-	user, err := ec.client.LoadUserFromStateStore("")
-	if err != nil {
-		return errors.WithMessage(err, "LoadUserFromStateStore failed")
-	}
+	user := ec.client.UserContext()
 	payload, err := proto.Marshal(emsg)
 	if err != nil {
 		return errors.Wrap(err, "marshal event failed")

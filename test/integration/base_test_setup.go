@@ -91,7 +91,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 		return errors.WithMessage(err, "SDK init failed")
 	}
 
-	session, err := sdk.NewPreEnrolledUserSession(setup.OrgID, "Admin")
+	session, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(setup.OrgID)).Session()
 	if err != nil {
 		return errors.WithMessage(err, "failed getting admin user session for org")
 	}
