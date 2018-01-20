@@ -19,6 +19,7 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
 )
 
@@ -35,15 +36,16 @@ func (c *Channel) SendTransactionProposal(request apitxn.ChaincodeInvokeRequest)
 
 // SendTransactionProposalWithChannelID sends the created proposal to peer for endorsement.
 // TODO: return the entire request or just the txn ID?
-func SendTransactionProposalWithChannelID(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext ClientContext) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+func SendTransactionProposalWithChannelID(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext clientContext) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 	if err := validateChaincodeInvokeRequest(request); err != nil {
 		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "validateChaincodeInvokeRequest failed")
 	}
 
-	request, err := chaincodeInvokeRequestAddTxnID(request, clientContext)
+	txid, err := internal.NewTxnID(clientContext.UserContext())
 	if err != nil {
-		return nil, request.TxnID, err
+		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "NewTxnID failed")
 	}
+	request.TxnID = txid
 
 	proposal, err := newTransactionProposal(channelID, request, clientContext)
 	if err != nil {
@@ -69,19 +71,6 @@ func validateChaincodeInvokeRequest(request apitxn.ChaincodeInvokeRequest) error
 	return nil
 }
 
-func chaincodeInvokeRequestAddTxnID(request apitxn.ChaincodeInvokeRequest, clientContext ClientContext) (apitxn.ChaincodeInvokeRequest, error) {
-	// create txn id (if needed)
-	if request.TxnID.ID == "" {
-		txid, err := clientContext.NewTxnID()
-		if err != nil {
-			return request, errors.WithMessage(err, "NewTxnID failed")
-		}
-		request.TxnID = txid
-	}
-
-	return request, nil
-}
-
 func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(request apitxn.ChaincodeInvokeRequest) (apitxn.ChaincodeInvokeRequest, error) {
 	// Use default peers if targets are not specified.
 	if request.Targets == nil || len(request.Targets) == 0 {
@@ -97,7 +86,7 @@ func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(request apitxn.Chaincode
 // newTransactionProposal creates a proposal for transaction. This involves assembling the proposal
 // with the data (chaincodeName, function to call, arguments, transient data, etc.) and signing it using the private key corresponding to the
 // ECert to sign.
-func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext ClientContext) (*apitxn.TransactionProposal, error) {
+func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext clientContext) (*apitxn.TransactionProposal, error) {
 
 	// Add function name to arguments
 	argsArray := make([][]byte, len(request.Args)+1)
@@ -226,16 +215,6 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 		return errors.New("missing targets input parameter with the peer objects for the join channel proposal")
 	}
 
-	// verify that we have transaction id
-	if request.TxnID.ID == "" {
-		return errors.New("missing txId input parameter with the required transaction identifier")
-	}
-
-	// verify that we have the nonce
-	if request.TxnID.Nonce == nil {
-		return errors.New("missing nonce input parameter with the required single use number")
-	}
-
 	if request.GenesisBlock == nil {
 		return errors.New("missing block input parameter with the required genesis block")
 	}
@@ -243,6 +222,13 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 	if c.clientContext.UserContext() == nil {
 		return errors.New("user context is nil")
 	}
+
+	txnID, err := internal.NewTxnID(c.clientContext.UserContext())
+	if err != nil {
+		return errors.WithMessage(err, "failed to calculate transaction id")
+	}
+	request.TxnID = txnID
+
 	creator, err := c.clientContext.UserContext().Identity()
 	if err != nil {
 		return errors.WithMessage(err, "getting creator identity failed")

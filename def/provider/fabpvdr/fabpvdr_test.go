@@ -41,9 +41,6 @@ func TestNewClient(t *testing.T) {
 	}
 
 	// Brittle tests follow (may need to be removed when we minimize client interface)
-	if !reflect.DeepEqual(client.StateStore(), p.stateStore) {
-		t.Fatalf("Unexpected keyvalue store")
-	}
 	if !reflect.DeepEqual(client.CryptoSuite(), p.cryptoSuite) {
 		t.Fatalf("Unexpected cryptosuite")
 	}

@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 )
@@ -22,14 +21,8 @@ func TestGenesisBlock(t *testing.T) {
 	peers = append(peers, peer)
 	orderer := mocks.NewMockOrderer("", nil)
 	orderer.(mocks.MockOrderer).EnqueueForSendDeliver(mocks.NewSimpleMockError())
-	txid, _ := channel.ClientContext().NewTxnID()
-	badtxid := apitxn.TransactionID{
-		ID: txid.ID,
-	}
 
-	genesisBlockReq := &fab.GenesisBlockRequest{
-		TxnID: txid,
-	}
+	genesisBlockReq := &fab.GenesisBlockRequest{}
 
 	channel.AddOrderer(orderer)
 
@@ -58,27 +51,9 @@ func TestGenesisBlock(t *testing.T) {
 	}
 
 	//Validation test
-	genesisBlockReq = &fab.GenesisBlockRequest{}
-	_, err = channel.GenesisBlock(genesisBlockReq)
-
-	if err == nil || !strings.Contains(err.Error(), "missing txId input parameter with the required transaction identifier") {
-		t.Fatal("validation on missing txID input parameter is not working as expected")
-	}
-
-	genesisBlockReq = &fab.GenesisBlockRequest{
-		TxnID: badtxid,
-	}
-	_, err = channel.GenesisBlock(genesisBlockReq)
-
-	if err == nil || !strings.Contains(err.Error(), "missing nonce input parameter with the required single use number") {
-		t.Fatal("validation on missing nonce input parameter is not working as expected")
-	}
-
 	channel.RemoveOrderer(orderer)
 
-	genesisBlockReq = &fab.GenesisBlockRequest{
-		TxnID: txid,
-	}
+	genesisBlockReq = &fab.GenesisBlockRequest{}
 
 	_, err = channel.GenesisBlock(genesisBlockReq)
 

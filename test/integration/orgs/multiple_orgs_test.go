@@ -255,14 +255,13 @@ func verifyValue(t *testing.T, chClient apitxn.ChannelClient, expected int) {
 
 }
 
-func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) fab.User {
+func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) fab.IdentityContext {
 
-	user, err := sdk.NewPreEnrolledUser(orgName, userName)
+	session, err := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName)).Session()
 	if err != nil {
-		t.Fatal(errors.Wrapf(err, "NewPreEnrolledUser failed, %s, %s", orgName, userName))
+		t.Fatal(errors.Wrapf(err, "Session failed, %s, %s", orgName, userName))
 	}
-
-	return user
+	return session.Identity()
 }
 
 func loadOrgPeers(t *testing.T, sdk *fabsdk.FabricSDK) {

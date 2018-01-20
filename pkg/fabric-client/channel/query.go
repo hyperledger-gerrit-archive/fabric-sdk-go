@@ -176,7 +176,7 @@ func filterProposalResponses(tpr []*txn.TransactionProposalResponse) ([][]byte, 
 	return responses, nil
 }
 
-func queryByChaincode(channelID string, request txn.ChaincodeInvokeRequest, clientContext ClientContext) ([][]byte, error) {
+func queryByChaincode(channelID string, request txn.ChaincodeInvokeRequest, clientContext clientContext) ([][]byte, error) {
 	if err := validateChaincodeInvokeRequest(request); err != nil {
 		return nil, err
 	}
@@ -221,6 +221,6 @@ func (c *Channel) QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([]
 
 // QueryBySystemChaincode invokes a system chaincode
 // TODO - should be moved.
-func QueryBySystemChaincode(request txn.ChaincodeInvokeRequest, clientContext ClientContext) ([][]byte, error) {
+func QueryBySystemChaincode(request txn.ChaincodeInvokeRequest, clientContext clientContext) ([][]byte, error) {
 	return queryByChaincode(systemChannel, request, clientContext)
 }
