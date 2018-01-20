@@ -125,26 +125,14 @@ func TestOrgsEndToEnd(t *testing.T) {
 	// Load specific targets for move funds test
 	loadOrgPeers(t, sdk)
 
-	// Client provides access to txn APIs
-	clientOrg1User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org1))
-	if err != nil {
-		t.Fatalf("Failed to create new client for Org1 user: %s", err)
-	}
-
 	// Org1 user connects to 'orgchannel'
-	chClientOrg1User, err := clientOrg1User.Channel("orgchannel")
+	chClientOrg1User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org1)).Channel("orgchannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
 
-	// Client provides access to txn APIs
-	clientOrg2User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org2))
-	if err != nil {
-		t.Fatalf("Failed to create new client for Org1 user: %s", err)
-	}
-
 	// Org2 user connects to 'orgchannel'
-	chClientOrg2User, err := clientOrg2User.Channel("orgchannel")
+	chClientOrg2User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org2)).Channel("orgchannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
