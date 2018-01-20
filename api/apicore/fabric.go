@@ -13,7 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
 
-// FabricProvider allows overriding of fabric objects such as peer and user
+// FabricProvider enables access to fabric objects such as peer and user
 type FabricProvider interface {
 	NewClient(user apifabclient.User) (apifabclient.FabricClient, error)
 	NewPeer(url string, certificate *x509.Certificate, serverHostOverride string) (apifabclient.Peer, error)

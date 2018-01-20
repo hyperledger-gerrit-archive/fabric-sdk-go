@@ -1052,7 +1052,6 @@ func setupTestClient(userName string, mspID string) *fcmocks.MockClient {
 	client := fcmocks.NewMockClient()
 	user := fcmocks.NewMockUserWithMSPID(userName, mspID)
 	cryptoSuite := &fcmocks.MockCryptoSuite{}
-	client.SaveUserToStateStore(user, true)
 	client.SetUserContext(user)
 	client.SetCryptoSuite(cryptoSuite)
 

@@ -19,7 +19,7 @@ func TestChannelConfigs(t *testing.T) {
 	client := mocks.NewMockClient()
 	user := mocks.NewMockUser("test")
 	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SaveUserToStateStore(user, true)
+	client.SetUserContext(user)
 	client.SetCryptoSuite(cryptoSuite)
 
 	channel, _ := NewChannel("testChannel", client)
