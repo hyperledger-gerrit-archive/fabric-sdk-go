@@ -1,3 +1,5 @@
+// +build deprecated
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -10,28 +12,22 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
-	"math/rand"
-	"strconv"
 	"testing"
-	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
-
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
-)
-
-const (
-	org1Name = "Org1"
-	org2Name = "Org2"
+	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
+	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
+	peer "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/signingmgr"
 )
 
 // This test loads/enrols an admin user
 // Using the admin, it registers, enrols, and revokes a test user
-func TestRegisterEnrollRevoke(t *testing.T) {
+func TestRegisterEnrollRevokeFabClient(t *testing.T) {
 	mspID, err := testFabricConfig.MspID(org1Name)
 	if err != nil {
 		t.Fatalf("GetMspId() returned error: %v", err)
@@ -42,10 +38,19 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("GetCAConfig returned error: %s", err)
 	}
 
+	client := client.NewClient(testFabricConfig)
+
 	cryptoSuiteProvider, err := cryptosuite.GetSuiteByConfig(testFabricConfig)
 	if err != nil {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
+
+	client.SetCryptoSuite(cryptoSuiteProvider)
+	stateStore, err := kvs.CreateNewFileKeyValueStore("/tmp/enroll_user")
+	if err != nil {
+		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
+	}
+	client.SetStateStore(stateStore)
 
 	caClient, err := fabricCAClient.NewFabricCAClient(org1Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
@@ -53,13 +58,11 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 
 	// Admin user is used to register, enroll and revoke a test user
-	// TODO
-	//adminUser, err := client.LoadUserFromStateStore("admin")
+	adminUser, err := client.LoadUserFromStateStore("admin")
 
-	//if err != nil {
-	//	t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
-	//}
-	var adminUser apifabclient.User
+	if err != nil {
+		t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
+	}
 	if adminUser == nil {
 		key, cert, err := caClient.Enroll("admin", "adminpw")
 		if err != nil {
@@ -87,16 +90,14 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		adminUser2 := identity.NewUser("admin", mspID)
 		adminUser2.SetPrivateKey(key)
 		adminUser2.SetEnrollmentCertificate(cert)
-		// TODO
-		//err = client.SaveUserToStateStore(adminUser2)
-		//if err != nil {
-		//	t.Fatalf("client.SaveUserToStateStore return error: %v", err)
-		//}
-		//adminUser, err = client.LoadUserFromStateStore("admin")
-		//if err != nil {
-		//	t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
-		//}
-		adminUser = adminUser2
+		err = client.SaveUserToStateStore(adminUser2)
+		if err != nil {
+			t.Fatalf("client.SaveUserToStateStore return error: %v", err)
+		}
+		adminUser, err = client.LoadUserFromStateStore("admin")
+		if err != nil {
+			t.Fatalf("client.LoadUserFromStateStore return error: %v", err)
+		}
 		if adminUser == nil {
 			t.Fatalf("client.LoadUserFromStateStore return nil")
 		}
@@ -144,31 +145,50 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 
 }
 
-func TestEnrollOrg2(t *testing.T) {
+func TestEnrollAndTransact(t *testing.T) {
+	mspID, err := testFabricConfig.MspID(org1Name)
+	if err != nil {
+		t.Fatalf("GetMspId() returned error: %v", err)
+	}
+	peers, err := testFabricConfig.PeersConfig(org1Name)
+	if err != nil {
+		t.Fatalf("Failed to get peer config : %s", err)
+	}
+	networkPeer := &apiconfig.NetworkPeer{PeerConfig: peers[0], MspID: mspID}
+	testPeer, err := peer.New(testFabricConfig, peer.FromPeerConfig(networkPeer))
+	if err != nil {
+		t.Fatalf("Failed to create peer from config : %s", err)
+	}
 
 	cryptoSuiteProvider, err := cryptosuite.GetSuiteByConfig(testFabricConfig)
 	if err != nil {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
-
-	caClient, err := fabricCAClient.NewFabricCAClient(org2Name, testFabricConfig, cryptoSuiteProvider)
+	signingManager, err := signingmgr.NewSigningManager(cryptoSuiteProvider, testFabricConfig)
 	if err != nil {
-		t.Fatalf("NewFabricCAClient return error: %v", err)
+		t.Fatalf("Could not create signing manager: %s", err)
+	}
+
+	caClient, err := fabricCAClient.NewFabricCAClient(org1Name, testFabricConfig, cryptoSuiteProvider)
+	if err != nil {
+		t.Fatalf("NewFabricCAClient returned error: %v", err)
 	}
 
 	key, cert, err := caClient.Enroll("admin", "adminpw")
 	if err != nil {
 		t.Fatalf("Enroll returned error: %v", err)
 	}
-	if key == nil {
-		t.Fatalf("Expected enrol to return a private key")
-	}
-	if cert == nil {
-		t.Fatalf("Expected enrol to return an enrolment cert")
-	}
-}
 
-func createRandomName() string {
-	rand.Seed(time.Now().UnixNano())
-	return "user" + strconv.Itoa(rand.Intn(500000))
+	myUser := identity.NewUser("myUser", mspID)
+	myUser.SetEnrollmentCertificate(cert)
+	myUser.SetPrivateKey(key)
+
+	testClient := client.NewClient(testFabricConfig)
+	testClient.SetIdentityContext(myUser)
+	testClient.SetSigningManager(signingManager)
+
+	_, err = testClient.QueryChannels(testPeer)
+	if err != nil {
+		t.Fatalf("Failed to query with enrolled user : %s", err)
+	}
 }
