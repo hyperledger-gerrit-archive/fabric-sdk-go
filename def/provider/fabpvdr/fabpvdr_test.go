@@ -60,7 +60,7 @@ func TestNewResourceClient(t *testing.T) {
 	if !reflect.DeepEqual(client.CryptoSuite(), p.cryptoSuite) {
 		t.Fatalf("Unexpected cryptosuite")
 	}
-	if !reflect.DeepEqual(client.SigningManager(), p.signer) {
+	if !reflect.DeepEqual(client.SigningManager(), p.signingManager) {
 		t.Fatalf("Unexpected signing manager")
 	}
 	if !reflect.DeepEqual(client.Config(), p.config) {

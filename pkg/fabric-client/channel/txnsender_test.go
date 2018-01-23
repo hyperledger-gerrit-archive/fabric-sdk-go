@@ -135,7 +135,7 @@ func TestSendInstantiateProposal(t *testing.T) {
 	cryptoSuite := &mocks.MockCryptoSuite{}
 	client.SetCryptoSuite(cryptoSuite)
 	client.SetIdentityContext(user)
-	channel, _ := NewChannel("testChannel", client)
+	channel, _ := New(client, "testChannel")
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -214,7 +214,7 @@ func TestSendUpgradeProposal(t *testing.T) {
 	cryptoSuite := &mocks.MockCryptoSuite{}
 	client.SetCryptoSuite(cryptoSuite)
 	client.SetIdentityContext(user)
-	channel, _ := NewChannel("testChannel", client)
+	channel, _ := New(client, "testChannel")
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -459,7 +459,7 @@ func TestSignPayload(t *testing.T) {
 	cryptoSuite := &mocks.MockCryptoSuite{}
 	client.SetIdentityContext(user)
 	client.SetCryptoSuite(cryptoSuite)
-	channel, _ := NewChannel("testChannel", client)
+	channel, _ := New(client, "testChannel")
 
 	signedEnv, err := channel.SignPayload([]byte(""))
 

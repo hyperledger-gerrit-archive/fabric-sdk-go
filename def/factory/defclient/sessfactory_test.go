@@ -146,7 +146,7 @@ func TestNewChannelClientBadOrg(t *testing.T) {
 }
 
 func getChannelMock(client apifabclient.Resource, channelID string) (apifabclient.Channel, error) {
-	return channel.NewChannel("channel", client)
+	return channel.New(client, "channel")
 }
 
 type mockProviders struct {

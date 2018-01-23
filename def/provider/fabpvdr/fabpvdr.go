@@ -22,31 +22,27 @@ import (
 
 // FabricProvider represents the default implementation of Fabric objects.
 type FabricProvider struct {
-	config      apiconfig.Config
-	stateStore  apifabclient.KeyValueStore
-	cryptoSuite apicryptosuite.CryptoSuite
-	signer      apifabclient.SigningManager
+	config         apiconfig.Config
+	stateStore     apifabclient.KeyValueStore
+	cryptoSuite    apicryptosuite.CryptoSuite
+	signingManager apifabclient.SigningManager
 }
 
 // NewFabricProvider creates a FabricProvider enabling access to core Fabric objects and functionality.
-func NewFabricProvider(config apiconfig.Config, stateStore apifabclient.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signer apifabclient.SigningManager) *FabricProvider {
+func NewFabricProvider(config apiconfig.Config, stateStore apifabclient.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signingManager apifabclient.SigningManager) *FabricProvider {
 	f := FabricProvider{
 		config,
 		stateStore,
 		cryptoSuite,
-		signer,
+		signingManager,
 	}
 	return &f
 }
 
 // NewResourceClient returns a new client initialized for the current instance of the SDK
 func (f *FabricProvider) NewResourceClient(ic apifabclient.IdentityContext) (apifabclient.Resource, error) {
-	client := clientImpl.NewClient(f.config)
-
-	client.SetCryptoSuite(f.cryptoSuite)
-	client.SetStateStore(f.stateStore)
-	client.SetIdentityContext(ic)
-	client.SetSigningManager(f.signer)
+	context := &clientContext{fabProvider: f, identity: ic}
+	client := clientImpl.New(context)
 
 	return client, nil
 }
@@ -79,14 +75,29 @@ func (f *FabricProvider) NewPeerFromConfig(peerCfg *apiconfig.NetworkPeer) (apif
 
 // NewChannelClient returns a new client initialized for the current instance of the SDK
 func (f *FabricProvider) NewChannelClient(ic apifabclient.IdentityContext, name string) (apifabclient.Channel, error) {
-	client := clientImpl.NewClient(f.config)
+	context := &clientContext{fabProvider: f, identity: ic}
+	return channelImpl.New(context, name)
+}
 
-	client.SetCryptoSuite(f.cryptoSuite)
-	client.SetStateStore(f.stateStore)
-	client.SetIdentityContext(ic)
-	client.SetSigningManager(f.signer)
+type clientContext struct {
+	fabProvider *FabricProvider
+	identity    apifabclient.IdentityContext
+}
 
-	return channelImpl.NewChannel(name, client)
+func (c *clientContext) Config() apiconfig.Config {
+	return c.fabProvider.config
+}
+
+func (c *clientContext) CryptoSuite() apicryptosuite.CryptoSuite {
+	return c.fabProvider.cryptoSuite
+}
+
+func (c *clientContext) SigningManager() apifabclient.SigningManager {
+	return c.fabProvider.signingManager
+}
+
+func (c *clientContext) IdentityContext() apifabclient.IdentityContext {
+	return c.identity
 }
 
 /*

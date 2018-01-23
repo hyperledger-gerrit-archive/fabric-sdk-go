@@ -17,14 +17,7 @@ import (
 // Resource is a client that provides access to fabric resources such as chaincode.
 type Resource interface {
 	Context
-	client
 
-	// TODO refactor into channel provider and remove from Resource (upcoming CR)
-	NewChannel(name string) (Channel, error)
-	Channel(name string) Channel
-}
-
-type client interface {
 	CreateChannel(request CreateChannelRequest) (txn.TransactionID, error)
 	InstallChaincode(request InstallChaincodeRequest) ([]*txn.TransactionProposalResponse, string, error)
 	QueryInstalledChaincodes(peer Peer) (*pb.ChaincodeQueryResponse, error)
@@ -32,14 +25,22 @@ type client interface {
 
 	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
 	SignChannelConfig(config []byte, signer IdentityContext) (*common.ConfigSignature, error)
+
+	NewChannel(name string) (Channel, error)
+	Channel(name string) Channel
 }
 
 // Context supplies the configuration and signing identity to client objects.
 type Context interface {
+	ProviderContext
+	IdentityContext() IdentityContext
+}
+
+// ProviderContext supplies the configuration to client objects.
+type ProviderContext interface {
 	SigningManager() SigningManager
 	Config() config.Config
 	CryptoSuite() apicryptosuite.CryptoSuite
-	IdentityContext() IdentityContext
 }
 
 // FabricClient provides access to infrastructure functionality.

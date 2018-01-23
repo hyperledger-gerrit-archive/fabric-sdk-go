@@ -22,7 +22,7 @@ func TestChannelConfigs(t *testing.T) {
 	client.SetIdentityContext(user)
 	client.SetCryptoSuite(cryptoSuite)
 
-	channel, _ := NewChannel("testChannel", client)
+	channel, _ := New(client, "testChannel")
 
 	if channel.IsReadonly() {
 		//TODO: Rightnow it is returning false always, need to revisit test once actual implementation is provided

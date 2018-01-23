@@ -42,7 +42,7 @@ func TestJoinChannel(t *testing.T) {
 	client := setupTestClient("test", "Org1MSP")
 
 	// Create test channel and add it to the client (no added orderer yet)
-	channel, _ := channel.NewChannel("mychannel", client)
+	channel, _ := channel.New(client, "mychannel")
 	client.SetChannel("mychannel", channel)
 
 	// Setup resource management client
@@ -918,7 +918,7 @@ func TestCCProposal(t *testing.T) {
 	client := setupTestClient("Admin", "Org1MSP")
 
 	// Create test channel and add it to the client (no added orderer yet)
-	channel, _ := channel.NewChannel("mychannel", client)
+	channel, _ := channel.New(client, "mychannel")
 	client.SetChannel("mychannel", channel)
 
 	// Setup resource management client
