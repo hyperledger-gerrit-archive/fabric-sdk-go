@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package defclient
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
@@ -17,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 	chmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
@@ -38,7 +38,7 @@ func TestNewChannelMgmtClient(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	client, err := factory.NewChannelMgmtClient(mockSDK, session, p.Config)
+	client, err := factory.NewChannelMgmtClient(mockSDK, session)
 	if err != nil {
 		t.Fatalf("Unexpected error creating system client %v", err)
 	}
@@ -62,7 +62,7 @@ func TestNewResourceMgmtClient(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	client, err := factory.NewResourceMgmtClient(mockSDK, session, p.Config, nil)
+	client, err := factory.NewResourceMgmtClient(mockSDK, session, nil)
 	if err != nil {
 		t.Fatalf("Unexpected error creating system client %v", err)
 	}
@@ -80,17 +80,13 @@ func TestNewChannelClient(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
-	mockSDK.EXPECT().Config().Return(p.Config)
-	mockSDK.EXPECT().CryptoSuite().Return(p.CryptoSuite)
-	mockSDK.EXPECT().StateStore().Return(p.StateStore)
-	mockSDK.EXPECT().SigningManager().Return(p.SigningManager)
 	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
 	mockSDK.EXPECT().SelectionProvider().Return(p.SelectionProvider)
 
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	client, err := factory.NewChannelClient(mockSDK, session, p.Config, "mychannel")
+	client, err := factory.NewChannelClient(mockSDK, session, "mychannel")
 	if err != nil {
 		t.Fatalf("Unexpected error creating channel client: %v", err)
 	}
@@ -108,45 +104,50 @@ func TestNewChannelClientBadChannel(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
-	mockSDK.EXPECT().Config().Return(p.Config)
-	mockSDK.EXPECT().CryptoSuite().Return(p.CryptoSuite)
-	mockSDK.EXPECT().StateStore().Return(p.StateStore)
-	mockSDK.EXPECT().SigningManager().Return(p.SigningManager)
+	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
 
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	_, err := factory.NewChannelClient(mockSDK, session, p.Config, "badchannel")
+	_, err := factory.NewChannelClient(mockSDK, session, "badchannel")
 	if err == nil {
 		t.Fatalf("Expected error creating channel client")
 	}
 }
 
-func TestNewChannelClientBadOrg(t *testing.T) {
+func TestNewChannelClientBadChannelProvider(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
+
+	factory := NewSessionClientFactory()
+	session := newMockSession()
+	session.IsChError = true
+
+	_, err := factory.NewChannelClient(mockSDK, session, "mychannel")
+	if err == nil {
+		t.Fatalf("Expected error creating channel client")
+	}
+}
+
+func TestNewChannelClientBadEventHub(t *testing.T) {
 	p := newMockProviders(t)
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
 
-	mockSDK.EXPECT().Config().Return(p.Config)
-	mockSDK.EXPECT().CryptoSuite().Return(p.CryptoSuite)
-	mockSDK.EXPECT().StateStore().Return(p.StateStore)
-	mockSDK.EXPECT().SigningManager().Return(p.SigningManager)
 	mockSDK.EXPECT().DiscoveryProvider().Return(p.DiscoveryProvider)
 	mockSDK.EXPECT().SelectionProvider().Return(p.SelectionProvider)
 
 	factory := NewSessionClientFactory()
-	session := newMockSessionWithUser("user1", "BadOrg")
+	session := newMockSession()
+	session.IsEHError = true
 
-	_, err := factory.NewChannelClient(mockSDK, session, p.Config, "mychannel")
+	_, err := factory.NewChannelClient(mockSDK, session, "mychannel")
 	if err == nil {
 		t.Fatalf("Expected error creating channel client")
 	}
-}
-
-func getChannelMock(client apifabclient.Resource, channelID string) (apifabclient.Channel, error) {
-	return channel.NewChannel("channel", client)
 }
 
 type mockProviders struct {
@@ -182,7 +183,8 @@ func newMockProviders(t *testing.T) *mockProviders {
 		t.Fatalf("Unexpected error creating signing manager %v", err)
 	}
 
-	fabricProvider, err := coreFactory.NewFabricProvider(config, stateStore, cryptosuite, signer)
+	ctx := fabmocks.NewMockProviderContextCustom(config, cryptosuite, signer)
+	fabricProvider, err := coreFactory.NewFabricProvider(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
 	}
@@ -210,7 +212,9 @@ func newMockProviders(t *testing.T) *mockProviders {
 }
 
 type mockSession struct {
-	user apifabclient.IdentityContext
+	user      apifabclient.IdentityContext
+	IsChError bool
+	IsEHError bool
 }
 
 func newMockSession() *mockSession {
@@ -220,11 +224,25 @@ func newMockSession() *mockSession {
 func newMockSessionWithUser(username, mspID string) *mockSession {
 	user := fabmocks.NewMockUserWithMSPID(username, mspID)
 	session := mockSession{
-		user,
+		user: user,
 	}
 	return &session
 }
 
 func (s *mockSession) Identity() apifabclient.IdentityContext {
 	return s.user
+}
+
+func (s *mockSession) Channel(channelID string) (apifabclient.Channel, error) {
+	if s.IsChError {
+		return nil, errors.New("error")
+	}
+	return nil, nil
+}
+
+func (s *mockSession) EventHub(channelID string) (apifabclient.EventHub, error) {
+	if s.IsEHError {
+		return nil, errors.New("error")
+	}
+	return nil, nil
 }

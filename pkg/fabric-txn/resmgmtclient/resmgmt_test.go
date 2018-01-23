@@ -30,8 +30,29 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-func TestJoinChannel(t *testing.T) {
+func TestJoinChannelFail(t *testing.T) {
 
+	client := setupTestClient("test", "Org1MSP")
+
+	// Setup resource management client
+	config := getNetworkConfig(t)
+	client.SetConfig(config)
+
+	rc := setupResMgmtClient(client, nil, t)
+
+	// Setup target peers
+	var peers []fab.Peer
+	peer1, _ := peer.New(fcmocks.NewMockConfig())
+	peers = append(peers, peer1)
+
+	// Test fail genesis block retrieval (no orderer)
+	err := rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{Targets: peers})
+	if err == nil {
+		t.Fatal("Should have failed to get genesis block")
+	}
+}
+
+func TestJoinChannel(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
 
@@ -41,36 +62,26 @@ func TestJoinChannel(t *testing.T) {
 
 	client := setupTestClient("test", "Org1MSP")
 
-	// Create test channel and add it to the client (no added orderer yet)
-	channel, _ := channel.NewChannel("mychannel", client)
-	client.SetChannel("mychannel", channel)
+	// Create mock orderer with simple mock block
+	orderer := fcmocks.NewMockOrderer("", nil)
+	orderer.(fcmocks.MockOrderer).EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 
-	// Setup resource management client
-	config := getNetworkConfig(t)
-	rc := setupResMgmtClient(client, nil, config, t)
+	rc := setupResMgmtClient(client, nil, t)
+
+	channel, err := channel.New(client, "mychannel")
+	if err != nil {
+		t.Fatalf("Error setting up channel: %v", err)
+	}
+	err = channel.AddOrderer(orderer)
+	if err != nil {
+		t.Fatalf("Error adding orderer: %v", err)
+	}
+	rc.channelSvc.(*fcmocks.MockChannelSvc).SetChannel("mychannel", channel)
 
 	// Setup target peers
 	var peers []fab.Peer
 	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL(addr))
 	peers = append(peers, peer1)
-
-	// Test fail genesis block retrieval (no orderer)
-	err := rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{Targets: peers})
-	if err == nil {
-		t.Fatal("Should have failed to get genesis block")
-	}
-
-	// Create mock orderer with simple mock block
-	orderer := fcmocks.NewMockOrderer("", nil)
-	orderer.(fcmocks.MockOrderer).EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
-
-	// Add orderer to the channel
-	err = channel.AddOrderer(orderer)
-	if err != nil {
-		t.Fatalf("Error adding orderer: %v", err)
-	}
-
-	rc = setupResMgmtClient(client, nil, config, t)
 
 	// Test valid join channel request (success)
 	err = rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{Targets: peers})
@@ -104,21 +115,29 @@ func TestNoSigningUserFailure(t *testing.T) {
 	// Setup client without user context
 	client := fcmocks.NewMockClient()
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
+	resource := fcmocks.NewMockResource()
 
 	discovery, err := setupTestDiscovery(nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	_, err = NewResourceMgmtClient(client, discovery, nil, config)
-	if err == nil {
-		t.Fatal("Should have failed due to missing signing user")
+	chProvider, err := fcmocks.NewMockChannelProvider(client)
+	if err != nil {
+		t.Fatalf("Failed to setup channel provider: %s", err)
 	}
 
 	user := fcmocks.NewMockUserWithMSPID("test", "")
-	client.SetIdentityContext(user)
 
-	_, err = NewResourceMgmtClient(client, discovery, nil, config)
+	ctx := Context{
+		ProviderContext:   client,
+		IdentityContext:   user,
+		Resource:          resource,
+		ChannelService:    chProvider,
+		DiscoveryProvider: discovery,
+	}
+	_, err = New(ctx, nil)
 	if err == nil {
 		t.Fatal("Should have failed due to missing msp")
 	}
@@ -144,9 +163,10 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 	// Setup test client with different msp (default targets cannot be calculated)
 	client := setupTestClient("test", "otherMSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(client, nil, config, t)
+	rc = setupResMgmtClient(client, nil, t)
 
 	// Test missing default targets
 	err = rc.JoinChannel("mychannel")
@@ -189,9 +209,10 @@ func TestJoinChannelDiscoveryError(t *testing.T) {
 	// Setup test client and config
 	client := setupTestClient("test", "Org1MSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
-	rc := setupResMgmtClient(client, errors.New("Test Error"), config, t)
+	rc := setupResMgmtClient(client, errors.New("Test Error"), t)
 
 	err := rc.JoinChannel("mychannel")
 	if err == nil {
@@ -215,7 +236,8 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rc := setupResMgmtClient(client, nil, noOrdererConfig, t)
+	client.SetConfig(noOrdererConfig)
+	rc := setupResMgmtClient(client, nil, t)
 
 	err = rc.JoinChannel("mychannel")
 	if err == nil {
@@ -227,7 +249,8 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rc.config = invalidChOrdererConfig
+	client.SetConfig(invalidChOrdererConfig)
+	rc = setupResMgmtClient(client, nil, t)
 
 	err = rc.JoinChannel("mychannel")
 	if err == nil {
@@ -239,13 +262,13 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rc.config = invalidOrdererConfig
+	client.SetConfig(invalidOrdererConfig)
+	rc = setupResMgmtClient(client, nil, t)
 
 	err = rc.JoinChannel("mychannel")
 	if err == nil {
 		t.Fatalf("Should have failed to join channel since global orderer certs are not configured properly")
 	}
-
 }
 
 func TestIsChaincodeInstalled(t *testing.T) {
@@ -263,7 +286,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !installed {
-		t.Fatalf("CC should have been installed: %s", req)
+		t.Fatalf("CC should have been installed: %v", req)
 	}
 
 	// Chaincode not found request
@@ -417,9 +440,10 @@ func TestInstallCCRequiredParameters(t *testing.T) {
 	// Setup test client with different msp (default targets cannot be calculated)
 	client := setupTestClient("test", "otherMSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(client, nil, config, t)
+	rc = setupResMgmtClient(client, nil, t)
 	req = resmgmt.InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &fab.CCPackage{Type: 1, Code: []byte("code")}}
 
 	// Test missing default targets
@@ -487,9 +511,10 @@ func TestInstallCCWithOptsRequiredParameters(t *testing.T) {
 	// Setup test client with different msp
 	client := setupTestClient("test", "otherMSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(client, nil, config, t)
+	rc = setupResMgmtClient(client, nil, t)
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
 	_, err = rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{})
@@ -509,9 +534,10 @@ func TestInstallCCDiscoveryError(t *testing.T) {
 	// Setup test client and config
 	client := setupTestClient("test", "Org1MSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
-	rc := setupResMgmtClient(client, errors.New("Test Error"), config, t)
+	rc := setupResMgmtClient(client, errors.New("Test Error"), t)
 
 	// Test InstallCC discovery service error
 	req := resmgmt.InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &fab.CCPackage{Type: 1, Code: []byte("code")}}
@@ -579,9 +605,10 @@ func TestInstantiateCCRequiredParameters(t *testing.T) {
 	// Setup test client with different msp (default targets cannot be calculated)
 	client := setupTestClient("test", "otherMSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(client, nil, config, t)
+	rc = setupResMgmtClient(client, nil, t)
 
 	// Valid request
 	ccPolicy := cauthdsl.SignedByMspMember("otherMSP")
@@ -661,9 +688,10 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 	// Setup test client with different msp
 	client := setupTestClient("test", "otherMSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(client, nil, config, t)
+	rc = setupResMgmtClient(client, nil, t)
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
 	err = rc.InstantiateCCWithOpts("mychannel", req, resmgmt.InstantiateCCOpts{})
@@ -683,9 +711,10 @@ func TestInstantiateCCDiscoveryError(t *testing.T) {
 	// Setup test client and config
 	client := setupTestClient("test", "Org1MSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
-	rc := setupResMgmtClient(client, errors.New("Test Error"), config, t)
+	rc := setupResMgmtClient(client, errors.New("Test Error"), t)
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
 	req := resmgmt.InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
@@ -767,9 +796,10 @@ func TestUpgradeCCRequiredParameters(t *testing.T) {
 	// Setup test client with different msp (default targets cannot be calculated)
 	client := setupTestClient("test", "otherMSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(client, nil, config, t)
+	rc = setupResMgmtClient(client, nil, t)
 
 	// Valid request
 	ccPolicy := cauthdsl.SignedByMspMember("otherMSP")
@@ -849,9 +879,10 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 	// Setup test client with different msp
 	client := setupTestClient("test", "otherMSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create new resource management client ("otherMSP")
-	rc = setupResMgmtClient(client, nil, config, t)
+	rc = setupResMgmtClient(client, nil, t)
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
 	err = rc.UpgradeCCWithOpts("mychannel", req, resmgmt.UpgradeCCOpts{})
@@ -871,9 +902,10 @@ func TestUpgradeCCDiscoveryError(t *testing.T) {
 	// Setup test client and config
 	client := setupTestClient("test", "Org1MSP")
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	// Create resource management client with discovery service that will generate an error
-	rc := setupResMgmtClient(client, errors.New("Test Error"), config, t)
+	rc := setupResMgmtClient(client, errors.New("Test Error"), t)
 
 	// Test UpgradeCC discovery service error
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
@@ -917,16 +949,14 @@ func TestCCProposal(t *testing.T) {
 
 	client := setupTestClient("Admin", "Org1MSP")
 
-	// Create test channel and add it to the client (no added orderer yet)
-	channel, _ := channel.NewChannel("mychannel", client)
-	client.SetChannel("mychannel", channel)
-
 	// Setup resource management client
 	cfg, err := config.FromFile("./testdata/ccproposal_test.yaml")()
 	if err != nil {
 		t.Fatal(err)
 	}
-	rc := setupResMgmtClient(client, nil, cfg, t)
+	client.SetConfig(cfg)
+
+	rc := setupResMgmtClient(client, nil, t)
 
 	// Setup target peers
 	var peers []fab.Peer
@@ -936,13 +966,17 @@ func TestCCProposal(t *testing.T) {
 	// Create mock orderer
 	orderer := fcmocks.NewMockOrderer("", nil)
 
-	// Add orderer to the channel
+	rc = setupResMgmtClient(client, nil, t)
+
+	channel, err := channel.New(client, "mychannel")
+	if err != nil {
+		t.Fatalf("Error setting up channel: %v", err)
+	}
 	err = channel.AddOrderer(orderer)
 	if err != nil {
 		t.Fatalf("Error adding orderer: %v", err)
 	}
-
-	rc = setupResMgmtClient(client, nil, cfg, t)
+	rc.channelSvc.(*fcmocks.MockChannelSvc).SetChannel("mychannel", channel)
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
 	instantiateReq := resmgmt.InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
@@ -994,18 +1028,13 @@ func TestCCProposal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	client.SetConfig(cfg)
 
-	rc = setupResMgmtClient(client, nil, cfg, t)
+	rc = setupResMgmtClient(client, nil, t)
 	err = rc.InstantiateCC("mychannel", instantiateReq)
 	if err == nil {
 		t.Fatalf("Should have failed since no event source has been configured")
 	}
-
-	expected := "unable to find event source for channel"
-	if !strings.Contains(err.Error(), expected) {
-		t.Fatalf("Expecting '%s', got '%s'", expected, err.Error())
-	}
-
 }
 
 func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryProvider, error) {
@@ -1030,17 +1059,40 @@ func getNetworkConfig(t *testing.T) apiconfig.Config {
 func setupDefaultResMgmtClient(t *testing.T) *ResourceMgmtClient {
 	client := setupTestClient("test", "Org1MSP")
 	network := getNetworkConfig(t)
-	return setupResMgmtClient(client, nil, network, t)
+	client.SetConfig(network)
+
+	return setupResMgmtClient(client, nil, t)
 }
 
-func setupResMgmtClient(client *fcmocks.MockClient, discErr error, config apiconfig.Config, t *testing.T) *ResourceMgmtClient {
+func setupResMgmtClient(fabCtx fab.Context, discErr error, t *testing.T) *ResourceMgmtClient {
 
 	discovery, err := setupTestDiscovery(discErr, nil)
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	resClient, err := NewResourceMgmtClient(client, discovery, nil, config)
+	chProvider, err := fcmocks.NewMockChannelProvider(fabCtx)
+	if err != nil {
+		t.Fatalf("Failed to setup channel provider: %s", err)
+	}
+
+	// Create test channel and add it to the client (no added orderer yet)
+	channel, err := channel.New(fabCtx, "mychannel")
+	if err != nil {
+		t.Fatalf("Failed to setup channel: %s", err)
+	}
+	chProvider.SetChannel("mychannel", channel)
+
+	resource := fcmocks.NewMockResource()
+
+	ctx := Context{
+		ProviderContext:   fabCtx,
+		IdentityContext:   fabCtx,
+		Resource:          resource,
+		ChannelService:    chProvider,
+		DiscoveryProvider: discovery,
+	}
+	resClient, err := New(ctx, nil)
 	if err != nil {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
@@ -1051,9 +1103,7 @@ func setupResMgmtClient(client *fcmocks.MockClient, discErr error, config apicon
 func setupTestClient(userName string, mspID string) *fcmocks.MockClient {
 	client := fcmocks.NewMockClient()
 	user := fcmocks.NewMockUserWithMSPID(userName, mspID)
-	cryptoSuite := &fcmocks.MockCryptoSuite{}
-	client.SetIdentityContext(user)
-	client.SetCryptoSuite(cryptoSuite)
+	client.IdentityContext = user
 
 	return client
 }
