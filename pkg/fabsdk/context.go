@@ -53,6 +53,11 @@ func (c *sdkContext) FabricProvider() apicore.FabricProvider {
 	return c.sdk.fabricProvider
 }
 
+// ChannelProvider provides channel services.
+func (c *sdkContext) ChannelProvider() *channelProvider {
+	return c.sdk.channelProvider
+}
+
 type identityOptions struct {
 	identity apifabclient.IdentityContext
 	ok       bool
@@ -108,26 +113,31 @@ func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (ap
 	return opts.identity, nil
 }
 
-// session represents an identity being used with clients.
-// TODO: Better description
-// TODO: consider removing this extra wrapper.
+// session represents an identity being used with clients along with services
+// that associate with that identity (particularly the channel service).
 type session struct {
-	user apifabclient.IdentityContext
+	identityContext apifabclient.IdentityContext
+	channelService  apifabclient.ChannelService
 }
 
 // newSession creates a session from a context and a user (TODO)
-func newSession(user apifabclient.IdentityContext) *session {
+func newSession(ic apifabclient.IdentityContext, cp *channelProvider) *session {
 	s := session{
-		user: user,
+		identityContext: ic,
+		channelService:  cp.newChannelService(ic),
 	}
 
 	return &s
 }
 
+func (s *session) Channel(channelID string) (apifabclient.Channel, error) {
+	return s.channelService.Channel(channelID)
+}
+
 // Identity returns the User in the session.
 // TODO: reduce interface to identity
 func (s *session) Identity() apifabclient.IdentityContext {
-	return s.user
+	return s.identityContext
 }
 
 // FabricProvider provides fabric objects such as peer and user

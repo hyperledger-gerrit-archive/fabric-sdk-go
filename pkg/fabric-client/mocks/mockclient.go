@@ -70,6 +70,11 @@ func (c *MockClient) Config() config.Config {
 	return c.config
 }
 
+// SetConfig changes the configuration of the mock client.
+func (c *MockClient) SetConfig(config config.Config) {
+	c.config = config
+}
+
 // QueryChannelInfo ...
 func (c *MockClient) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, error) {
 	return nil, errors.New("Not implemented yet")

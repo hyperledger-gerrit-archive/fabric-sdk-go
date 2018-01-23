@@ -19,6 +19,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 
@@ -42,7 +43,7 @@ func TestJoinChannel(t *testing.T) {
 	client := setupTestClient("test", "Org1MSP")
 
 	// Create test channel and add it to the client (no added orderer yet)
-	channel, _ := channel.NewChannel("mychannel", client)
+	channel, _ := channel.New(client, "mychannel")
 	client.SetChannel("mychannel", channel)
 
 	// Setup resource management client
@@ -104,13 +105,14 @@ func TestNoSigningUserFailure(t *testing.T) {
 	// Setup client without user context
 	client := fcmocks.NewMockClient()
 	config := getNetworkConfig(t)
+	client.SetConfig(config)
 
 	discovery, err := setupTestDiscovery(nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	_, err = NewResourceMgmtClient(client, discovery, nil, config)
+	_, err = NewResourceMgmtClient(client, &mockChannelSvc{client}, discovery, nil)
 	if err == nil {
 		t.Fatal("Should have failed due to missing signing user")
 	}
@@ -118,7 +120,7 @@ func TestNoSigningUserFailure(t *testing.T) {
 	user := fcmocks.NewMockUserWithMSPID("test", "")
 	client.SetIdentityContext(user)
 
-	_, err = NewResourceMgmtClient(client, discovery, nil, config)
+	_, err = NewResourceMgmtClient(client, &mockChannelSvc{client}, discovery, nil)
 	if err == nil {
 		t.Fatal("Should have failed due to missing msp")
 	}
@@ -227,7 +229,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rc.config = invalidChOrdererConfig
+	rc = setupResMgmtClient(client, nil, invalidChOrdererConfig, t)
 
 	err = rc.JoinChannel("mychannel")
 	if err == nil {
@@ -239,7 +241,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rc.config = invalidOrdererConfig
+	rc = setupResMgmtClient(client, nil, invalidOrdererConfig, t)
 
 	err = rc.JoinChannel("mychannel")
 	if err == nil {
@@ -918,7 +920,7 @@ func TestCCProposal(t *testing.T) {
 	client := setupTestClient("Admin", "Org1MSP")
 
 	// Create test channel and add it to the client (no added orderer yet)
-	channel, _ := channel.NewChannel("mychannel", client)
+	channel, _ := channel.New(client, "mychannel")
 	client.SetChannel("mychannel", channel)
 
 	// Setup resource management client
@@ -1040,7 +1042,9 @@ func setupResMgmtClient(client *fcmocks.MockClient, discErr error, config apicon
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	resClient, err := NewResourceMgmtClient(client, discovery, nil, config)
+	client.SetConfig(config)
+
+	resClient, err := NewResourceMgmtClient(client, &mockChannelSvc{client}, discovery, nil)
 	if err != nil {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
@@ -1071,4 +1075,53 @@ func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*fcmocks.MockEn
 	t.Logf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
 	return endorserServer, addr
+}
+
+type mockChannelSvc struct {
+	client *fcmocks.MockClient
+}
+
+func (cs *mockChannelSvc) Channel(channelID string) (fab.Channel, error) {
+	channel := cs.client.Channel(channelID)
+	if channel != nil {
+		return channel, nil
+	}
+	// Creating channel requires orderer information
+	var orderers []apiconfig.OrdererConfig
+	chCfg, err := cs.client.Config().ChannelConfig(channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	if chCfg == nil {
+		orderers, err = cs.client.Config().OrderersConfig()
+	} else {
+		orderers, err = cs.client.Config().ChannelOrderers(channelID)
+	}
+
+	// Check if retrieving orderer configuration went ok
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to retrieve orderer configuration")
+	}
+
+	if len(orderers) == 0 {
+		return nil, errors.Errorf("Must configure at least one order for channel and/or one orderer in the network")
+	}
+
+	channel, err = cs.client.NewChannel(channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "NewChannel failed")
+	}
+
+	for _, ordererCfg := range orderers {
+		orderer, err := orderer.New(cs.client.Config(), orderer.FromOrdererConfig(&ordererCfg))
+		if err != nil {
+			return nil, errors.WithMessage(err, "NewOrdererFromConfig failed")
+		}
+		err = channel.AddOrderer(orderer)
+		if err != nil {
+			return nil, errors.WithMessage(err, "adding orderer failed")
+		}
+	}
+	return channel, nil
 }
