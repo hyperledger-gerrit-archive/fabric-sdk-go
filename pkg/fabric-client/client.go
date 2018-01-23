@@ -44,7 +44,22 @@ type Client struct {
 	signingManager  fab.SigningManager
 }
 
+// New returns a Client instance with the SDK context.
+func New(ctx fab.Context) *Client {
+	channels := make(map[string]fab.Channel)
+	c := Client{
+		channels:        channels,
+		cryptoSuite:     ctx.CryptoSuite(),
+		signingIdentity: ctx.IdentityContext(),
+		signingManager:  ctx.SigningManager(),
+		config:          ctx.Config(),
+	}
+	return &c
+}
+
 // NewClient returns a Client instance.
+//
+// Deprecated: see fabsdk package.
 func NewClient(config config.Config) *Client {
 	channels := make(map[string]fab.Channel)
 	c := Client{channels: channels, config: config}
@@ -52,12 +67,14 @@ func NewClient(config config.Config) *Client {
 }
 
 // NewChannel returns a channel instance with the given name.
+//
+// Deprecated: see fabsdk package.
 func (c *Client) NewChannel(name string) (fab.Channel, error) {
 	if _, ok := c.channels[name]; ok {
 		return nil, errors.Errorf("channel %s already exists", name)
 	}
 	var err error
-	channel, err := channel.NewChannel(name, c)
+	channel, err := channel.New(c, name)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +106,8 @@ func (c *Client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, e
 }
 
 // SetStateStore ...
+//
+// Deprecated: see fabsdk package.
 /*
  * The SDK should have a built-in key value store implementation (suggest a file-based implementation to allow easy setup during
  * development). But production systems would want a store backed by database for more robust storage and clustering,
@@ -105,6 +124,8 @@ func (c *Client) StateStore() fab.KeyValueStore {
 }
 
 // SetCryptoSuite is a convenience method for obtaining the state store object in use for this client.
+//
+// Deprecated: see fabsdk package.
 func (c *Client) SetCryptoSuite(cryptoSuite apicryptosuite.CryptoSuite) {
 	c.cryptoSuite = cryptoSuite
 }
@@ -120,6 +141,8 @@ func (c *Client) SigningManager() fab.SigningManager {
 }
 
 // SetSigningManager is a convenience method to set signing manager
+//
+// Deprecated: see fabsdk package.
 func (c *Client) SetSigningManager(signingMgr fab.SigningManager) {
 	c.signingManager = signingMgr
 }

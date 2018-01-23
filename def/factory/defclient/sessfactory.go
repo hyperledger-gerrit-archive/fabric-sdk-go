@@ -18,7 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	clientImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 	chmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
 	resmgmtImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
@@ -34,17 +33,17 @@ func NewSessionClientFactory() *SessionClientFactory {
 }
 
 // NewChannelMgmtClient returns a client that manages channels (create/join channel)
-func (f *SessionClientFactory) NewChannelMgmtClient(sdk apisdk.Providers, session apisdk.Session, config apiconfig.Config) (chmgmt.ChannelMgmtClient, error) {
+func (f *SessionClientFactory) NewChannelMgmtClient(sdk apisdk.Providers, session apisdk.SessionSvc) (chmgmt.ChannelMgmtClient, error) {
 	// For now settings are the same as for system client
 	client, err := sdk.FabricProvider().NewResourceClient(session.Identity())
 	if err != nil {
 		return nil, err
 	}
-	return chmgmtImpl.NewChannelMgmtClient(client, config)
+	return chmgmtImpl.NewChannelMgmtClient(client, sdk.ConfigProvider())
 }
 
 // NewResourceMgmtClient returns a client that manages resources
-func (f *SessionClientFactory) NewResourceMgmtClient(sdk apisdk.Providers, session apisdk.Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error) {
+func (f *SessionClientFactory) NewResourceMgmtClient(sdk apisdk.Providers, session apisdk.SessionSvc, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error) {
 
 	// For now settings are the same as for system client
 	client, err := sdk.FabricProvider().NewResourceClient(session.Identity())
@@ -57,21 +56,22 @@ func (f *SessionClientFactory) NewResourceMgmtClient(sdk apisdk.Providers, sessi
 		return nil, errors.WithMessage(err, "create discovery provider failed")
 	}
 
-	return resmgmtImpl.NewResourceMgmtClient(client, provider, filter, config)
+	return resmgmtImpl.NewResourceMgmtClient(client, session, provider, filter)
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel
 // TODO - better refactoring for testing and/or extract getChannelImpl to another package
-func (f *SessionClientFactory) NewChannelClient(sdk apisdk.Providers, session apisdk.Session, config apiconfig.Config, channelID string) (apitxn.ChannelClient, error) {
+func (f *SessionClientFactory) NewChannelClient(sdk apisdk.Providers, session apisdk.SessionSvc, channelID string) (apitxn.ChannelClient, error) {
 	// TODO: Add capablity to override sdk's selection and discovery provider
 
+	// TODO extract eventHub logic similar to channel logic
 	client := clientImpl.NewClient(sdk.ConfigProvider())
 	client.SetCryptoSuite(sdk.CryptoSuiteProvider())
 	client.SetStateStore(sdk.StateStoreProvider())
 	client.SetIdentityContext(session.Identity())
 	client.SetSigningManager(sdk.SigningManager())
 
-	channel, err := getChannel(client, channelID)
+	channel, err := session.Channel(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create channel failed")
 	}
@@ -92,39 +92,6 @@ func (f *SessionClientFactory) NewChannelClient(sdk apisdk.Providers, session ap
 	}
 
 	return chImpl.NewChannelClient(client, channel, discovery, selection, eventHub)
-}
-
-// getChannel is helper method to initializes and returns a channel based on config
-func getChannel(client fab.Resource, channelID string) (fab.Channel, error) {
-
-	channel, err := client.NewChannel(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
-	}
-
-	chCfg, err := client.Config().ChannelConfig(channel.Name())
-	if err != nil || chCfg == nil {
-		return nil, errors.Errorf("reading channel config failed: %s", err)
-	}
-
-	chOrderers, err := client.Config().ChannelOrderers(channel.Name())
-	if err != nil {
-		return nil, errors.WithMessage(err, "reading channel orderers failed")
-	}
-
-	for _, ordererCfg := range chOrderers {
-
-		orderer, err := orderer.New(client.Config(), orderer.FromOrdererConfig(&ordererCfg))
-		if err != nil {
-			return nil, errors.WithMessage(err, "creating orderer failed")
-		}
-		err = channel.AddOrderer(orderer)
-		if err != nil {
-			return nil, errors.WithMessage(err, "adding orderer failed")
-		}
-	}
-
-	return channel, nil
 }
 
 func getEventHub(client fab.Resource, channelID string, session apisdk.Session) (*events.EventHub, error) {

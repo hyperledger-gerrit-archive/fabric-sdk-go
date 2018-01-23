@@ -17,7 +17,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -27,11 +26,11 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // ResourceMgmtClient enables managing resources in Fabric network.
 type ResourceMgmtClient struct {
-	client    fab.Resource
-	config    config.Config
-	filter    resmgmt.TargetFilter
-	discovery fab.DiscoveryService  // global discovery service (detects all peers on the network)
-	provider  fab.DiscoveryProvider // used to get per channel discovery service(s)
+	client            fab.Resource
+	filter            resmgmt.TargetFilter
+	channelSvc        fab.ChannelService
+	discovery         fab.DiscoveryService  // global discovery service (detects all peers on the network)
+	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
 }
 
 // CCProposalType reflects transitions in the chaincode lifecycle
@@ -54,7 +53,7 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 }
 
 // NewResourceMgmtClient returns a ResourceMgmtClient instance
-func NewResourceMgmtClient(client fab.Resource, provider fab.DiscoveryProvider, filter resmgmt.TargetFilter, config config.Config) (*ResourceMgmtClient, error) {
+func NewResourceMgmtClient(client fab.Resource, cp fab.ChannelService, dp fab.DiscoveryProvider, filter resmgmt.TargetFilter) (*ResourceMgmtClient, error) {
 
 	if client.IdentityContext() == nil {
 		return nil, errors.New("must provide client identity")
@@ -71,12 +70,18 @@ func NewResourceMgmtClient(client fab.Resource, provider fab.DiscoveryProvider, 
 	}
 
 	// setup global discovery service
-	discovery, err := provider.NewDiscoveryService("")
+	discovery, err := dp.NewDiscoveryService("")
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create global discovery service")
 	}
 
-	resourceClient := &ResourceMgmtClient{client: client, discovery: discovery, provider: provider, filter: rcFilter, config: config}
+	resourceClient := &ResourceMgmtClient{
+		client:            client,
+		channelSvc:        cp,
+		discovery:         discovery,
+		discoveryProvider: dp,
+		filter:            rcFilter,
+	}
 	return resourceClient, nil
 }
 
@@ -318,7 +323,7 @@ func (rc *ResourceMgmtClient) InstantiateCC(channelID string, req resmgmt.Instan
 	}
 
 	// per channel discovery service
-	discovery, err := rc.provider.NewDiscoveryService(channelID)
+	discovery, err := rc.discoveryProvider.NewDiscoveryService(channelID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create channel discovery service")
 	}
@@ -350,7 +355,7 @@ func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req resmgmt.UpgradeCCR
 	}
 
 	// per channel discovery service
-	discovery, err := rc.provider.NewDiscoveryService(channelID)
+	discovery, err := rc.discoveryProvider.NewDiscoveryService(channelID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create channel discovery service")
 	}
@@ -382,7 +387,7 @@ func (rc *ResourceMgmtClient) sendCCProposalWithOpts(ccProposalType CCProposalTy
 	}
 
 	// per channel discovery service
-	discovery, err := rc.provider.NewDiscoveryService(channelID)
+	discovery, err := rc.discoveryProvider.NewDiscoveryService(channelID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create channel discovery service")
 	}
@@ -448,7 +453,7 @@ func (rc *ResourceMgmtClient) sendCCProposalWithOpts(ccProposalType CCProposalTy
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	timeout := rc.config.TimeoutOrDefault(config.ExecuteTx)
+	timeout := rc.client.Config().TimeoutOrDefault(config.ExecuteTx)
 	if opts.Timeout != 0 {
 		timeout = opts.Timeout
 	}
@@ -480,55 +485,55 @@ func checkRequiredCCProposalParams(channelID string, req resmgmt.InstantiateCCRe
 // getChannel is helper method for instantiating channel. If channel is not configured it will use random orderer from global orderer configuration
 func (rc *ResourceMgmtClient) getChannel(channelID string) (fab.Channel, error) {
 
-	channel := rc.client.Channel(channelID)
-	if channel != nil {
-		return channel, nil
-	}
-
-	// Creating channel requires orderer information
-	var orderers []config.OrdererConfig
-	chCfg, err := rc.config.ChannelConfig(channelID)
+	channel, err := rc.channelSvc.Channel(channelID)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessage(err, "failed to get channel")
 	}
-
-	if chCfg == nil {
-		orderers, err = rc.config.OrderersConfig()
-	} else {
-		orderers, err = rc.config.ChannelOrderers(channelID)
-	}
-
-	// Check if retrieving orderer configuration went ok
-	if err != nil {
-		return nil, errors.WithMessage(err, "Failed to retrieve orderer configuration")
-	}
-
-	if len(orderers) == 0 {
-		return nil, errors.Errorf("Must configure at least one order for channel and/or one orderer in the network")
-	}
-
-	channel, err = rc.client.NewChannel(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
-	}
-
-	for _, ordererCfg := range orderers {
-		orderer, err := orderer.New(rc.config, orderer.FromOrdererConfig(&ordererCfg))
+	/*
+		// Creating channel requires orderer information
+		var orderers []config.OrdererConfig
+		chCfg, err := rc.config.ChannelConfig(channelID)
 		if err != nil {
-			return nil, errors.WithMessage(err, "NewOrdererFromConfig failed")
+			return nil, err
 		}
-		err = channel.AddOrderer(orderer)
-		if err != nil {
-			return nil, errors.WithMessage(err, "adding orderer failed")
-		}
-	}
 
+		if chCfg == nil {
+			orderers, err = rc.config.OrderersConfig()
+		} else {
+			orderers, err = rc.config.ChannelOrderers(channelID)
+		}
+
+		// Check if retrieving orderer configuration went ok
+		if err != nil {
+			return nil, errors.WithMessage(err, "Failed to retrieve orderer configuration")
+		}
+
+		if len(orderers) == 0 {
+			return nil, errors.Errorf("Must configure at least one order for channel and/or one orderer in the network")
+		}
+
+		channel, err = rc.channelSvc.NewChannel(channelID)
+		if err != nil {
+			return nil, errors.WithMessage(err, "NewChannel failed")
+		}
+
+		for _, ordererCfg := range orderers {
+			orderer, err := orderer.New(rc.config, orderer.FromOrdererConfig(&ordererCfg))
+			if err != nil {
+				return nil, errors.WithMessage(err, "NewOrdererFromConfig failed")
+			}
+			err = channel.AddOrderer(orderer)
+			if err != nil {
+				return nil, errors.WithMessage(err, "adding orderer failed")
+			}
+		}
+	*/
 	return channel, nil
 }
 
 func (rc *ResourceMgmtClient) getEventHub(channelID string) (*events.EventHub, error) {
 
-	peerConfig, err := rc.config.ChannelPeers(channelID)
+	peerConfig, err := rc.client.Config().ChannelPeers(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
 	}

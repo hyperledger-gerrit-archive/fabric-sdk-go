@@ -24,7 +24,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/events"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
@@ -101,7 +100,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 
 	setup.Client = sc
 
-	channel, err := setup.GetChannel(sdk, setup.Client, setup.ChannelID, []string{setup.OrgID})
+	channel, err := setup.GetChannel(sdk, session.Identity(), sdk.ConfigProvider(), setup.ChannelID, []string{setup.OrgID})
 	if err != nil {
 		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
 	}
@@ -152,6 +151,34 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	setup.Initialized = true
 
 	return nil
+}
+
+// GetChannel initializes and returns a channel based on config
+func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, channelID string, orgs []string) (fab.Channel, error) {
+
+	channel, err := sdk.FabricProvider().NewChannelClient(ic, channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "NewChannel failed")
+	}
+
+	for _, org := range orgs {
+		peerConfig, err := config.PeersConfig(org)
+		if err != nil {
+			return nil, errors.WithMessage(err, "reading peer config failed")
+		}
+		for _, p := range peerConfig {
+			endorser, err := sdk.FabricProvider().NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p})
+			if err != nil {
+				return nil, errors.WithMessage(err, "NewPeer failed")
+			}
+			err = channel.AddPeer(endorser)
+			if err != nil {
+				return nil, errors.WithMessage(err, "adding peer failed")
+			}
+		}
+	}
+
+	return channel, nil
 }
 
 func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client fab.Resource) error {
@@ -225,48 +252,6 @@ func (setup *BaseSetupImpl) InstallAndInstantiateCC(ccName, ccPath, ccVersion, g
 
 	ccPolicy := cauthdsl.SignedByMspMember(setup.Client.IdentityContext().MspID())
 	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
-}
-
-// GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, client fab.Resource, channelID string, orgs []string) (fab.Channel, error) {
-
-	channel, err := client.NewChannel(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
-	}
-
-	ordererConfig, err := client.Config().RandomOrdererConfig()
-	if err != nil {
-		return nil, errors.WithMessage(err, "RandomOrdererConfig failed")
-	}
-
-	orderer, err := orderer.New(client.Config(), orderer.FromOrdererConfig(ordererConfig))
-	if err != nil {
-		return nil, errors.WithMessage(err, "New failed")
-	}
-	err = channel.AddOrderer(orderer)
-	if err != nil {
-		return nil, errors.WithMessage(err, "adding orderer failed")
-	}
-
-	for _, org := range orgs {
-		peerConfig, err := client.Config().PeersConfig(org)
-		if err != nil {
-			return nil, errors.WithMessage(err, "reading peer config failed")
-		}
-		for _, p := range peerConfig {
-			endorser, err := sdk.FabricProvider().NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p})
-			if err != nil {
-				return nil, errors.WithMessage(err, "NewPeer failed")
-			}
-			err = channel.AddPeer(endorser)
-			if err != nil {
-				return nil, errors.WithMessage(err, "adding peer failed")
-			}
-		}
-	}
-
-	return channel, nil
 }
 
 // CreateAndSendTransactionProposal ... TODO duplicate

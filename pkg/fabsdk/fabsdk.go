@@ -31,6 +31,7 @@ type FabricSDK struct {
 	selectionProvider apifabclient.SelectionProvider
 	signingManager    apifabclient.SigningManager
 	fabricProvider    apicore.FabricProvider
+	channelProvider   *channelProvider
 }
 
 type options struct {
@@ -197,7 +198,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.signingManager = signingMgr
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.NewFabricProvider(sdk.configProvider, sdk.stateStore, sdk.cryptoSuite, sdk.signingManager)
+	fabricProvider, err := sdk.opts.Core.NewFabricProvider(sdk.configProvider, sdk.cryptoSuite, sdk.signingManager)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
@@ -222,6 +223,12 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 		pi.Initialize(sdk)
 	}
 	sdk.selectionProvider = selectionProvider
+
+	channelProvider, err := newChannelProvider(sdk.context())
+	if err != nil {
+		return errors.WithMessage(err, "failed to initialize channel provider")
+	}
+	sdk.channelProvider = channelProvider
 
 	return nil
 }
