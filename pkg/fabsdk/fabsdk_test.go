@@ -58,8 +58,12 @@ func TestNewDefaultSDK(t *testing.T) {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
 
+	verifySDK(t, sdk)
+}
+
+func verifySDK(t *testing.T, sdk *FabricSDK) {
 	// Default channel client (uses organisation from client configuration)
-	_, err = sdk.NewClient(WithUser(sdkValidClientUser)).Channel("mychannel")
+	_, err := sdk.NewClient(WithUser(sdkValidClientUser)).Channel("mychannel")
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -78,7 +82,21 @@ func TestNewDefaultSDK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
+}
 
+func TestWithConfigOpt(t *testing.T) {
+	// Test New SDK with valid config file
+	c, err := configImpl.FromFile(sdkConfigFile)()
+	if err != nil {
+		t.Fatalf("Unexpected error from config: %v", err)
+	}
+
+	sdk, err := New(WithConfig(c))
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	verifySDK(t, sdk)
 }
 
 func TestWithCorePkg(t *testing.T) {
