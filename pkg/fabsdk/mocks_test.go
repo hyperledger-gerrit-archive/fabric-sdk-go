@@ -45,7 +45,7 @@ func newMockCorePkg(config apiconfig.Config) (*mockCorePkg, error) {
 	if err != nil {
 		return nil, err
 	}
-	fp, err := core.NewFabricProvider(config, stateStore, cs, sm)
+	fp, err := core.NewFabricProvider(config, cs, sm)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (mc *mockCorePkg) NewSigningManager(cryptoProvider apicryptosuite.CryptoSui
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) NewFabricProvider(config apiconfig.Config, stateStore apifabclient.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signer apifabclient.SigningManager) (apicore.FabricProvider, error) {
+func (mc *mockCorePkg) NewFabricProvider(config apiconfig.Config, cryptoSuite apicryptosuite.CryptoSuite, signer apifabclient.SigningManager) (apicore.FabricProvider, error) {
 	return mc.fabricProvider, nil
 }
 

@@ -7,13 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"bytes"
-
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
@@ -70,6 +65,11 @@ func (c *MockClient) Config() config.Config {
 	return c.config
 }
 
+// SetConfig changes the configuration of the mock client.
+func (c *MockClient) SetConfig(config config.Config) {
+	c.config = config
+}
+
 // QueryChannelInfo ...
 func (c *MockClient) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, error) {
 	return nil, errors.New("Not implemented yet")
@@ -119,64 +119,6 @@ func (c *MockClient) LoadUserFromStateStore(name string) (fab.User, error) {
 	return NewMockUser("test"), nil
 }
 
-// ExtractChannelConfig ...
-func (c *MockClient) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
-	if bytes.Compare(configEnvelope, []byte("ExtractChannelConfigError")) == 0 {
-		return nil, errors.New("Mock extract channel config error")
-	}
-
-	return configEnvelope, nil
-}
-
-// SignChannelConfig ...
-func (c *MockClient) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
-	if bytes.Compare(config, []byte("SignChannelConfigError")) == 0 {
-		return nil, errors.New("Mock sign channel config error")
-	}
-	return nil, nil
-}
-
-// CreateChannel ...
-func (c *MockClient) CreateChannel(request fab.CreateChannelRequest) (apitxn.TransactionID, error) {
-	if c.errorScenario {
-		return apitxn.TransactionID{}, errors.New("Create Channel Error")
-	}
-
-	return apitxn.TransactionID{}, nil
-}
-
-//QueryChannels ...
-func (c *MockClient) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) {
-	return nil, errors.New("Not implemented yet")
-}
-
-//QueryInstalledChaincodes mocks query installed chaincodes
-func (c *MockClient) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
-	if peer == nil {
-		return nil, errors.New("Generate Error")
-	}
-	ci := &pb.ChaincodeInfo{Name: "name", Version: "version", Path: "path"}
-	response := &pb.ChaincodeQueryResponse{Chaincodes: []*pb.ChaincodeInfo{ci}}
-	return response, nil
-}
-
-// InstallChaincode mocks install chaincode
-func (c *MockClient) InstallChaincode(req fab.InstallChaincodeRequest) ([]*apitxn.TransactionProposalResponse, string, error) {
-	if req.Name == "error" {
-		return nil, "", errors.New("Generate Error")
-	}
-
-	if req.Name == "errorInResponse" {
-		result := apitxn.TransactionProposalResult{Endorser: "http://peer1.com", Status: 10}
-		response := &apitxn.TransactionProposalResponse{TransactionProposalResult: result, Err: errors.New("Generate Response Error")}
-		return []*apitxn.TransactionProposalResponse{response}, "1234", nil
-	}
-
-	result := apitxn.TransactionProposalResult{Endorser: "http://peer1.com", Status: 0}
-	response := &apitxn.TransactionProposalResponse{TransactionProposalResult: result}
-	return []*apitxn.TransactionProposalResponse{response}, "1234", nil
-}
-
 // IdentityContext ...
 func (c *MockClient) IdentityContext() fab.IdentityContext {
 	return c.identityContext
@@ -185,12 +127,4 @@ func (c *MockClient) IdentityContext() fab.IdentityContext {
 // SetIdentityContext ...
 func (c *MockClient) SetIdentityContext(user fab.IdentityContext) {
 	c.identityContext = user
-}
-
-// NewTxnID computes a TransactionID for the current user context
-func (c *MockClient) NewTxnID() (apitxn.TransactionID, error) {
-	return apitxn.TransactionID{
-		ID:    "1234",
-		Nonce: []byte{1, 2, 3, 4, 5},
-	}, nil
 }

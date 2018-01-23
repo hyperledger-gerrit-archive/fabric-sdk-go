@@ -60,32 +60,34 @@ type EventHub struct {
 	// Factory that creates EventsClient
 	eventsClientFactory eventClientFactory
 	// FabricClient
-	client fab.Resource
+	provider fab.ProviderContext
+	identity fab.IdentityContext
 }
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(client fab.Resource, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error)
+	newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(client fab.Resource, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error) {
-	return consumer.NewEventsClient(client, peerAddress, certificate, serverHostOverride, regTimeout, adapter)
+func (ccf *consumerClientFactory) newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter) (fab.EventsClient, error) {
+	return consumer.NewEventsClient(provider, identity, peerAddress, certificate, serverHostOverride, regTimeout, adapter)
 }
 
 // NewEventHub ...
-func NewEventHub(client fab.Resource) (*EventHub, error) {
+func NewEventHub(provider fab.ProviderContext, identity fab.IdentityContext) (*EventHub, error) {
 
-	if client == nil {
+	if provider == nil {
 		return nil, errors.New("Client is required")
 	}
 	eventHub := EventHub{
 		blockRegistrants:    nil,
 		interestedEvents:    nil,
 		eventsClientFactory: &consumerClientFactory{},
-		client:              client,
+		provider:            provider,
+		identity:            identity,
 	}
 	// register default transaction callback
 	eventHub.RegisterBlockEvent(eventHub.txCallback)
@@ -93,9 +95,9 @@ func NewEventHub(client fab.Resource) (*EventHub, error) {
 }
 
 // NewEventHubFromConfig creates new event hub from client and peer config
-func NewEventHubFromConfig(client fab.Resource, peerCfg *apiconfig.PeerConfig) (*EventHub, error) {
+func NewEventHubFromConfig(provider fab.ProviderContext, identity fab.IdentityContext, peerCfg *apiconfig.PeerConfig) (*EventHub, error) {
 
-	eventHub, err := NewEventHub(client)
+	eventHub, err := NewEventHub(provider, identity)
 	if err != nil {
 		return nil, err
 	}
@@ -277,9 +279,9 @@ func (eventHub *EventHub) Connect() error {
 	}
 
 	if eventHub.grpcClient == nil {
-		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.client,
+		eventsClient, _ := eventHub.eventsClientFactory.newEventsClient(eventHub.provider, eventHub.identity,
 			eventHub.peerAddr, eventHub.peerTLSCertificate, eventHub.peerTLSServerHostOverride,
-			eventHub.client.Config().TimeoutOrDefault(apiconfig.EventReg), eventHub)
+			eventHub.provider.Config().TimeoutOrDefault(apiconfig.EventReg), eventHub)
 		eventHub.grpcClient = eventsClient
 	}
 

@@ -310,7 +310,7 @@ func TestTransactionValidationError(t *testing.T) {
 
 func setupTestChannel() (*channel.Channel, error) {
 	client := setupTestClient()
-	return channel.NewChannel("testChannel", client)
+	return channel.New(client, "testChannel")
 }
 
 func setupTestClient() *fcmocks.MockClient {
@@ -369,7 +369,13 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []apif
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	ch, err := NewChannelClient(fcClient, testChannel, discoveryService, selectionService, nil)
+	ctx := mockcontext{
+		ProviderContext:  fcClient,
+		discoveryService: discoveryService,
+		selectionService: selectionService,
+		channel:          testChannel,
+	}
+	ch, err := New(&ctx)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -395,8 +401,38 @@ func setupChannelClientWithNodes(peers []apifabclient.Peer,
 	selectionService, err := setupTestSelection(nil, peers)
 	assert.Nil(t, err, "Failed to setup discovery service")
 
-	ch, err := NewChannelClient(fcClient, testChannel, discoveryService, selectionService, nil)
+	ctx := mockcontext{
+		ProviderContext:  fcClient,
+		discoveryService: discoveryService,
+		selectionService: selectionService,
+		channel:          testChannel,
+	}
+	ch, err := New(&ctx)
 	assert.Nil(t, err, "Failed to create new channel client")
 
 	return ch
+}
+
+type mockcontext struct {
+	apifabclient.ProviderContext
+	discoveryService apifabclient.DiscoveryService
+	selectionService apifabclient.SelectionService
+	eventHub         apifabclient.EventHub
+	channel          apifabclient.Channel
+}
+
+func (c *mockcontext) DiscoveryService() apifabclient.DiscoveryService {
+	return c.discoveryService
+}
+
+func (c *mockcontext) SelectionService() apifabclient.SelectionService {
+	return c.selectionService
+}
+
+func (c *mockcontext) EventHub() apifabclient.EventHub {
+	return c.eventHub
+}
+
+func (c *mockcontext) Channel() apifabclient.Channel {
+	return c.channel
 }
