@@ -23,13 +23,18 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // ChannelMgmtClient enables managing channels in Fabric network.
 type ChannelMgmtClient struct {
-	client fab.Resource
-	config config.Config
+	provider fab.ProviderContext
+	identity fab.IdentityContext
+	client   fab.Resource
 }
 
 // NewChannelMgmtClient returns a channel management client instance
-func NewChannelMgmtClient(client fab.Resource, config config.Config) (*ChannelMgmtClient, error) {
-	cc := &ChannelMgmtClient{client: client, config: config}
+func NewChannelMgmtClient(provider fab.ProviderContext, identity fab.IdentityContext, client fab.Resource) (*ChannelMgmtClient, error) {
+	cc := &ChannelMgmtClient{
+		provider: provider,
+		identity: identity,
+		client:   client,
+	}
 	return cc, nil
 }
 
@@ -49,7 +54,7 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
-	signer := cc.client.IdentityContext()
+	signer := cc.identity
 	if req.SigningIdentity != nil {
 		// Retrieve custom signing identity here
 		signer = req.SigningIdentity
@@ -80,10 +85,10 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 	// Figure out orderer configuration
 	var ordererCfg *config.OrdererConfig
 	if opts.OrdererID != "" {
-		ordererCfg, err = cc.config.OrdererConfig(opts.OrdererID)
+		ordererCfg, err = cc.provider.Config().OrdererConfig(opts.OrdererID)
 	} else {
 		// Default is random orderer from configuration
-		ordererCfg, err = cc.config.RandomOrdererConfig()
+		ordererCfg, err = cc.provider.Config().RandomOrdererConfig()
 	}
 
 	// Check if retrieving orderer configuration went ok
@@ -91,7 +96,7 @@ func (cc *ChannelMgmtClient) SaveChannelWithOpts(req chmgmt.SaveChannelRequest, 
 		return errors.Errorf("failed to retrieve orderer config: %s", err)
 	}
 
-	orderer, err := orderer.New(cc.config, orderer.FromOrdererConfig(ordererCfg))
+	orderer, err := orderer.New(cc.provider.Config(), orderer.FromOrdererConfig(ordererCfg))
 	if err != nil {
 		return errors.WithMessage(err, "failed to create new orderer from config")
 	}

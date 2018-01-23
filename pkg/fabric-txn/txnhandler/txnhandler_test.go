@@ -149,7 +149,7 @@ func prepareRequestContext(request apitxn.Request, opts apitxn.Opts, t *testing.
 
 func setupTestChannel() (*channel.Channel, error) {
 	client := setupTestClient()
-	return channel.NewChannel("testChannel", client)
+	return channel.New(client, "testChannel")
 }
 
 func setupTestClient() *fcmocks.MockClient {

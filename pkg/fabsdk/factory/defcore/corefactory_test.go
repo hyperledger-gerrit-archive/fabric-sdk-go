@@ -148,9 +148,7 @@ func TestNewFactoryFabricProvider(t *testing.T) {
 		t.Fatalf("Unexpected error creating signing manager %v", err)
 	}
 
-	stateStore := newMockStateStore(t)
-
-	fabricProvider, err := factory.NewFabricProvider(config, stateStore, cryptosuite, signer)
+	fabricProvider, err := factory.NewFabricProvider(config, cryptosuite, signer)
 	if err != nil {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
 	}
