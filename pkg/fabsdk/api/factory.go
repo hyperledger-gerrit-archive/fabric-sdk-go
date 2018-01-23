@@ -22,7 +22,7 @@ type CoreProviderFactory interface {
 	NewStateStoreProvider(config apiconfig.Config) (fab.KeyValueStore, error)
 	NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error)
 	NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error)
-	NewFabricProvider(config apiconfig.Config, stateStore fab.KeyValueStore, cryptoSuite apicryptosuite.CryptoSuite, signer fab.SigningManager) (apicore.FabricProvider, error)
+	NewFabricProvider(context fab.ProviderContext) (apicore.FabricProvider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)
@@ -40,9 +40,9 @@ type OrgClientFactory interface {
 
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
-	NewChannelMgmtClient(sdk Providers, session Session, config apiconfig.Config) (chmgmt.ChannelMgmtClient, error)
-	NewResourceMgmtClient(sdk Providers, session Session, config apiconfig.Config, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
-	NewChannelClient(sdk Providers, session Session, config apiconfig.Config, channelID string) (txn.ChannelClient, error)
+	NewChannelMgmtClient(sdk Providers, session SessionSvc) (chmgmt.ChannelMgmtClient, error)
+	NewResourceMgmtClient(sdk Providers, session SessionSvc, filter resmgmt.TargetFilter) (resmgmt.ResourceMgmtClient, error)
+	NewChannelClient(sdk Providers, session SessionSvc, channelID string) (txn.ChannelClient, error)
 }
 
 // PkgSuite provides the package factories that create clients and providers

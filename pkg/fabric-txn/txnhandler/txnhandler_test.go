@@ -149,15 +149,13 @@ func prepareRequestContext(request apitxn.Request, opts apitxn.Opts, t *testing.
 
 func setupTestChannel() (*channel.Channel, error) {
 	client := setupTestClient()
-	return channel.NewChannel("testChannel", client)
+	return channel.New(client, "testChannel")
 }
 
 func setupTestClient() *fcmocks.MockClient {
 	client := fcmocks.NewMockClient()
 	user := fcmocks.NewMockUser("test")
-	cryptoSuite := &fcmocks.MockCryptoSuite{}
-	client.SetIdentityContext(user)
-	client.SetCryptoSuite(cryptoSuite)
+	client.IdentityContext = user
 	return client
 }
 

@@ -132,10 +132,8 @@ func TestSendInstantiateProposal(t *testing.T) {
 	//Setup channel
 	client := mocks.NewMockClient()
 	user := mocks.NewMockUserWithMSPID("test", "1234")
-	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SetCryptoSuite(cryptoSuite)
-	client.SetIdentityContext(user)
-	channel, _ := NewChannel("testChannel", client)
+	client.IdentityContext = user
+	channel, _ := New(client, "testChannel")
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -211,10 +209,8 @@ func TestSendUpgradeProposal(t *testing.T) {
 	//Setup channel
 	client := mocks.NewMockClient()
 	user := mocks.NewMockUserWithMSPID("test", "1234")
-	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SetCryptoSuite(cryptoSuite)
-	client.SetIdentityContext(user)
-	channel, _ := NewChannel("testChannel", client)
+	client.IdentityContext = user
+	channel, _ := New(client, "testChannel")
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -456,24 +452,17 @@ func TestSignPayload(t *testing.T) {
 
 	client := mocks.NewMockInvalidClient()
 	user := mocks.NewMockUser("test")
-	cryptoSuite := &mocks.MockCryptoSuite{}
-	client.SetIdentityContext(user)
-	client.SetCryptoSuite(cryptoSuite)
-	channel, _ := NewChannel("testChannel", client)
+	client.IdentityContext = user
 
-	signedEnv, err := channel.SignPayload([]byte(""))
-
-	if err == nil {
-		t.Fatal("Test Sign Payload was supposed to fail")
+	channel, err := setupTestChannel()
+	if err != nil {
+		t.Fatalf("setupTestChannel failed: %v", err)
 	}
-
-	channel, _ = setupTestChannel()
-	signedEnv, err = channel.SignPayload([]byte(""))
+	signedEnv, err := channel.SignPayload([]byte(""))
 
 	if err != nil || signedEnv == nil {
 		t.Fatal("Test Sign Payload Failed")
 	}
-
 }
 
 func TestConcurrentOrderers(t *testing.T) {

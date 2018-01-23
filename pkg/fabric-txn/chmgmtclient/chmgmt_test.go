@@ -64,12 +64,19 @@ func TestSaveChannel(t *testing.T) {
 func TestSaveChannelFailure(t *testing.T) {
 
 	// Set up client with error in create channel
-	errClient := fcmocks.NewMockInvalidClient()
+	errClient := fcmocks.NewMockClient()
 	user := fcmocks.NewMockUser("test")
-	errClient.SetIdentityContext(user)
+	errClient.IdentityContext = user
 	network := getNetworkConfig(t)
+	errClient.SetConfig(network)
+	resource := fcmocks.NewMockInvalidResource()
 
-	cc, err := NewChannelMgmtClient(errClient, network)
+	ctx := Context{
+		ProviderContext: errClient,
+		IdentityContext: user,
+		Resource:        resource,
+	}
+	cc, err := New(ctx)
 	if err != nil {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
@@ -78,25 +85,6 @@ func TestSaveChannelFailure(t *testing.T) {
 	err = cc.SaveChannel(chmgmtclient.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig})
 	if err == nil {
 		t.Fatal("Should have failed with create channel error")
-	}
-
-}
-
-func TestNoSigningUserFailure(t *testing.T) {
-
-	// Setup client without user context
-	client := fcmocks.NewMockClient()
-	network := getNetworkConfig(t)
-
-	cc, err := NewChannelMgmtClient(client, network)
-	if err != nil {
-		t.Fatalf("Failed to create new channel management client: %s", err)
-	}
-
-	// Test save channel without signing user set (and no default context user)
-	err = cc.SaveChannel(chmgmtclient.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig})
-	if err == nil {
-		t.Fatal("Should have failed due to missing signing user")
 	}
 
 }
@@ -133,9 +121,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 func setupTestClient() *fcmocks.MockClient {
 	client := fcmocks.NewMockClient()
 	user := fcmocks.NewMockUser("test")
-	cryptoSuite := &fcmocks.MockCryptoSuite{}
-	client.SetIdentityContext(user)
-	client.SetCryptoSuite(cryptoSuite)
+	client.IdentityContext = user
 	return client
 }
 
@@ -152,8 +138,15 @@ func setupChannelMgmtClient(t *testing.T) *ChannelMgmtClient {
 
 	fcClient := setupTestClient()
 	network := getNetworkConfig(t)
+	fcClient.SetConfig(network)
+	resource := fcmocks.NewMockResource()
 
-	consClient, err := NewChannelMgmtClient(fcClient, network)
+	ctx := Context{
+		ProviderContext: fcClient,
+		IdentityContext: fcClient,
+		Resource:        resource,
+	}
+	consClient, err := New(ctx)
 	if err != nil {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
