@@ -310,7 +310,7 @@ func TestTransactionValidationError(t *testing.T) {
 
 func setupTestChannel() (*channel.Channel, error) {
 	client := setupTestClient()
-	return channel.NewChannel("testChannel", client)
+	return channel.New(client, "testChannel")
 }
 
 func setupTestClient() *fcmocks.MockClient {
@@ -369,7 +369,13 @@ func setupChannelClientWithError(discErr error, selectionErr error, peers []apif
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
 
-	ch, err := NewChannelClient(fcClient, testChannel, discoveryService, selectionService, nil)
+	ctx := Context{
+		ProviderContext:  fcClient,
+		DiscoveryService: discoveryService,
+		SelectionService: selectionService,
+		Channel:          testChannel,
+	}
+	ch, err := New(ctx)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -395,7 +401,13 @@ func setupChannelClientWithNodes(peers []apifabclient.Peer,
 	selectionService, err := setupTestSelection(nil, peers)
 	assert.Nil(t, err, "Failed to setup discovery service")
 
-	ch, err := NewChannelClient(fcClient, testChannel, discoveryService, selectionService, nil)
+	ctx := Context{
+		ProviderContext:  fcClient,
+		DiscoveryService: discoveryService,
+		SelectionService: selectionService,
+		Channel:          testChannel,
+	}
+	ch, err := New(ctx)
 	assert.Nil(t, err, "Failed to create new channel client")
 
 	return ch
