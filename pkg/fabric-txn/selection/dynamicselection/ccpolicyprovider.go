@@ -137,7 +137,7 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 			Args:        ccArgs,
 		}
 
-		opts := apitxn.QueryOpts{
+		opts := apitxn.TxOpts{
 			ProposalProcessors: []apitxn.ProposalProcessor{peer},
 		}
 

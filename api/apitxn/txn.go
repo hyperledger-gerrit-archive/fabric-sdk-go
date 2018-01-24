@@ -19,27 +19,6 @@ type QueryRequest struct {
 	Args        [][]byte
 }
 
-// QueryOpts allows the user to specify more advanced options
-type QueryOpts struct {
-	Notifier           chan QueryResponse  // async
-	ProposalProcessors []ProposalProcessor // targets
-	TxFilter           TxProposalResponseFilter
-	Timeout            time.Duration
-}
-
-// QueryResponse contains result of asynchronous call
-type QueryResponse struct {
-	Response []byte
-	Error    error
-}
-
-// ExecuteTxResponse contains result of asynchronous call
-type ExecuteTxResponse struct {
-	Response         TransactionID
-	Error            error
-	TxValidationCode pb.TxValidationCode
-}
-
 // ExecuteTxRequest contains the parameters to execute transaction
 type ExecuteTxRequest struct {
 	ChaincodeID  string
@@ -48,9 +27,17 @@ type ExecuteTxRequest struct {
 	TransientMap map[string][]byte
 }
 
-// ExecuteTxOpts allows the user to specify more advanced options
-type ExecuteTxOpts struct {
-	Notifier           chan ExecuteTxResponse // async
+//Response contains response parameters for query and execute transaction
+type Response struct {
+	Payload          []byte
+	Error            error
+	TransactionID    TransactionID
+	TxValidationCode pb.TxValidationCode
+}
+
+// TxOpts allows the user to specify more advanced options
+type TxOpts struct {
+	Notifier           chan Response // async
 	TxFilter           TxProposalResponseFilter
 	ProposalProcessors []ProposalProcessor // targets
 	Timeout            time.Duration
@@ -91,13 +78,13 @@ type ChannelClient interface {
 	Query(request QueryRequest) ([]byte, error)
 
 	// QueryWithOpts allows the user to provide options for query (sync vs async, etc.)
-	QueryWithOpts(request QueryRequest, opt QueryOpts) ([]byte, error)
+	QueryWithOpts(request QueryRequest, opt TxOpts) ([]byte, error)
 
 	// ExecuteTx execute transaction
 	ExecuteTx(request ExecuteTxRequest) ([]byte, TransactionID, error)
 
 	// ExecuteTxWithOpts allows the user to provide options for transaction execution (sync vs async, etc.)
-	ExecuteTxWithOpts(request ExecuteTxRequest, opt ExecuteTxOpts) ([]byte, TransactionID, error)
+	ExecuteTxWithOpts(request ExecuteTxRequest, opt TxOpts) ([]byte, TransactionID, error)
 
 	// RegisterChaincodeEvent registers chain code event
 	// @param {chan bool} channel which receives event details when the event is complete

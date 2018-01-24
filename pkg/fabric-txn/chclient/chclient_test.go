@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -120,7 +121,7 @@ func TestQueryWithOptSync(t *testing.T) {
 
 	chClient := setupChannelClient(nil, t)
 
-	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}, apitxn.QueryOpts{})
+	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}, apitxn.TxOpts{})
 	if err != nil {
 		t.Fatalf("Failed to invoke test cc: %s", err)
 	}
@@ -134,9 +135,9 @@ func TestQueryWithOptAsync(t *testing.T) {
 
 	chClient := setupChannelClient(nil, t)
 
-	notifier := make(chan apitxn.QueryResponse)
+	notifier := make(chan apitxn.Response)
 
-	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}, apitxn.QueryOpts{Notifier: notifier})
+	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}, apitxn.TxOpts{Notifier: notifier})
 	if err != nil {
 		t.Fatalf("Failed to invoke test cc: %s", err)
 	}
@@ -150,8 +151,8 @@ func TestQueryWithOptAsync(t *testing.T) {
 		if response.Error != nil {
 			t.Fatalf("Query returned error: %s", response.Error)
 		}
-		if string(response.Response) != "" {
-			t.Fatalf("Expecting empty, got %s", response.Response)
+		if string(response.Payload) != "" {
+			t.Fatalf("Expecting empty, got %s", response.Payload)
 		}
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Query Request timed out")
@@ -169,7 +170,7 @@ func TestQueryWithOptTarget(t *testing.T) {
 
 	targets := peer.PeersToTxnProcessors(peers)
 
-	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}, apitxn.QueryOpts{ProposalProcessors: targets})
+	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}, apitxn.TxOpts{ProposalProcessors: targets})
 	if err != nil {
 		t.Fatalf("Failed to invoke test cc: %s", err)
 	}
@@ -280,10 +281,10 @@ func TestTransactionValidationError(t *testing.T) {
 
 	chClient := setupChannelClient(peers, t)
 	chClient.eventHub = mockEventHub
-	notifier := make(chan apitxn.ExecuteTxResponse)
+	notifier := make(chan apitxn.Response)
 
 	result, _, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}},
-		apitxn.ExecuteTxOpts{Notifier: notifier})
+		apitxn.TxOpts{Notifier: notifier})
 	if result != nil {
 		t.Fatalf("Expecting nil, got %s", result)
 	}

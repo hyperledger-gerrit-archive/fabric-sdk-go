@@ -144,7 +144,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org2 user moves funds on org2 peer
-	txOpts := apitxn.ExecuteTxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer1}}
+	txOpts := apitxn.TxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer1}}
 	_, _, err = chClientOrg2User.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
@@ -182,14 +182,14 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
-	txOpts = apitxn.ExecuteTxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer1}}
+	txOpts = apitxn.TxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer1}}
 	_, _, err = chClientOrg2User.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err == nil {
 		t.Fatalf("Should have failed to move funds due to cc policy")
 	}
 
 	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
-	txOpts = apitxn.ExecuteTxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer0, orgTestPeer1}}
+	txOpts = apitxn.TxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer0, orgTestPeer1}}
 	_, _, err = chClientOrg2User.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
@@ -234,7 +234,7 @@ func verifyValue(t *testing.T, chClient apitxn.ChannelClient, expected int) {
 	var valueInt int
 	for i := 0; i < pollRetries; i++ {
 		// Query final value on org1 peer
-		queryOpts := apitxn.QueryOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer0}}
+		queryOpts := apitxn.TxOpts{ProposalProcessors: []apitxn.ProposalProcessor{orgTestPeer0}}
 		value, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, queryOpts)
 		if err != nil {
 			t.Fatalf("Failed to query funds after transaction: %s", err)

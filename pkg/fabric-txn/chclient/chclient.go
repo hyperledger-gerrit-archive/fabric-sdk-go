@@ -17,9 +17,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
+	txnHandlerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
 	"github.com/hyperledger/fabric-sdk-go/pkg/status"
 )
 
@@ -68,185 +68,144 @@ func NewChannelClient(client fab.Resource, channel fab.Channel, discovery fab.Di
 // Query chaincode
 func (cc *ChannelClient) Query(request apitxn.QueryRequest) ([]byte, error) {
 
-	return cc.QueryWithOpts(request, apitxn.QueryOpts{})
+	return cc.QueryWithOpts(request, apitxn.TxOpts{})
 
 }
 
-// QueryWithOpts allows the user to provide options for query (sync vs async, etc.)
-func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.QueryOpts) ([]byte, error) {
+// QueryWithOpts  allows the user to provide options for query (sync vs async, etc.)
+func (cc *ChannelClient) QueryWithOpts(request apitxn.QueryRequest, opts apitxn.TxOpts) ([]byte, error) {
 
+	//Basic Validation
 	if request.ChaincodeID == "" || request.Fcn == "" {
 		return nil, errors.New("ChaincodeID and Fcn are required")
 	}
 
-	notifier := opts.Notifier
-	if notifier == nil {
-		notifier = make(chan apitxn.QueryResponse)
-	}
+	isAsync := opts.Notifier != nil
 
-	txProcessors := opts.ProposalProcessors
-	if len(txProcessors) == 0 {
-		// Use discovery service to figure out proposal processors
-		peers, err := cc.discovery.GetPeers()
-		if err != nil {
-			return nil, errors.WithMessage(err, "GetPeers failed")
-		}
-		endorsers := peers
-		if cc.selection != nil {
-			endorsers, err = cc.selection.GetEndorsersForChaincode(peers, request.ChaincodeID)
-			if err != nil {
-				return nil, errors.WithMessage(err, "Failed to get endorsing peers")
-			}
-		}
-		txProcessors = peer.PeersToTxnProcessors(endorsers)
-	}
+	//Prepare context objects for handler
+	requestContext, clientContext := cc.prepareHandlerContexts(request, opts)
 
-	go sendTransactionProposal(request, cc.channel, txProcessors, opts.TxFilter, notifier)
+	//Get query handler
+	queryHandler := txnHandlerImpl.GetQueryHandler()
 
-	if opts.Notifier != nil {
+	//Perform action through handler
+	go queryHandler.Handle(requestContext, clientContext)
+
+	//If async return
+	if isAsync {
 		return nil, nil
 	}
 
-	timeout := cc.client.Config().TimeoutOrDefault(apiconfig.Query)
-	if opts.Timeout != 0 {
-		timeout = opts.Timeout
-	}
-
+	//If Sync
 	select {
-	case response := <-notifier:
-		return response.Response, response.Error
-	case <-time.After(timeout):
+	case response := <-requestContext.Request.Opts.Notifier:
+		return response.Payload, response.Error
+	case <-time.After(requestContext.Request.Opts.Timeout):
 		return nil, errors.New("query request timed out")
 	}
 
 }
 
-func sendTransactionProposal(request apitxn.QueryRequest, channel fab.Channel, proposalProcessors []apitxn.ProposalProcessor, txFilter apitxn.TxProposalResponseFilter, notifier chan apitxn.QueryResponse) {
+// ExecuteTxWithOpts allows the user to provide options for execute transaction:
+// sync vs async, filter to inspect proposal response before commit etc)
+func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts apitxn.TxOpts) ([]byte, apitxn.TransactionID, error) {
 
-	transactionProposalResponses, _, err := internal.CreateAndSendTransactionProposal(channel,
-		request.ChaincodeID, request.Fcn, request.Args, proposalProcessors, nil)
-
-	if err != nil {
-		notifier <- apitxn.QueryResponse{Response: nil, Error: err}
-		return
+	//Basic Validation
+	if request.ChaincodeID == "" || request.Fcn == "" {
+		return nil, apitxn.TransactionID{}, errors.New("chaincode name and function name are required")
 	}
 
-	if txFilter == nil {
-		txFilter = &txProposalResponseFilter{}
+	isAsync := opts.Notifier != nil
+
+	//Prepare context objects for handler
+	requestContext, clientContext := cc.prepareHandlerContexts(request, opts)
+
+	//Get query handler
+	executeTxHandler := txnHandlerImpl.GetExecuteTxHandler()
+
+	//Perform action through handler
+	go executeTxHandler.Handle(requestContext, clientContext)
+
+	var payload []byte
+	for {
+		select {
+		case response := <-requestContext.Response.Payload:
+			payload = response
+			if isAsync {
+				//If async return with payload, commit tx will occur asynchronously
+				return payload, requestContext.Response.TxnID, nil
+			}
+		case response := <-requestContext.Request.Opts.Notifier:
+			return payload, response.TransactionID, response.Error
+		case <-time.After(requestContext.Request.Opts.Timeout): // This should never happen since there's timeout in sendTransaction
+			return payload, requestContext.Response.TxnID, errors.New("ExecuteTx request timed out")
+		}
 	}
 
-	transactionProposalResponses, err = txFilter.ProcessTxProposalResponse(transactionProposalResponses)
-	if err != nil {
-		notifier <- apitxn.QueryResponse{Response: nil, Error: errors.WithMessage(err, "TxFilter failed")}
-		return
+}
+
+//prepareHandlerContexts prepares context objects for handlers
+func (cc *ChannelClient) prepareHandlerContexts(request interface{}, opts apitxn.TxOpts) (*txnhandler.RequestContext, *txnhandler.ClientContext) {
+
+	clientContext := &txnhandler.ClientContext{
+		Channel:   cc.channel,
+		Selection: cc.selection,
+		Discovery: cc.discovery,
+		EventHub:  cc.eventHub,
 	}
 
-	response := transactionProposalResponses[0].ProposalResponse.GetResponse().Payload
+	var requestContext *txnhandler.RequestContext
+	switch request.(type) {
+	case apitxn.QueryRequest:
+		requestContext = &txnhandler.RequestContext{Request: txnhandler.TxRequestContext{
+			ChaincodeID: request.(apitxn.QueryRequest).ChaincodeID,
+			Fcn:         request.(apitxn.QueryRequest).Fcn,
+			Args:        request.(apitxn.QueryRequest).Args,
+			Opts:        opts,
+		}, Response: txnhandler.TxResponseContext{}}
 
-	notifier <- apitxn.QueryResponse{Response: response, Error: nil}
+		if requestContext.Request.Opts.Timeout == 0 {
+			requestContext.Request.Opts.Timeout = cc.client.Config().TimeoutOrDefault(apiconfig.Query)
+		}
+		break
+
+	case apitxn.ExecuteTxRequest:
+		requestContext = &txnhandler.RequestContext{Request: txnhandler.TxRequestContext{
+			ChaincodeID:  request.(apitxn.ExecuteTxRequest).ChaincodeID,
+			Fcn:          request.(apitxn.ExecuteTxRequest).Fcn,
+			Args:         request.(apitxn.ExecuteTxRequest).Args,
+			TransientMap: request.(apitxn.ExecuteTxRequest).TransientMap,
+			Opts:         opts,
+		}, Response: txnhandler.TxResponseContext{}}
+
+		if requestContext.Request.Opts.Timeout == 0 {
+			requestContext.Request.Opts.Timeout = cc.client.Config().TimeoutOrDefault(apiconfig.ExecuteTx)
+		}
+		requestContext.Response.Payload = make(chan []byte)
+		break
+
+	default:
+		requestContext = &txnhandler.RequestContext{Request: txnhandler.TxRequestContext{
+			Opts: apitxn.TxOpts{},
+		}, Response: txnhandler.TxResponseContext{}}
+	}
+
+	if requestContext.Request.Opts.TxFilter == nil {
+		requestContext.Request.Opts.TxFilter = &txProposalResponseFilter{}
+	}
+
+	if requestContext.Request.Opts.Notifier == nil {
+		requestContext.Request.Opts.Notifier = make(chan apitxn.Response)
+	}
+
+	return requestContext, clientContext
+
 }
 
 // ExecuteTx prepares and executes transaction
 func (cc *ChannelClient) ExecuteTx(request apitxn.ExecuteTxRequest) ([]byte, apitxn.TransactionID, error) {
 
-	return cc.ExecuteTxWithOpts(request, apitxn.ExecuteTxOpts{})
-}
-
-// ExecuteTxWithOpts allows the user to provide options for execute transaction:
-// sync vs async, filter to inspect proposal response before commit etc)
-func (cc *ChannelClient) ExecuteTxWithOpts(request apitxn.ExecuteTxRequest, opts apitxn.ExecuteTxOpts) ([]byte, apitxn.TransactionID, error) {
-
-	if request.ChaincodeID == "" || request.Fcn == "" {
-		return nil, apitxn.TransactionID{}, errors.New("chaincode name and function name are required")
-	}
-
-	txProcessors := opts.ProposalProcessors
-	if len(txProcessors) == 0 {
-		// Use discovery service to figure out proposal processors
-		peers, err := cc.discovery.GetPeers()
-		if err != nil {
-			return nil, apitxn.TransactionID{}, errors.WithMessage(err, "GetPeers failed")
-		}
-		endorsers := peers
-		if cc.selection != nil {
-			endorsers, err = cc.selection.GetEndorsersForChaincode(peers, request.ChaincodeID)
-			if err != nil {
-				return nil, apitxn.TransactionID{}, errors.WithMessage(err, "Failed to get endorsing peers for ExecuteTx")
-			}
-		}
-		txProcessors = peer.PeersToTxnProcessors(endorsers)
-	}
-
-	txProposalResponses, txID, err := internal.CreateAndSendTransactionProposal(cc.channel,
-		request.ChaincodeID, request.Fcn, request.Args, txProcessors, request.TransientMap)
-	if err != nil {
-		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
-	}
-
-	if opts.TxFilter == nil {
-		opts.TxFilter = &txProposalResponseFilter{}
-	}
-
-	var payloadResponse []byte
-	txProposalResponses, err = opts.TxFilter.ProcessTxProposalResponse(txProposalResponses)
-	if len(txProposalResponses) > 0 {
-		payloadResponse = txProposalResponses[0].ProposalResponse.GetResponse().Payload
-	}
-
-	if err != nil {
-		return payloadResponse, txID, errors.WithMessage(err, "TxFilter failed")
-	}
-
-	notifier := opts.Notifier
-	if notifier == nil {
-		notifier = make(chan apitxn.ExecuteTxResponse)
-	}
-
-	timeout := cc.client.Config().TimeoutOrDefault(apiconfig.ExecuteTx)
-	if opts.Timeout != 0 {
-		timeout = opts.Timeout
-	}
-
-	go sendTransaction(cc.channel, txID, txProposalResponses, cc.eventHub, notifier, timeout)
-
-	if opts.Notifier != nil {
-		return payloadResponse, txID, nil
-	}
-
-	select {
-	case response := <-notifier:
-		return payloadResponse, response.Response, response.Error
-	case <-time.After(timeout): // This should never happen since there's timeout in sendTransaction
-		return payloadResponse, txID, errors.New("ExecuteTx request timed out")
-	}
-
-}
-
-func sendTransaction(channel fab.Channel, txID apitxn.TransactionID, txProposalResponses []*apitxn.TransactionProposalResponse, eventHub fab.EventHub, notifier chan apitxn.ExecuteTxResponse, timeout time.Duration) {
-	if eventHub.IsConnected() == false {
-		err := eventHub.Connect()
-		if err != nil {
-			notifier <- apitxn.ExecuteTxResponse{Response: apitxn.TransactionID{}, Error: err}
-		}
-	}
-
-	statusNotifier := internal.RegisterTxEvent(txID, eventHub)
-	_, err := internal.CreateAndSendTransaction(channel, txProposalResponses)
-	if err != nil {
-		notifier <- apitxn.ExecuteTxResponse{Response: apitxn.TransactionID{}, Error: errors.Wrap(err, "CreateAndSendTransaction failed")}
-		return
-	}
-
-	select {
-	case result := <-statusNotifier:
-		if result.Error == nil {
-			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: result.Code}
-		} else {
-			notifier <- apitxn.ExecuteTxResponse{Response: txID, TxValidationCode: result.Code, Error: result.Error}
-		}
-	case <-time.After(timeout):
-		notifier <- apitxn.ExecuteTxResponse{Response: txID, Error: errors.New("ExecuteTx didn't receive block event")}
-	}
+	return cc.ExecuteTxWithOpts(request, apitxn.TxOpts{})
 }
 
 // Close releases channel client resources (disconnects event hub etc.)

@@ -123,8 +123,8 @@ func testQuery(expected string, ccID string, chClient apitxn.ChannelClient, t *t
 
 func testQueryWithOpts(expected string, ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
-	notifier := make(chan apitxn.QueryResponse)
-	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, apitxn.QueryOpts{Notifier: notifier})
+	notifier := make(chan apitxn.Response)
+	result, err := chClient.QueryWithOpts(apitxn.QueryRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, apitxn.TxOpts{Notifier: notifier})
 	if err != nil {
 		t.Fatalf("Failed to invoke example cc asynchronously: %s", err)
 	}
@@ -137,8 +137,8 @@ func testQueryWithOpts(expected string, ccID string, chClient apitxn.ChannelClie
 		if response.Error != nil {
 			t.Fatalf("Query returned error: %s", response.Error)
 		}
-		if string(response.Response) != expected {
-			t.Fatalf("Expecting %s, got %s", expected, response.Response)
+		if string(response.Payload) != expected {
+			t.Fatalf("Expecting %s, got %s", expected, response.Payload)
 		}
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Query Request timed out")
@@ -148,9 +148,9 @@ func testQueryWithOpts(expected string, ccID string, chClient apitxn.ChannelClie
 
 func testAsyncTransaction(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
-	txNotifier := make(chan apitxn.ExecuteTxResponse)
+	txNotifier := make(chan apitxn.Response)
 	txFilter := &TestTxFilter{}
-	txOpts := apitxn.ExecuteTxOpts{Notifier: txNotifier, TxFilter: txFilter}
+	txOpts := apitxn.TxOpts{Notifier: txNotifier, TxFilter: txFilter}
 
 	_, _, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err != nil {
@@ -172,10 +172,10 @@ func testAsyncTransaction(ccID string, chClient apitxn.ChannelClient, t *testing
 
 func testCommitError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
-	txNotifier := make(chan apitxn.ExecuteTxResponse)
+	txNotifier := make(chan apitxn.Response)
 
 	txFilter := &TestTxFilter{errResponses: errors.New("Error")}
-	txOpts := apitxn.ExecuteTxOpts{Notifier: txNotifier, TxFilter: txFilter}
+	txOpts := apitxn.TxOpts{Notifier: txNotifier, TxFilter: txFilter}
 
 	_, _, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err != nil {
@@ -195,7 +195,7 @@ func testCommitError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 func testFilterError(ccID string, chClient apitxn.ChannelClient, t *testing.T) {
 
 	txFilter := &TestTxFilter{err: errors.New("Error")}
-	txOpts := apitxn.ExecuteTxOpts{TxFilter: txFilter}
+	txOpts := apitxn.TxOpts{TxFilter: txFilter}
 
 	_, _, err := chClient.ExecuteTxWithOpts(apitxn.ExecuteTxRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, txOpts)
 	if err == nil {
