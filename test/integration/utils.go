@@ -11,6 +11,7 @@ import (
 	"time"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 )
 
@@ -47,4 +48,20 @@ func HasPrimaryPeerJoinedChannel(client fab.Resource, channel fab.Channel) (bool
 	}
 
 	return foundChannel, nil
+}
+
+//WithNotifier utility to encapsulate apitxn.Response to apitxn.Option
+func WithNotifier(notifier chan apitxn.Response) apitxn.Option {
+	return func(opts *apitxn.Opts) error {
+		opts.Notifier = notifier
+		return nil
+	}
+}
+
+//WithProposalProcessor utility to encapsulate []apitxn.ProposalProcessor to apitxn.Option
+func WithProposalProcessor(proposalProcessors []apitxn.ProposalProcessor) apitxn.Option {
+	return func(opts *apitxn.Opts) error {
+		opts.ProposalProcessors = proposalProcessors
+		return nil
+	}
 }

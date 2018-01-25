@@ -131,17 +131,15 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 		}
 
 		// Send query to channel peer
-		request := apitxn.QueryRequest{
+		request := apitxn.Request{
 			ChaincodeID: ccID,
 			Fcn:         ccFcn,
 			Args:        ccArgs,
 		}
 
-		opts := apitxn.QueryOpts{
-			ProposalProcessors: []apitxn.ProposalProcessor{peer},
-		}
+		opts := []apitxn.Option{WithProposalProcessor([]apitxn.ProposalProcessor{peer})}
 
-		resp, err := channel.QueryWithOpts(request, opts)
+		resp, err := channel.Query(request, opts...)
 		if err != nil {
 			queryErrors = append(queryErrors, err.Error())
 			continue
@@ -184,4 +182,12 @@ func newResolverKey(channelID string, chaincodeIDs ...string) *resolverKey {
 		}
 	}
 	return &resolverKey{channelID: channelID, chaincodeIDs: arr, key: key}
+}
+
+//WithProposalProcessor utility to encapsulate []apitxn.ProposalProcessor to apitxn.Option
+func WithProposalProcessor(proposalProcessors []apitxn.ProposalProcessor) apitxn.Option {
+	return func(opts *apitxn.Opts) error {
+		opts.ProposalProcessors = proposalProcessors
+		return nil
+	}
 }
