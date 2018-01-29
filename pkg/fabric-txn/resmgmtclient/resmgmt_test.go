@@ -50,12 +50,10 @@ func TestJoinChannel(t *testing.T) {
 	rc := setupResMgmtClient(client, nil, config, t)
 
 	// Setup target peers
-	var peers []fab.Peer
 	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL(addr))
-	peers = append(peers, peer1)
 
 	// Test fail genesis block retrieval (no orderer)
-	err := rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{Targets: peers})
+	err := rc.JoinChannel("mychannel", resmgmt.WithTargets(peer1))
 	if err == nil {
 		t.Fatal("Should have failed to get genesis block")
 	}
@@ -73,7 +71,7 @@ func TestJoinChannel(t *testing.T) {
 	rc = setupResMgmtClient(client, nil, config, t)
 
 	// Test valid join channel request (success)
-	err = rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{Targets: peers})
+	err = rc.JoinChannel("mychannel", resmgmt.WithTargets(peer1))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +79,7 @@ func TestJoinChannel(t *testing.T) {
 	orderer.(fcmocks.MockOrderer).EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 
 	// Test fails because configured peer is not running
-	err = rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{})
+	err = rc.JoinChannel("mychannel")
 	if err == nil {
 		t.Fatal("Should have failed due to configured peer is not running")
 	}
@@ -92,7 +90,7 @@ func TestJoinChannel(t *testing.T) {
 	endorserServer.ProposalError = errors.New("Test Error")
 
 	// Test proposal error
-	err = rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{Targets: peers})
+	err = rc.JoinChannel("mychannel", resmgmt.WithTargets(peer1))
 	if err == nil {
 		t.Fatal("Should have failed with proposal error")
 	}
@@ -160,8 +158,8 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
 
-	// Test empty channel name for request with opts
-	err := rc.JoinChannelWithOpts("", resmgmt.JoinChannelOpts{})
+	// Test empty channel name for request with no opts
+	err := rc.JoinChannel("")
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel name")
 	}
@@ -171,13 +169,13 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, &peer)
 
 	// Test both targets and filter provided (error condition)
-	err = rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{Targets: peers, TargetFilter: &MSPFilter{mspID: "MspID"}})
+	err = rc.JoinChannel("mychannel", resmgmt.WithTargets(peers...), resmgmt.WithTargetFilter(&MSPFilter{mspID: "MspID"}))
 	if err == nil {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
 
 	// Test missing default targets
-	err = rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{TargetFilter: &MSPFilter{mspID: "MspID"}})
+	err = rc.JoinChannel("mychannel", resmgmt.WithTargetFilter(&MSPFilter{mspID: "MspID"}))
 	if err == nil {
 		t.Fatalf("InstallCC should have failed with no targets error")
 	}
@@ -199,7 +197,7 @@ func TestJoinChannelDiscoveryError(t *testing.T) {
 	}
 
 	// If targets are not provided discovery service is used
-	err = rc.JoinChannelWithOpts("mychannel", resmgmt.JoinChannelOpts{})
+	err = rc.JoinChannel("mychannel")
 	if err == nil {
 		t.Fatalf("Should have failed to join channel with discovery error")
 	}
@@ -297,7 +295,7 @@ func TestInstallCCWithOpts(t *testing.T) {
 
 	// Already installed chaincode request
 	req := resmgmt.InstallCCRequest{Name: "name", Version: "version", Path: "path", Package: &fab.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err := rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{Targets: peers})
+	responses, err := rc.InstallCC(req, resmgmt.WithTargets(peers...))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +314,7 @@ func TestInstallCCWithOpts(t *testing.T) {
 
 	// Chaincode not found request (it will be installed)
 	req = resmgmt.InstallCCRequest{Name: "ID", Version: "v0", Path: "path", Package: &fab.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err = rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{Targets: peers})
+	responses, err = rc.InstallCC(req, resmgmt.WithTargets(peers...))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -331,14 +329,14 @@ func TestInstallCCWithOpts(t *testing.T) {
 
 	// Chaincode that causes generic (system) error in installed chaincodes
 	req = resmgmt.InstallCCRequest{Name: "error", Version: "v0", Path: "path", Package: &fab.CCPackage{Type: 1, Code: []byte("code")}}
-	_, err = rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{Targets: peers})
+	_, err = rc.InstallCC(req, resmgmt.WithTargets(peers...))
 	if err == nil {
 		t.Fatalf("Should have failed since install cc returns an error in the client")
 	}
 
 	// Chaincode that causes response error in installed chaincodes
 	req = resmgmt.InstallCCRequest{Name: "errorInResponse", Version: "v0", Path: "path", Package: &fab.CCPackage{Type: 1, Code: []byte("code")}}
-	responses, err = rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{Targets: peers})
+	responses, err = rc.InstallCC(req, resmgmt.WithTargets(peers...))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -436,36 +434,35 @@ func TestInstallCCWithOptsRequiredParameters(t *testing.T) {
 
 	// Test missing required parameters
 	req := resmgmt.InstallCCRequest{}
-	opts := resmgmt.InstallCCOpts{}
-	_, err := rc.InstallCCWithOpts(req, opts)
+	_, err := rc.InstallCC(req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty install cc request")
 	}
 
 	// Test missing chaincode ID
 	req = resmgmt.InstallCCRequest{Name: "", Version: "v0", Path: "path"}
-	_, err = rc.InstallCCWithOpts(req, opts)
+	_, err = rc.InstallCC(req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc ID")
 	}
 
 	// Test missing chaincode version
 	req = resmgmt.InstallCCRequest{Name: "ID", Version: "", Path: "path"}
-	_, err = rc.InstallCCWithOpts(req, opts)
+	_, err = rc.InstallCC(req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = resmgmt.InstallCCRequest{Name: "ID", Version: "v0", Path: ""}
-	_, err = rc.InstallCCWithOpts(req, opts)
+	_, err = rc.InstallCC(req)
 	if err == nil {
 		t.Fatalf("InstallCC should have failed for empty cc path")
 	}
 
 	// Test missing chaincode package
 	req = resmgmt.InstallCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	_, err = rc.InstallCCWithOpts(req, opts)
+	_, err = rc.InstallCC(req)
 	if err == nil {
 		t.Fatalf("InstallCC should have failed for nil chaincode package")
 	}
@@ -479,7 +476,7 @@ func TestInstallCCWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, &peer)
 
 	// Test both targets and filter provided (error condition)
-	_, err = rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{Targets: peers, TargetFilter: &MSPFilter{mspID: "Org1MSP"}})
+	_, err = rc.InstallCC(req, resmgmt.WithTargets(peers...), resmgmt.WithTargetFilter(&MSPFilter{mspID: "Org1MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -492,13 +489,13 @@ func TestInstallCCWithOptsRequiredParameters(t *testing.T) {
 	rc = setupResMgmtClient(client, nil, config, t)
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
-	_, err = rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{})
+	_, err = rc.InstallCC(req)
 	if err == nil {
 		t.Fatalf("Should have failed with no targets error")
 	}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
-	_, err = rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{TargetFilter: &MSPFilter{mspID: "Org2MSP"}})
+	_, err = rc.InstallCC(req, resmgmt.WithTargetFilter(&MSPFilter{mspID: "Org2MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
@@ -522,7 +519,7 @@ func TestInstallCCDiscoveryError(t *testing.T) {
 
 	// Test InstallCC discovery service error
 	// if targets are not provided discovery service is used
-	_, err = rc.InstallCCWithOpts(req, resmgmt.InstallCCOpts{})
+	_, err = rc.InstallCC(req)
 	if err == nil {
 		t.Fatalf("Should have failed to install cc with opts with discovery error")
 	}
@@ -601,44 +598,43 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 
 	// Test missing required parameters
 	req := resmgmt.InstantiateCCRequest{}
-	opts := resmgmt.InstantiateCCOpts{}
 
 	// Test empty channel name
-	err := rc.InstantiateCCWithOpts("", req, opts)
+	err := rc.InstantiateCC("", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel name")
 	}
 
 	// Test empty request
-	err = rc.InstantiateCCWithOpts("mychannel", req, opts)
+	err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty instantiate cc request")
 	}
 
 	// Test missing chaincode ID
 	req = resmgmt.InstantiateCCRequest{Name: "", Version: "v0", Path: "path"}
-	err = rc.InstantiateCCWithOpts("mychannel", req, opts)
+	err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc name")
 	}
 
 	// Test missing chaincode version
 	req = resmgmt.InstantiateCCRequest{Name: "ID", Version: "", Path: "path"}
-	err = rc.InstantiateCCWithOpts("mychannel", req, opts)
+	err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = resmgmt.InstantiateCCRequest{Name: "ID", Version: "v0", Path: ""}
-	err = rc.InstantiateCCWithOpts("mychannel", req, opts)
+	err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc path")
 	}
 
 	// Test missing chaincode policy
 	req = resmgmt.InstantiateCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	err = rc.InstantiateCCWithOpts("mychannel", req, opts)
+	err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for missing chaincode policy")
 	}
@@ -653,7 +649,7 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, &peer)
 
 	// Test both targets and filter provided (error condition)
-	err = rc.InstantiateCCWithOpts("mychannel", req, resmgmt.InstantiateCCOpts{Targets: peers, TargetFilter: &MSPFilter{mspID: "Org1MSP"}})
+	err = rc.InstantiateCC("mychannel", req, resmgmt.WithTargets(peers...), resmgmt.WithTargetFilter(&MSPFilter{mspID: "Org1MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -666,13 +662,13 @@ func TestInstantiateCCWithOptsRequiredParameters(t *testing.T) {
 	rc = setupResMgmtClient(client, nil, config, t)
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
-	err = rc.InstantiateCCWithOpts("mychannel", req, resmgmt.InstantiateCCOpts{})
+	err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed with no targets error")
 	}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
-	err = rc.InstantiateCCWithOpts("mychannel", req, resmgmt.InstantiateCCOpts{TargetFilter: &MSPFilter{mspID: "Org2MSP"}})
+	err = rc.InstantiateCC("mychannel", req, resmgmt.WithTargetFilter(&MSPFilter{mspID: "Org2MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
@@ -703,14 +699,14 @@ func TestInstantiateCCDiscoveryError(t *testing.T) {
 	}
 
 	// Test InstantiateCCWithOpts create new discovery service per channel error
-	err = rc.InstantiateCCWithOpts("error", req, resmgmt.InstantiateCCOpts{})
+	err = rc.InstantiateCC("error", req)
 	if err == nil {
 		t.Fatalf("Should have failed to instantiate cc with opts with create discovery service error")
 	}
 
 	// Test InstantiateCCWithOpts discovery service get peers error
 	// if targets are not provided discovery service is used
-	err = rc.InstantiateCCWithOpts("mychannel", req, resmgmt.InstantiateCCOpts{})
+	err = rc.InstantiateCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed to instantiate cc with opts with get peers discovery error")
 	}
@@ -789,44 +785,43 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 
 	// Test missing required parameters
 	req := resmgmt.UpgradeCCRequest{}
-	opts := resmgmt.UpgradeCCOpts{}
 
 	// Test empty channel name
-	err := rc.UpgradeCCWithOpts("", req, opts)
+	err := rc.UpgradeCC("", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty channel name")
 	}
 
 	// Test empty request
-	err = rc.UpgradeCCWithOpts("mychannel", req, opts)
+	err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty upgrade cc request")
 	}
 
 	// Test missing chaincode ID
 	req = resmgmt.UpgradeCCRequest{Name: "", Version: "v0", Path: "path"}
-	err = rc.UpgradeCCWithOpts("mychannel", req, opts)
+	err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc name")
 	}
 
 	// Test missing chaincode version
 	req = resmgmt.UpgradeCCRequest{Name: "ID", Version: "", Path: "path"}
-	err = rc.UpgradeCCWithOpts("mychannel", req, opts)
+	err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed for empty cc version")
 	}
 
 	// Test missing chaincode path
 	req = resmgmt.UpgradeCCRequest{Name: "ID", Version: "v0", Path: ""}
-	err = rc.UpgradeCCWithOpts("mychannel", req, opts)
+	err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("UpgradeCC should have failed for empty cc path")
 	}
 
 	// Test missing chaincode policy
 	req = resmgmt.UpgradeCCRequest{Name: "ID", Version: "v0", Path: "path"}
-	err = rc.UpgradeCCWithOpts("mychannel", req, opts)
+	err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("UpgradeCC should have failed for missing chaincode policy")
 	}
@@ -841,7 +836,7 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 	peers = append(peers, &peer)
 
 	// Test both targets and filter provided (error condition)
-	err = rc.UpgradeCCWithOpts("mychannel", req, resmgmt.UpgradeCCOpts{Targets: peers, TargetFilter: &MSPFilter{mspID: "Org1MSP"}})
+	err = rc.UpgradeCC("mychannel", req, resmgmt.WithTargets(peers...), resmgmt.WithTargetFilter(&MSPFilter{mspID: "Org1MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed if both target and filter provided")
 	}
@@ -854,13 +849,13 @@ func TestUpgradeCCWithOptsRequiredParameters(t *testing.T) {
 	rc = setupResMgmtClient(client, nil, config, t)
 
 	// No targets and no filter -- default filter msp doesn't match discovery service peer msp
-	err = rc.UpgradeCCWithOpts("mychannel", req, resmgmt.UpgradeCCOpts{})
+	err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed with no targets error")
 	}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
-	err = rc.UpgradeCCWithOpts("mychannel", req, resmgmt.UpgradeCCOpts{TargetFilter: &MSPFilter{mspID: "Org2MSP"}})
+	err = rc.UpgradeCC("mychannel", req, resmgmt.WithTargetFilter(&MSPFilter{mspID: "Org2MSP"}))
 	if err == nil {
 		t.Fatalf("Should have failed with no targets since filter rejected all discovery targets")
 	}
@@ -892,14 +887,14 @@ func TestUpgradeCCDiscoveryError(t *testing.T) {
 	}
 
 	// Test UpgradeCCWithOpts discovery service error when creating discovery service for channel 'error'
-	err = rc.UpgradeCCWithOpts("error", req, resmgmt.UpgradeCCOpts{})
+	err = rc.UpgradeCC("error", req)
 	if err == nil {
 		t.Fatalf("Should have failed to upgrade cc with opts with discovery error")
 	}
 
 	// Test UpgradeCCWithOpts discovery service error
 	// if targets are not provided discovery service is used to get targets
-	err = rc.UpgradeCCWithOpts("mychannel", req, resmgmt.UpgradeCCOpts{})
+	err = rc.UpgradeCC("mychannel", req)
 	if err == nil {
 		t.Fatalf("Should have failed to upgrade cc with opts with discovery error")
 	}
@@ -950,13 +945,13 @@ func TestCCProposal(t *testing.T) {
 	// Test failed proposal error handling (endorser returns an error)
 	endorserServer.ProposalError = errors.New("Test Error")
 
-	err = rc.InstantiateCCWithOpts("mychannel", instantiateReq, resmgmt.InstantiateCCOpts{Targets: peers})
+	err = rc.InstantiateCC("mychannel", instantiateReq, resmgmt.WithTargets(peers...))
 	if err == nil {
 		t.Fatalf("Should have failed to instantiate cc due to endorser error")
 	}
 
 	upgradeRequest := resmgmt.UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
-	err = rc.UpgradeCCWithOpts("mychannel", upgradeRequest, resmgmt.UpgradeCCOpts{Targets: peers})
+	err = rc.UpgradeCC("mychannel", upgradeRequest, resmgmt.WithTargets(peers...))
 	if err == nil {
 		t.Fatalf("Should have failed to upgrade cc due to endorser error")
 	}
@@ -984,7 +979,7 @@ func TestCCProposal(t *testing.T) {
 	}
 
 	// Test invalid function (only 'instatiate' and 'upgrade' are supported)
-	err = rc.sendCCProposalWithOpts(3, "mychannel", instantiateReq, resmgmt.InstantiateCCOpts{Targets: peers})
+	err = rc.sendCCProposal(3, "mychannel", instantiateReq, resmgmt.WithTargets(peers...))
 	if err == nil {
 		t.Fatalf("Should have failed for invalid function name")
 	}
