@@ -46,7 +46,7 @@ func TestQueryHandlerSuccess(t *testing.T) {
 	go queryHandler.Handle(requestContext, clientContext)
 
 	select {
-	case response := <-requestContext.Opts.Notifier:
+	case response := <-requestContext.ResponseCollector:
 		if response.Error != nil {
 			t.Fatal("Query handler failed", response.Error)
 		}
@@ -79,7 +79,7 @@ func TestExecuteTxHandlerSuccess(t *testing.T) {
 		case callback := <-mockEventHub.RegisteredTxCallbacks:
 			callback("txid", 0,
 				status.New(status.EventServerStatus, 0, "test", nil))
-		case <-requestContext.Opts.Notifier:
+		case <-requestContext.ResponseCollector:
 			return
 		case <-time.After(requestContext.Opts.Timeout):
 			t.Fatal("Execute handler : time out not expected")
@@ -103,7 +103,7 @@ func TestQueryHandlerErrors(t *testing.T) {
 	go queryHandler.Handle(requestContext, clientContext)
 
 	select {
-	case response := <-requestContext.Opts.Notifier:
+	case response := <-requestContext.ResponseCollector:
 		if response.Error == nil || !strings.Contains(response.Error.Error(), discoveryServiceError) {
 			t.Fatal("Expected error: ", discoveryServiceError, ", Received error:", response.Error.Error())
 		}
@@ -118,7 +118,7 @@ func TestQueryHandlerErrors(t *testing.T) {
 	go queryHandler.Handle(requestContext, clientContext)
 
 	select {
-	case response := <-requestContext.Opts.Notifier:
+	case response := <-requestContext.ResponseCollector:
 		if response.Error == nil || !strings.Contains(response.Error.Error(), selectionServiceError) {
 			t.Fatal("Expected error: ", selectionServiceError, ", Received error:", response.Error.Error())
 		}
@@ -141,7 +141,7 @@ func prepareRequestContext(request apitxn.Request, opts apitxn.Opts, t *testing.
 
 	requestContext.Opts.Timeout = testTimeOut
 
-	requestContext.Opts.Notifier = make(chan apitxn.Response)
+	requestContext.ResponseCollector = make(chan apitxn.Response)
 
 	return requestContext
 

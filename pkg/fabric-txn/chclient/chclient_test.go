@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
 
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/status"
@@ -306,6 +307,21 @@ func TestTransactionValidationError(t *testing.T) {
 	case <-time.After(time.Second * 5):
 		t.Fatal("Timed out waiting for execute Tx")
 	}
+}
+
+func TestExecuteTxWithRetries(t *testing.T) {
+	testStatus := status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), "test", nil)
+
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	testPeer1.Error = testStatus
+	chClient := setupChannelClient([]apifabclient.Peer{testPeer1}, t)
+
+	_, err := chClient.Query(apitxn.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}},
+		apitxn.WithRetry(retry.DefaultOpts))
+	if err == nil {
+		t.Fatalf("Should have failed for not success status")
+	}
+	assert.Equal(t, retry.DefaultOpts.Attempts, testPeer1.ProcessProposalCalls-1, "Expected peer to be called (retry attempts + 1) times")
 }
 
 func setupTestChannel() (*channel.Channel, error) {
