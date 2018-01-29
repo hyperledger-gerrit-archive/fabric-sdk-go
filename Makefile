@@ -41,6 +41,7 @@ FABRIC_DEVSTABLE_VERSION_MAJOR  := 1
 GO_LDFLAGS                 ?= -s
 GO_TESTFLAGS               ?=
 FABRIC_SDK_EXPERIMENTAL    ?= true
+FABRIC_SDK_DEPRECATED      ?= false
 FABRIC_SDK_EXTRA_GO_TAGS   ?=
 FABRIC_SDK_POPULATE_VENDOR ?= true
 
@@ -143,6 +144,9 @@ endif
 GO_TAGS := $(FABRIC_SDK_EXTRA_GO_TAGS)
 ifeq ($(FABRIC_SDK_EXPERIMENTAL),true)
 GO_TAGS += experimental
+endif
+ifeq ($(FABRIC_SDK_DEPRECATED),true)
+GO_TAGS += deprecated
 endif
 
 # Detect subtarget execution

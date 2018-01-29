@@ -14,12 +14,12 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
-	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	ledger_util "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/pkg/errors"
 )
 
 type mockEventClientMockEventRegistration struct {
@@ -106,10 +106,11 @@ func (mec *mockEventClient) Stop() error {
 }
 
 func createMockedEventHub() (*EventHub, *mockEventClientFactory, error) {
-	client := client.NewClient(mocks.NewMockConfig())
+	user := mocks.NewMockUser("user")
+	fabCtx := mocks.NewMockContext(user)
 	ctx := Context{
-		ProviderContext: client,
-		IdentityContext: client.IdentityContext(),
+		ProviderContext: fabCtx,
+		IdentityContext: fabCtx,
 	}
 	eventHub, err := New(ctx)
 	if err != nil {
