@@ -23,12 +23,12 @@ type SaveChannelOpts struct {
 	OrdererID string // use specific orderer
 }
 
+//Option func for each SaveChannelOpts argument
+type Option func(opts *SaveChannelOpts) error
+
 // ChannelMgmtClient supports creating new channels
 type ChannelMgmtClient interface {
 
-	// SaveChannel creates or updates channel
-	SaveChannel(req SaveChannelRequest) error
-
-	// SaveChannel creates or updates channel with custom options
-	SaveChannelWithOpts(req SaveChannelRequest, opts SaveChannelOpts) error
+	// SaveChannel creates or updates channel with optional SaveChannelOpts options
+	SaveChannel(req SaveChannelRequest, options ...Option) error
 }
