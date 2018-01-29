@@ -124,7 +124,7 @@ type session struct {
 }
 
 // newSession creates a session from a context and a user (TODO)
-func newSession(ic apifabclient.IdentityContext, cp apifabclient.ChannelProvider) *session {
+func newSession(ic apifabclient.IdentityContext) *session {
 	s := session{
 		IdentityContext: ic,
 	}

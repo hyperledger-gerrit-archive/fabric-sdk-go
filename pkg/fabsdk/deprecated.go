@@ -129,7 +129,7 @@ func (sdk *FabricSDK) newSessionFromIdentityName(orgID string, id string) (*sess
 		return nil, errors.WithMessage(err, "failed to get pre-enrolled user")
 	}
 
-	session := newSession(user, sdk.channelProvider)
+	session := newSession(user)
 
 	return session, nil
 }

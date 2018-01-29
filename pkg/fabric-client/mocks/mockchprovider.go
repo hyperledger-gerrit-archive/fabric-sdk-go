@@ -63,3 +63,13 @@ func (cs *MockChannelService) Channel() (fab.Channel, error) {
 
 	return ch, nil
 }
+
+// Ledger ...
+func (cs *MockChannelService) Ledger() (fab.ChannelLedger, error) {
+	ch, ok := cs.provider.channels[cs.channelID]
+	if !ok {
+		return nil, errors.New("No channel")
+	}
+
+	return ch, nil
+}
