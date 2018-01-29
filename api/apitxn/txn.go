@@ -9,6 +9,7 @@ package apitxn
 import (
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -34,6 +35,7 @@ type Opts struct {
 	Notifier           chan Response       // async
 	ProposalProcessors []ProposalProcessor // targets
 	Timeout            time.Duration
+	Retry              retry.Opts
 }
 
 //Option func for each Opts argument
