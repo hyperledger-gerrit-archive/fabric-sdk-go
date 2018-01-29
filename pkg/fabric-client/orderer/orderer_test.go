@@ -346,7 +346,7 @@ func TestBroadcastBadDial(t *testing.T) {
 
 	config.EXPECT().TimeoutOrDefault(apiconfig.OrdererConnection).Return(time.Second * 1)
 
-	orderer, _ := NewOrderer("127.0.0.1:0", "", "", config)
+	orderer, _ := New(config, WithServerName("127.0.0.1:0"))
 	orderer.grpcDialOption = append(orderer.grpcDialOption, grpc.WithBlock())
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 	assert.NotNil(t, err)
