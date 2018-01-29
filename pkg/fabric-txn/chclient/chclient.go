@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	txnHandlerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
+	"github.com/hyperledger/fabric-sdk-go/pkg/retry"
 )
 
 const (
@@ -88,7 +89,7 @@ func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitx
 	}
 
 	//Perform action through handler
-	go handler.Handle(requestContext, clientContext)
+	go handleWithRetry(handler, requestContext, clientContext)
 
 	//notifier in options will handle response if provided
 	if txnOpts.Notifier != nil {
@@ -101,6 +102,20 @@ func (cc *ChannelClient) InvokeHandler(handler txnhandler.Handler, request apitx
 	case <-time.After(requestContext.Opts.Timeout):
 		return apitxn.Response{Error: errors.New("handler timed out while performing operation")}
 	}
+}
+
+func handleWithRetry(handler txnhandler.Handler, requestContext *txnhandler.RequestContext,
+	clientContext *txnhandler.ClientContext) {
+handleInvoke:
+	go handler.Handle(requestContext, clientContext)
+	// collect response
+	response := <-requestContext.ResponseCollector
+	// retry if required
+	if requestContext.RetryHandler.Required(response.Error) {
+		goto handleInvoke
+	}
+	// forward response
+	requestContext.Opts.Notifier <- response
 }
 
 //prepareHandlerContexts prepares context objects for handlers
@@ -118,9 +133,11 @@ func (cc *ChannelClient) prepareHandlerContexts(request apitxn.Request, options 
 	}
 
 	requestContext := &txnhandler.RequestContext{
-		Request:  request,
-		Opts:     options,
-		Response: apitxn.Response{},
+		Request:           request,
+		Opts:              options,
+		Response:          apitxn.Response{},
+		RetryHandler:      retry.New(options.Retry),
+		ResponseCollector: make(chan apitxn.Response),
 	}
 
 	if requestContext.Opts.Timeout == 0 {
