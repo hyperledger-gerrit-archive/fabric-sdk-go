@@ -20,7 +20,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -30,8 +29,8 @@ import (
 type BaseSetupImpl struct {
 	SDK             *fabsdk.FabricSDK
 	Identity        fab.IdentityContext
+	ChannelService  fab.ChannelService
 	Client          fab.Resource
-	Channel         fab.Channel
 	EventHub        fab.EventHub
 	ConnectEventHub bool
 	ConfigFile      string
@@ -101,11 +100,11 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 
 	setup.Client = sc
 
-	channel, err := setup.GetChannel(sdk, setup.Identity, sdk.Config(), setup.ChannelID, []string{setup.OrgID})
+	channelService, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(setup.OrgID)).ChannelService(setup.ChannelID)
 	if err != nil {
-		return errors.Wrapf(err, "create channel (%s) failed: %v", setup.ChannelID)
+		t.Fatalf("channelService returned error: %v", err)
 	}
-	setup.Channel = channel
+	setup.ChannelService = channelService
 
 	// Channel management client is responsible for managing channels (create/update)
 	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ChannelMgmt()
@@ -117,6 +116,11 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	resMgmtClient, err = sdk.NewClient(fabsdk.WithUser("Admin")).ResourceMgmt()
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
+	}
+
+	channel, err := channelService.Channel()
+	if err != nil {
+		t.Fatalf("Ledger returned error: %v", err)
 	}
 
 	// Check if primary peer has joined channel
@@ -136,10 +140,6 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 
 		time.Sleep(time.Second * 3)
 
-		if err = channel.Initialize(nil); err != nil {
-			return errors.WithMessage(err, "channel init failed")
-		}
-
 		if err = resMgmtClient.JoinChannel(setup.ChannelID); err != nil {
 			return errors.WithMessage(err, "JoinChannel failed")
 		}
@@ -152,34 +152,6 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 	setup.Initialized = true
 
 	return nil
-}
-
-// GetChannel initializes and returns a channel based on config
-func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, channelID string, orgs []string) (fab.Channel, error) {
-
-	channel, err := sdk.FabricProvider().NewChannelClient(ic, channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewChannel failed")
-	}
-
-	for _, org := range orgs {
-		peerConfig, err := config.PeersConfig(org)
-		if err != nil {
-			return nil, errors.WithMessage(err, "reading peer config failed")
-		}
-		for _, p := range peerConfig {
-			endorser, err := sdk.FabricProvider().NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p})
-			if err != nil {
-				return nil, errors.WithMessage(err, "NewPeer failed")
-			}
-			err = channel.AddPeer(endorser)
-			if err != nil {
-				return nil, errors.WithMessage(err, "adding peer failed")
-			}
-		}
-	}
-
-	return channel, nil
 }
 
 func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client *fabsdk.FabricSDK, identity fab.IdentityContext) error {
@@ -204,9 +176,9 @@ func (setup *BaseSetupImpl) InitConfig() apiconfig.ConfigProvider {
 }
 
 // InstallCC use low level client to install chaincode
-func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *fab.CCPackage) error {
+func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *fab.CCPackage, targets []apitxn.ProposalProcessor) error {
 
-	icr := fab.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: peer.PeersToTxnProcessors(setup.Channel.Peers())}
+	icr := fab.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
 
 	transactionProposalResponse, _, err := setup.Client.InstallChaincode(icr)
 

@@ -130,7 +130,7 @@ func (c *Client) ChannelMgmt() (chmgmt.ChannelMgmtClient, error) {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
 	}
 
-	session := newSession(p.identity, p.providers.ChannelProvider())
+	session := newSession(p.identity)
 	client, err := p.clientFactory.NewChannelMgmtClient(p.providers, session)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create new channel management client")
@@ -146,10 +146,10 @@ func (c *Client) ResourceMgmt() (resmgmt.ResourceMgmtClient, error) {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
 	}
 
-	session := newSession(p.identity, p.providers.ChannelProvider())
+	session := newSession(p.identity)
 	client, err := p.clientFactory.NewResourceMgmtClient(p.providers, session, p.opts.targetFilter)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to created new resource management client")
+		return nil, errors.WithMessage(err, "failed to create new resource management client")
 	}
 
 	return client, nil
@@ -162,13 +162,24 @@ func (c *Client) Channel(id string) (apitxn.ChannelClient, error) {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
 	}
 
-	session := newSession(p.identity, p.providers.ChannelProvider())
+	session := newSession(p.identity)
 	client, err := p.clientFactory.NewChannelClient(p.providers, session, id)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to created new resource management client")
+		return nil, errors.WithMessage(err, "failed to create new resource management client")
 	}
 
 	return client, nil
+}
+
+// ChannelService returns a client API for interacting with a channel.
+func (c *Client) ChannelService(id string) (apifabclient.ChannelService, error) {
+	p, err := c.provider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to get client provider context")
+	}
+
+	channelProvider := p.providers.ChannelProvider()
+	return channelProvider.NewChannelService(p.identity, id)
 }
 
 // Session returns the underlying identity of the client.
@@ -180,5 +191,5 @@ func (c *Client) Session() (apisdk.SessionContext, error) {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
 	}
 
-	return newSession(p.identity, p.providers.ChannelProvider()), nil
+	return newSession(p.identity), nil
 }

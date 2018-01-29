@@ -32,31 +32,42 @@ func TestChannelQueries(t *testing.T) {
 		ConnectEventHub: true,
 	}
 
+	t.Log("Initializing")
 	if err := testSetup.Initialize(t); err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	channel := testSetup.Channel
 	client := testSetup.Client
 
+	t.Log("Installing example cc")
 	if err := testSetup.InstallAndInstantiateExampleCC(); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
+	channel, err := testSetup.ChannelService.Channel()
+	if err != nil {
+		t.Fatalf("Ledger returned error: %v", err)
+	}
+
+	ledger, err := testSetup.ChannelService.Ledger()
+	if err != nil {
+		t.Fatalf("Ledger returned error: %v", err)
+	}
+
 	// Test Query Info - retrieve values before transaction
-	bciBeforeTx, err := channel.QueryInfo()
+	bciBeforeTx, err := ledger.QueryInfo()
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
 	// Invoke transaction that changes block state
-	txID, err := changeBlockState(t, testSetup)
+	txID, err := changeBlockState(t, testSetup, channel)
 	if err != nil {
 		t.Fatalf("Failed to change block state (invoke transaction). Return error: %v", err)
 	}
 
 	// Test Query Info - retrieve values after transaction
-	bciAfterTx, err := channel.QueryInfo()
+	bciAfterTx, err := ledger.QueryInfo()
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
@@ -68,7 +79,7 @@ func TestChannelQueries(t *testing.T) {
 
 	testQueryTransaction(t, channel, txID)
 
-	testQueryBlock(t, channel)
+	testQueryBlock(t, ledger)
 
 	testQueryChannels(t, channel, client)
 
@@ -80,9 +91,9 @@ func TestChannelQueries(t *testing.T) {
 
 }
 
-func changeBlockState(t *testing.T, testSetup *integration.BaseSetupImpl) (string, error) {
+func changeBlockState(t *testing.T, testSetup *integration.BaseSetupImpl, channel fab.Channel) (string, error) {
 
-	tpResponses, _, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", integration.ExampleCCQueryArgs(), []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses, _, err := testSetup.CreateAndSendTransactionProposal(channel, testSetup.ChainCodeID, "invoke", integration.ExampleCCQueryArgs(), []apitxn.ProposalProcessor{channel.PrimaryPeer()}, nil)
 	if err != nil {
 		return "", errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
@@ -90,12 +101,12 @@ func changeBlockState(t *testing.T, testSetup *integration.BaseSetupImpl) (strin
 	value := tpResponses[0].ProposalResponse.GetResponse().Payload
 
 	// Start transaction that will change block state
-	txID, err := moveFundsAndGetTxID(t, testSetup)
+	txID, err := moveFundsAndGetTxID(t, testSetup, channel)
 	if err != nil {
 		return "", errors.WithMessage(err, "move funds failed")
 	}
 
-	tpResponses, _, err = testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, "invoke", integration.ExampleCCQueryArgs(), []apitxn.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses, _, err = testSetup.CreateAndSendTransactionProposal(channel, testSetup.ChainCodeID, "invoke", integration.ExampleCCQueryArgs(), []apitxn.ProposalProcessor{channel.PrimaryPeer()}, nil)
 	if err != nil {
 		return "", errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
@@ -133,16 +144,16 @@ func testQueryTransaction(t *testing.T, channel fab.Channel, txID string) {
 
 }
 
-func testQueryBlock(t *testing.T, channel fab.Channel) {
+func testQueryBlock(t *testing.T, ledger fab.ChannelLedger) {
 
 	// Retrieve current blockchain info
-	bci, err := channel.QueryInfo()
+	bci, err := ledger.QueryInfo()
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
 	// Test Query Block by Hash - retrieve current block by hash
-	block, err := channel.QueryBlockByHash(bci.CurrentBlockHash)
+	block, err := ledger.QueryBlockByHash(bci.CurrentBlockHash)
 	if err != nil {
 		t.Fatalf("QueryBlockByHash return error: %v", err)
 	}
@@ -152,13 +163,13 @@ func testQueryBlock(t *testing.T, channel fab.Channel) {
 	}
 
 	// Test Query Block by Hash - retrieve block by non-existent hash
-	block, err = channel.QueryBlockByHash([]byte("non-existent"))
+	block, err = ledger.QueryBlockByHash([]byte("non-existent"))
 	if err == nil {
 		t.Fatalf("QueryBlockByHash non-existent didn't return an error")
 	}
 
 	// Test Query Block - retrieve block by number
-	block, err = channel.QueryBlock(1)
+	block, err = ledger.QueryBlock(1)
 	if err != nil {
 		t.Fatalf("QueryBlock return error: %v", err)
 	}
@@ -168,7 +179,7 @@ func testQueryBlock(t *testing.T, channel fab.Channel) {
 	}
 
 	// Test Query Block - retrieve block by non-existent number
-	block, err = channel.QueryBlock(2147483647)
+	block, err = ledger.QueryBlock(2147483647)
 	if err == nil {
 		t.Fatalf("QueryBlock non-existent didn't return an error")
 	}
@@ -311,19 +322,19 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, testSetup *integrat
 }
 
 // MoveFundsAndGetTxID ...
-func moveFundsAndGetTxID(t *testing.T, setup *integration.BaseSetupImpl) (string, error) {
+func moveFundsAndGetTxID(t *testing.T, setup *integration.BaseSetupImpl, channel fab.Channel) (string, error) {
 
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(setup.Channel, setup.ChainCodeID, "invoke", integration.ExampleCCTxArgs(), []apitxn.ProposalProcessor{setup.Channel.PrimaryPeer()}, transientDataMap)
+	transactionProposalResponse, txID, err := setup.CreateAndSendTransactionProposal(channel, setup.ChainCodeID, "invoke", integration.ExampleCCTxArgs(), []apitxn.ProposalProcessor{channel.PrimaryPeer()}, transientDataMap)
 	if err != nil {
 		return "", errors.WithMessage(err, "CreateAndSendTransactionProposal failed")
 	}
 	// Register for commit event
 	done, fail := setup.RegisterTxEvent(t, txID, setup.EventHub)
 
-	txResponse, err := setup.CreateAndSendTransaction(setup.Channel, transactionProposalResponse)
+	txResponse, err := setup.CreateAndSendTransaction(channel, transactionProposalResponse)
 	if err != nil {
 		return "", errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}

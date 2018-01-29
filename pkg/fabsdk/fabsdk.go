@@ -225,7 +225,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	}
 	sdk.selectionProvider = selectionProvider
 
-	channelProvider, err := chpvdr.New(fabricProvider)
+	channelProvider, err := chpvdr.New(fabricProvider, discoveryProvider)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize channel provider")
 	}
