@@ -26,15 +26,12 @@ import (
 type Channel interface {
 	txn.Sender
 	txn.ProposalSender
+	ChannelRequest
+	ChannelInfo
+	ChannelConfig
 
 	Name() string
-	Initialize(data []byte) error
 	IsInitialized() bool
-	LoadConfigUpdateEnvelope(data []byte) error
-	ChannelConfig() (*common.ConfigEnvelope, error)
-	SendInstantiateProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope,
-		collConfig []*common.CollectionConfig, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
-	SendUpgradeProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
 
 	// Network
 	// TODO: Use PeerEndorser
@@ -48,23 +45,41 @@ type Channel interface {
 	RemoveOrderer(orderer Orderer)
 	Orderers() []Orderer
 	SetMSPManager(mspManager msp.MSPManager)
-	MSPManager() msp.MSPManager
 	OrganizationUnits() ([]string, error)
 
 	// Channel Info
-	GenesisBlock() (*common.Block, error)
-	JoinChannel(request *JoinChannelRequest) error
 	UpdateChannel() bool
 	IsReadonly() bool
 
 	// Query
+	QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error)
+}
+
+// ChannelRequest ...
+type ChannelRequest interface {
+	JoinChannel(request *JoinChannelRequest) error
+	SendInstantiateProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope,
+		collConfig []*common.CollectionConfig, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
+	SendUpgradeProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
+	QueryByChaincode(txn.ChaincodeInvokeRequest) ([][]byte, error)
+}
+
+// ChannelInfo ...
+type ChannelInfo interface {
+	GenesisBlock() (*common.Block, error)
 	QueryInfo() (*common.BlockchainInfo, error)
 	QueryBlock(blockNumber int) (*common.Block, error)
 	QueryBlockByHash(blockHash []byte) (*common.Block, error)
 	QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error)
 	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
-	QueryByChaincode(txn.ChaincodeInvokeRequest) ([][]byte, error)
-	QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error)
+}
+
+// ChannelConfig ...
+type ChannelConfig interface {
+	Initialize(data []byte) error
+	LoadConfigUpdateEnvelope(data []byte) error
+	ChannelConfig() (*common.ConfigEnvelope, error)
+	MSPManager() msp.MSPManager
 }
 
 // OrgAnchorPeer contains information about an anchor peer on this channel
