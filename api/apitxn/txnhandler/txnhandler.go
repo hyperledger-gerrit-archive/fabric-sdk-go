@@ -13,7 +13,7 @@ import (
 
 //Handler for chaining transaction executions
 type Handler interface {
-	Handle(context *RequestContext, clientContext *ClientContext)
+	Handle(context *RequestContext, clientContext *ClientContext) apitxn.Response
 }
 
 //ClientContext contains context parameters for handler execution

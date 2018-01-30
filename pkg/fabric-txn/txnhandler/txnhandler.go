@@ -26,7 +26,7 @@ type EndorseTxHandler struct {
 }
 
 //Handle for endorsing transactions
-func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, clientContext *txnhandler.ClientContext) {
+func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, clientContext *txnhandler.ClientContext) apitxn.Response {
 
 	//Get proposal processor, if not supplied then use discovery service to get available peers as endorser
 	//If selection service available then get endorser peers for this chaincode
@@ -35,15 +35,13 @@ func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, cli
 		// Use discovery service to figure out proposal processors
 		peers, err := clientContext.Discovery.GetPeers()
 		if err != nil {
-			requestContext.Opts.Notifier <- apitxn.Response{Payload: nil, Error: errors.WithMessage(err, "GetPeers failed")}
-			return
+			return apitxn.Response{Payload: nil, Error: errors.WithMessage(err, "GetPeers failed")}
 		}
 		endorsers := peers
 		if clientContext.Selection != nil {
 			endorsers, err = clientContext.Selection.GetEndorsersForChaincode(peers, requestContext.Request.ChaincodeID)
 			if err != nil {
-				requestContext.Opts.Notifier <- apitxn.Response{Payload: nil, Error: errors.WithMessage(err, "Failed to get endorsing peers")}
-				return
+				return apitxn.Response{Payload: nil, Error: errors.WithMessage(err, "Failed to get endorsing peers")}
 			}
 		}
 		txProcessors = peer.PeersToTxnProcessors(endorsers)
@@ -54,8 +52,7 @@ func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, cli
 		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, txProcessors, requestContext.Request.TransientMap)
 
 	if err != nil {
-		requestContext.Opts.Notifier <- apitxn.Response{Payload: nil, TransactionID: txnID, Error: err}
-		return
+		return apitxn.Response{Payload: nil, TransactionID: txnID, Error: err}
 	}
 
 	requestContext.Response.Responses = transactionProposalResponses
@@ -63,13 +60,13 @@ func (e *EndorseTxHandler) Handle(requestContext *txnhandler.RequestContext, cli
 
 	//Delegate to next step if any
 	if e.next != nil {
-		e.next.Handle(requestContext, clientContext)
+		return e.next.Handle(requestContext, clientContext)
 	} else {
 		var response []byte
 		if len(transactionProposalResponses) > 0 {
 			response = transactionProposalResponses[0].ProposalResponse.GetResponse().Payload
 		}
-		requestContext.Opts.Notifier <- apitxn.Response{Payload: response, TransactionID: txnID, Responses: transactionProposalResponses}
+		return apitxn.Response{Payload: response, TransactionID: txnID, Responses: transactionProposalResponses}
 	}
 }
 
@@ -79,13 +76,14 @@ type EndorsementValidationHandler struct {
 }
 
 //Handle for Filtering proposal response
-func (f *EndorsementValidationHandler) Handle(requestContext *txnhandler.RequestContext, clientContext *txnhandler.ClientContext) {
+func (f *EndorsementValidationHandler) Handle(requestContext *txnhandler.RequestContext,
+	clientContext *txnhandler.ClientContext) apitxn.Response {
 
 	//Filter tx proposal responses
 	err := f.validate(requestContext.Response.Responses)
 	if err != nil {
-		requestContext.Opts.Notifier <- apitxn.Response{Payload: nil, TransactionID: requestContext.Response.TransactionID, Error: errors.WithMessage(err, "TxFilter failed")}
-		return
+		return apitxn.Response{Payload: nil, TransactionID: requestContext.Response.TransactionID,
+			Error: errors.WithMessage(err, "TxFilter failed")}
 	}
 
 	var response []byte
@@ -97,9 +95,9 @@ func (f *EndorsementValidationHandler) Handle(requestContext *txnhandler.Request
 
 	//Delegate to next step if any
 	if f.next != nil {
-		f.next.Handle(requestContext, clientContext)
+		return f.next.Handle(requestContext, clientContext)
 	} else {
-		requestContext.Opts.Notifier <- apitxn.Response{Payload: response, Error: nil}
+		return apitxn.Response{Payload: response, Error: nil}
 	}
 }
 
@@ -129,13 +127,13 @@ type CommitTxHandler struct {
 }
 
 //Handle handles commit tx
-func (c *CommitTxHandler) Handle(requestContext *txnhandler.RequestContext, clientContext *txnhandler.ClientContext) {
+func (c *CommitTxHandler) Handle(requestContext *txnhandler.RequestContext, clientContext *txnhandler.ClientContext) apitxn.Response {
 
 	//Connect to Event hub if not yet connected
 	if clientContext.EventHub.IsConnected() == false {
 		err := clientContext.EventHub.Connect()
 		if err != nil {
-			requestContext.Opts.Notifier <- apitxn.Response{TransactionID: apitxn.TransactionID{}, Error: err}
+			return apitxn.Response{TransactionID: apitxn.TransactionID{}, Error: err}
 		}
 	}
 
@@ -145,24 +143,25 @@ func (c *CommitTxHandler) Handle(requestContext *txnhandler.RequestContext, clie
 	statusNotifier := internal.RegisterTxEvent(txnID, clientContext.EventHub)
 	_, err := internal.CreateAndSendTransaction(clientContext.Channel, requestContext.Response.Responses)
 	if err != nil {
-		requestContext.Opts.Notifier <- apitxn.Response{TransactionID: apitxn.TransactionID{}, Error: errors.Wrap(err, "CreateAndSendTransaction failed")}
-		return
+		return apitxn.Response{TransactionID: apitxn.TransactionID{}, Error: errors.Wrap(err, "CreateAndSendTransaction failed")}
 	}
 
 	select {
 	case result := <-statusNotifier:
 		if result.Error == nil {
-			requestContext.Opts.Notifier <- apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code}
+			requestContext.Response = apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code}
 		} else {
-			requestContext.Opts.Notifier <- apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code, Error: result.Error}
+			return apitxn.Response{Payload: requestContext.Response.Payload, TransactionID: txnID, TxValidationCode: result.Code, Error: result.Error}
 		}
 	case <-time.After(requestContext.Opts.Timeout):
-		requestContext.Opts.Notifier <- apitxn.Response{TransactionID: txnID, Error: errors.New("Execute didn't receive block event")}
+		return apitxn.Response{TransactionID: txnID, Error: errors.New("Execute didn't receive block event")}
 	}
 
 	//Delegate to next step if any
 	if c.next != nil {
-		c.next.Handle(requestContext, clientContext)
+		return c.next.Handle(requestContext, clientContext)
+	} else {
+		return requestContext.Response
 	}
 }
 

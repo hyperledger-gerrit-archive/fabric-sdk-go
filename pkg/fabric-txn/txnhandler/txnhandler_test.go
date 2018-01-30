@@ -14,7 +14,7 @@ import (
 	txnhandlerApi "github.com/hyperledger/fabric-sdk-go/api/apitxn/txnhandler"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/status"
+	"github.com/stretchr/testify/assert"
 
 	"strings"
 
@@ -43,15 +43,9 @@ func TestQueryHandlerSuccess(t *testing.T) {
 	queryHandler := NewQueryHandler()
 
 	//Perform action through handler
-	go queryHandler.Handle(requestContext, clientContext)
-
-	select {
-	case response := <-requestContext.Opts.Notifier:
-		if response.Error != nil {
-			t.Fatal("Query handler failed", response.Error)
-		}
-	case <-time.After(requestContext.Opts.Timeout):
-		t.Fatal("Query handler : time out not expected")
+	response := queryHandler.Handle(requestContext, clientContext)
+	if response.Error != nil {
+		t.Fatal("Query handler failed", response.Error)
 	}
 }
 
@@ -68,23 +62,20 @@ func TestExecuteTxHandlerSuccess(t *testing.T) {
 	mockEventHub := fcmocks.NewMockEventHub()
 	clientContext.EventHub = mockEventHub
 
-	//Get query handler
-	queryHandler := NewExecuteHandler()
-
-	//Perform action through handler
-	go queryHandler.Handle(requestContext, clientContext)
-	for {
-
+	go func() {
 		select {
 		case callback := <-mockEventHub.RegisteredTxCallbacks:
-			callback("txid", 0,
-				status.New(status.EventServerStatus, 0, "test", nil))
-		case <-requestContext.Opts.Notifier:
-			return
+			callback("txid", 0, nil)
 		case <-time.After(requestContext.Opts.Timeout):
 			t.Fatal("Execute handler : time out not expected")
 		}
-	}
+	}()
+
+	//Get query handler
+	executeHandler := NewExecuteHandler()
+	//Perform action through handler
+	response := executeHandler.Handle(requestContext, clientContext)
+	assert.Nil(t, response.Error)
 }
 
 func TestQueryHandlerErrors(t *testing.T) {
@@ -100,31 +91,18 @@ func TestQueryHandlerErrors(t *testing.T) {
 	queryHandler := NewQueryHandler()
 
 	//Perform action through handler
-	go queryHandler.Handle(requestContext, clientContext)
-
-	select {
-	case response := <-requestContext.Opts.Notifier:
-		if response.Error == nil || !strings.Contains(response.Error.Error(), discoveryServiceError) {
-			t.Fatal("Expected error: ", discoveryServiceError, ", Received error:", response.Error.Error())
-		}
-	case <-time.After(requestContext.Opts.Timeout):
-		t.Fatal("Query handler : time out not expected")
+	response := queryHandler.Handle(requestContext, clientContext)
+	if response.Error == nil || !strings.Contains(response.Error.Error(), discoveryServiceError) {
+		t.Fatal("Expected error: ", discoveryServiceError, ", Received error:", response.Error.Error())
 	}
 
 	//Error Scenario 2
 	clientContext = setupChannelClientContext(nil, errors.New(selectionServiceError), nil, t)
 
 	//Perform action through handler
-	go queryHandler.Handle(requestContext, clientContext)
-
-	select {
-	case response := <-requestContext.Opts.Notifier:
-		if response.Error == nil || !strings.Contains(response.Error.Error(), selectionServiceError) {
-			t.Fatal("Expected error: ", selectionServiceError, ", Received error:", response.Error.Error())
-		}
-	case <-time.After(requestContext.Opts.Timeout):
-		t.Fatal("Query handler : time out not expected")
-
+	response = queryHandler.Handle(requestContext, clientContext)
+	if response.Error == nil || !strings.Contains(response.Error.Error(), selectionServiceError) {
+		t.Fatal("Expected error: ", selectionServiceError, ", Received error:", response.Error.Error())
 	}
 
 }
@@ -140,8 +118,6 @@ func prepareRequestContext(request apitxn.Request, opts apitxn.Opts, t *testing.
 	}
 
 	requestContext.Opts.Timeout = testTimeOut
-
-	requestContext.Opts.Notifier = make(chan apitxn.Response)
 
 	return requestContext
 
