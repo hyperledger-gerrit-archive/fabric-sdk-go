@@ -27,7 +27,7 @@ type CoreProviderFactory interface {
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)
 type ServiceProviderFactory interface {
-	NewDiscoveryProvider(config apiconfig.Config) (fab.DiscoveryProvider, error)
+	NewDiscoveryProvider(config apiconfig.Config, peerFilter fab.TargetFilter) (fab.DiscoveryProvider, error)
 	NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error)
 	//	NewChannelProvider(ctx fab.Context, channelID string) (fab.ChannelProvider, error)
 }

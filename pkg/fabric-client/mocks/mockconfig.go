@@ -198,6 +198,11 @@ func (c *MockConfig) ChannelPeers(name string) ([]config.ChannelPeer, error) {
 	return nil, nil
 }
 
+// ChannelOrganizations returns a list of channel organizations
+func (c *MockConfig) ChannelOrganizations(name string) ([]string, error) {
+	return nil, nil
+}
+
 // ChannelOrderers returns a list of channel orderers
 func (c *MockConfig) ChannelOrderers(name string) ([]config.OrdererConfig, error) {
 	return nil, nil

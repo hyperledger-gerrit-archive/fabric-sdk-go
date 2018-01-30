@@ -72,6 +72,8 @@ type ChannelConfig struct {
 	Peers map[string]PeerChannelConfig
 	// Chaincodes list of services
 	Chaincodes []string
+	// Organizations list of organizations to connect to their peers
+	Organizations []string
 }
 
 // PeerChannelConfig defines the peer capabilities

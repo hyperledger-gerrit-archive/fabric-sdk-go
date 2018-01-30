@@ -377,16 +377,16 @@ func (_m *MockServiceProviderFactory) EXPECT() *MockServiceProviderFactoryMockRe
 }
 
 // NewDiscoveryProvider mocks base method
-func (_m *MockServiceProviderFactory) NewDiscoveryProvider(_param0 apiconfig.Config) (apifabclient.DiscoveryProvider, error) {
-	ret := _m.ctrl.Call(_m, "NewDiscoveryProvider", _param0)
+func (_m *MockServiceProviderFactory) NewDiscoveryProvider(_param0 apiconfig.Config, _param1 apifabclient.TargetFilter) (apifabclient.DiscoveryProvider, error) {
+	ret := _m.ctrl.Call(_m, "NewDiscoveryProvider", _param0, _param1)
 	ret0, _ := ret[0].(apifabclient.DiscoveryProvider)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewDiscoveryProvider indicates an expected call of NewDiscoveryProvider
-func (_mr *MockServiceProviderFactoryMockRecorder) NewDiscoveryProvider(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "NewDiscoveryProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).NewDiscoveryProvider), arg0)
+func (_mr *MockServiceProviderFactoryMockRecorder) NewDiscoveryProvider(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "NewDiscoveryProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).NewDiscoveryProvider), arg0, arg1)
 }
 
 // NewSelectionProvider mocks base method

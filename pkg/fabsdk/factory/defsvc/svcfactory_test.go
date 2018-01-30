@@ -19,7 +19,7 @@ func TestNewDiscoveryProvider(t *testing.T) {
 
 	config := mocks.NewMockConfig()
 
-	dp, err := factory.NewDiscoveryProvider(config)
+	dp, err := factory.NewDiscoveryProvider(config, nil)
 	if err != nil {
 		t.Fatalf("Unexpected error creating discovery provider %v", err)
 	}

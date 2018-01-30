@@ -113,7 +113,11 @@ channels:
     # be "names" of orgs defined under "organizations/peers"
     orderers:
       - orderer.example.com
-
+	
+    # [Optional]. list of organizations to connect to their peers
+    organizations:
+      - org1
+	
     # Required. list of peers from participating orgs
     peers:
       peer0.org1.example.com:
@@ -134,6 +138,12 @@ channels:
         # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
         # produce events but the app typically only needs to connect to one to listen to events.
         # Default: true
+        eventSource: true
+
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
         eventSource: true
 
     # [Optional]. what chaincodes are expected to exist on this channel? The application can use
