@@ -113,7 +113,11 @@ channels:
     # be "names" of orgs defined under "organizations/peers"
     orderers:
       - orderer.example.com
-
+	
+    # [Optional]. list of organizations to connect to their peers
+    organizations:
+      - org1
+	
     # Required. list of peers from participating orgs
     peers:
       peer0.org1.example.com:

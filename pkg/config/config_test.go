@@ -267,6 +267,12 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 		t.Fatal("Testing ChannelOrderers supposed to fail")
 	}
 
+	//Testing ChannelOrganizations failure scenario
+	corgConfigs, err := sampleConfig.ChannelOrganizations("invalid")
+	if corgConfigs != nil || err == nil {
+		t.Fatal("Testing ChannelOrganizations supposed to fail")
+	}
+
 	// test empty network objects
 	sampleConfig.configViper.Set("organizations", nil)
 	_, err = sampleConfig.NetworkConfig()
@@ -485,6 +491,27 @@ func TestPeersConfig(t *testing.T) {
 			t.Fatalf("EventUrl value is empty")
 		}
 	}
+}
+
+func TestChannelOrganizations(t *testing.T) {
+	organizations, err := configImpl.ChannelOrganizations("mychannel")
+	if organizations == nil || err != nil {
+		t.Fatal("Testing ChannelOrganizations failed")
+	}
+
+	if len(organizations) != 1 {
+		t.Fatalf("Expecting one channel organization got %d", len(organizations))
+	}
+
+	organizations, err = configImpl.ChannelOrganizations("orgchannel")
+	if err != nil {
+		t.Fatal("Testing ChannelOrganizations failed")
+	}
+
+	if len(organizations) != 0 {
+		t.Fatalf("Expecting zero channel organization got %d", len(organizations))
+	}
+
 }
 
 func TestPeerConfig(t *testing.T) {

@@ -729,6 +729,15 @@ func (c *Config) ChannelPeers(name string) ([]apiconfig.ChannelPeer, error) {
 
 }
 
+// ChannelOrganizations returns a list of channel organizations
+func (c *Config) ChannelOrganizations(name string) ([]string, error) {
+	channel, err := c.ChannelConfig(name)
+	if err != nil || channel == nil {
+		return nil, errors.Errorf("Unable to retrieve channel config: %s", err)
+	}
+	return channel.Organizations, nil
+}
+
 // NetworkPeers returns the network peers configuration
 func (c *Config) NetworkPeers() ([]apiconfig.NetworkPeer, error) {
 	netConfig, err := c.NetworkConfig()

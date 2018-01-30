@@ -206,7 +206,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.fabricProvider = fabricProvider
 
 	// Initialize discovery provider
-	discoveryProvider, err := sdk.opts.Service.NewDiscoveryProvider(sdk.config)
+	discoveryProvider, err := sdk.opts.Service.NewDiscoveryProvider(sdk.config, nil)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize discovery provider")
 	}
