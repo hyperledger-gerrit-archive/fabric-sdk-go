@@ -65,8 +65,6 @@ const (
 	EventHub
 	// EventReg connection timeout
 	EventReg
-	// Query timeout
-	Query
 	// Execute timeout
 	Execute
 	// OrdererConnection orderer connection timeout

@@ -385,10 +385,6 @@ func TestTimeouts(t *testing.T) {
 	if t1 != time.Hour*2 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
-	t1 = configImpl.TimeoutOrDefault(api.Query)
-	if t1 != time.Hour*7 {
-		t.Fatalf("Timeout not read correctly. Got: %s", t1)
-	}
 	t1 = configImpl.TimeoutOrDefault(api.Execute)
 	if t1 != time.Hour*8 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)

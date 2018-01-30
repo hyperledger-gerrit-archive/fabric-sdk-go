@@ -46,7 +46,6 @@ client:
   peer:
     timeout:
       connection: 3s
-      queryResponse: 45s
       executeTxResponse: 30s
   eventService:
     timeout:
@@ -189,7 +188,7 @@ organizations:
     # Needed to load users crypto certs for this org
     users:
       Admin:
-        cert: 
+        cert:
           pem: |
             -----BEGIN CERTIFICATE-----
             MIICGjCCAcCgAwIBAgIRAIQkbh9nsGnLmDalAVlj8sUwCgYIKoZIzj0EAwIwczEL
@@ -256,7 +255,7 @@ organizations:
 
     users:
       Admin:
-        cert: 
+        cert:
           pem: |
             -----BEGIN CERTIFICATE-----
             MIICGDCCAb+gAwIBAgIQeIi7Jkt6rpWXkiSbOmf4xDAKBggqhkjOPQQDAjBzMQsw
@@ -273,7 +272,7 @@ organizations:
             STrxiXhat7xfrSAE
             -----END CERTIFICATE-----
       User1:
-        cert: 
+        cert:
           pem: |
             -----BEGIN CERTIFICATE-----
             MIICGDCCAb+gAwIBAgIQHMp+UdtCOLJAE7QMGIsXCTAKBggqhkjOPQQDAjBzMQsw
@@ -303,7 +302,7 @@ organizations:
 
       users:
         Admin:
-          cert: 
+          cert:
             pem: |
               -----BEGIN CERTIFICATE-----
               MIICCjCCAbGgAwIBAgIRAP6rTgrL8PUGUhDZBlTbttkwCgYIKoZIzj0EAwIwaTEL
