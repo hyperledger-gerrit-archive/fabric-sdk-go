@@ -8,16 +8,13 @@ package channel
 
 import (
 	"github.com/golang/protobuf/proto"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
-
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
-	fc "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
+	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
 
+/*
 // ChannelConfig queries for the current config block for this channel.
 // This transaction will be made to the orderer.
 // @returns {ConfigEnvelope} Object containing the configuration items.
@@ -80,6 +77,7 @@ func createConfigEnvelope(data []byte) (*common.ConfigEnvelope, error) {
 
 	return configEnvelope, nil
 }
+*/
 
 func loadMSPs(mspConfigs []*mb.MSPConfig, cs apicryptosuite.CryptoSuite) ([]msp.MSP, error) {
 	logger.Debugf("loadMSPs - start number of msps=%d", len(mspConfigs))

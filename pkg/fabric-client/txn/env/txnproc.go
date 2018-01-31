@@ -4,8 +4,8 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package txnproc provides functionality for processing fabric transactions.
-package txnproc
+// Package env provides functionality for processing fabric transactions.
+package env
 
 import (
 	"sync"

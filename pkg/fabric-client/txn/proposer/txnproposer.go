@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package channel
+package proposer
 
 import (
 	"fmt"
@@ -12,47 +12,45 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/internal/txnproc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn/env"
 )
+
+var logger = logging.NewLogger("fabric_sdk_go")
+
+type context interface {
+	SigningManager() fab.SigningManager
+	Config() apiconfig.Config
+	fab.IdentityContext
+}
 
 // SendTransactionProposal sends the created proposal to peer for endorsement.
 // TODO: return the entire request or just the txn ID?
-func (c *Channel) SendTransactionProposal(request apitxn.ChaincodeInvokeRequest) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
-	request, err := c.chaincodeInvokeRequestAddDefaultPeers(request)
-	if err != nil {
-		return nil, apitxn.TransactionID{}, err
-	}
-
-	return SendTransactionProposalWithChannelID(c.name, request, c.clientContext)
-}
-
-// SendTransactionProposalWithChannelID sends the created proposal to peer for endorsement.
-// TODO: return the entire request or just the txn ID?
-func SendTransactionProposalWithChannelID(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext fab.Context) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+func SendTransactionProposal(ctx context, channelID string, request apitxn.ChaincodeInvokeRequest) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
 	if err := validateChaincodeInvokeRequest(request); err != nil {
 		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "validateChaincodeInvokeRequest failed")
 	}
 
-	txid, err := internal.NewTxnID(clientContext)
+	txid, err := env.NewTxnID(ctx)
 	if err != nil {
 		return nil, apitxn.TransactionID{}, errors.WithMessage(err, "NewTxnID failed")
 	}
 	request.TxnID = txid
 
-	proposal, err := newTransactionProposal(channelID, request, clientContext)
+	proposal, err := newTransactionProposal(ctx, channelID, request)
 	if err != nil {
 		return nil, request.TxnID, err
 	}
 
-	responses, err := txnproc.SendTransactionProposalToProcessors(proposal, request.Targets)
+	responses, err := env.SendTransactionProposalToProcessors(proposal, request.Targets)
 	return responses, request.TxnID, err
 }
 
@@ -71,22 +69,10 @@ func validateChaincodeInvokeRequest(request apitxn.ChaincodeInvokeRequest) error
 	return nil
 }
 
-func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(request apitxn.ChaincodeInvokeRequest) (apitxn.ChaincodeInvokeRequest, error) {
-	// Use default peers if targets are not specified.
-	if request.Targets == nil || len(request.Targets) == 0 {
-		if c.peers == nil || len(c.peers) == 0 {
-			return request, errors.New("targets were not specified and no peers have been configured")
-		}
-
-		request.Targets = c.txnProcessors()
-	}
-	return request, nil
-}
-
 // newTransactionProposal creates a proposal for transaction. This involves assembling the proposal
 // with the data (chaincodeName, function to call, arguments, transient data, etc.) and signing it using the private key corresponding to the
 // ECert to sign.
-func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequest, clientContext fab.Context) (*apitxn.TransactionProposal, error) {
+func newTransactionProposal(ctx context, channelID string, request apitxn.ChaincodeInvokeRequest) (*apitxn.TransactionProposal, error) {
 
 	// Add function name to arguments
 	argsArray := make([][]byte, len(request.Args)+1)
@@ -101,7 +87,7 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
 	// create a proposal from a ChaincodeInvocationSpec
-	creator, err := clientContext.Identity()
+	creator, err := ctx.Identity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to get user context identity")
 	}
@@ -117,12 +103,12 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 		return nil, errors.Wrap(err, "marshal proposal failed")
 	}
 
-	signingMgr := clientContext.SigningManager()
+	signingMgr := ctx.SigningManager()
 	if signingMgr == nil {
 		return nil, errors.New("signing manager is nil")
 	}
 
-	signature, err := signingMgr.Sign(proposalBytes, clientContext.PrivateKey())
+	signature, err := signingMgr.Sign(proposalBytes, ctx.PrivateKey())
 	if err != nil {
 		return nil, err
 	}
@@ -138,11 +124,6 @@ func newTransactionProposal(channelID string, request apitxn.ChaincodeInvokeRequ
 	return &tp, nil
 }
 
-// TODO: There should be a strategy for choosing processors.
-func (c *Channel) txnProcessors() []apitxn.ProposalProcessor {
-	return peersToTxnProcessors(c.Peers())
-}
-
 // peersToTxnProcessors converts a slice of Peers to a slice of ProposalProcessors
 func peersToTxnProcessors(peers []fab.Peer) []apitxn.ProposalProcessor {
 	tpp := make([]apitxn.ProposalProcessor, len(peers))
@@ -154,22 +135,22 @@ func peersToTxnProcessors(peers []fab.Peer) []apitxn.ProposalProcessor {
 }
 
 // ProposalBytes returns the serialized transaction.
-func (c *Channel) ProposalBytes(tp *apitxn.TransactionProposal) ([]byte, error) {
+func ProposalBytes(tp *apitxn.TransactionProposal) ([]byte, error) {
 	return proto.Marshal(tp.SignedProposal)
 }
 
-func (c *Channel) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error) {
+func signProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error) {
 	proposalBytes, err := proto.Marshal(proposal)
 	if err != nil {
 		return nil, errors.Wrap(err, "mashal proposal failed")
 	}
 
-	signingMgr := c.clientContext.SigningManager()
+	signingMgr := ctx.SigningManager()
 	if signingMgr == nil {
 		return nil, errors.New("signing manager is nil")
 	}
 
-	signature, err := signingMgr.Sign(proposalBytes, c.clientContext.PrivateKey())
+	signature, err := signingMgr.Sign(proposalBytes, ctx.PrivateKey())
 	if err != nil {
 		return nil, errors.WithMessage(err, "signing proposal failed")
 	}
@@ -186,7 +167,7 @@ func (c *Channel) signProposal(proposal *pb.Proposal) (*pb.SignedProposal, error
 // `block`   : the genesis block of the channel
 //             see GenesisBlock() method
 // See /protos/peer/proposal_response.proto
-func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
+func JoinChannel(ctx context, request *fab.JoinChannelRequest) error {
 	logger.Debug("joinChannel - start")
 
 	// verify that we have targets (Peers) to join this channel
@@ -204,12 +185,12 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 		return errors.New("missing block input parameter with the required genesis block")
 	}
 
-	txnID, err := internal.NewTxnID(c.clientContext)
+	txnID, err := env.NewTxnID(ctx)
 	if err != nil {
 		return errors.WithMessage(err, "failed to calculate transaction id")
 	}
 
-	creator, err := c.clientContext.Identity()
+	creator, err := ctx.Identity()
 	if err != nil {
 		return errors.WithMessage(err, "getting creator identity failed")
 	}
@@ -237,7 +218,7 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to build chaincode proposal")
 	}
-	signedProposal, err := c.signProposal(proposal)
+	signedProposal, err := signProposal(ctx, proposal)
 	if err != nil {
 		return errors.WithMessage(err, "signing proposal failed")
 	}
@@ -250,7 +231,7 @@ func (c *Channel) JoinChannel(request *fab.JoinChannelRequest) error {
 	targets := peersToTxnProcessors(request.Targets)
 
 	// Send join proposal
-	proposalResponses, err := txnproc.SendTransactionProposalToProcessors(transactionProposal, targets)
+	proposalResponses, err := env.SendTransactionProposalToProcessors(transactionProposal, targets)
 	if err != nil {
 		return errors.WithMessage(err, "sending join transaction proposal failed")
 	}

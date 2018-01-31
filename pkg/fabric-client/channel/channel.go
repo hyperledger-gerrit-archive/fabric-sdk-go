@@ -243,6 +243,8 @@ func (c *Channel) isValidPeer(peer fab.Peer) bool {
 	return peer != nil && c.peers[peer.URL()] != nil
 }
 
+/*
+
 // TODO
 // The following functions haven't been implemented.
 
@@ -266,3 +268,130 @@ func (c *Channel) IsReadonly() bool {
 func (c *Channel) IsInitialized() bool {
 	return c.initialized
 }
+
+// common
+
+// SignPayload signs payload
+func (c *Channel) SignPayload(payload []byte) (*fab.SignedEnvelope, error) {
+}
+
+// BroadcastEnvelope will send the given envelope to some orderer, picking random endpoints
+// until all are exhausted
+func (c *Channel) BroadcastEnvelope(envelope *fab.SignedEnvelope) (*apitxn.TransactionResponse, error) {
+}
+
+
+// channel/comm
+
+// QueryByChaincode sends a proposal to one or more endorsing peers that will be handled by the chaincode.
+// This request will be presented to the chaincode 'invoke' and must understand
+// from the arguments that this is a query request. The chaincode must also return
+// results in the byte array format and the caller will have to be able to decode.
+// these results.
+func (c *Channel) QueryByChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error) {
+}
+
+// QueryBySystemChaincode invokes a chaincode that isn't part of a channel.
+//
+// TODO: This function's name is confusing - call the normal QueryByChaincode for system chaincode on a channel.
+func (c *Channel) QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error) {
+}
+
+// channel/config
+
+// Initialize initializes the channel.
+// Retrieves the configuration from the primary orderer and initializes this channel
+// with those values. Optionally a configuration may be passed in to initialize this channel
+// without making the call to the orderer.
+// config_update: Optional - A serialized form of the protobuf configuration update.
+func (c *Channel) Initialize(configUpdate []byte) error {
+}
+
+// LoadConfigUpdateEnvelope is a utility method to load this channel with configuration information
+// from an Envelope that contains a Configuration.
+// data: the envelope with the configuration update items.
+// See /protos/common/configtx.proto
+func (c *Channel) LoadConfigUpdateEnvelope(data []byte) error {
+}
+
+// ChannelConfig queries for the current config block for this channel.
+// This transaction will be made to the orderer.
+// @returns {ConfigEnvelope} Object containing the configuration items.
+// @see /protos/orderer/ab.proto
+// @see /protos/common/configtx.proto
+func (c *Channel) ChannelConfig() (*common.ConfigEnvelope, error) {
+}
+
+// channel/ledger
+
+// GenesisBlock returns the genesis block from the defined orderer that may be
+// used in a join request
+// request: An object containing the following fields:
+//          `txId` : required - String of the transaction id
+//          `nonce` : required - Integer of the once time number
+//
+// See /protos/peer/proposal_response.proto
+func (c *Channel) GenesisBlock() (*common.Block, error) {
+}
+
+// QueryInfo queries for various useful information on the state of the channel
+// (height, known peers).
+// This query will be made to the primary peer.
+func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
+}
+
+// QueryBlockByHash queries the ledger for Block by block hash.
+// This query will be made to the primary peer.
+// Returns the block.
+func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
+}
+
+// QueryBlock queries the ledger for Block by block number.
+// This query will be made to the primary peer.
+// blockNumber: The number which is the ID of the Block.
+// It returns the block.
+func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
+}
+
+// QueryTransaction queries the ledger for Transaction by number.
+// This query will be made to the primary peer.
+// Returns the ProcessedTransaction information containing the transaction.
+// TODO: add optional target
+func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error) {
+}
+
+// QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
+// This query will be made to the primary peer.
+func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
+}
+
+// channel/txn
+
+// CreateTransaction create a transaction with proposal response, following the endorsement policy.
+func (c *Channel) CreateTransaction(resps []*apitxn.TransactionProposalResponse) (*apitxn.Transaction, error) {
+}
+
+// SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
+func (c *Channel) SendTransaction(tx *apitxn.Transaction) (*apitxn.TransactionResponse, error) {
+}
+
+// SendInstantiateProposal sends an instantiate proposal to one or more endorsing peers.
+// chaincodeName: required - The name of the chain.
+// args: optional - string Array arguments specific to the chaincode being instantiated
+// chaincodePath: required - string of the path to the location of the source code of the chaincode
+// chaincodeVersion: required - string of the version of the chaincode
+// chaincodePolicy: required - chaincode signature policy
+// collConfig: optional - private data collection configuration
+func (c *Channel) SendInstantiateProposal(chaincodeName string,
+}
+
+// SendUpgradeProposal sends an upgrade proposal to one or more endorsing peers.
+// chaincodeName: required - The name of the chain.
+// args: optional - string Array arguments specific to the chaincode being upgraded
+// chaincodePath: required - string of the path to the location of the source code of the chaincode
+// chaincodeVersion: required - string of the version of the chaincode
+func (c *Channel) SendUpgradeProposal(chaincodeName string,
+	args [][]byte, chaincodePath string, chaincodeVersion string,
+	chaincodePolicy *common.SignaturePolicyEnvelope, targets []apitxn.ProposalProcessor) ([]*apitxn.TransactionProposalResponse, apitxn.TransactionID, error) {
+}
+*/

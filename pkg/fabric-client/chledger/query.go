@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package channel
+package chledger
 
 import (
 	"bytes"
@@ -19,21 +19,31 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-const (
-	systemChannel = ""
-)
+const systemChannel = ""
+
+// Ledger holds the context for interacting with a Channel's ledger via the Orderer.
+type Ledger struct {
+	ctx fab.Context
+	cfg fab.ChannelConfig
+}
+
+// New allows interaction with a Channel's ledger based on the context and channel config.
+func New(ctx fab.Context, cfg fab.ChannelCfg) *Ledger {
+	l := Ledger{ctx, cfg}
+	return &l
+}
 
 // QueryInfo queries for various useful information on the state of the channel
 // (height, known peers).
 // This query will be made to the primary peer.
-func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
+func QueryInfo() (*common.BlockchainInfo, error) {
 	logger.Debug("queryInfo - start")
 
 	// prepare arguments to call qscc GetChainInfo function
 	var args [][]byte
 	args = append(args, []byte(c.Name()))
 
-	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetChainInfo", args, c.PrimaryPeer())
+	payload, err := queryBySystemChaincodeByTarget("qscc", "GetChainInfo", args, c.PrimaryPeer())
 	if err != nil {
 		return nil, errors.WithMessage(err, "qscc.GetChainInfo failed")
 	}
@@ -50,7 +60,7 @@ func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
 // QueryBlockByHash queries the ledger for Block by block hash.
 // This query will be made to the primary peer.
 // Returns the block.
-func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
+func QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 
 	if blockHash == nil {
 		return nil, errors.New("blockHash is required")
@@ -79,7 +89,7 @@ func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 // This query will be made to the primary peer.
 // blockNumber: The number which is the ID of the Block.
 // It returns the block.
-func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
+func QueryBlock(blockNumber int) (*common.Block, error) {
 
 	if blockNumber < 0 {
 		return nil, errors.New("blockNumber must be a positive integer")
@@ -108,7 +118,7 @@ func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
 // This query will be made to the primary peer.
 // Returns the ProcessedTransaction information containing the transaction.
 // TODO: add optional target
-func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error) {
+func QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error) {
 
 	// prepare arguments to call qscc GetTransactionByID function
 	var args [][]byte
@@ -131,7 +141,7 @@ func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
 // This query will be made to the primary peer.
-func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
+func QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
 
 	targets := []txn.ProposalProcessor{c.PrimaryPeer()}
 	request := txn.ChaincodeInvokeRequest{
@@ -154,90 +164,9 @@ func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, err
 	return response, nil
 }
 
-// QueryByChaincode sends a proposal to one or more endorsing peers that will be handled by the chaincode.
-// This request will be presented to the chaincode 'invoke' and must understand
-// from the arguments that this is a query request. The chaincode must also return
-// results in the byte array format and the caller will have to be able to decode.
-// these results.
-func (c *Channel) QueryByChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error) {
-	request, err := c.chaincodeInvokeRequestAddDefaultPeers(request)
-	if err != nil {
-		return nil, err
-	}
-	return queryByChaincode(c.name, request, c.clientContext)
-}
-
-func filterProposalResponses(tpr []*txn.TransactionProposalResponse) ([][]byte, error) {
-	var responses [][]byte
-	errMsg := ""
-	for _, response := range tpr {
-		if response.Err != nil {
-			errMsg = errMsg + response.Err.Error() + "\n"
-		} else {
-			responses = append(responses, response.ProposalResponse.GetResponse().Payload)
-		}
-	}
-
-	if len(errMsg) > 0 {
-		return responses, errors.New(errMsg)
-	}
-	return responses, nil
-}
-
-func queryByChaincode(channelID string, request txn.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
-	if err := validateChaincodeInvokeRequest(request); err != nil {
-		return nil, err
-	}
-
-	transactionProposalResponses, _, err := SendTransactionProposalWithChannelID(channelID, request, clientContext)
-	if err != nil {
-		return nil, errors.WithMessage(err, "SendTransactionProposalWithChannelID failed")
-	}
-
-	return filterProposalResponses(transactionProposalResponses)
-}
-
-// queryBySystemChaincodeByTarget is an internal helper function that queries system chaincode.
-// This function is not exported to keep the external interface of this package to only expose
-// request structs.
-func (c *Channel) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target txn.ProposalProcessor) ([]byte, error) {
-	targets := []txn.ProposalProcessor{target}
-	request := txn.ChaincodeInvokeRequest{
-		ChaincodeID: chaincodeID,
-		Fcn:         fcn,
-		Args:        args,
-		Targets:     targets,
-	}
-	responses, err := c.QueryBySystemChaincode(request)
-
-	// we are only querying one peer hence one result
-	if err != nil || len(responses) != 1 {
-		return nil, errors.Errorf("QueryBySystemChaincode should have one result only, actual result is %d", len(responses))
-	}
-
-	return responses[0], nil
-}
-
-// QueryBySystemChaincode invokes a chaincode that isn't part of a channel.
-//
-// TODO: This function's name is confusing - call the normal QueryByChaincode for system chaincode on a channel.
-func (c *Channel) QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error) {
-	request, err := c.chaincodeInvokeRequestAddDefaultPeers(request)
-	if err != nil {
-		return nil, err
-	}
-	return queryByChaincode(systemChannel, request, c.clientContext)
-}
-
-// QueryBySystemChaincode invokes a system chaincode
-// TODO - should be moved.
-func QueryBySystemChaincode(request txn.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
-	return queryByChaincode(systemChannel, request, clientContext)
-}
-
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
-func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.ConfigEnvelope, error) {
+func QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.ConfigEnvelope, error) {
 
 	if len(peers) == 0 {
 		return nil, errors.New("peer(s) required")
@@ -255,7 +184,7 @@ func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.
 	}
 
 	// we are using system channel here (query to system cc)
-	transactionProposalResponses, _, err := SendTransactionProposalWithChannelID(systemChannel, request, c.clientContext)
+	transactionProposalResponses, _, err := proposer.SendTransactionProposalWithChannelID(systemChannel, request, c.clientContext)
 	if err != nil {
 		return nil, errors.WithMessage(err, "SendTransactionProposalWithChannelID failed")
 	}
@@ -292,4 +221,25 @@ func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.
 
 	return createConfigEnvelope(block.Data.Data[0])
 
+}
+
+// queryBySystemChaincodeByTarget is an internal helper function that queries system chaincode.
+// This function is not exported to keep the external interface of this package to only expose
+// request structs.
+func queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target txn.ProposalProcessor) ([]byte, error) {
+	targets := []txn.ProposalProcessor{target}
+	request := txn.ChaincodeInvokeRequest{
+		ChaincodeID: chaincodeID,
+		Fcn:         fcn,
+		Args:        args,
+		Targets:     targets,
+	}
+	responses, err := proposer.QueryBySystemChaincode(request)
+
+	// we are only querying one peer hence one result
+	if err != nil || len(responses) != 1 {
+		return nil, errors.Errorf("QueryBySystemChaincode should have one result only, actual result is %d", len(responses))
+	}
+
+	return responses[0], nil
 }

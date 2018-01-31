@@ -4,10 +4,11 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package channel
+package sender
 
 import (
 	"crypto/rand"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -24,17 +25,14 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn/env"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
 func TestCreateTransaction(t *testing.T) {
-	channel, _ := setupTestChannel()
-
-	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
-	channel.AddPeer(&peer)
 
 	//Test Empty proposal response scenario
-	_, err := channel.CreateTransaction([]*apitxn.TransactionProposalResponse{})
+	_, err := CreateTransaction([]*apitxn.TransactionProposalResponse{})
 
 	if err == nil || err.Error() != "at least one proposal response is necessary" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, for empty proposal response scenario")
@@ -60,7 +58,7 @@ func TestCreateTransaction(t *testing.T) {
 
 	input := []*apitxn.TransactionProposalResponse{test}
 
-	_, err = channel.CreateTransaction(input)
+	_, err = CreateTransaction(input)
 
 	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, invalid proposal header scenario")
@@ -81,7 +79,7 @@ func TestCreateTransaction(t *testing.T) {
 
 	input = []*apitxn.TransactionProposalResponse{test}
 
-	_, err = channel.CreateTransaction(input)
+	_, err = CreateTransaction(input)
 	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction, invalid proposal payload scenario")
 	}
@@ -99,7 +97,7 @@ func TestCreateTransaction(t *testing.T) {
 	}
 
 	input = []*apitxn.TransactionProposalResponse{test}
-	_, err = channel.CreateTransaction(input)
+	_, err = CreateTransaction(input)
 
 	if err == nil || err.Error() != "proposal response was not successful, error code 99, msg success" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction")
@@ -118,7 +116,7 @@ func TestCreateTransaction(t *testing.T) {
 		},
 	}
 
-	_, err = channel.CreateTransaction([]*apitxn.TransactionProposalResponse{test})
+	_, err = CreateTransaction([]*apitxn.TransactionProposalResponse{test})
 
 	if err == nil || err.Error() != "repeated field endorsements has nil element" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction")
@@ -132,7 +130,7 @@ func TestSendInstantiateProposal(t *testing.T) {
 	//Setup channel
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
-	channel, _ := New(ctx, mocks.NewMockChannelCfg("testChannel"))
+	channelID := "testChannel"
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -145,48 +143,44 @@ func TestSendInstantiateProposal(t *testing.T) {
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(tpr, nil)
 	targets := []apitxn.ProposalProcessor{proc}
 
-	//Add a Peer
-	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
-	channel.AddPeer(&peer)
-
-	tresponse, txnid, err := channel.SendInstantiateProposal("", nil, "",
+	tresponse, txnid, err := SendInstantiateProposal(ctx, channelID, "", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
 	if err == nil || err.Error() != "chaincodeName is required" {
 		t.Fatal("Validation for chain code name parameter for send Instantiate Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "",
+	tresponse, txnid, err = SendInstantiateProposal(ctx, channelID, "qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "",
+	tresponse, txnid, err = SendInstantiateProposal(ctx, channelID, "qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
 	if err == nil || err.Error() != "chaincodePath is required" {
 		t.Fatal("Validation for chain code path for send Instantiate Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, txnid, err = SendInstantiateProposal(ctx, channelID, "qscc", nil, "test",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
 	if err == nil || err.Error() != "chaincodeVersion is required" {
 		t.Fatal("Validation for chain code version for send Instantiate Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, txnid, err = SendInstantiateProposal(ctx, channelID, "qscc", nil, "test",
 		"1", nil, nil, nil)
 	if err == nil || err.Error() != "chaincodePolicy is required" {
 		t.Fatal("Validation for chain code policy for send Instantiate Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, txnid, err = SendInstantiateProposal(ctx, channelID, "qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
 	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
 		t.Fatal("Send Instantiate Proposal Test failed")
 	}
 
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, txnid, err = SendInstantiateProposal(ctx, channelID, "qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), nil, nil)
 
 	if err == nil || err.Error() != "missing peer objects for chaincode proposal" {
@@ -197,7 +191,7 @@ func TestSendInstantiateProposal(t *testing.T) {
 	collConfig := []*common.CollectionConfig{
 		newCollectionConfig("somecollection", 1, 3, cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})),
 	}
-	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
+	tresponse, txnid, err = SendInstantiateProposal(ctx, channelID, "qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), collConfig, targets)
 	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
 		t.Fatal("Send Instantiate Proposal Test failed")
@@ -208,7 +202,7 @@ func TestSendUpgradeProposal(t *testing.T) {
 	//Setup channel
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
-	channel, _ := New(ctx, mocks.NewMockChannelCfg("testChannel"))
+	channelID := "testChannel"
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -221,47 +215,44 @@ func TestSendUpgradeProposal(t *testing.T) {
 	targets := []apitxn.ProposalProcessor{proc}
 
 	//Add a Peer
-	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
-	channel.AddPeer(&peer)
-
-	tresponse, txnid, err := channel.SendUpgradeProposal("", nil, "",
+	tresponse, txnid, err := SendUpgradeProposal(ctx, channelID, "", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
 	if err == nil || err.Error() != "chaincodeName is required" {
 		t.Fatal("Validation for chain code name parameter for send Upgrade Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "",
+	tresponse, txnid, err = SendUpgradeProposal(ctx, channelID, "qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "",
+	tresponse, txnid, err = SendUpgradeProposal(ctx, channelID, "qscc", nil, "",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
 	if err == nil || err.Error() != "chaincodePath is required" {
 		t.Fatal("Validation for chain code path for send Upgrade Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+	tresponse, txnid, err = SendUpgradeProposal(ctx, channelID, "qscc", nil, "test",
 		"", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
 	if err == nil || err.Error() != "chaincodeVersion is required" {
 		t.Fatal("Validation for chain code version for send Upgrade Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+	tresponse, txnid, err = SendUpgradeProposal(ctx, channelID, "qscc", nil, "test",
 		"2", nil, nil)
 	if err == nil || err.Error() != "chaincodePolicy is required" {
 		t.Fatal("Validation for chain code policy for send Upgrade Proposal failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+	tresponse, txnid, err = SendUpgradeProposal(ctx, channelID, "qscc", nil, "test",
 		"2", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
 	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
 		t.Fatal("Send Upgrade Proposal Test failed")
 	}
 
-	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
+	tresponse, txnid, err = SendUpgradeProposal(ctx, channelID, "qscc", nil, "test",
 		"2", cauthdsl.SignedByMspMember("Org1MSP"), nil)
 	if err == nil || err.Error() != "missing peer objects for chaincode proposal" {
 		t.Fatal("Missing peer objects validation is not working as expected")
@@ -281,27 +272,19 @@ func (r *mockReader) Read(p []byte) (int, error) {
 }
 
 func TestBroadcastEnvelope(t *testing.T) {
-	//Setup channel
-	channel, _ := setupTestChannel()
-
 	lsnr1 := make(chan *fab.SignedEnvelope)
 	lsnr2 := make(chan *fab.SignedEnvelope)
 	//Create mock orderers
 	orderer1 := mocks.NewMockOrderer("1", lsnr1)
 	orderer2 := mocks.NewMockOrderer("2", lsnr2)
 
-	//Add the orderers
-	channel.AddOrderer(orderer1)
-	channel.AddOrderer(orderer2)
-
-	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
-	channel.AddPeer(&peer)
+	orderers := []fab.Orderer{orderer1, orderer2}
 
 	sigEnvelope := &fab.SignedEnvelope{
 		Signature: []byte(""),
 		Payload:   []byte(""),
 	}
-	res, err := channel.BroadcastEnvelope(sigEnvelope)
+	res, err := BroadcastEnvelope(sigEnvelope, orderers)
 
 	if err != nil || res.Err != nil {
 		t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
@@ -331,7 +314,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 	// It should always succeed even though one of them has failed
 	for i := 0; i < broadcastCount; i++ {
-		if res, err := channel.BroadcastEnvelope(sigEnvelope); err != nil || res.Err != nil {
+		if res, err := BroadcastEnvelope(sigEnvelope, orderers); err != nil || res.Err != nil {
 			t.Fatalf("Test Broadcast Envelope Failed, cause %v %v", err, res)
 		}
 	}
@@ -343,7 +326,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 
 	for i := 0; i < broadcastCount; i++ {
-		res, err := channel.BroadcastEnvelope(sigEnvelope)
+		res, err := BroadcastEnvelope(sigEnvelope, orderers)
 		if err != nil {
 			t.Fatalf("Test Broadcast sending failed, cause %v", err)
 		}
@@ -355,9 +338,8 @@ func TestBroadcastEnvelope(t *testing.T) {
 		}
 	}
 
-	channel.RemoveOrderer(orderer1)
-	channel.RemoveOrderer(orderer2)
-	_, err = channel.BroadcastEnvelope(sigEnvelope)
+	emptyOrderers := []fab.Orderer{}
+	_, err = BroadcastEnvelope(sigEnvelope, emptyOrderers)
 
 	if err == nil || err.Error() != "orderers not set" {
 		t.Fatal("orderers not set validation on broadcast envelope is not working as expected")
@@ -365,10 +347,11 @@ func TestBroadcastEnvelope(t *testing.T) {
 }
 
 func TestSendTransaction(t *testing.T) {
+	//Setup channel
+	user := mocks.NewMockUserWithMSPID("test", "1234")
+	ctx := mocks.NewMockContext(user)
 
-	channel, _ := setupTestChannel()
-
-	response, err := channel.SendTransaction(nil)
+	response, err := SendTransaction(ctx, nil, nil)
 
 	//Expect orderer is nil error
 	if response != nil || err == nil || err.Error() != "orderers is nil" {
@@ -377,12 +360,10 @@ func TestSendTransaction(t *testing.T) {
 
 	//Create mock orderer
 	orderer := mocks.NewMockOrderer("", nil)
-
-	//Add an orderer
-	channel.AddOrderer(orderer)
+	orderers := []fab.Orderer{orderer}
 
 	//Call Send Transaction with nil tx
-	response, err = channel.SendTransaction(nil)
+	response, err = SendTransaction(ctx, nil, orderers)
 
 	//Expect tx is nil error
 	if response != nil || err == nil || err.Error() != "transaction is nil" {
@@ -398,7 +379,7 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Call Send Transaction with nil proposal
-	response, err = channel.SendTransaction(&txn)
+	response, err = SendTransaction(ctx, &txn, orderers)
 
 	//Expect proposal is nil error
 	if response != nil || err == nil || err.Error() != "proposal is nil" {
@@ -413,7 +394,7 @@ func TestSendTransaction(t *testing.T) {
 		Transaction: &pb.Transaction{},
 	}
 	//Call Send Transaction
-	response, err = channel.SendTransaction(&txn)
+	response, err = SendTransaction(ctx, &txn, orderers)
 
 	//Expect header unmarshal error
 	if response != nil || err == nil || !strings.Contains(err.Error(), "unmarshal") {
@@ -429,7 +410,7 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Call Send Transaction
-	response, err = channel.SendTransaction(&txn)
+	response, err = SendTransaction(ctx, &txn, orderers)
 
 	if response == nil || err != nil {
 		t.Fatalf("Test SendTransaction failed, reason : '%s'", err.Error())
@@ -438,7 +419,7 @@ func TestSendTransaction(t *testing.T) {
 
 func TestBuildChannelHeader(t *testing.T) {
 
-	header, err := BuildChannelHeader(common.HeaderType_CHAINCODE_PACKAGE, "test", "", 1, "1234", time.Time{}, []byte{})
+	header, err := env.BuildChannelHeader(common.HeaderType_CHAINCODE_PACKAGE, "test", "", 1, "1234", time.Time{}, []byte{})
 
 	if err != nil || header == nil {
 		t.Fatalf("Test Build Channel Header failed, cause : '%s'", err.Error())
@@ -447,12 +428,11 @@ func TestBuildChannelHeader(t *testing.T) {
 }
 
 func TestSignPayload(t *testing.T) {
+	//Setup channel
+	user := mocks.NewMockUserWithMSPID("test", "1234")
+	ctx := mocks.NewMockContext(user)
 
-	channel, err := setupTestChannel()
-	if err != nil {
-		t.Fatalf("setupTestChannel failed: %v", err)
-	}
-	signedEnv, err := channel.SignPayload([]byte(""))
+	signedEnv, err := env.SignPayload(ctx, []byte(""))
 
 	if err != nil || signedEnv == nil {
 		t.Fatal("Test Sign Payload Failed")
@@ -460,6 +440,10 @@ func TestSignPayload(t *testing.T) {
 }
 
 func TestConcurrentOrderers(t *testing.T) {
+	//Setup channel
+	user := mocks.NewMockUserWithMSPID("test", "1234")
+	ctx := mocks.NewMockContext(user)
+
 	// Determine number of orderers to use - environment can override
 	const numOrderersDefault = 2000
 	numOrderersEnv := os.Getenv("TEST_MASSIVE_ORDERER_COUNT")
@@ -468,10 +452,7 @@ func TestConcurrentOrderers(t *testing.T) {
 		numOrderers = numOrderersDefault
 	}
 
-	channel, err := setupMassiveTestChannel(0, numOrderers)
-	if err != nil {
-		t.Fatalf("Failed to create massive channel: %s", err)
-	}
+	orderers := setupMassiveTestOrderer(numOrderers)
 
 	txn := apitxn.Transaction{
 		Proposal: &apitxn.TransactionProposal{
@@ -479,7 +460,7 @@ func TestConcurrentOrderers(t *testing.T) {
 		},
 		Transaction: &pb.Transaction{},
 	}
-	_, err = channel.SendTransaction(&txn)
+	_, err = SendTransaction(ctx, &txn, orderers)
 	if err != nil {
 		t.Fatalf("SendTransaction returned error: %s", err)
 	}
@@ -500,4 +481,15 @@ func newCollectionConfig(collName string, requiredPeerCount, maxPeerCount int32,
 			},
 		},
 	}
+}
+
+func setupMassiveTestOrderer(numberOfOrderers int) []fab.Orderer {
+	orderers := []fab.Orderer{}
+
+	for i := 0; i < numberOfOrderers; i++ {
+		orderer := mocks.NewMockOrderer(fmt.Sprintf("http://mock%d.orderers.r.us", i), nil)
+		orderers = append(orderers, orderer)
+	}
+
+	return orderers
 }
