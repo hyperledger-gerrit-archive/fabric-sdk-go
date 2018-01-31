@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
-	txn "github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -24,8 +23,8 @@ import (
  * primary orderer to retrieve the configuration settings for this channel.
  */
 type Channel interface {
-	txn.Sender
-	txn.ProposalSender
+	Sender
+	ProposalSender
 
 	Name() string
 	Initialize(data []byte) error
@@ -33,8 +32,8 @@ type Channel interface {
 	LoadConfigUpdateEnvelope(data []byte) error
 	ChannelConfig() (*common.ConfigEnvelope, error)
 	SendInstantiateProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope,
-		collConfig []*common.CollectionConfig, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
-	SendUpgradeProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []txn.ProposalProcessor) ([]*txn.TransactionProposalResponse, txn.TransactionID, error)
+		collConfig []*common.CollectionConfig, targets []ProposalProcessor) ([]*TransactionProposalResponse, TransactionID, error)
+	SendUpgradeProposal(chaincodeName string, args [][]byte, chaincodePath string, chaincodeVersion string, chaincodePolicy *common.SignaturePolicyEnvelope, targets []ProposalProcessor) ([]*TransactionProposalResponse, TransactionID, error)
 
 	// Network
 	// TODO: Use PeerEndorser
@@ -63,8 +62,8 @@ type Channel interface {
 	QueryBlockByHash(blockHash []byte) (*common.Block, error)
 	QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error)
 	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
-	QueryByChaincode(txn.ChaincodeInvokeRequest) ([][]byte, error)
-	QueryBySystemChaincode(request txn.ChaincodeInvokeRequest) ([][]byte, error)
+	QueryByChaincode(ChaincodeInvokeRequest) ([][]byte, error)
+	QueryBySystemChaincode(request ChaincodeInvokeRequest) ([][]byte, error)
 	QueryConfigBlock(peers []Peer, minResponses int) (*common.ConfigEnvelope, error)
 }
 

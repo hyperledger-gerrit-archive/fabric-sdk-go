@@ -17,7 +17,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -410,14 +409,14 @@ func (eventHub *EventHub) UnregisterChaincodeEvent(cbe *fab.ChainCodeCBE) {
 // txid: transaction id
 // callback: Function that takes a single parameter which
 // is a json object representation of type "message Transaction"
-func (eventHub *EventHub) RegisterTxEvent(txnID apitxn.TransactionID, callback func(string, pb.TxValidationCode, error)) {
+func (eventHub *EventHub) RegisterTxEvent(txnID fab.TransactionID, callback func(string, pb.TxValidationCode, error)) {
 	logger.Debugf("reg txid %s\n", txnID.ID)
 	eventHub.txRegistrants.Store(txnID.ID, callback)
 }
 
 // UnregisterTxEvent unregister transactional event registration.
 // txid: transaction id
-func (eventHub *EventHub) UnregisterTxEvent(txnID apitxn.TransactionID) {
+func (eventHub *EventHub) UnregisterTxEvent(txnID fab.TransactionID) {
 	logger.Debugf("un-reg txid %s\n", txnID.ID)
 	eventHub.txRegistrants.Delete(txnID.ID)
 }
