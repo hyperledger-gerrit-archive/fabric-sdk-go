@@ -16,12 +16,16 @@ GOPATH="${GOPATH:-$HOME/go}"
 # Automatically install go tools (particularly for CI)
 if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ]; then
     echo "Installing dependencies ..."
-    $GO_CMD get -u github.com/axw/gocov/...
-    $GO_CMD get -u github.com/AlekSi/gocov-xml
-    $GO_CMD get -u github.com/client9/misspell/cmd/misspell
-    $GO_CMD get -u github.com/golang/lint/golint
-    $GO_CMD get -u golang.org/x/tools/cmd/goimports
-    $GO_CMD get -u github.com/golang/mock/mockgen
+    TMP=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
+    GOPATH=$TMP $GO_CMD get -v -u github.com/axw/gocov/...
+    GOPATH=$TMP $GO_CMD get -v -u github.com/AlekSi/gocov-xml
+    cp $TMP/bin/gocov* $GOPATH/bin
+    GOPATH=$TMP $GO_CMD get -v -u github.com/client9/misspell/cmd/misspell
+    cp $TMP/bin/misspell $GOPATH/bin
+    GOPATH=$TMP $GO_CMD get -v -u github.com/golang/lint/golint
+    cp $TMP/bin/golint $GOPATH/bin
+    GOPATH=$TMP $GO_CMD get -v -u golang.org/x/tools/cmd/goimports
+    cp $TMP/bin/goimports $GOPATH/bin
 fi
 
 # Install specific version of go dep (particularly for CI)
