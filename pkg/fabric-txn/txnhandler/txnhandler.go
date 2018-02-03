@@ -15,7 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
@@ -28,7 +28,7 @@ type EndorsementHandler struct {
 //Handle for endorsing transactions
 func (e *EndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
 	// Endorse Tx
-	transactionProposalResponses, txnID, err := internal.CreateAndSendTransactionProposal(clientContext.Channel,
+	transactionProposalResponses, txnID, err := txn.CreateAndSendTransactionProposal(clientContext.Channel,
 		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, requestContext.Opts.ProposalProcessors, requestContext.Request.TransientMap)
 
 	requestContext.Response.TransactionID = txnID
@@ -143,8 +143,8 @@ func (c *CommitTxHandler) Handle(requestContext *chclient.RequestContext, client
 	txnID := requestContext.Response.TransactionID
 
 	//Register Tx event
-	statusNotifier := internal.RegisterTxEvent(txnID, clientContext.EventHub)
-	_, err := internal.CreateAndSendTransaction(clientContext.Channel, requestContext.Response.Responses)
+	statusNotifier := txn.RegisterEvent(txnID, clientContext.EventHub)
+	_, err := txn.CreateAndSendTransaction(clientContext.Channel, requestContext.Response.Responses)
 	if err != nil {
 		requestContext.Error = errors.Wrap(err, "CreateAndSendTransaction failed")
 		return

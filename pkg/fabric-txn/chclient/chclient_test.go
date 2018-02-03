@@ -20,7 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -221,7 +221,7 @@ type customEndorsementHandler struct {
 }
 
 func (h *customEndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
-	transactionProposalResponses, txnID, err := internal.CreateAndSendTransactionProposal(h.channel,
+	transactionProposalResponses, txnID, err := txn.CreateAndSendTransactionProposal(h.channel,
 		requestContext.Request.ChaincodeID, requestContext.Request.Fcn, requestContext.Request.Args, requestContext.Opts.ProposalProcessors, requestContext.Request.TransientMap)
 
 	requestContext.Response.TransactionID = txnID

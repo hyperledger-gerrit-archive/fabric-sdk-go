@@ -15,7 +15,7 @@ import (
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/internal"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -410,9 +410,9 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, chan
 	}
 
 	// Register for commit event
-	statusNotifier := internal.RegisterTxEvent(txID, eventHub)
+	statusNotifier := txn.RegisterEvent(txID, eventHub)
 
-	if _, err = internal.CreateAndSendTransaction(channel, txProposalResponse); err != nil {
+	if _, err = txn.CreateAndSendTransaction(channel, txProposalResponse); err != nil {
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
