@@ -4,17 +4,14 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package internal
+package txn
 
 import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
-
-var logger = logging.NewLogger("fabric_sdk_go")
 
 // TxStatus is the transaction status returned from eventhub tx events
 type TxStatus struct {

@@ -61,10 +61,10 @@ func SignPayload(ctx context, payload []byte) (*fab.SignedEnvelope, error) {
 	return &fab.SignedEnvelope{Payload: payload, Signature: signature}, nil
 }
 
-// BuildChannelHeader is a utility method to build a common chain header (TODO refactor)
+// NewChannelHeader is a utility method to build a common chain header (TODO refactor)
 //
 // TODO: Determine if this function should be exported after refactoring is completed.
-func BuildChannelHeader(headerType common.HeaderType, channelID string, txID string, epoch uint64, chaincodeID string, timestamp time.Time, tlsCertHash []byte) (*common.ChannelHeader, error) {
+func NewChannelHeader(headerType common.HeaderType, channelID string, txID string, epoch uint64, chaincodeID string, timestamp time.Time, tlsCertHash []byte) (*common.ChannelHeader, error) {
 	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, channelID, txID, epoch, chaincodeID, timestamp)
 	channelHeader := &common.ChannelHeader{
 		Type:        int32(headerType),
@@ -95,4 +95,25 @@ func BuildChannelHeader(headerType common.HeaderType, channelID string, txID str
 		channelHeader.Extension = headerExtBytes
 	}
 	return channelHeader, nil
+}
+
+// NewHeader creates a Header from a ChannelHeader.
+func NewHeader(creator []byte, channelHeader *common.ChannelHeader, nonce []byte) (*common.Header, error) {
+	signatureHeader := &common.SignatureHeader{
+		Creator: creator,
+		Nonce:   nonce,
+	}
+	sh, err := proto.Marshal(signatureHeader)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal signatureHeader failed")
+	}
+	ch, err := proto.Marshal(channelHeader)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal channelHeader failed")
+	}
+	header := &common.Header{
+		SignatureHeader: sh,
+		ChannelHeader:   ch,
+	}
+	return header, nil
 }
