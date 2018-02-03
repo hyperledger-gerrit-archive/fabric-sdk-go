@@ -8,6 +8,7 @@ package channel
 
 import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
@@ -238,6 +239,37 @@ func (c *Channel) OrganizationUnits() ([]string, error) {
 // It returns true if peer exists on this channel
 func (c *Channel) isValidPeer(peer fab.Peer) bool {
 	return peer != nil && c.peers[peer.URL()] != nil
+}
+
+// CreateTransaction create a transaction with proposal response, following the endorsement policy.
+func (c *Channel) CreateTransaction(resps []*fab.TransactionProposalResponse) (*fab.Transaction, error) {
+	return txn.New(resps)
+}
+
+// SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
+func (c *Channel) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
+	return txn.Send(c.clientContext, tx, c.Orderers())
+}
+
+// SendTransactionProposal sends the created proposal to peer for endorsement.
+// TODO: return the entire request or just the txn ID?
+func (c *Channel) SendTransactionProposal(request fab.ChaincodeInvokeRequest) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+	tp, err := txn.NewProposal(c.clientContext, c.name, request)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "new transaction proposal failed")
+	}
+
+	request, err = c.chaincodeInvokeRequestAddDefaultPeers(request)
+	if err != nil {
+		return nil, fab.TransactionID{}, err
+	}
+
+	tpr, err := txn.SendProposal(tp, request.Targets)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "send transaction proposal failed")
+	}
+
+	return tpr, tp.TxnID, nil
 }
 
 // TODO
