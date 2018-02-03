@@ -17,7 +17,7 @@ type ProposalProcessor interface {
 
 // ProposalSender provides the ability for a transaction proposal to be created and sent.
 type ProposalSender interface {
-	SendTransactionProposal(ChaincodeInvokeRequest) ([]*TransactionProposalResponse, TransactionID, error)
+	SendTransactionProposal(ChaincodeInvokeRequest, []ProposalProcessor) ([]*TransactionProposalResponse, TransactionID, error)
 }
 
 // TransactionID contains the ID of a Fabric Transaction Proposal
