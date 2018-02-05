@@ -124,10 +124,11 @@ func (cc *ChannelClient) prepareHandlerContexts(request chclient.Request, option
 	}
 
 	clientContext := &chclient.ClientContext{
-		Channel:   cc.channel,
-		Selection: cc.selection,
-		Discovery: cc.discovery,
-		EventHub:  cc.eventHub,
+		CryptoSuite: cc.context.CryptoSuite(),
+		Channel:     cc.channel,
+		Selection:   cc.selection,
+		Discovery:   cc.discovery,
+		EventHub:    cc.eventHub,
 	}
 
 	requestContext := &chclient.RequestContext{

@@ -63,6 +63,13 @@ func GetProposalResponsePayload(prpBytes []byte) (*peer.ProposalResponsePayload,
 	return prp, err
 }
 
+// GetProposal returns a Proposal message from its bytes
+func GetProposal(propBytes []byte) (*peer.Proposal, error) {
+	prop := &peer.Proposal{}
+	err := proto.Unmarshal(propBytes, prop)
+	return prop, err
+}
+
 // GetPayload Get Payload from Envelope message
 func GetPayload(e *common.Envelope) (*common.Payload, error) {
 	payload := &common.Payload{}

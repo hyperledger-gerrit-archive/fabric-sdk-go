@@ -62,7 +62,7 @@ FILTER_FN+=",Marshal,ExtractEnvelope,ExtractEnvelopeOrPanic,ExtractPayloadOrPani
 gofilter
 
 FILTER_FILENAME="protos/utils/proputils.go"
-FILTER_FN="GetHeader,GetChaincodeProposalPayload,GetSignatureHeader,GetChaincodeHeaderExtension,GetBytesChaincodeActionPayload"
+FILTER_FN="GetHeader,GetProposal,GetChaincodeProposalPayload,GetSignatureHeader,GetChaincodeHeaderExtension,GetBytesChaincodeActionPayload"
 FILTER_FN+=",GetBytesTransaction,GetBytesPayload,GetHeader,GetBytesProposalResponsePayload,GetBytesProposal,CreateChaincodeProposal"
 FILTER_FN+=",GetBytesChaincodeProposalPayload,CreateChaincodeProposalWithTransient,ComputeProposalTxID"
 FILTER_FN+=",CreateChaincodeProposalWithTxIDNonceAndTransient,CreateDeployProposalFromCDS,CreateUpgradeProposalFromCDS"

@@ -12,12 +12,14 @@ import (
 	"bytes"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+
 	"github.com/pkg/errors"
 )
 
@@ -106,6 +108,7 @@ func (f *EndorsementValidationHandler) Handle(requestContext *chclient.RequestCo
 }
 
 func (f *EndorsementValidationHandler) validate(txProposalResponse []*apifabclient.TransactionProposalResponse) error {
+
 	var a1 []byte
 	for n, r := range txProposalResponse {
 		if r.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
