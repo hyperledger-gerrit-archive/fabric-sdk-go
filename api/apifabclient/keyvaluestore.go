@@ -17,15 +17,15 @@ type KeyValueStore interface {
 	/**
 	 * Get the value associated with name.
 	 *
-	 * @param {string} name of the key
-	 * @returns {[]byte}
+	 * @param {interface{}} key
+	 * @returns {interface{}}
 	 */
-	Value(key string) ([]byte, error)
+	Value(key interface{}) (interface{}, error)
 
 	/**
 	 * Set the value associated with name.
-	 * @param {string} name of the key to save
-	 * @param {[]byte} value to save
+	 * @param {interface{}} key
+	 * @param {interface{}} value to save
 	 */
-	SetValue(key string, value []byte) error
+	SetValue(key interface{}, value interface{}) error
 }

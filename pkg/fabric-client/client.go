@@ -186,10 +186,17 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
 	}
 	value, err := c.stateStore.Value(name)
 	if err != nil {
+		return nil, err
+	}
+	if value == nil {
 		return nil, nil
 	}
+	valueBytes, ok := value.([]byte)
+	if !ok {
+		return nil, errors.New("state store return wrong data type")
+	}
 	var userJSON identity.JSON
-	err = json.Unmarshal(value, &userJSON)
+	err = json.Unmarshal(valueBytes, &userJSON)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal user JSON failed")
 	}
