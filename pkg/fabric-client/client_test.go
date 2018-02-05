@@ -85,7 +85,7 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("client.NewChain create wrong chain")
 	}
 
-	stateStore, err := kvs.CreateNewFileKeyValueStore("/tmp/keyvaluestore")
+	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{Path: "/tmp/keyvaluestore"})
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
@@ -93,9 +93,13 @@ func TestClientMethods(t *testing.T) {
 	client.StateStore().SetValue("testvalue", []byte("data"))
 	value, err := client.StateStore().Value("testvalue")
 	if err != nil {
-		t.Fatalf("client.StateStore().GetValue() return error[%s]", err)
+		t.Fatalf("client.StateStore().Value() return error[%s]", err)
 	}
-	if string(value) != "data" {
+	valueBytes, ok := value.([]byte)
+	if !ok {
+		t.Fatalf("client.StateStore().Value() returned wrong data type")
+	}
+	if string(valueBytes) != "data" {
 		t.Fatalf("client.StateStore().GetValue() didn't return the right value")
 	}
 
