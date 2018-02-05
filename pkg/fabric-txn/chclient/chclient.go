@@ -32,12 +32,13 @@ const (
 
 // ChannelClient enables access to a Fabric network.
 type ChannelClient struct {
-	context   fab.ProviderContext
-	discovery fab.DiscoveryService
-	selection fab.SelectionService
-	channel   fab.Channel
-	eventHub  fab.EventHub
-	greylist  *greylist.Filter
+	context    fab.ProviderContext
+	discovery  fab.DiscoveryService
+	selection  fab.SelectionService
+	txnSender  fab.Sender
+	propSender fab.ProposalSender
+	eventHub   fab.EventHub
+	greylist   *greylist.Filter
 }
 
 // Context holds the providers and services needed to create a ChannelClient.
@@ -45,7 +46,8 @@ type Context struct {
 	fab.ProviderContext
 	DiscoveryService fab.DiscoveryService
 	SelectionService fab.SelectionService
-	Channel          fab.Channel
+	TxnSender        fab.Sender
+	PropSender       fab.ProposalSender
 	EventHub         fab.EventHub
 }
 
@@ -54,12 +56,13 @@ func New(c Context) (*ChannelClient, error) {
 	greylistProvider := greylist.New(c.Config().TimeoutOrDefault(apiconfig.DiscoveryGreylistExpiry))
 
 	channelClient := ChannelClient{
-		greylist:  greylistProvider,
-		context:   c,
-		discovery: discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
-		selection: c.SelectionService,
-		channel:   c.Channel,
-		eventHub:  c.EventHub,
+		greylist:   greylistProvider,
+		context:    c,
+		discovery:  discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
+		selection:  c.SelectionService,
+		txnSender:  c.TxnSender,
+		propSender: c.PropSender,
+		eventHub:   c.EventHub,
 	}
 
 	return &channelClient, nil
@@ -132,10 +135,11 @@ func (cc *ChannelClient) prepareHandlerContexts(request chclient.Request, option
 	}
 
 	clientContext := &chclient.ClientContext{
-		Channel:   cc.channel,
-		Selection: cc.selection,
-		Discovery: cc.discovery,
-		EventHub:  cc.eventHub,
+		TxnSender:  cc.txnSender,
+		PropSender: cc.propSender,
+		Selection:  cc.selection,
+		Discovery:  cc.discovery,
+		EventHub:   cc.eventHub,
 	}
 
 	requestContext := &chclient.RequestContext{

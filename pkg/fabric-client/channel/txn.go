@@ -10,13 +10,14 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 )
 
 // CCProposalType reflects transitions in the chaincode lifecycle
@@ -28,35 +29,70 @@ const (
 	Upgrade
 )
 
-// CreateTransaction create a transaction with proposal response, following the endorsement policy.
-func (c *Channel) CreateTransaction(resps []*fab.TransactionProposalResponse) (*fab.Transaction, error) {
+// Transactor enables sending transactions and transaction proposals on the channel.
+type Transactor struct {
+	ctx       fab.Context
+	channelID string
+	orderers  []fab.Orderer
+}
+
+// NewTransactor returns a Transactor for the current context and channel config.
+func NewTransactor(ctx fab.Context, cfg fab.ChannelCfg) (*Transactor, error) {
+	orderers, err := orderersFromChannelCfg(ctx, cfg)
+	if err != nil {
+		return nil, errors.WithMessage(err, "reading orderers from channel config failed")
+	}
+
+	t := Transactor{
+		ctx:       ctx,
+		channelID: cfg.Name(),
+		orderers:  orderers,
+	}
+	return &t, nil
+}
+
+func orderersFromChannelCfg(ctx fab.Context, cfg fab.ChannelCfg) ([]fab.Orderer, error) {
+	orderers := []fab.Orderer{}
+
+	// Add orderer if specified in config
+	for _, name := range cfg.Orderers() {
+
+		// Figure out orderer configuration
+		oCfg, err := ctx.Config().OrdererConfig(name)
+
+		// Check if retrieving orderer configuration went ok
+		if err != nil || oCfg == nil {
+			return nil, errors.Errorf("failed to retrieve orderer config: %s", err)
+		}
+
+		o, err := orderer.New(ctx.Config(), orderer.FromOrdererConfig(oCfg))
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create new orderer from config")
+		}
+
+		orderers = append(orderers, o)
+	}
+	return orderers, nil
+}
+
+// CreateTransactionProposal creates a Transaction Proposal based on the current context and channel config.
+func (t *Transactor) CreateTransactionProposal(request fab.TransactionProposalRequest) (*fab.TransactionProposal, error) {
+	tp, err := txn.NewProposal(t.ctx, t.channelID, request)
+	if err != nil {
+		return nil, errors.WithMessage(err, "new transaction proposal failed")
+	}
+
+	return tp, nil
+}
+
+// CreateTransaction create a transaction with proposal response.
+func (t *Transactor) CreateTransaction(resps []*fab.TransactionProposalResponse) (*fab.Transaction, error) {
 	return txn.New(resps)
 }
 
 // SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
-func (c *Channel) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
-	return txn.Send(c.clientContext, tx, c.Orderers())
-}
-
-// SendTransactionProposal sends the created proposal to peer for endorsement.
-// TODO: return the entire request or just the txn ID?
-func (c *Channel) SendTransactionProposal(request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
-	tp, err := txn.NewProposal(c.clientContext, c.name, request)
-	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "new transaction proposal failed")
-	}
-
-	targets, err = c.chaincodeInvokeRequestAddDefaultPeers(targets)
-	if err != nil {
-		return nil, fab.TransactionID{}, err
-	}
-
-	tpr, err := txn.SendProposal(tp, targets)
-	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "send transaction proposal failed")
-	}
-
-	return tpr, tp.TxnID, nil
+func (t *Transactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
+	return txn.Send(t.ctx, tx, t.orderers)
 }
 
 // SendInstantiateProposal sends an instantiate proposal to one or more endorsing peers.

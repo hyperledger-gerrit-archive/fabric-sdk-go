@@ -10,6 +10,7 @@ import (
 	apichclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	apichmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	apiresmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -100,10 +101,32 @@ func (f *SessionClientFactory) NewChannelClient(providers apisdk.Providers, sess
 
 	ctx := chclient.Context{
 		ProviderContext:  providers,
-		Channel:          channel,
+		TxnSender:        channel,
+		PropSender:       channel,
 		DiscoveryService: discoveryService,
 		SelectionService: selection,
 		EventHub:         eventHub,
 	}
 	return chclient.New(ctx)
+}
+
+type txnCtx struct {
+	ctx       apifabclient.Context
+	channelID string
+}
+
+// SendTransactionProposal sends the created proposal to peer for endorsement.
+// TODO: return the entire request or just the txn ID?
+func (t *txnCtx) SendTransactionProposal(request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+	tp, err := txn.NewProposal(t.ctx, t.channelID, request)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "new transaction proposal failed")
+	}
+
+	tpr, err := txn.SendProposal(tp, targets)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "send transaction proposal failed")
+	}
+
+	return tpr, tp.TxnID, nil
 }
