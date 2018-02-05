@@ -46,7 +46,7 @@ func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (fab.Ke
 		stateStorePath = clientCofig.CredentialStore.Path
 	}
 
-	stateStore, err := kvs.CreateNewFileKeyValueStore(stateStorePath)
+	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
 	if err != nil {
 		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
 	}

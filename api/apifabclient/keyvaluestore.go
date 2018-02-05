@@ -6,26 +6,23 @@ SPDX-License-Identifier: Apache-2.0
 
 package apifabclient
 
-// KeyValueStore ...
-/**
- * Abstract class for a Key-Value store. The Chain class uses this store
- * to save sensitive information such as authenticated user's private keys,
- * certificates, etc.
- *
- */
+// KeyValueStore is a generic key-value store interface.
 type KeyValueStore interface {
 	/**
-	 * Get the value associated with name.
+	 * Get the value associated with the key.
+	 * If not found returns (nil, nil)
 	 *
-	 * @param {string} name of the key
-	 * @returns {[]byte}
+	 * @param {interface{}} key
+	 * @returns {interface{}}
 	 */
-	Value(key string) ([]byte, error)
+	Value(key interface{}) (interface{}, error)
 
 	/**
-	 * Set the value associated with name.
-	 * @param {string} name of the key to save
-	 * @param {[]byte} value to save
+	 * Set the value associated with the key.
+	 * If the value is nil, the entry is removed from the storage.
+	 *
+	 * @param {interface{}} key
+	 * @param {interface{}} value to save
 	 */
-	SetValue(key string, value []byte) error
+	SetValue(key interface{}, value interface{}) error
 }

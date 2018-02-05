@@ -7,42 +7,189 @@ SPDX-License-Identifier: Apache-2.0
 package keyvaluestore
 
 import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
 	"testing"
+
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/pkg/errors"
 )
 
-func TestFKVSMethods(t *testing.T) {
-	stateStore, err := CreateNewFileKeyValueStore("/tmp/keyvaluestore")
-	if err != nil {
-		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
+var storePath = "/tmp/testkeyvaluestore"
+
+func TestDefaultFKVS(t *testing.T) {
+	testFKVS(t, nil)
+}
+
+func TestFKVSWithCustomResolver(t *testing.T) {
+	keySerializer := func(spath string, key interface{}) (string, error) {
+		keyString, ok := key.(string)
+		if !ok {
+			return "", errors.New("converting key to string failed")
+		}
+		return path.Join(spath, fmt.Sprintf("mypath/%s/valuefile", keyString)), nil
 	}
-	stateStore.SetValue("testvalue", []byte("data"))
-	value, err := stateStore.Value("testvalue")
+	testFKVS(t, keySerializer)
+}
+
+func testFKVS(t *testing.T, KeySerializer KeySerializer) {
+	var store apifabclient.KeyValueStore
+	var err error
+	store, err = NewFileKeyValueStore(
+		&FileKeyValueStoreOptions{
+			Path:          storePath,
+			KeySerializer: KeySerializer,
+		})
 	if err != nil {
-		t.Fatalf("stateStore.GetValue return error[%s]", err)
+		t.Fatalf("NewFileKeyValueStore failed [%s]", err)
 	}
-	if string(value) != "data" {
-		t.Fatalf("stateStore.GetValue didn't return the right value")
+	if err := cleanup(storePath); err != nil {
+		t.Fatalf("%s", err)
+	}
+	defer cleanup(storePath)
+
+	err = store.SetValue(nil, []byte("1234"))
+	if err == nil || err.Error() != "key is nil" {
+		t.Fatal("SetValue(nil, ...) should throw error")
+	}
+
+	key1 := "key1"
+	value1 := []byte("value1")
+	key2 := "key2"
+	value2 := []byte("value2")
+	if err := store.SetValue(key1, value1); err != nil {
+		t.Fatalf("SetValue %s failed [%s]", key1, err)
+	}
+	if err := store.SetValue(key2, value2); err != nil {
+		t.Fatalf("SetValue %s failed [%s]", key1, err)
+	}
+
+	// Check key1, value1
+	if err := checkStoreValue(store, key1, value1); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", key1, err)
+	}
+	if err := store.SetValue(key1, nil); err != nil {
+		t.Fatalf("SetValue %s failed [%s]", key1, err)
+	}
+	if err := checkStoreValue(store, key1, nil); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", key1, err)
+	}
+
+	// Check ke2, value2
+	if err := checkStoreValue(store, key2, value2); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", key2, err)
+	}
+	if err := store.SetValue(key2, nil); err != nil {
+		t.Fatalf("SetValue %s failed [%s]", key2, err)
+	}
+	if err := checkStoreValue(store, key2, nil); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", key2, err)
+	}
+
+	// Check non-existing key
+	v, err := store.Value("non-existing")
+	if err != nil {
+		t.Fatal("fetching value for non-existing key should not fail")
+	}
+	if v != nil {
+		t.Fatal("fetching value for non-existing key should return nil")
+	}
+
+	// Check empty string value
+	keyEmptyString := "empty-string"
+	valueEmptyString := []byte("")
+	err = store.SetValue(keyEmptyString, valueEmptyString)
+	if err != nil {
+		t.Fatal("setting an empty string value shouldn't fail")
+	}
+	if err := checkStoreValue(store, keyEmptyString, valueEmptyString); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", keyEmptyString, err)
 	}
 }
 
-func TestFKVSMethodsForFailures(t *testing.T) {
+func TestCreateNewFileKeyValueStore(t *testing.T) {
 
-	stateStore, err := CreateNewFileKeyValueStore("")
-
+	_, err := NewFileKeyValueStore(
+		&FileKeyValueStoreOptions{
+			Path: "",
+		})
 	if err == nil || err.Error() != "FileKeyValueStore path is empty" {
-		t.Fatal("File path validation on CreateNewFileKeyValueStore is not working as expected")
+		t.Fatal("File path validation on NewFileKeyValueStore is not working as expected")
 	}
 
-	stateStore, err = CreateNewFileKeyValueStore("/tmp/keyvaluestore")
-
-	_, err = stateStore.Value("invalid")
-	if err == nil {
-		t.Fatal(" fetching value was supposed to fail")
+	_, err = NewFileKeyValueStore(nil)
+	if err == nil || err.Error() != "FileKeyValueStoreOptions is nil" {
+		t.Fatal("File path validation on NewFileKeyValueStore is not working as expected")
 	}
 
-	err = stateStore.SetValue("testvalue.json//C;", []byte(""))
-	if err == nil {
-		t.Fatal(" setting value was supposed to fail")
+	var store apifabclient.KeyValueStore
+	store, err = NewFileKeyValueStore(
+		&FileKeyValueStoreOptions{
+			Path: storePath,
+		})
+	if err != nil {
+		t.Fatal("creating a store shouldn't fail")
 	}
+	if store == nil {
+		t.Fatal("creating a store failed")
+	}
+}
 
+func cleanup(storePath string) error {
+	err := os.RemoveAll(storePath)
+	if err != nil {
+		return errors.Wrapf(err, "Cleaning up directory '%s' failed", storePath)
+	}
+	return nil
+}
+
+func checkStoreValue(store apifabclient.KeyValueStore, key interface{}, expected []byte) error {
+	v, err := store.Value(key)
+	if err != nil {
+		return err
+	}
+	if err = compare(v, expected); err != nil {
+		return err
+	}
+	path := store.(*FileKeyValueStore).GetPath()
+	file, err := store.(*FileKeyValueStore).keySerializer(path, key)
+	if err != nil {
+		return err
+	}
+	if expected == nil {
+		_, err := os.Stat(file)
+		if err == nil {
+			return fmt.Errorf("path shouldn't exist [%s]", file)
+		}
+		if !os.IsNotExist(err) {
+			return errors.Wrapf(err, "stat file failed [%s]", file)
+		}
+		// Doesn't exist, OK
+		return nil
+	}
+	v, err = ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	return compare(v, expected)
+}
+
+func compare(v interface{}, expected []byte) error {
+	var vbytes []byte
+	var ok bool
+	if v == nil {
+		vbytes = nil
+	} else {
+		vbytes, ok = v.([]byte)
+		if !ok {
+			return errors.New("value is not []byte")
+		}
+	}
+	if bytes.Compare(vbytes, expected) != 0 {
+		return errors.New("value from store comparison failed")
+	}
+	return nil
 }
