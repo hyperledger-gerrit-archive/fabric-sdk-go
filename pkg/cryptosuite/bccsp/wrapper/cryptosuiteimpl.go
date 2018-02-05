@@ -10,6 +10,7 @@ import (
 	"hash"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
@@ -17,8 +18,10 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 //NewCryptoSuite returns cryptosuite adaptor for given bccsp.BCCSP implementation
-func NewCryptoSuite(bccsp bccsp.BCCSP) CryptoSuite {
-	return CryptoSuite{bccsp}
+func NewCryptoSuite(bccsp bccsp.BCCSP) apicryptosuite.CryptoSuite {
+	return &CryptoSuite{
+		BCCSP: bccsp,
+	}
 }
 
 //GetKey returns implementation of of cryptosuite.Key
@@ -28,7 +31,8 @@ func GetKey(newkey bccsp.Key) apicryptosuite.Key {
 
 // CryptoSuite provides a wrapper of BCCSP
 type CryptoSuite struct {
-	BCCSP bccsp.BCCSP
+	BCCSP    bccsp.BCCSP
+	keyStore kvstore.KVStore
 }
 
 // KeyGen is a wrapper of BCCSP.KeyGen
