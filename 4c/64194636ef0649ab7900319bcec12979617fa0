@@ -1,0 +1,8 @@
+Code-Review+1: Bob Stasyszyn <bob.stasyszyn@securekey.com>
+Code-Review+2: Firas Qutishat <firas.qutishat@securekey.com>
+Verified+1: Troy Ronda <troy@troyronda.com>
+Submitted-by: Troy Ronda <troy@troyronda.com>
+Submitted-at: Mon, 05 Feb 2018 16:11:38 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/17537
+Project: fabric-sdk-go
+Branch: refs/heads/master
