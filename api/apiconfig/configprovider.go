@@ -73,4 +73,6 @@ const (
 	OrdererConnection
 	// OrdererResponse orderer response timeout
 	OrdererResponse
+	// DiscoveryBlocklistExpiry discovery Blocklist expiration period
+	DiscoveryBlocklistExpiry
 )
