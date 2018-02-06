@@ -48,6 +48,12 @@ client:
       connection: 3s
       queryResponse: 45s
       executeTxResponse: 60s
+      discovery:
+        # Expiry period for discovery service blacklist filter
+        # The channel client will blacklist peers that are found to be offline
+        # to prevent re-selecting them in subsequent retries.
+        # This interval will define how long a peer is blacklisted        
+        blacklistExpiry: 5s
   eventService:
     timeout:
       connection: 3s
