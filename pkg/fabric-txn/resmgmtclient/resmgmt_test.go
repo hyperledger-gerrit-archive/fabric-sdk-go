@@ -19,6 +19,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/pkg/errors"
 
@@ -30,33 +31,9 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-func TestJoinChannelFail(t *testing.T) {
-
-	ctx := setupTestContext("test", "Org1MSP")
-
-	// Setup resource management client
-	config := getNetworkConfig(t)
-	ctx.SetConfig(config)
-
-	rc := setupResMgmtClient(ctx, nil, t)
-
-	// Setup target peers
-	peer1, _ := peer.New(fcmocks.NewMockConfig())
-
-	// Test fail genesis block retrieval (no orderer)
-	err := rc.JoinChannel("mychannel", resmgmt.WithTargets(peer1))
-	if err == nil {
-		t.Fatal("Should have failed to get genesis block")
-	}
-}
-
 func TestJoinChannel(t *testing.T) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
-
-	// Setup mock targets
-	endorserServer, addr := startEndorserServer(t, grpcServer)
-	time.Sleep(2 * time.Second)
 
 	ctx := setupTestContext("test", "Org1MSP")
 
@@ -78,7 +55,7 @@ func TestJoinChannel(t *testing.T) {
 
 	// Setup target peers
 	var peers []fab.Peer
-	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL(addr))
+	peer1, _ := peer.New(fcmocks.NewMockConfig(), peer.WithURL("example.com"))
 	peers = append(peers, peer1)
 
 	// Test valid join channel request (success)
@@ -86,26 +63,6 @@ func TestJoinChannel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	orderer.(fcmocks.MockOrderer).EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
-
-	// Test fails because configured peer is not running
-	err = rc.JoinChannel("mychannel")
-	if err == nil {
-		t.Fatal("Should have failed due to configured peer is not running")
-	}
-
-	orderer.(fcmocks.MockOrderer).EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
-
-	// Test failed proposal error handling
-	endorserServer.ProposalError = errors.New("Test Error")
-
-	// Test proposal error
-	err = rc.JoinChannel("mychannel", resmgmt.WithTargets(peer1))
-	if err == nil {
-		t.Fatal("Should have failed with proposal error")
-	}
-
 }
 
 func TestNoSigningUserFailure(t *testing.T) {
@@ -1060,6 +1017,8 @@ func setupDefaultResMgmtClient(t *testing.T) *ResourceMgmtClient {
 
 func setupResMgmtClient(fabCtx fab.Context, discErr error, t *testing.T) *ResourceMgmtClient {
 
+	fabProvider := fabpvdr.New(fabCtx)
+
 	discovery, err := setupTestDiscovery(discErr, nil)
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
@@ -1085,6 +1044,7 @@ func setupResMgmtClient(fabCtx fab.Context, discErr error, t *testing.T) *Resour
 		Resource:          resource,
 		ChannelProvider:   chProvider,
 		DiscoveryProvider: discovery,
+		FabricProvider:    fabProvider,
 	}
 	resClient, err := New(ctx, nil)
 	if err != nil {

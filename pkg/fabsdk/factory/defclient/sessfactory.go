@@ -54,6 +54,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers,
 
 	discovery := providers.DiscoveryProvider()
 	chProvider := providers.ChannelProvider()
+	fabProvider := providers.FabricProvider()
 
 	ctx := resmgmtclient.Context{
 		ProviderContext:   providers,
@@ -61,6 +62,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers,
 		Resource:          resource,
 		DiscoveryProvider: discovery,
 		ChannelProvider:   chProvider,
+		FabricProvider:    fabProvider,
 	}
 	return resmgmtclient.New(ctx, filter)
 }
