@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	grpcstatus "google.golang.org/grpc/status"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"

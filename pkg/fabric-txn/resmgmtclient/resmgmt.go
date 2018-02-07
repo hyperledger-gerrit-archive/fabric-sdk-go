@@ -10,9 +10,9 @@ package resmgmtclient
 import (
 	"time"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	config "github.com/hyperledger/fabric-sdk-go/api/config"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"

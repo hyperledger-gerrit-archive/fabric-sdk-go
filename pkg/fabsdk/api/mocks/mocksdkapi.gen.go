@@ -7,13 +7,13 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	apicore "github.com/hyperledger/fabric-sdk-go/api/apicore"
 	apicryptosuite "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	chclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )

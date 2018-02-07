@@ -11,8 +11,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
@@ -34,7 +34,7 @@ type ChannelClient struct {
 	selection fab.SelectionService
 	channel   fab.Channel
 	eventHub  fab.EventHub
-	greylist *greylist.Filter
+	greylist  *greylist.Filter
 }
 
 // Context holds the providers and services needed to create a ChannelClient.
@@ -51,7 +51,7 @@ func New(c Context) (*ChannelClient, error) {
 	greylistProvider := greylist.New(c.Config().TimeoutOrDefault(apiconfig.DiscoveryGreylistExpiry))
 
 	channelClient := ChannelClient{
-		greylist: greylistProvider,
+		greylist:  greylistProvider,
 		context:   c,
 		discovery: discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
 		selection: c.SelectionService,

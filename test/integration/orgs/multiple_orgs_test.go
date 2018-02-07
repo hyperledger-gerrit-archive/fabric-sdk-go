@@ -13,13 +13,13 @@ import (
 	"testing"
 	"time"
 
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"

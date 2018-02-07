@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	config "github.com/hyperledger/fabric-sdk-go/api/config"
 )
 
 // Context supplies the configuration and signing identity to client objects.

@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
@@ -15,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 )
 

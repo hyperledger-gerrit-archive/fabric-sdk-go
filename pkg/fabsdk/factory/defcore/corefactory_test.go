@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
+	"github.com/hyperledger/fabric-sdk-go/api/config/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"

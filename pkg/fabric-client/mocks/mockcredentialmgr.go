@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 )
 
 // MockCredentialManager is a mock CredentialManager

@@ -9,8 +9,8 @@ package fabricca
 import (
 	"github.com/pkg/errors"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	config "github.com/hyperledger/fabric-sdk-go/api/config"
 	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	fabric_ca "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"

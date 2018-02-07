@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 

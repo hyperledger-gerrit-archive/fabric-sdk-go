@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"

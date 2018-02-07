@@ -17,8 +17,8 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/golang/protobuf/ptypes"
-	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"

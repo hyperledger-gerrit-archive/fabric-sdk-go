@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"

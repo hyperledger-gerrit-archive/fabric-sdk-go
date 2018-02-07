@@ -14,9 +14,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 

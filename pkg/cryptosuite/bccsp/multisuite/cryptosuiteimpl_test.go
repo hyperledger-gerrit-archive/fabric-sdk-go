@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/api/config/mocks"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 )

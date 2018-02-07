@@ -16,9 +16,9 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
+	"github.com/hyperledger/fabric-sdk-go/api/config/mocks"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/stretchr/testify/assert"

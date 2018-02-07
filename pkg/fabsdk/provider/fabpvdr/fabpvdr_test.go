@@ -9,9 +9,9 @@ package fabpvdr
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
+	"github.com/hyperledger/fabric-sdk-go/api/config/mocks"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"

@@ -14,9 +14,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	api "github.com/hyperledger/fabric-sdk-go/api/config"
+	"github.com/hyperledger/fabric-sdk-go/api/config/mocks"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	pkcsFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"

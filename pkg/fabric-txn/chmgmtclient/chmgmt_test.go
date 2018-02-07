@@ -9,8 +9,8 @@ package chmgmtclient
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"

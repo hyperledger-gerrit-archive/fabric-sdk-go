@@ -9,9 +9,9 @@ package apicore
 import (
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 )
 
 // FabricProvider enables access to fabric objects such as peer and user

@@ -7,11 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"

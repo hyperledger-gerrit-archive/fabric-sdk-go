@@ -19,7 +19,7 @@ import (
 	"reflect"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/api/config/mocks"
 )
 
 func TestTLSConfigEmptyCertPoolAndCertificate(t *testing.T) {

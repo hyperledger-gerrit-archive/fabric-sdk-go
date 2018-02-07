@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package defsvc
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery/staticdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/staticselection"

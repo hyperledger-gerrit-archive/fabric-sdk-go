@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/api/config/mocks"
 	"github.com/pkg/errors"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	config "github.com/hyperledger/fabric-sdk-go/api/config"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"

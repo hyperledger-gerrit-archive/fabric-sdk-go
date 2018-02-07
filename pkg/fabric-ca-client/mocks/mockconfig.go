@@ -11,7 +11,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 )
 
 // MockConfig ...

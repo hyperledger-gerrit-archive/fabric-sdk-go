@@ -13,10 +13,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicore"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"

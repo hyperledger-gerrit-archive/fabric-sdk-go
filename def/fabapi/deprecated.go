@@ -8,8 +8,8 @@ SPDX-License-Identifier: Apache-2.0
 package fabapi
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"

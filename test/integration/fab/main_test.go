@@ -10,7 +10,7 @@ import (
 	"os"
 	"testing"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	config "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 

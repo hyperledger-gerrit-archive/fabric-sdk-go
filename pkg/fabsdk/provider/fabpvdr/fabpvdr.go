@@ -9,9 +9,9 @@ package fabpvdr
 import (
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"

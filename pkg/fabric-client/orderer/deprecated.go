@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	apiconfig "github.com/hyperledger/fabric-sdk-go/api/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"google.golang.org/grpc"
