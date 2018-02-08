@@ -93,7 +93,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 
 	setup.Identity = session
 
-	sc, err := sdk.FabricProvider().NewResourceClient(setup.Identity)
+	sc, err := sdk.FabricProvider().CreateResourceClient(setup.Identity)
 	if err != nil {
 		return errors.WithMessage(err, "NewResourceClient failed")
 	}
@@ -152,7 +152,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 // GetChannel initializes and returns a channel based on config
 func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, channelID string, orgs []string) (fab.Channel, error) {
 
-	channel, err := sdk.FabricProvider().NewChannelClient(ic, channelID)
+	channel, err := sdk.FabricProvider().CreateChannelClient(ic, channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewChannel failed")
 	}
@@ -163,7 +163,7 @@ func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityCon
 			return nil, errors.WithMessage(err, "reading peer config failed")
 		}
 		for _, p := range peerConfig {
-			endorser, err := sdk.FabricProvider().NewPeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p})
+			endorser, err := sdk.FabricProvider().CreatePeerFromConfig(&apiconfig.NetworkPeer{PeerConfig: p})
 			if err != nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}
@@ -178,7 +178,7 @@ func (setup *BaseSetupImpl) GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityCon
 }
 
 func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client *fabsdk.FabricSDK, identity fab.IdentityContext) error {
-	eventHub, err := client.FabricProvider().NewEventHub(identity, setup.ChannelID)
+	eventHub, err := client.FabricProvider().CreateEventHub(identity, setup.ChannelID)
 	if err != nil {
 		return err
 	}

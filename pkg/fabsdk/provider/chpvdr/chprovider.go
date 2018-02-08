@@ -49,15 +49,15 @@ type ChannelService struct {
 
 // Channel returns the named Channel client.
 func (cs *ChannelService) Channel() (apifabclient.Channel, error) {
-	return cs.fabricProvider.NewChannelClient(cs.identityContext, cs.channelID)
+	return cs.fabricProvider.CreateChannelClient(cs.identityContext, cs.channelID)
 }
 
 // EventHub returns the EventHub for the named channel.
 func (cs *ChannelService) EventHub() (apifabclient.EventHub, error) {
-	return cs.fabricProvider.NewEventHub(cs.identityContext, cs.channelID)
+	return cs.fabricProvider.CreateEventHub(cs.identityContext, cs.channelID)
 }
 
 // ChannelConfig returns the ChannelConfig for the named channel
 func (cs *ChannelService) ChannelConfig() (apifabclient.ChannelConfig, error) {
-	return cs.fabricProvider.NewChannelConfig(cs.identityContext, cs.channelID)
+	return cs.fabricProvider.CreateChannelConfig(cs.identityContext, cs.channelID)
 }
