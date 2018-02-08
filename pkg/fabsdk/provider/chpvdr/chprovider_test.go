@@ -57,8 +57,8 @@ type MockFabricProvider struct {
 	providerContext apifabclient.ProviderContext
 }
 
-// NewChannelConfig initializes the channel config
-func (f *MockFabricProvider) NewChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
+// CreateChannelConfig initializes the channel config
+func (f *MockFabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
@@ -69,7 +69,8 @@ func (f *MockFabricProvider) NewChannelConfig(ic apifabclient.IdentityContext, c
 
 }
 
-func (f *MockFabricProvider) NewChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
+// CreateChannelClient overrides the default.
+func (f *MockFabricProvider) CreateChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
 		IdentityContext: ic,
