@@ -59,6 +59,15 @@ type Channel interface {
 	QueryConfigBlock(peers []Peer, minResponses int) (*common.ConfigEnvelope, error)
 }
 
+// ChannelLedger provides access to the underlying ledger for a channel.
+type ChannelLedger interface {
+	QueryInfo() (*common.BlockchainInfo, error)
+	QueryBlock(blockNumber int) (*common.Block, error)
+	QueryBlockByHash(blockHash []byte) (*common.Block, error)
+	QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error)
+	QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error)
+}
+
 // OrgAnchorPeer contains information about an anchor peer on this channel
 type OrgAnchorPeer struct {
 	Org  string
