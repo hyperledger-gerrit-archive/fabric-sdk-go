@@ -42,18 +42,21 @@ func TestChannelQueries(t *testing.T) {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 
+	t.Logf("1")
 	// Test Query Info - retrieve values before transaction
 	bciBeforeTx, err := channel.QueryInfo()
 	if err != nil {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
+	t.Logf("2")
 	// Invoke transaction that changes block state
 	txID, err := changeBlockState(t, testSetup)
 	if err != nil {
 		t.Fatalf("Failed to change block state (invoke transaction). Return error: %v", err)
 	}
 
+	t.Logf("3")
 	// Test Query Info - retrieve values after transaction
 	bciAfterTx, err := channel.QueryInfo()
 	if err != nil {
@@ -65,18 +68,25 @@ func TestChannelQueries(t *testing.T) {
 		t.Fatalf("Block size did not increase after transaction")
 	}
 
+	t.Logf("4")
 	testQueryTransaction(t, channel, txID)
 
+	t.Logf("5")
 	testQueryBlock(t, channel)
 
+	t.Logf("6")
 	testQueryConfigBlock(t, channel)
 
+	t.Logf("7")
 	testQueryChannels(t, channel, client)
 
+	t.Logf("8")
 	testInstalledChaincodes(t, channel, client)
 
+	t.Logf("9")
 	testQueryByChaincode(t, channel, testSetup)
 
+	t.Logf("10")
 	testInstantiatedChaincodes(t, channel)
 
 }

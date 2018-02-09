@@ -8,7 +8,9 @@ package channel
 
 import (
 	"bytes"
+	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -23,34 +25,58 @@ const (
 	systemChannel = ""
 )
 
+// Ledger is a client that provides access to the underlying ledger of a channel.
+type Ledger struct {
+	ctx    fab.Context
+	chName string
+}
+
+// NewLedger constructs a Ledger client for the current context and named channel.
+func NewLedger(ctx fab.Context, chName string) *Ledger {
+	l := Ledger{
+		ctx:    ctx,
+		chName: chName,
+	}
+	return &l
+}
+
 // QueryInfo queries for various useful information on the state of the channel
 // (height, known peers).
-// This query will be made to the primary peer.
-func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
+func (c *Ledger) QueryInfo(targets []fab.ProposalProcessor) ([]*common.BlockchainInfo, error) {
 	logger.Debug("queryInfo - start")
 
 	// prepare arguments to call qscc GetChainInfo function
 	var args [][]byte
-	args = append(args, []byte(c.Name()))
+	args = append(args, []byte(c.chName))
 
-	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetChainInfo", args, c.PrimaryPeer())
-	if err != nil {
-		return nil, errors.WithMessage(err, "qscc.GetChainInfo failed")
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "qscc",
+		Fcn:         "GetChainInfo",
+		Args:        args,
 	}
+	tprs, err := queryChaincode(c.ctx, systemChannel, request, targets)
+	processed, err := processTxnProposalResponse(tprs, err, createBlockchainInfo)
 
-	bci := &common.BlockchainInfo{}
-	err = proto.Unmarshal(payload, bci)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal of BlockchainInfo failed")
+	responses := []*common.BlockchainInfo{}
+	for _, p := range processed {
+		responses = append(responses, p.(*common.BlockchainInfo))
 	}
+	return responses, err
+}
 
-	return bci, nil
+func createBlockchainInfo(tpr *fab.TransactionProposalResponse) (interface{}, error) {
+	response := common.BlockchainInfo{}
+	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")
+	}
+	return &response, err
 }
 
 // QueryBlockByHash queries the ledger for Block by block hash.
 // This query will be made to the primary peer.
 // Returns the block.
-func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
+func (c *Ledger) QueryBlockByHash(blockHash []byte, targets []fab.ProposalProcessor) ([]*common.Block, error) {
 
 	if blockHash == nil {
 		return nil, errors.New("blockHash is required")
@@ -58,28 +84,29 @@ func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 
 	// prepare arguments to call qscc GetBlockByNumber function
 	var args [][]byte
-	args = append(args, []byte(c.Name()))
+	args = append(args, []byte(c.chName))
 	args = append(args, blockHash[:len(blockHash)])
 
-	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetBlockByHash", args, c.PrimaryPeer())
-	if err != nil {
-		return nil, errors.WithMessage(err, "qscc.GetBlockByHash failed")
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "qscc",
+		Fcn:         "GetBlockByHash",
+		Args:        args,
 	}
+	tprs, err := queryChaincode(c.ctx, systemChannel, request, targets)
+	processed, err := processTxnProposalResponse(tprs, err, createCommonBlock)
 
-	block := &common.Block{}
-	err = proto.Unmarshal(payload, block)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal of BlockchainInfo failed")
+	responses := []*common.Block{}
+	for _, p := range processed {
+		responses = append(responses, p.(*common.Block))
 	}
-
-	return block, nil
+	return responses, err
 }
 
 // QueryBlock queries the ledger for Block by block number.
 // This query will be made to the primary peer.
 // blockNumber: The number which is the ID of the Block.
 // It returns the block.
-func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
+func (c *Ledger) QueryBlock(blockNumber int, targets []fab.ProposalProcessor) ([]*common.Block, error) {
 
 	if blockNumber < 0 {
 		return nil, errors.New("blockNumber must be a positive integer")
@@ -87,161 +114,100 @@ func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
 
 	// prepare arguments to call qscc GetBlockByNumber function
 	var args [][]byte
-	args = append(args, []byte(c.Name()))
+	args = append(args, []byte(c.chName))
 	args = append(args, []byte(strconv.Itoa(blockNumber)))
 
-	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetBlockByNumber", args, c.PrimaryPeer())
-	if err != nil {
-		return nil, errors.WithMessage(err, "qscc.GetBlockByNumber failed")
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "qscc",
+		Fcn:         "GetBlockByNumber",
+		Args:        args,
 	}
 
-	block := &common.Block{}
-	err = proto.Unmarshal(payload, block)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal of BlockchainInfo failed")
-	}
+	tprs, err := queryChaincode(c.ctx, systemChannel, request, targets)
+	processed, err := processTxnProposalResponse(tprs, err, createCommonBlock)
 
-	return block, nil
+	responses := []*common.Block{}
+	for _, p := range processed {
+		responses = append(responses, p.(*common.Block))
+	}
+	return responses, err
+}
+
+func createCommonBlock(tpr *fab.TransactionProposalResponse) (interface{}, error) {
+	response := common.Block{}
+	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")
+	}
+	return &response, err
 }
 
 // QueryTransaction queries the ledger for Transaction by number.
 // This query will be made to the primary peer.
 // Returns the ProcessedTransaction information containing the transaction.
 // TODO: add optional target
-func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransaction, error) {
+func (c *Ledger) QueryTransaction(transactionID string, targets []fab.ProposalProcessor) ([]*pb.ProcessedTransaction, error) {
 
 	// prepare arguments to call qscc GetTransactionByID function
 	var args [][]byte
-	args = append(args, []byte(c.Name()))
+	args = append(args, []byte(c.chName))
 	args = append(args, []byte(transactionID))
 
-	payload, err := c.queryBySystemChaincodeByTarget("qscc", "GetTransactionByID", args, c.PrimaryPeer())
-	if err != nil {
-		return nil, errors.WithMessage(err, "qscc.GetTransactionByID failed")
+	request := fab.ChaincodeInvokeRequest{
+		ChaincodeID: "qscc",
+		Fcn:         "GetTransactionByID",
+		Args:        args,
 	}
 
-	transaction := new(pb.ProcessedTransaction)
-	err = proto.Unmarshal(payload, transaction)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal of ProcessedTransaction failed")
-	}
+	tprs, err := queryChaincode(c.ctx, systemChannel, request, targets)
+	processed, err := processTxnProposalResponse(tprs, err, createProcessedTransaction)
 
-	return transaction, nil
+	responses := []*pb.ProcessedTransaction{}
+	for _, p := range processed {
+		responses = append(responses, p.(*pb.ProcessedTransaction))
+	}
+	return responses, err
+}
+
+func createProcessedTransaction(tpr *fab.TransactionProposalResponse) (interface{}, error) {
+	response := pb.ProcessedTransaction{}
+	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")
+	}
+	return &response, err
 }
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
 // This query will be made to the primary peer.
-func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, error) {
-
-	targets := []fab.ProposalProcessor{c.PrimaryPeer()}
+func (c *Ledger) QueryInstantiatedChaincodes(targets []fab.ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error) {
 	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "lscc",
 		Fcn:         "getchaincodes",
 	}
 
-	payload, err := queryByChaincode(c.clientContext, c.name, request, targets)
-	if err != nil {
-		return nil, errors.WithMessage(err, "lscc.getchaincodes failed")
-	}
+	tprs, err := queryChaincode(c.ctx, c.chName, request, targets)
+	processed, err := processTxnProposalResponse(tprs, err, createChaincodeQueryResponse)
 
-	response := new(pb.ChaincodeQueryResponse)
-	err = proto.Unmarshal(payload[0], response)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal of ChaincodeQueryResponse failed")
+	responses := []*pb.ChaincodeQueryResponse{}
+	for _, p := range processed {
+		responses = append(responses, p.(*pb.ChaincodeQueryResponse))
 	}
-
-	return response, nil
+	return responses, err
 }
 
-// QueryByChaincode sends a proposal to one or more endorsing peers that will be handled by the chaincode.
-// This request will be presented to the chaincode 'invoke' and must understand
-// from the arguments that this is a query request. The chaincode must also return
-// results in the byte array format and the caller will have to be able to decode.
-// these results.
-func (c *Channel) QueryByChaincode(request fab.ChaincodeInvokeRequest) ([][]byte, error) {
-	targets, err := c.chaincodeInvokeRequestAddDefaultPeers(request.Targets)
+func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse) (interface{}, error) {
+	response := pb.ChaincodeQueryResponse{}
+	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")
 	}
-	return queryByChaincode(c.clientContext, c.name, request, targets)
-}
-
-func filterProposalResponses(tpr []*fab.TransactionProposalResponse) ([][]byte, error) {
-	var responses [][]byte
-	errMsg := ""
-	for _, response := range tpr {
-		if response.Err != nil {
-			errMsg = errMsg + response.Err.Error() + "\n"
-		} else {
-			responses = append(responses, response.ProposalResponse.GetResponse().Payload)
-		}
-	}
-
-	if len(errMsg) > 0 {
-		return responses, errors.New(errMsg)
-	}
-	return responses, nil
-}
-
-func queryByChaincode(clientContext fab.Context, channelID string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([][]byte, error) {
-	if err := validateChaincodeInvokeRequest(request); err != nil {
-		return nil, err
-	}
-
-	tp, err := txn.NewProposal(clientContext, channelID, request)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewProposal failed")
-	}
-
-	tpr, err := txn.SendProposal(tp, targets)
-	if err != nil {
-		return nil, errors.WithMessage(err, "SendProposal failed")
-	}
-
-	return filterProposalResponses(tpr)
-}
-
-// queryBySystemChaincodeByTarget is an internal helper function that queries system chaincode.
-// This function is not exported to keep the external interface of this package to only expose
-// request structs.
-func (c *Channel) queryBySystemChaincodeByTarget(chaincodeID string, fcn string, args [][]byte, target fab.ProposalProcessor) ([]byte, error) {
-	targets := []fab.ProposalProcessor{target}
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: chaincodeID,
-		Fcn:         fcn,
-		Args:        args,
-		Targets:     targets,
-	}
-	responses, err := c.QueryBySystemChaincode(request)
-
-	// we are only querying one peer hence one result
-	if err != nil || len(responses) != 1 {
-		return nil, errors.Errorf("QueryBySystemChaincode should have one result only, actual result is %d", len(responses))
-	}
-
-	return responses[0], nil
-}
-
-// QueryBySystemChaincode invokes a chaincode that isn't part of a channel.
-//
-// TODO: This function's name is confusing - call the normal QueryByChaincode for system chaincode on a channel.
-func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([][]byte, error) {
-	targets, err := c.chaincodeInvokeRequestAddDefaultPeers(request.Targets)
-	if err != nil {
-		return nil, err
-	}
-	return queryByChaincode(c.clientContext, systemChannel, request, targets)
-}
-
-// QueryBySystemChaincode invokes a system chaincode
-// TODO - should be moved.
-func QueryBySystemChaincode(request fab.ChaincodeInvokeRequest, clientContext fab.Context) ([][]byte, error) {
-	return queryByChaincode(clientContext, systemChannel, request, request.Targets)
+	return &response, err
 }
 
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
-func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.ConfigEnvelope, error) {
+func (c *Ledger) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.ConfigEnvelope, error) {
 
 	if len(peers) == 0 {
 		return nil, errors.New("peer(s) required")
@@ -254,20 +220,14 @@ func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.
 	request := fab.ChaincodeInvokeRequest{
 		ChaincodeID: "cscc",
 		Fcn:         "GetConfigBlock",
-		Args:        [][]byte{[]byte(c.Name())},
+		Args:        [][]byte{[]byte(c.chName)},
 	}
-
-	tp, err := txn.NewProposal(c.clientContext, c.Name(), request)
+	tpr, err := queryChaincode(c.ctx, c.chName, request, peersToTxnProcessors(peers))
 	if err != nil {
-		return nil, errors.WithMessage(err, "NewProposal failed")
+		return nil, errors.WithMessage(err, "queryChaincode failed")
 	}
 
-	tpr, err := txn.SendProposal(tp, peersToTxnProcessors(peers))
-	if err != nil {
-		return nil, errors.WithMessage(err, "SendProposal failed")
-	}
-
-	responses, err := filterProposalResponses(tpr)
+	responses, err := filterProposalResponses(tpr, err)
 	if err != nil {
 		return nil, err
 	}
@@ -299,4 +259,146 @@ func (c *Channel) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.
 
 	return createConfigEnvelope(block.Data.Data[0])
 
+}
+
+type txnProposalResponseOp func(*fab.TransactionProposalResponse) (interface{}, error)
+
+func processTxnProposalResponse(tprs []*fab.TransactionProposalResponse, tperr error, op txnProposalResponseOp) ([]interface{}, error) {
+
+	// examine errors from peers and prepare error slice that can be checked during each response' processing.
+	var errs MultiError
+	if tperr != nil {
+		var ok bool
+		errs, ok = tperr.(MultiError)
+		if !ok {
+			return nil, errors.WithMessage(tperr, "chaincode query failed")
+		}
+	} else {
+		errs = make([]error, len(tprs))
+	}
+
+	// process each response and set processing error, if needed.
+	responses := []interface{}{}
+	var resperrs MultiError
+	isErr := false
+	for i, tpr := range tprs {
+		var resp interface{}
+		var err error
+
+		if errs[i] != nil {
+			// response had an error - do not process.
+			err = errs[i]
+		} else {
+			// response was successful - process.
+			resp, err = op(tpr)
+		}
+
+		if err != nil {
+			isErr = true
+		}
+
+		responses = append(responses, resp)
+		resperrs = append(resperrs, err)
+	}
+
+	// when any error has occurred return responses and errors as a MultiError.
+	if isErr {
+		return responses, resperrs
+	}
+	return responses, nil
+}
+
+func filterProposalResponses(tprs []*fab.TransactionProposalResponse, tperr error) ([][]byte, error) {
+	// examine errors from peers and prepare error slice that can be checked during each response' processing.
+	var errs MultiError
+	if tperr != nil {
+		var ok bool
+		errs, ok = tperr.(MultiError)
+		if !ok {
+			return nil, errors.WithMessage(tperr, "chaincode query failed")
+		}
+	} else {
+		errs = make([]error, len(tprs))
+	}
+
+	var responses [][]byte
+	errMsg := ""
+	for i, tpr := range tprs {
+		if errs[i] != nil {
+			errMsg = errMsg + errs[i].Error() + "\n"
+		} else {
+			responses = append(responses, tpr.ProposalResponse.GetResponse().Payload)
+		}
+	}
+
+	if len(errMsg) > 0 {
+		return responses, errors.New(errMsg)
+	}
+	return responses, nil
+}
+
+// MultiError represents a slice of errors originating from each target peer.
+type MultiError []error
+
+func (me MultiError) Error() string {
+	msg := []string{}
+	for _, e := range me {
+		msg = append(msg, e.Error())
+	}
+	return strings.Join(msg, ",")
+}
+
+func queryChaincode(ctx fab.Context, channel string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+	errors := MultiError{}
+	responses := []*fab.TransactionProposalResponse{}
+	isErr := false
+
+	for _, target := range targets {
+		resp, err := queryChaincodeWithTarget(ctx, channel, request, target)
+
+		responses = append(responses, resp)
+		errors = append(errors, err)
+
+		if err != nil {
+			isErr = true
+		}
+	}
+	if isErr {
+		return responses, errors
+	}
+	return responses, nil
+}
+
+func queryChaincodeWithTarget(ctx fab.Context, channel string, request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) (*fab.TransactionProposalResponse, error) {
+
+	targets := []fab.ProposalProcessor{target}
+
+	tp, err := txn.NewProposal(ctx, channel, request)
+	if err != nil {
+		return nil, errors.WithMessage(err, "NewProposal failed")
+	}
+
+	tpr, err := txn.SendProposal(tp, targets)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendProposal failed")
+	}
+
+	err = validateResponse(tpr[0])
+	if err != nil {
+		return nil, errors.WithMessage(err, "transaction proposal failed")
+	}
+
+	return tpr[0], nil
+}
+
+func validateResponse(response *fab.TransactionProposalResponse) error {
+	if response.Err != nil {
+		return errors.Errorf("error from %s (%s)", response.Endorser, response.Err.Error())
+	}
+
+	if response.Status != http.StatusOK {
+		return errors.Errorf("bad status from %s (%d)", response.Endorser, response.Status)
+	}
+
+	return nil
 }
