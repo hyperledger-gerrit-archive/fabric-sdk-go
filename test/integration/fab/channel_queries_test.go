@@ -312,7 +312,6 @@ func testQueryByChaincode(t *testing.T, channel fab.Channel, testSetup *integrat
 	request = fab.ChaincodeInvokeRequest{
 		ChaincodeID: "lscc",
 		Fcn:         "getinstalledchaincodes",
-		Targets:     invalidTargets,
 	}
 	queryResponses, err = channel.QueryBySystemChaincode(request)
 	if err == nil {
