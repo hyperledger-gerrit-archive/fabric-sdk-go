@@ -34,13 +34,14 @@ func TestChannelClient(t *testing.T) {
 		OrgID:           org1Name,
 		ChannelConfig:   path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		ConnectEventHub: true,
+		ChainCodeID:     integration.GenerateRandomID(),
 	}
 
 	if err := testSetup.Initialize(t); err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	if err := testSetup.InstallAndInstantiateExampleCC(); err != nil {
+	if err := integration.InstallAndInstantiateExampleCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, testSetup.ChainCodeID); err != nil {
 		t.Fatalf("InstallAndInstantiateExampleCC return error: %v", err)
 	}
 

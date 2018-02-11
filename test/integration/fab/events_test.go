@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
@@ -52,7 +53,7 @@ func initializeTests(t *testing.T) integration.BaseSetupImpl {
 
 	testSetup.ChainCodeID = integration.GenerateRandomID()
 
-	if err := testSetup.InstallAndInstantiateCC(testSetup.ChainCodeID, "github.com/events_cc", "v0", testSetup.GetDeployPath(), nil); err != nil {
+	if err := integration.InstallAndInstantiateCC(testSetup.SDK, fabsdk.WithUser("Admin"), testSetup.OrgID, testSetup.ChainCodeID, "github.com/events_cc", "v0", integration.GetDeployPath(), nil); err != nil {
 		t.Fatalf("InstallAndInstantiateCC return error: %v", err)
 	}
 
@@ -67,21 +68,21 @@ func testFailedTx(t *testing.T, testSetup integration.BaseSetupImpl) {
 	args = append(args, []byte("invoke"))
 	args = append(args, []byte("SEVERE"))
 
-	tpResponses1, tx1, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, args, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses1, tx1, err := integration.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, args, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
-	tpResponses2, tx2, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, args, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses2, tx2, err := integration.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, args, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
 	// Register tx1 and tx2 for commit/block event(s)
-	done1, fail1 := testSetup.RegisterTxEvent(t, tx1, testSetup.EventHub)
+	done1, fail1 := integration.RegisterTxEvent(t, tx1, testSetup.EventHub)
 	defer testSetup.EventHub.UnregisterTxEvent(tx1)
 
-	done2, fail2 := testSetup.RegisterTxEvent(t, tx2, testSetup.EventHub)
+	done2, fail2 := integration.RegisterTxEvent(t, tx2, testSetup.EventHub)
 	defer testSetup.EventHub.UnregisterTxEvent(tx2)
 
 	// Setup monitoring of events
@@ -94,11 +95,11 @@ func testFailedTx(t *testing.T, testSetup integration.BaseSetupImpl) {
 
 	// Test invalid transaction: create 2 invoke requests in quick succession that modify
 	// the same state variable which should cause one invoke to be invalid
-	_, err = testSetup.CreateAndSendTransaction(testSetup.Channel, tpResponses1)
+	_, err = integration.CreateAndSendTransaction(testSetup.Channel, tpResponses1)
 	if err != nil {
 		t.Fatalf("First invoke failed err: %v", err)
 	}
-	_, err = testSetup.CreateAndSendTransaction(testSetup.Channel, tpResponses2)
+	_, err = integration.CreateAndSendTransaction(testSetup.Channel, tpResponses2)
 	if err != nil {
 		t.Fatalf("Second invoke failed err: %v", err)
 	}
@@ -136,13 +137,13 @@ Loop:
 func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl) {
 	fcn := "invoke"
 
-	tpResponses1, tx1, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, eventCCArgs, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses1, tx1, err := integration.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, eventCCArgs, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
 
-	tpResponses2, tx2, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, eventCCArgs, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses2, tx2, err := integration.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, eventCCArgs, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
@@ -183,11 +184,11 @@ func testFailedTxErrorCode(t *testing.T, testSetup integration.BaseSetupImpl) {
 
 	// Test invalid transaction: create 2 invoke requests in quick succession that modify
 	// the same state variable which should cause one invoke to be invalid
-	_, err = testSetup.CreateAndSendTransaction(testSetup.Channel, tpResponses1)
+	_, err = integration.CreateAndSendTransaction(testSetup.Channel, tpResponses1)
 	if err != nil {
 		t.Fatalf("First invoke failed err: %v", err)
 	}
-	_, err = testSetup.CreateAndSendTransaction(testSetup.Channel, tpResponses2)
+	_, err = integration.CreateAndSendTransaction(testSetup.Channel, tpResponses2)
 	if err != nil {
 		t.Fatalf("Second invoke failed err: %v", err)
 	}
@@ -250,13 +251,13 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup integration.BaseSet
 		test <- true
 	})
 
-	tpResponses, tx, err := testSetup.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, eventCCArgs, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
+	tpResponses, tx, err := integration.CreateAndSendTransactionProposal(testSetup.Channel, testSetup.ChainCodeID, fcn, eventCCArgs, []apifabclient.ProposalProcessor{testSetup.Channel.PrimaryPeer()}, nil)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal returned error: %v", err)
 	}
 
 	// Register tx for commit/block event(s)
-	done, fail := testSetup.RegisterTxEvent(t, tx, testSetup.EventHub)
+	done, fail := integration.RegisterTxEvent(t, tx, testSetup.EventHub)
 	defer testSetup.EventHub.UnregisterTxEvent(tx)
 
 	// Setup monitoring of events
@@ -267,7 +268,7 @@ func testMultipleBlockEventCallbacks(t *testing.T, testSetup integration.BaseSet
 		monitorMultipleBlockEventCallbacks(t, testSetup, done, fail, test)
 	}()
 
-	_, err = testSetup.CreateAndSendTransaction(testSetup.Channel, tpResponses)
+	_, err = integration.CreateAndSendTransaction(testSetup.Channel, tpResponses)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransaction failed with error: %v", err)
 	}
