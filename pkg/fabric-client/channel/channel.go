@@ -17,7 +17,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -430,7 +432,15 @@ func (c *Channel) QueryByChaincode(request fab.ChaincodeInvokeRequest) ([][]byte
 	if err != nil {
 		return nil, err
 	}
-	resps, err := queryChaincode(c.clientContext, c.name, request, targets)
+
+	tpreq := fab.TransactionProposalRequest{
+		ChaincodeID:  request.ChaincodeID,
+		Fcn:          request.Fcn,
+		Args:         request.Args,
+		TransientMap: request.TransientMap,
+	}
+
+	resps, err := queryChaincode(c.clientContext, c.name, tpreq, targets)
 	return filterProposalResponses(resps, err)
 }
 
@@ -442,6 +452,136 @@ func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([]
 	if err != nil {
 		return nil, err
 	}
-	resps, err := queryChaincode(c.clientContext, systemChannel, request, targets)
+
+	tpreq := fab.TransactionProposalRequest{
+		ChaincodeID:  request.ChaincodeID,
+		Fcn:          request.Fcn,
+		Args:         request.Args,
+		TransientMap: request.TransientMap,
+	}
+
+	resps, err := queryChaincode(c.clientContext, systemChannel, tpreq, targets)
 	return filterProposalResponses(resps, err)
+}
+
+// SendInstantiateProposal sends an instantiate proposal to one or more endorsing peers.
+// chaincodeName: required - The name of the chain.
+// args: optional - string Array arguments specific to the chaincode being instantiated
+// chaincodePath: required - string of the path to the location of the source code of the chaincode
+// chaincodeVersion: required - string of the version of the chaincode
+// chaincodePolicy: required - chaincode signature policy
+// collConfig: optional - private data collection configuration
+func (c *Channel) SendInstantiateProposal(chaincodeName string,
+	args [][]byte, chaincodePath string, chaincodeVersion string,
+	chaincodePolicy *common.SignaturePolicyEnvelope,
+	collConfig []*common.CollectionConfig, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+
+	if chaincodeName == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+	}
+	if chaincodePath == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+	}
+	if chaincodeVersion == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+	}
+	if chaincodePolicy == nil {
+		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+	}
+	if len(targets) == 0 {
+		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+	}
+
+	cp := ChaincodeDeployProposal{
+		Name:       chaincodeName,
+		Args:       args,
+		Path:       chaincodePath,
+		Version:    chaincodeVersion,
+		Policy:     chaincodePolicy,
+		CollConfig: collConfig,
+	}
+
+	tp, err := CreateChaincodeDeployProposal(c.clientContext, InstantiateChaincode, c.name, cp)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+	}
+
+	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
+	return tpr, tp.TxnID, err
+}
+
+// SendUpgradeProposal sends an upgrade proposal to one or more endorsing peers.
+// chaincodeName: required - The name of the chain.
+// args: optional - string Array arguments specific to the chaincode being upgraded
+// chaincodePath: required - string of the path to the location of the source code of the chaincode
+// chaincodeVersion: required - string of the version of the chaincode
+func (c *Channel) SendUpgradeProposal(chaincodeName string,
+	args [][]byte, chaincodePath string, chaincodeVersion string,
+	chaincodePolicy *common.SignaturePolicyEnvelope, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+
+	if chaincodeName == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+	}
+	if chaincodePath == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+	}
+	if chaincodeVersion == "" {
+		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+	}
+	if chaincodePolicy == nil {
+		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+	}
+	if len(targets) == 0 {
+		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+	}
+
+	cp := ChaincodeDeployProposal{
+		Name:    chaincodeName,
+		Args:    args,
+		Path:    chaincodePath,
+		Version: chaincodeVersion,
+		Policy:  chaincodePolicy,
+	}
+
+	tp, err := CreateChaincodeDeployProposal(c.clientContext, UpgradeChaincode, c.name, cp)
+	if err != nil {
+		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+	}
+
+	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
+	return tpr, tp.TxnID, err
+}
+
+func validateChaincodeInvokeRequest(request fab.ChaincodeInvokeRequest) error {
+	if request.ChaincodeID == "" {
+		return errors.New("ChaincodeID is required")
+	}
+
+	if request.Fcn == "" {
+		return errors.New("Fcn is required")
+	}
+	return nil
+}
+
+func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(targets []fab.ProposalProcessor) ([]fab.ProposalProcessor, error) {
+	// Use default peers if targets are not specified.
+	if targets == nil || len(targets) == 0 {
+		if c.peers == nil || len(c.peers) == 0 {
+			return nil, status.New(status.ClientStatus, status.NoPeersFound.ToInt32(),
+				"targets were not specified and no peers have been configured", nil)
+		}
+
+		return peersToTxnProcessors(c.Peers()), nil
+	}
+	return targets, nil
+}
+
+// peersToTxnProcessors converts a slice of Peers to a slice of ProposalProcessors
+func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
+	tpp := make([]fab.ProposalProcessor, len(peers))
+
+	for i := range peers {
+		tpp[i] = peers[i]
+	}
+	return tpp
 }

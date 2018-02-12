@@ -74,16 +74,22 @@ func verifyProposalResponse(res *pb.ProposalResponse, ctx *chclient.ClientContex
 		return errors.WithMessage(err, "Unmarshal endorser error")
 	}
 
-	if ctx.Channel.MSPManager() == nil {
-		return errors.Errorf("Channel %s msp manager is nil", ctx.Channel.Name())
+	// TODO - this is temporary and needs to be replaced with an MSP interface from channel service.
+	channel, err := ctx.Channel.Channel()
+	if err != nil {
+		return errors.WithMessage(err, "channel client creation failed")
 	}
 
-	msps, err := ctx.Channel.MSPManager().GetMSPs()
+	if channel.MSPManager() == nil {
+		return errors.Errorf("Channel %s msp manager is nil", channel.Name())
+	}
+
+	msps, err := channel.MSPManager().GetMSPs()
 	if err != nil {
 		return errors.WithMessage(err, "GetMSPs return error:%v")
 	}
 	if len(msps) == 0 {
-		return errors.Errorf("Channel %s msps is empty", ctx.Channel.Name())
+		return errors.Errorf("Channel %s msps is empty", channel.Name())
 	}
 
 	msp := msps[serializedIdentity.Mspid]

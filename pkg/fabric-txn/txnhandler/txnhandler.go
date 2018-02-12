@@ -32,7 +32,7 @@ type EndorsementHandler struct {
 //Handle for endorsing transactions
 func (e *EndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
 	// Endorse Tx
-	transactionProposalResponses, txnID, err := createAndSendTransactionProposal(clientContext.Channel, &requestContext.Request, requestContext.Opts.ProposalProcessors)
+	transactionProposalResponses, txnID, err := createAndSendTransactionProposal(clientContext.Transactor, &requestContext.Request, requestContext.Opts.ProposalProcessors)
 
 	requestContext.Response.TransactionID = txnID
 
@@ -147,7 +147,7 @@ func (c *CommitTxHandler) Handle(requestContext *chclient.RequestContext, client
 
 	//Register Tx event
 	statusNotifier := txn.RegisterStatus(txnID, clientContext.EventHub)
-	_, err := createAndSendTransaction(clientContext.Channel, requestContext.Response.Responses)
+	_, err := createAndSendTransaction(clientContext.Transactor, requestContext.Response.Responses)
 	if err != nil {
 		requestContext.Error = errors.Wrap(err, "CreateAndSendTransaction failed")
 		return
@@ -242,25 +242,30 @@ func createAndSendTransaction(sender apifabclient.Sender, resps []*apifabclient.
 }
 
 func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequest *chclient.Request, targets []apifabclient.ProposalProcessor) ([]*apifabclient.TransactionProposalResponse, apifabclient.TransactionID, error) {
-	request := apifabclient.ChaincodeInvokeRequest{
+	request := apifabclient.TransactionProposalRequest{
 		ChaincodeID:  chrequest.ChaincodeID,
 		Fcn:          chrequest.Fcn,
 		Args:         chrequest.Args,
 		TransientMap: chrequest.TransientMap,
 	}
 
-	transactionProposalResponses, txnID, err := sender.SendTransactionProposal(request, targets)
+	proposal, err := sender.CreateTransactionProposal(request)
 	if err != nil {
-		return nil, txnID, err
+		return nil, apifabclient.TransactionID{}, errors.WithMessage(err, "creating transaction proposal failed")
+	}
+
+	transactionProposalResponses, err := sender.SendTransactionProposal(proposal, targets)
+	if err != nil {
+		return nil, proposal.TxnID, err
 	}
 
 	for _, v := range transactionProposalResponses {
 		if v.Err != nil {
 			logger.Debugf("SendTransactionProposal failed (%v, %s)", v.Endorser, v.Err.Error())
-			return nil, txnID, errors.WithMessage(v.Err, "SendTransactionProposal failed")
+			return nil, proposal.TxnID, errors.WithMessage(v.Err, "SendTransactionProposal failed")
 		}
 		logger.Debugf("invoke Endorser '%s' returned ProposalResponse status:%v", v.Endorser, v.Status)
 	}
 
-	return transactionProposalResponses, txnID, nil
+	return transactionProposalResponses, proposal.TxnID, nil
 }
