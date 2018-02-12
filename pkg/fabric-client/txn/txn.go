@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -46,7 +45,7 @@ type context interface {
 }
 
 // New create a transaction with proposal response, following the endorsement policy.
-func New(resps []*fab.TransactionProposalResponse) (*fab.Transaction, error) {
+func New(resps fab.TransactionRequest) (*fab.Transaction, error) {
 	if len(resps) == 0 {
 		return nil, errors.New("at least one proposal response is necessary")
 	}
@@ -54,13 +53,13 @@ func New(resps []*fab.TransactionProposalResponse) (*fab.Transaction, error) {
 	proposal := &resps[0].Proposal
 
 	// the original header
-	hdr, err := protos_utils.GetHeader(proposal.Proposal.Header)
+	hdr, err := protos_utils.GetHeader(proposal.Header)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal header failed")
 	}
 
 	// the original payload
-	pPayl, err := protos_utils.GetChaincodeProposalPayload(proposal.Proposal.Payload)
+	pPayl, err := protos_utils.GetChaincodeProposalPayload(proposal.Payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal payload failed")
 	}
@@ -257,25 +256,6 @@ func SendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orde
 	}
 
 	return nil, errors.New("unexpected: didn't receive a block from any of the orderer servces and didn't receive any error")
-}
-
-func signProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error) {
-	proposalBytes, err := proto.Marshal(proposal)
-	if err != nil {
-		return nil, errors.Wrap(err, "mashal proposal failed")
-	}
-
-	signingMgr := ctx.SigningManager()
-	if signingMgr == nil {
-		return nil, errors.New("signing manager is nil")
-	}
-
-	signature, err := signingMgr.Sign(proposalBytes, ctx.PrivateKey())
-	if err != nil {
-		return nil, errors.WithMessage(err, "signing proposal failed")
-	}
-
-	return &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}, nil
 }
 
 // Status is the transaction status returned from eventhub tx events

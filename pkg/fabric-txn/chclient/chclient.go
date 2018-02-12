@@ -36,7 +36,7 @@ type ChannelClient struct {
 	context   fab.ProviderContext
 	discovery fab.DiscoveryService
 	selection fab.SelectionService
-	channel   fab.Channel
+	channel   fab.ChannelService
 	eventHub  fab.EventHub
 	greylist  *greylist.Filter
 }
@@ -46,21 +46,25 @@ type Context struct {
 	fab.ProviderContext
 	DiscoveryService fab.DiscoveryService
 	SelectionService fab.SelectionService
-	Channel          fab.Channel
-	EventHub         fab.EventHub
+	ChannelService   fab.ChannelService
 }
 
 // New returns a ChannelClient instance.
 func New(c Context) (*ChannelClient, error) {
 	greylistProvider := greylist.New(c.Config().TimeoutOrDefault(apiconfig.DiscoveryGreylistExpiry))
 
+	eventHub, err := c.ChannelService.EventHub()
+	if err != nil {
+		return nil, errors.WithMessage(err, "event hub creation failed")
+	}
+
 	channelClient := ChannelClient{
 		greylist:  greylistProvider,
 		context:   c,
 		discovery: discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
 		selection: c.SelectionService,
-		channel:   c.Channel,
-		eventHub:  c.EventHub,
+		channel:   c.ChannelService,
+		eventHub:  eventHub,
 	}
 
 	return &channelClient, nil
@@ -139,9 +143,9 @@ func (cc *ChannelClient) prepareHandlerContexts(request chclient.Request, option
 	}
 
 	clientContext := &chclient.ClientContext{
-		Channel:   cc.channel,
 		Selection: cc.selection,
 		Discovery: cc.discovery,
+		Channel:   cc.channel,
 		EventHub:  cc.eventHub,
 	}
 

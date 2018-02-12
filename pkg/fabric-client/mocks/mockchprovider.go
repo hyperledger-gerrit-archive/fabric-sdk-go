@@ -64,6 +64,11 @@ func (cs *MockChannelService) Channel() (fab.Channel, error) {
 	return ch, nil
 }
 
+// Transactor ...
+func (cs *MockChannelService) Transactor() (fab.Transactor, error) {
+	return nil, nil
+}
+
 // Config ...
 func (cs *MockChannelService) Config() (fab.ChannelConfig, error) {
 	return nil, nil

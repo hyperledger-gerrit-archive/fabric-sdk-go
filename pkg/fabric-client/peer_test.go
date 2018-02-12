@@ -104,7 +104,7 @@ func TestPeerViaChannelNilData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error adding peer: %v", err)
 	}
-	_, _, err = channel.SendTransactionProposal(apifabclient.ChaincodeInvokeRequest{}, nil)
+	_, _, err = channel.SendTransactionProposal(apifabclient.ChaincodeInvokeRequest{})
 	if err == nil {
 		t.Fatalf("SendTransaction didn't return error")
 	}

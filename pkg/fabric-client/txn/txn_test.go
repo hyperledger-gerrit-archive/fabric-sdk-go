@@ -47,7 +47,7 @@ func TestNewTransaction(t *testing.T) {
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
-	input := []*fab.TransactionProposalResponse{test}
+	input := []*fab.TransactionProposalResponse{&test}
 
 	_, err = New(input)
 
@@ -66,7 +66,7 @@ func TestNewTransaction(t *testing.T) {
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
-	input = []*fab.TransactionProposalResponse{test}
+	input = []*fab.TransactionProposalResponse{&test}
 
 	_, err = New(input)
 	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
@@ -83,7 +83,7 @@ func TestNewTransaction(t *testing.T) {
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
-	input = []*fab.TransactionProposalResponse{test}
+	input = []*fab.TransactionProposalResponse{&test}
 	_, err = New(input)
 
 	if err == nil || err.Error() != "proposal response was not successful, error code 99, msg success" {
@@ -101,7 +101,7 @@ func TestNewTransaction(t *testing.T) {
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 200, Payload: []byte("")}},
 	}
 
-	_, err = New([]*fab.TransactionProposalResponse{test})
+	_, err = New([]*fab.TransactionProposalResponse{&test})
 
 	if err == nil || err.Error() != "repeated field endorsements has nil element" {
 		t.Fatal("Proposal response was supposed to fail in Create Transaction")
