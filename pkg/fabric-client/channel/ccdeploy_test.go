@@ -7,7 +7,6 @@ package channel
 
 import (
 	"net"
-	"strings"
 	"testing"
 
 	"google.golang.org/grpc"
@@ -21,19 +20,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
-
-func TestAddPeerDuplicateCheck(t *testing.T) {
-	channel, _ := setupTestChannel()
-
-	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
-	channel.AddPeer(&peer)
-
-	err := channel.AddPeer(&peer)
-
-	if err == nil || !strings.Contains(err.Error(), "http://peer1.com already exists") {
-		t.Fatal("Duplicate Peer check is not working as expected")
-	}
-}
 
 func TestSendInstantiateProposal(t *testing.T) {
 	//Setup channel

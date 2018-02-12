@@ -10,9 +10,12 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
+// TransactionRequest holds endorsed Transaction Proposals.
+type TransactionRequest []*TransactionProposalResponse
+
 // Sender provides the ability for a transaction to be created and sent.
 type Sender interface {
-	CreateTransaction(resps []*TransactionProposalResponse) (*Transaction, error)
+	CreateTransaction(request TransactionRequest) (*Transaction, error)
 	SendTransaction(tx *Transaction) (*TransactionResponse, error)
 }
 

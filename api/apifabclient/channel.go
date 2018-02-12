@@ -23,8 +23,9 @@ import (
  * primary orderer to retrieve the configuration settings for this channel.
  */
 type Channel interface {
-	Sender
-	ProposalSender
+	CreateTransaction(request TransactionProposalResponse) (*Transaction, error)
+	SendTransaction(tx *Transaction) (*TransactionResponse, error)
+	SendTransactionProposal(ChaincodeInvokeRequest) ([]*TransactionProposalResponse, TransactionID, error)
 
 	Name() string
 	ChannelConfig() (*common.ConfigEnvelope, error)

@@ -430,7 +430,15 @@ func (c *Channel) QueryByChaincode(request fab.ChaincodeInvokeRequest) ([][]byte
 	if err != nil {
 		return nil, err
 	}
-	resps, err := queryChaincode(c.clientContext, c.name, request, targets)
+
+	tpreq := fab.TransactionProposalRequest{
+		ChaincodeID:  request.ChaincodeID,
+		Fcn:          request.Fcn,
+		Args:         request.Args,
+		TransientMap: request.TransientMap,
+	}
+
+	resps, err := queryChaincode(c.clientContext, c.name, tpreq, targets)
 	return filterProposalResponses(resps, err)
 }
 
@@ -442,6 +450,14 @@ func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([]
 	if err != nil {
 		return nil, err
 	}
-	resps, err := queryChaincode(c.clientContext, systemChannel, request, targets)
+
+	tpreq := fab.TransactionProposalRequest{
+		ChaincodeID:  request.ChaincodeID,
+		Fcn:          request.Fcn,
+		Args:         request.Args,
+		TransientMap: request.TransientMap,
+	}
+
+	resps, err := queryChaincode(c.clientContext, systemChannel, tpreq, targets)
 	return filterProposalResponses(resps, err)
 }

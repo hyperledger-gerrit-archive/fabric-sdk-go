@@ -1,0 +1,87 @@
+/*
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package channel
+
+import (
+	"github.com/pkg/errors"
+
+	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
+)
+
+// Transactor enables sending transactions and transaction proposals on the channel.
+type Transactor struct {
+	ctx       fab.Context
+	channelID string
+	orderers  []fab.Orderer
+}
+
+// NewTransactor returns a Transactor for the current context and channel config.
+func NewTransactor(ctx fab.Context, cfg fab.ChannelCfg) (*Transactor, error) {
+	orderers, err := orderersFromChannelCfg(ctx, cfg)
+	if err != nil {
+		return nil, errors.WithMessage(err, "reading orderers from channel config failed")
+	}
+
+	t := Transactor{
+		ctx:       ctx,
+		channelID: cfg.Name(),
+		orderers:  orderers,
+	}
+	return &t, nil
+}
+
+func orderersFromChannelCfg(ctx fab.Context, cfg fab.ChannelCfg) ([]fab.Orderer, error) {
+	orderers := []fab.Orderer{}
+
+	// Add orderer if specified in config
+	for _, name := range cfg.Orderers() {
+
+		// Figure out orderer configuration
+		oCfg, err := ctx.Config().OrdererConfig(name)
+
+		// Check if retrieving orderer configuration went ok
+		if err != nil || oCfg == nil {
+			return nil, errors.Errorf("failed to retrieve orderer config: %s", err)
+		}
+
+		o, err := orderer.New(ctx.Config(), orderer.FromOrdererConfig(oCfg))
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create new orderer from config")
+		}
+
+		orderers = append(orderers, o)
+	}
+	return orderers, nil
+}
+
+// CreateTransactionProposal creates a Transaction Proposal based on the current context and channel config.
+func (t *Transactor) CreateTransactionProposal(request fab.TransactionProposalRequest) (*fab.TransactionProposal, error) {
+	tp, err := txn.NewProposal(t.ctx, t.channelID, request)
+	if err != nil {
+		return nil, errors.WithMessage(err, "new transaction proposal failed")
+	}
+
+	return tp, nil
+}
+
+// SendTransactionProposal ...
+func (t *Transactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+	return txn.SendProposal(t.ctx, proposal, targets)
+}
+
+// CreateTransaction create a transaction with proposal response.
+func (t *Transactor) CreateTransaction(request fab.TransactionRequest) (*fab.Transaction, error) {
+	return txn.New(request)
+}
+
+// SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
+func (t *Transactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
+	return txn.Send(t.ctx, tx, t.orderers)
+}

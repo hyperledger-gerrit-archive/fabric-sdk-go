@@ -372,7 +372,12 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, chan
 		return errors.New("No targets available for cc proposal")
 	}
 
-	channel, err := rc.getChannel(channelID)
+	channelService, err := rc.channelProvider.NewChannelService(rc.identity, channelID)
+	if err != nil {
+		return errors.WithMessage(err, "Unable to get channel service")
+	}
+
+	transactor, err := channelService.Transactor()
 	if err != nil {
 		return errors.WithMessage(err, "get channel failed")
 	}
@@ -404,10 +409,6 @@ func (rc *ResourceMgmtClient) sendCCProposal(ccProposalType CCProposalType, chan
 		}
 	}
 
-	channelService, err := rc.channelProvider.NewChannelService(rc.identity, channelID)
-	if err != nil {
-		return errors.WithMessage(err, "Unable to get channel service")
-	}
 	eventHub, err := channelService.EventHub()
 	if err != nil {
 		return errors.WithMessage(err, "Unable to get EventHub")
@@ -456,13 +457,9 @@ func checkRequiredCCProposalParams(channelID string, req resmgmt.InstantiateCCRe
 	return nil
 }
 
-// getChannel is helper method for instantiating channel. If channel is not configured it will use random orderer from global orderer configuration
-func (rc *ResourceMgmtClient) getChannel(channelID string) (fab.Channel, error) {
+// getChannelTransactor is helper method for instantiating channel. If channel is not configured it will use random orderer from global orderer configuration
+func (rc *ResourceMgmtClient) getChannelTransactor(channelSvc fab.ChannelService) (fab.Transactor, error) {
 
-	channelService, err := rc.channelProvider.NewChannelService(rc.identity, channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "Unable to get channel service")
-	}
 	channel, err := channelService.Channel()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get channel")
