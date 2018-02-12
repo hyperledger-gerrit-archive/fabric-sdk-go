@@ -32,7 +32,7 @@ type EndorsementHandler struct {
 //Handle for endorsing transactions
 func (e *EndorsementHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
 	// Endorse Tx
-	transactionProposalResponses, txnID, err := createAndSendTransactionProposal(clientContext.Channel, &requestContext.Request, requestContext.Opts.ProposalProcessors)
+	transactionProposalResponses, txnID, err := createAndSendTransactionProposal(clientContext.PropSender, &requestContext.Request, requestContext.Opts.ProposalProcessors)
 
 	requestContext.Response.TransactionID = txnID
 
@@ -147,7 +147,7 @@ func (c *CommitTxHandler) Handle(requestContext *chclient.RequestContext, client
 
 	//Register Tx event
 	statusNotifier := txn.RegisterStatus(txnID, clientContext.EventHub)
-	_, err := createAndSendTransaction(clientContext.Channel, requestContext.Response.Responses)
+	_, err := createAndSendTransaction(clientContext.TxnSender, requestContext.Response.Responses)
 	if err != nil {
 		requestContext.Error = errors.Wrap(err, "CreateAndSendTransaction failed")
 		return

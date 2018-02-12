@@ -24,7 +24,7 @@ import (
  */
 type Channel interface {
 	Sender
-	ProposalSender
+	SendTransactionProposal(ChaincodeInvokeRequest) ([]*TransactionProposalResponse, TransactionID, error)
 
 	Name() string
 	ChannelConfig() (*common.ConfigEnvelope, error)
