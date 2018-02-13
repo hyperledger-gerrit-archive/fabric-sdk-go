@@ -451,6 +451,18 @@ func (mr *MockConfigMockRecorder) SoftVerify() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SoftVerify", reflect.TypeOf((*MockConfig)(nil).SoftVerify))
 }
 
+// SubConfig mocks base method
+func (m *MockConfig) SubConfig(arg0 string) interface{} {
+	ret := m.ctrl.Call(m, "SubConfig", arg0)
+	ret0, _ := ret[0].(interface{})
+	return ret0
+}
+
+// SubConfig indicates an expected call of SubConfig
+func (mr *MockConfigMockRecorder) SubConfig(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubConfig", reflect.TypeOf((*MockConfig)(nil).SubConfig), arg0)
+}
+
 // TLSCACertPool mocks base method
 func (m *MockConfig) TLSCACertPool(arg0 ...*x509.Certificate) (*x509.CertPool, error) {
 	varargs := []interface{}{}

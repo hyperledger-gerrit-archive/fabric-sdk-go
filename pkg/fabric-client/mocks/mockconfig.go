@@ -250,3 +250,8 @@ func (c *MockConfig) IsSecurityEnabled() bool {
 func (c *MockConfig) TLSClientCerts() ([]tls.Certificate, error) {
 	return nil, nil
 }
+
+// SubConfig ...
+func (c *MockConfig) SubConfig(string) interface{} {
+	return ""
+}

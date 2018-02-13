@@ -995,3 +995,8 @@ func loadCAKey(rawData []byte) (*x509.Certificate, error) {
 	}
 	return nil, errors.New("pem data missing")
 }
+
+// SubConfig ...
+func (c *Config) SubConfig(path string) interface{} {
+	return c.configViper.Sub(path)
+}
