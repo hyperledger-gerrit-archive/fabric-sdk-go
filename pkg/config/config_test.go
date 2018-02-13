@@ -1434,3 +1434,23 @@ func TestFromDefaultPathFailure(t *testing.T) {
 	}
 }
 */
+
+func TestSub(t *testing.T) {
+
+	c := configImpl.Sub("client.customPlugin")
+	v, ok := c.(*viper.Viper)
+	if !ok {
+		t.Fatalf("Subconfiguration is not an instance of *viper.Viper")
+	}
+
+	if v.GetString("p1") != "p1value" {
+		t.Fatalf("Unexpected value from subconfiguration")
+	}
+	if v.GetString("p2") != "p2value" {
+		t.Fatalf("Unexpected value from subconfiguration")
+	}
+	if v.GetString("p3.p3p1") != "p3p1value" {
+		t.Fatalf("Unexpected value from subconfiguration")
+	}
+
+}
