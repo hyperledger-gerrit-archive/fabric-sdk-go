@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
-	"context"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -29,10 +32,12 @@ import (
 type peerEndorser struct {
 	grpcDialOption []grpc.DialOption
 	target         string
+	dialTimeout    time.Duration
+	failFast       bool
 }
 
 func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOverride string,
-	dialBlocking bool, config apiconfig.Config) (
+	dialBlocking bool, config apiconfig.Config, kap keepalive.ClientParameters, failFast bool) (
 	*peerEndorser, error) {
 	if len(target) == 0 {
 		return nil, errors.New("target is required")
@@ -40,7 +45,13 @@ func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOve
 
 	// Construct dialer options for the connection
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTimeout(config.TimeoutOrDefault(apiconfig.Endorser)))
+	if kap.Time > 0 || kap.Timeout > 0 {
+		opts = append(opts, grpc.WithKeepaliveParams(kap))
+	}
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.FailFast(failFast)))
+
+	timeout := config.TimeoutOrDefault(apiconfig.Endorser)
+
 	if dialBlocking { // TODO: configurable?
 		opts = append(opts, grpc.WithBlock())
 	}
@@ -56,7 +67,7 @@ func newPeerEndorser(target string, certificate *x509.Certificate, serverHostOve
 		opts = append(opts, grpc.WithInsecure())
 	}
 
-	pc := &peerEndorser{grpcDialOption: opts, target: urlutil.ToAddress(target)}
+	pc := &peerEndorser{grpcDialOption: opts, target: urlutil.ToAddress(target), dialTimeout: timeout}
 
 	return pc, nil
 }
@@ -83,7 +94,9 @@ func (p *peerEndorser) ProcessTransactionProposal(proposal apifabclient.Transact
 }
 
 func (p *peerEndorser) conn() (*grpc.ClientConn, error) {
-	return grpc.Dial(p.target, p.grpcDialOption...)
+	ctx := context.Background()
+	ctx, _ = context.WithTimeout(ctx, p.dialTimeout)
+	return grpc.DialContext(ctx, p.target, p.grpcDialOption...)
 }
 
 func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
