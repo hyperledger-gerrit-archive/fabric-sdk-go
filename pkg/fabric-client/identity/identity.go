@@ -88,6 +88,11 @@ func (u *User) MspID() string {
 	return u.mspID
 }
 
+// IsEnrolled returns true if the user is already enrolled
+func (u *User) IsEnrolled() bool {
+	return u.enrollmentCertificate != nil
+}
+
 // Identity returns client's serialized identity
 func (u *User) Identity() ([]byte, error) {
 	serializedIdentity := &pb_msp.SerializedIdentity{Mspid: u.MspID(),

@@ -55,11 +55,17 @@ func TestUserMethods(t *testing.T) {
 	user.GenerateTcerts(1, attributes) // TODO implement test when function is implemented
 
 	// test EnrolmentCert
+	if user.IsEnrolled() == true {
+		t.Fatal("user.IsEnrolled should return false.")
+	}
 	cert := readCert(t)
 	user.SetEnrollmentCertificate(cert)
 	setCert := user.EnrollmentCertificate()
 	if len(cert) != len(setCert) {
 		t.Fatal("user.SetEnrollmentCertificate did not set the same cert.")
+	}
+	if user.IsEnrolled() == false {
+		t.Fatal("user.IsEnrolled should return true.")
 	}
 
 	// test MSP

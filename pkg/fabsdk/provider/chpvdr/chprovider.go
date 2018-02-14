@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
@@ -32,7 +33,7 @@ func New(fabricProvider api.FabricProvider) (*ChannelProvider, error) {
 }
 
 // NewChannelService creates a ChannelService for an identity
-func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelService, error) {
+func (cp *ChannelProvider) NewChannelService(ic identity.Context, channelID string) (apifabclient.ChannelService, error) {
 
 	var cfg apifabclient.ChannelCfg
 	if channelID != "" {
@@ -74,7 +75,7 @@ func (cp *ChannelProvider) NewChannelService(ic apifabclient.IdentityContext, ch
 type ChannelService struct {
 	provider        *ChannelProvider
 	fabricProvider  api.FabricProvider
-	identityContext apifabclient.IdentityContext
+	identityContext identity.Context
 	cfg             apifabclient.ChannelCfg
 }
 

@@ -103,6 +103,11 @@ func (u *MockUser) Identity() ([]byte, error) {
 	return []byte("test"), nil
 }
 
+// IsEnrolled returns true if the user is already enrolled
+func (u *MockUser) IsEnrolled() bool {
+	return u.enrollmentCertificate != nil
+}
+
 // GenerateTcerts ...
 /**
  * Gets a batch of TCerts to use for transaction. there is a 1-to-1 relationship between

@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/idmgmtclient"
 )
 
 func TestNewFabricProvider(t *testing.T) {
@@ -79,6 +80,22 @@ func TestCreateCAClient(t *testing.T) {
 
 	if a != e {
 		t.Fatalf("Unexpected CA name %s", a)
+	}
+}
+
+func TestCreateIdentityManager(t *testing.T) {
+	p := newMockFabricProvider(t)
+
+	org := "org1"
+
+	mgr, err := p.CreateIdentityManager(org)
+	if err != nil {
+		t.Fatalf("Unexpected error creating client %v", err)
+	}
+
+	_, ok := mgr.(*idmgmtclient.IdentityManager)
+	if !ok {
+		t.Fatalf("Unexpected client impl created")
 	}
 }
 
