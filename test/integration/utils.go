@@ -12,7 +12,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
@@ -35,7 +35,7 @@ func randomString(strlen int) string {
 }
 
 // InitializeChannel ...
-func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req chmgmt.SaveChannelRequest, targets []fab.ProposalProcessor) error {
+func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChannelRequest, targets []fab.ProposalProcessor) error {
 	joinedTargets, err := FilterTargetsJoinedChannel(sdk, orgID, req.ChannelID, targets)
 	if err != nil {
 		return errors.WithMessage(err, "checking for joined targets failed")
@@ -82,7 +82,7 @@ func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID s
 }
 
 // CreateChannel attempts to save the named channel.
-func CreateChannel(sdk *fabsdk.FabricSDK, req chmgmt.SaveChannelRequest) (bool, error) {
+func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool, error) {
 
 	// Channel management client is responsible for managing channels (create/update)
 	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ChannelMgmt()

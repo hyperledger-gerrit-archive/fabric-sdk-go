@@ -10,7 +10,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
@@ -44,7 +43,7 @@ type ResourceMgmtClientOpts struct {
 // NewChannelMgmtClientWithOpts returns a new client for managing channels with options
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *ChannelMgmtClientOpts) (chmgmt.ChannelMgmtClient, error) {
+func (sdk *FabricSDK) NewChannelMgmtClientWithOpts(userName string, opt *ChannelMgmtClientOpts) (resmgmt.ResourceMgmtClient, error) {
 	o := []ContextOption{}
 	if opt.OrgName != "" {
 		o = append(o, WithOrg(opt.OrgName))
@@ -95,7 +94,7 @@ func (sdk *FabricSDK) NewChannelClientWithOpts(channelID string, userName string
 // NewChannelMgmtClient returns a new client for managing channels
 //
 // Deprecated: Use NewClient instead.
-func (sdk *FabricSDK) NewChannelMgmtClient(userName string, opts ...ContextOption) (chmgmt.ChannelMgmtClient, error) {
+func (sdk *FabricSDK) NewChannelMgmtClient(userName string, opts ...ContextOption) (resmgmt.ResourceMgmtClient, error) {
 	c := sdk.NewClient(WithUser(userName), opts...)
 	return c.ChannelMgmt()
 }
