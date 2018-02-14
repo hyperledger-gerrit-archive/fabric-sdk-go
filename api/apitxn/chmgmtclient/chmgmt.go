@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package chmgmtclient
 
-import fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+import "github.com/hyperledger/fabric-sdk-go/api/core/identity"
 
 // SaveChannelRequest contains parameters for creating or updating channel
 type SaveChannelRequest struct {
@@ -15,7 +15,7 @@ type SaveChannelRequest struct {
 	// Path to channel configuration file
 	ChannelConfig string
 	// User that signs channel configuration
-	SigningIdentity fab.IdentityContext
+	SigningIdentity identity.Context
 }
 
 // Opts contains options for saving channel, this struct is intended for reference only.

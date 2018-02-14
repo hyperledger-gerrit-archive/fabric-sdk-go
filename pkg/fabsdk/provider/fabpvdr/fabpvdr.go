@@ -10,6 +10,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	fabricCAClient "github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
@@ -28,7 +29,7 @@ type FabricProvider struct {
 
 type fabContext struct {
 	apifabclient.ProviderContext
-	apifabclient.IdentityContext
+	identity.Context
 }
 
 // New creates a FabricProvider enabling access to core Fabric objects and functionality.
@@ -40,10 +41,10 @@ func New(ctx apifabclient.ProviderContext) *FabricProvider {
 }
 
 // CreateResourceClient returns a new client initialized for the current instance of the SDK.
-func (f *FabricProvider) CreateResourceClient(ic apifabclient.IdentityContext) (apifabclient.Resource, error) {
+func (f *FabricProvider) CreateResourceClient(ic identity.Context) (apifabclient.Resource, error) {
 	ctx := &fabContext{
 		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Context:         ic,
 	}
 	client := clientImpl.New(ctx)
 
@@ -51,10 +52,10 @@ func (f *FabricProvider) CreateResourceClient(ic apifabclient.IdentityContext) (
 }
 
 // CreateChannelClient returns a new client initialized for the current instance of the SDK.
-func (f *FabricProvider) CreateChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
+func (f *FabricProvider) CreateChannelClient(ic identity.Context, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
 	ctx := &fabContext{
 		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Context:         ic,
 	}
 	channel, err := channelImpl.New(ctx, cfg)
 	if err != nil {
@@ -65,10 +66,10 @@ func (f *FabricProvider) CreateChannelClient(ic apifabclient.IdentityContext, cf
 }
 
 // CreateChannelLedger returns a new client initialized for the current instance of the SDK.
-func (f *FabricProvider) CreateChannelLedger(ic apifabclient.IdentityContext, channelName string) (apifabclient.ChannelLedger, error) {
+func (f *FabricProvider) CreateChannelLedger(ic identity.Context, channelName string) (apifabclient.ChannelLedger, error) {
 	ctx := &fabContext{
 		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Context:         ic,
 	}
 	ledger, err := channelImpl.NewLedger(ctx, channelName)
 	if err != nil {
@@ -79,7 +80,7 @@ func (f *FabricProvider) CreateChannelLedger(ic apifabclient.IdentityContext, ch
 }
 
 // CreateEventHub initilizes the event hub.
-func (f *FabricProvider) CreateEventHub(ic apifabclient.IdentityContext, channelID string) (apifabclient.EventHub, error) {
+func (f *FabricProvider) CreateEventHub(ic identity.Context, channelID string) (apifabclient.EventHub, error) {
 	peerConfig, err := f.providerContext.Config().ChannelPeers(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
@@ -100,29 +101,29 @@ func (f *FabricProvider) CreateEventHub(ic apifabclient.IdentityContext, channel
 	// Event source found, create event hub
 	eventCtx := events.Context{
 		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Context:         ic,
 	}
 	return events.FromConfig(eventCtx, &eventSource.PeerConfig)
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *FabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
+func (f *FabricProvider) CreateChannelConfig(ic identity.Context, channelID string) (apifabclient.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Context:         ic,
 	}
 
 	return chconfig.New(ctx, channelID)
 }
 
-// CreateCAClient returns a new FabricCAClient initialized for the current instance of the SDK.
-func (f *FabricProvider) CreateCAClient(orgID string) (apifabca.FabricCAClient, error) {
+// CreateIdentityClient returns a new FabricCAClient initialized for the current instance of the SDK.
+func (f *FabricProvider) CreateIdentityClient(orgID string) (apifabca.FabricCAClient, error) {
 	return fabricCAClient.NewFabricCAClient(orgID, f.providerContext.Config(), f.providerContext.CryptoSuite())
 }
 
 // CreateUser returns a new default implementation of a User.
-func (f *FabricProvider) CreateUser(name string, signingIdentity *apifabclient.SigningIdentity) (apifabclient.User, error) {
+func (f *FabricProvider) CreateUser(name string, signingIdentity *apifabclient.SigningIdentity) (identity.User, error) {
 
 	user := identityImpl.NewUser(name, signingIdentity.MspID)
 
