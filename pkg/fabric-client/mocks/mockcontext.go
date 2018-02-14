@@ -9,6 +9,7 @@ package mocks
 import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
@@ -65,14 +66,14 @@ func (pc *MockProviderContext) SigningManager() fab.SigningManager {
 // MockContext holds core providers and identity to enable mocking.
 type MockContext struct {
 	*MockProviderContext
-	fab.IdentityContext
+	identity.Context
 }
 
 // NewMockContext creates a MockContext consisting of defaults and an identity
-func NewMockContext(ic fab.IdentityContext) *MockContext {
+func NewMockContext(ic identity.Context) *MockContext {
 	ctx := MockContext{
 		MockProviderContext: NewMockProviderContext(),
-		IdentityContext:     ic,
+		Context:             ic,
 	}
 	return &ctx
 }

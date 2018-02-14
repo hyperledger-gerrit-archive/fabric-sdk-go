@@ -8,6 +8,7 @@ package mocks
 
 import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/pkg/errors"
 )
 
@@ -41,7 +42,7 @@ func (cp *MockChannelProvider) SetChannel(id string, channel fab.Channel) {
 }
 
 // NewChannelService returns a mock ChannelService
-func (cp *MockChannelProvider) NewChannelService(ic fab.IdentityContext, channelID string) (fab.ChannelService, error) {
+func (cp *MockChannelProvider) NewChannelService(ic identity.Context, channelID string) (fab.ChannelService, error) {
 	cs := MockChannelService{
 		provider:  cp,
 		channelID: channelID,

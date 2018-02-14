@@ -13,6 +13,7 @@ import (
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	chclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	idmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/idmgmtclient"
 	resmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	kvstore "github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -486,6 +487,19 @@ func (m *MockSessionClientFactory) NewChannelMgmtClient(arg0 api.Providers, arg1
 // NewChannelMgmtClient indicates an expected call of NewChannelMgmtClient
 func (mr *MockSessionClientFactoryMockRecorder) NewChannelMgmtClient(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewChannelMgmtClient", reflect.TypeOf((*MockSessionClientFactory)(nil).NewChannelMgmtClient), arg0, arg1)
+}
+
+// NewIdentityMgmtClient mocks base method
+func (m *MockSessionClientFactory) NewIdentityMgmtClient(arg0 api.Providers, arg1 api.SessionContext) (idmgmtclient.IdentityMgmtClient, error) {
+	ret := m.ctrl.Call(m, "NewIdentityMgmtClient", arg0, arg1)
+	ret0, _ := ret[0].(idmgmtclient.IdentityMgmtClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewIdentityMgmtClient indicates an expected call of NewIdentityMgmtClient
+func (mr *MockSessionClientFactoryMockRecorder) NewIdentityMgmtClient(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewIdentityMgmtClient", reflect.TypeOf((*MockSessionClientFactory)(nil).NewIdentityMgmtClient), arg0, arg1)
 }
 
 // NewResourceMgmtClient mocks base method

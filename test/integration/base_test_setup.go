@@ -15,6 +15,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
@@ -28,7 +29,7 @@ import (
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
 	SDK             *fabsdk.FabricSDK
-	Identity        fab.IdentityContext
+	Identity        identity.Context
 	Client          fab.Resource
 	Channel         fab.Channel
 	EventHub        fab.EventHub
@@ -134,7 +135,7 @@ func (setup *BaseSetupImpl) Initialize(t *testing.T) error {
 }
 
 // GetChannel initializes and returns a channel based on config
-func GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.Config, chCfg fab.ChannelCfg, orgs []string) (fab.Channel, error) {
+func GetChannel(sdk *fabsdk.FabricSDK, ic identity.Context, config apiconfig.Config, chCfg fab.ChannelCfg, orgs []string) (fab.Channel, error) {
 
 	channel, err := sdk.FabricProvider().CreateChannelClient(ic, chCfg)
 	if err != nil {
@@ -161,7 +162,7 @@ func GetChannel(sdk *fabsdk.FabricSDK, ic fab.IdentityContext, config apiconfig.
 	return channel, nil
 }
 
-func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client *fabsdk.FabricSDK, identity fab.IdentityContext) error {
+func (setup *BaseSetupImpl) setupEventHub(t *testing.T, client *fabsdk.FabricSDK, identity identity.Context) error {
 	eventHub, err := client.FabricProvider().CreateEventHub(identity, setup.ChannelID)
 	if err != nil {
 		return err

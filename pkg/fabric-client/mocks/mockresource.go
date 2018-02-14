@@ -10,6 +10,7 @@ import (
 	"bytes"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -41,7 +42,7 @@ func (c *MockResource) ExtractChannelConfig(configEnvelope []byte) ([]byte, erro
 }
 
 // SignChannelConfig ...
-func (c *MockResource) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
+func (c *MockResource) SignChannelConfig(config []byte, signer identity.Context) (*common.ConfigSignature, error) {
 	if bytes.Compare(config, []byte("SignChannelConfigError")) == 0 {
 		return nil, errors.New("Mock sign channel config error")
 	}

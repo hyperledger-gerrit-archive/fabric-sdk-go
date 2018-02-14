@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -23,7 +24,7 @@ type Resource interface {
 
 	// TODO - the following methods are utilities
 	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
-	SignChannelConfig(config []byte, signer IdentityContext) (*common.ConfigSignature, error)
+	SignChannelConfig(config []byte, signer identity.Context) (*common.ConfigSignature, error)
 }
 
 // CreateChannelRequest requests channel creation on the network
