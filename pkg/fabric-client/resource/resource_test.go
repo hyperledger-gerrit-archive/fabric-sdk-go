@@ -24,6 +24,40 @@ import (
 	"google.golang.org/grpc"
 )
 
+func TestExtractChannelConfig(t *testing.T) {
+	client := setupTestClient()
+
+	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	chConfig, err := client.ExtractChannelConfig(configTx)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	fmt.Printf("%v\n", chConfig)
+}
+
+func TestSignChannelConfig(t *testing.T) {
+	client := setupTestClient()
+
+	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	chConfig, err := client.SignChannelConfig(nil, nil)
+	if err == nil {
+		t.Fatalf("Expected 'channel configuration required")
+	}
+
+	_, err = client.SignChannelConfig(configTx, nil)
+	if err != nil {
+		t.Fatalf("Expected 'channel configuration required %v", err)
+	}
+}
+
 func TestCreateChannel(t *testing.T) {
 	client := setupTestClient()
 

@@ -13,7 +13,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
@@ -104,7 +103,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 
 	targets := []fab.ProposalProcessor{channel.PrimaryPeer()}
-	req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
 	InitializeChannel(sdk, setup.OrgID, req, targets)
 
 	if err := setup.setupEventHub(sdk, setup.Identity); err != nil {

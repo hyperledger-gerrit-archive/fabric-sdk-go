@@ -8,13 +8,11 @@ package defclient
 
 import (
 	apichclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	apichmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	apiresmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 	"github.com/pkg/errors"
@@ -29,23 +27,8 @@ func NewSessionClientFactory() *SessionClientFactory {
 	return &f
 }
 
-// NewChannelMgmtClient returns a client that manages channels (create/join channel)
-func (f *SessionClientFactory) NewChannelMgmtClient(providers apisdk.Providers, session apisdk.SessionContext) (apichmgmt.ChannelMgmtClient, error) {
-	// For now settings are the same as for system client
-	resource, err := providers.FabricProvider().CreateResourceClient(session)
-	if err != nil {
-		return nil, err
-	}
-	ctx := chmgmtclient.Context{
-		ProviderContext: providers,
-		IdentityContext: session,
-		Resource:        resource,
-	}
-	return chmgmtclient.New(ctx)
-}
-
-// NewResourceMgmtClient returns a client that manages resources
-func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers, session apisdk.SessionContext, filter apiresmgmt.TargetFilter) (apiresmgmt.ResourceMgmtClient, error) {
+// New returns a client that manages resources
+func (f *SessionClientFactory) New(providers apisdk.Providers, session apisdk.SessionContext, filter apiresmgmt.TargetFilter) (apiresmgmt.ResourceMgmtClient, error) {
 
 	fabProvider := providers.FabricProvider()
 	resource, err := fabProvider.CreateResourceClient(session)
