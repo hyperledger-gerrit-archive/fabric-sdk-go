@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fabricca
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	idapi "github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/pkg/errors"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
@@ -32,9 +34,14 @@ var cryptoSuiteProvider apicryptosuite.CryptoSuite
 var org1 = "peerorg1"
 var caServerURL = "http://localhost:8090"
 var wrongCAServerURL = "http://localhost:8091"
+var userStorePath = "/tmp/userstore"
 
 // TestMain Load testing config
 func TestMain(m *testing.M) {
+	err := cleanup(userStorePath)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to remove dir %s: %v\n", userStorePath, err))
+	}
 	configImp = mocks.NewMockConfig(caServerURL)
 	cryptoSuiteProvider, _ = cryptosuiteimpl.GetSuiteByConfig(configImp)
 	if cryptoSuiteProvider == nil {
@@ -58,14 +65,14 @@ func TestEnroll(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
-	if err.Error() != "enrollmentID required" {
+	if err.Error() != "enrollmentID is required" {
 		t.Fatalf("Enroll didn't return right error")
 	}
 	_, _, err = fabricCAClient.Enroll("test", "")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
-	if err.Error() != "enrollmentSecret required" {
+	if err.Error() != "enrollmentSecret is required" {
 		t.Fatalf("Enroll didn't return right error")
 	}
 	_, _, err = fabricCAClient.Enroll("enrollmentID", "enrollmentSecret")
@@ -97,28 +104,28 @@ func TestRegister(t *testing.T) {
 	}
 	user := mocks.NewMockUser("test")
 	// Register with nil request
-	_, err = fabricCAClient.Register(user, nil)
+	_, err = fabricCAClient.Register(nil)
 	if err == nil {
 		t.Fatalf("Expected error with nil request")
 	}
-	if err.Error() != "registration request required" {
-		t.Fatalf("Expected error registration request required. Got: %s", err.Error())
+	if err.Error() != "registration request is required" {
+		t.Fatalf("Expected error registration request is required. Got: %s", err.Error())
 	}
 
 	//Register with nil user
-	_, err = fabricCAClient.Register(nil, &ca.RegistrationRequest{})
+	_, err = fabricCAClient.Register(&idapi.RegistrationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error with nil user")
 	}
-	if !strings.Contains(err.Error(), "failed to create request for signing identity") {
+	if !strings.Contains(err.Error(), "request.Name is required") {
 		t.Fatalf("Expected error failed to create request for signing identity. Got: %s", err.Error())
 	}
 	// Register with nil user cert and key
-	_, err = fabricCAClient.Register(user, &ca.RegistrationRequest{})
+	_, err = fabricCAClient.Register(&idapi.RegistrationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error without user enrolment information")
 	}
-	if !strings.Contains(err.Error(), "failed to create request for signing identity") {
+	if !strings.Contains(err.Error(), "request.Name is required") {
 		t.Fatalf("Expected error failed to create request for signing identity. Got: %s", err.Error())
 	}
 
@@ -129,16 +136,16 @@ func TestRegister(t *testing.T) {
 	}
 	user.SetPrivateKey(key)
 	// Register without registration name parameter
-	_, err = fabricCAClient.Register(user, &ca.RegistrationRequest{})
-	if !strings.Contains(err.Error(), "failed to register user") {
-		t.Fatalf("Expected error failed to register user. Got: %s", err.Error())
+	_, err = fabricCAClient.Register(&idapi.RegistrationRequest{})
+	if !strings.Contains(err.Error(), "request.Name is required") {
+		t.Fatalf("Expected error request.Name is required. Got: %s", err.Error())
 	}
 
 	// Register with valid request
-	var attributes []ca.Attribute
-	attributes = append(attributes, ca.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, ca.Attribute{Key: "test2", Value: "test3"})
-	secret, err := fabricCAClient.Register(user, &ca.RegistrationRequest{Name: "test",
+	var attributes []idapi.Attribute
+	attributes = append(attributes, idapi.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, idapi.Attribute{Key: "test2", Value: "test3"})
+	secret, err := fabricCAClient.Register(&idapi.RegistrationRequest{Name: "test",
 		Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("fabricCAClient Register return error %v", err)
@@ -163,24 +170,18 @@ func TestRevoke(t *testing.T) {
 	mockKey := bccspwrapper.GetKey(&mocks.MockKey{})
 	user := mocks.NewMockUser("test")
 	// Revoke with nil request
-	_, err = fabricCAClient.Revoke(user, nil)
+	_, err = fabricCAClient.Revoke(nil)
 	if err == nil {
 		t.Fatalf("Expected error with nil request")
 	}
-	if err.Error() != "revocation request required" {
-		t.Fatalf("Expected error revocation request required. Got: %s", err.Error())
-	}
 	//Revoke with nil user
-	_, err = fabricCAClient.Revoke(nil, &ca.RevocationRequest{})
+	_, err = fabricCAClient.Revoke(&idapi.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error with nil user")
 	}
-	if !strings.Contains(err.Error(), "failed to create request for signing identity") {
-		t.Fatalf("Expected error failed to create request for signing identity. Got: %s", err.Error())
-	}
 	user.SetEnrollmentCertificate(readCert(t))
 	user.SetPrivateKey(mockKey)
-	_, err = fabricCAClient.Revoke(user, &ca.RevocationRequest{})
+	_, err = fabricCAClient.Revoke(&idapi.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected decoding error with test cert")
 	}
@@ -260,17 +261,16 @@ func TestGetCAName(t *testing.T) {
 // TestCreateNewFabricCAClientOrgAndConfigMissingFailure tests for newFabricCA Client creation with a missing Config and Org
 func TestCreateNewFabricCAClientOrgAndConfigMissingFailure(t *testing.T) {
 	_, err := NewFabricCAClient("", configImp, cryptoSuiteProvider)
-	if err.Error() != "organization, config and cryptoSuite are required to load CA config" {
-		t.Fatalf("Expected error without oganization information. Got: %s", err.Error())
+	if err == nil {
+		t.Fatalf("Expected error without oganization information")
 	}
 	_, err = NewFabricCAClient(org1, nil, cryptoSuiteProvider)
-	if err.Error() != "organization, config and cryptoSuite are required to load CA config" {
-		t.Fatalf("Expected error without config information. Got: %s", err.Error())
+	if err == nil {
+		t.Fatalf("Expected error without config information")
 	}
-
 	_, err = NewFabricCAClient(org1, configImp, nil)
-	if err.Error() != "organization, config and cryptoSuite are required to load CA config" {
-		t.Fatalf("Expected error without cryptosuite information. Got: %s", err.Error())
+	if err == nil {
+		t.Fatalf("Expected error without cryptosuite information")
 	}
 }
 
@@ -293,7 +293,8 @@ func TestCreateNewFabricCAClientCertFilesMissingFailure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
+	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil).Times(2)
+	mockConfig.EXPECT().UserStorePath().Return(userStorePath)
 	mockConfig.EXPECT().CAServerCertPaths(org1).Return(nil, errors.New("CAServerCertPaths error"))
 	_, err := NewFabricCAClient(org1, mockConfig, cryptoSuiteProvider)
 	if err.Error() != "CAServerCertPaths error" {
@@ -306,7 +307,8 @@ func TestCreateNewFabricCAClientCertFileErrorFailure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
+	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil).Times(2)
+	mockConfig.EXPECT().UserStorePath().Return(userStorePath)
 	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertPath(org1).Return("", errors.New("CAClientCertPath error"))
 	_, err := NewFabricCAClient(org1, mockConfig, cryptoSuiteProvider)
@@ -320,7 +322,8 @@ func TestCreateNewFabricCAClientKeyFileErrorFailure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil)
+	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{URL: ""}, nil).Times(2)
+	mockConfig.EXPECT().UserStorePath().Return(userStorePath)
 	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertPath(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyPath(org1).Return("", errors.New("CAClientKeyPath error"))
@@ -337,7 +340,8 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 	mockConfig := mock_apiconfig.NewMockConfig(mockCtrl)
 	clientMockObject := &config.ClientConfig{Organization: "org1", Logging: config.LoggingType{Level: "info"}, CryptoConfig: config.CCType{Path: "test/path"}}
 
-	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil)
+	mockConfig.EXPECT().CAConfig(org1).Return(&config.CAConfig{}, nil).AnyTimes()
+	mockConfig.EXPECT().UserStorePath().Return(userStorePath)
 	mockConfig.EXPECT().CAServerCertPaths(org1).Return([]string{"test"}, nil)
 	mockConfig.EXPECT().CAClientCertPath(org1).Return("", nil)
 	mockConfig.EXPECT().CAClientKeyPath(org1).Return("", nil)
@@ -379,4 +383,15 @@ func TestInterfaces(t *testing.T) {
 	if apiCA == nil {
 		t.Fatalf("this shouldn't happen.")
 	}
+}
+
+func cleanup(path string) error {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(path)
 }

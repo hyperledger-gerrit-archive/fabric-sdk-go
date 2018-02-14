@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -69,11 +70,11 @@ type MockFabricProvider struct {
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *MockFabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
+func (f *MockFabricProvider) CreateChannelConfig(ic identity.Context, channelID string) (apifabclient.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Context:         ic,
 	}
 
 	return mocks.NewMockChannelConfig(ctx, "mychannel")
@@ -81,10 +82,10 @@ func (f *MockFabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext
 }
 
 // CreateChannelClient overrides the default.
-func (f *MockFabricProvider) CreateChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
+func (f *MockFabricProvider) CreateChannelClient(ic identity.Context, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Context:         ic,
 	}
 	channel, err := channelImpl.New(ctx, cfg)
 	if err != nil {

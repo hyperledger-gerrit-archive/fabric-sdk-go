@@ -38,7 +38,7 @@ func (f *SessionClientFactory) NewChannelMgmtClient(providers apisdk.Providers, 
 	}
 	ctx := chmgmtclient.Context{
 		ProviderContext: providers,
-		IdentityContext: session,
+		Context:         session,
 		Resource:        resource,
 	}
 	return chmgmtclient.New(ctx)
@@ -58,7 +58,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers,
 
 	ctx := resmgmtclient.Context{
 		ProviderContext:   providers,
-		IdentityContext:   session,
+		Context:           session,
 		Resource:          resource,
 		DiscoveryProvider: discovery,
 		ChannelProvider:   chProvider,

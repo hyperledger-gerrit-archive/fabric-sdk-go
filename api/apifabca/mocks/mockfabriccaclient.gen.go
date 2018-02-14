@@ -9,8 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apicryptosuite "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	apifabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
-	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	identity "github.com/hyperledger/fabric-sdk-go/api/core/identity"
 )
 
 // MockFabricCAClient is a mock of FabricCAClient interface
@@ -49,8 +48,12 @@ func (mr *MockFabricCAClientMockRecorder) CAName() *gomock.Call {
 }
 
 // Enroll mocks base method
-func (m *MockFabricCAClient) Enroll(arg0, arg1 string) (apicryptosuite.Key, []byte, error) {
-	ret := m.ctrl.Call(m, "Enroll", arg0, arg1)
+func (m *MockFabricCAClient) Enroll(arg0, arg1 string, arg2 ...identity.AttributeRequest) (apicryptosuite.Key, []byte, error) {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Enroll", varargs...)
 	ret0, _ := ret[0].(apicryptosuite.Key)
 	ret1, _ := ret[1].([]byte)
 	ret2, _ := ret[2].(error)
@@ -58,12 +61,13 @@ func (m *MockFabricCAClient) Enroll(arg0, arg1 string) (apicryptosuite.Key, []by
 }
 
 // Enroll indicates an expected call of Enroll
-func (mr *MockFabricCAClientMockRecorder) Enroll(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enroll", reflect.TypeOf((*MockFabricCAClient)(nil).Enroll), arg0, arg1)
+func (mr *MockFabricCAClientMockRecorder) Enroll(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enroll", reflect.TypeOf((*MockFabricCAClient)(nil).Enroll), varargs...)
 }
 
 // Reenroll mocks base method
-func (m *MockFabricCAClient) Reenroll(arg0 apifabca.User) (apicryptosuite.Key, []byte, error) {
+func (m *MockFabricCAClient) Reenroll(arg0 identity.User) (apicryptosuite.Key, []byte, error) {
 	ret := m.ctrl.Call(m, "Reenroll", arg0)
 	ret0, _ := ret[0].(apicryptosuite.Key)
 	ret1, _ := ret[1].([]byte)
@@ -77,27 +81,27 @@ func (mr *MockFabricCAClientMockRecorder) Reenroll(arg0 interface{}) *gomock.Cal
 }
 
 // Register mocks base method
-func (m *MockFabricCAClient) Register(arg0 apifabca.User, arg1 *apifabca.RegistrationRequest) (string, error) {
-	ret := m.ctrl.Call(m, "Register", arg0, arg1)
+func (m *MockFabricCAClient) Register(arg0 *identity.RegistrationRequest) (string, error) {
+	ret := m.ctrl.Call(m, "Register", arg0)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Register indicates an expected call of Register
-func (mr *MockFabricCAClientMockRecorder) Register(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockFabricCAClient)(nil).Register), arg0, arg1)
+func (mr *MockFabricCAClientMockRecorder) Register(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockFabricCAClient)(nil).Register), arg0)
 }
 
 // Revoke mocks base method
-func (m *MockFabricCAClient) Revoke(arg0 apifabca.User, arg1 *apifabca.RevocationRequest) (*api.RevocationResponse, error) {
-	ret := m.ctrl.Call(m, "Revoke", arg0, arg1)
-	ret0, _ := ret[0].(*api.RevocationResponse)
+func (m *MockFabricCAClient) Revoke(arg0 *identity.RevocationRequest) (*identity.RevocationResponse, error) {
+	ret := m.ctrl.Call(m, "Revoke", arg0)
+	ret0, _ := ret[0].(*identity.RevocationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Revoke indicates an expected call of Revoke
-func (mr *MockFabricCAClientMockRecorder) Revoke(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MockFabricCAClient)(nil).Revoke), arg0, arg1)
+func (mr *MockFabricCAClientMockRecorder) Revoke(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MockFabricCAClient)(nil).Revoke), arg0)
 }

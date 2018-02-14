@@ -14,6 +14,7 @@ import (
 	chclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	identity "github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	kvstore "github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
@@ -437,6 +438,19 @@ func (m *MockOrgClientFactory) NewCredentialManager(arg0 string, arg1 apiconfig.
 // NewCredentialManager indicates an expected call of NewCredentialManager
 func (mr *MockOrgClientFactoryMockRecorder) NewCredentialManager(arg0, arg1, arg2 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCredentialManager", reflect.TypeOf((*MockOrgClientFactory)(nil).NewCredentialManager), arg0, arg1, arg2)
+}
+
+// NewIdentityManager mocks base method
+func (m *MockOrgClientFactory) NewIdentityManager(arg0 api.Providers, arg1 string) (identity.Manager, error) {
+	ret := m.ctrl.Call(m, "NewIdentityManager", arg0, arg1)
+	ret0, _ := ret[0].(identity.Manager)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewIdentityManager indicates an expected call of NewIdentityManager
+func (mr *MockOrgClientFactoryMockRecorder) NewIdentityManager(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewIdentityManager", reflect.TypeOf((*MockOrgClientFactory)(nil).NewIdentityManager), arg0, arg1)
 }
 
 // MockSessionClientFactory is a mock of SessionClientFactory interface

@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -21,7 +22,7 @@ import (
 )
 
 // CreateChaincodeInvokeProposal creates a proposal for transaction.
-func CreateChaincodeInvokeProposal(ctx fab.IdentityContext, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeInvokeProposal(ctx identity.Context, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
 	if request.ChaincodeID == "" {
 		return nil, errors.New("ChaincodeID is required")
 	}

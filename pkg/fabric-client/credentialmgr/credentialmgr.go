@@ -15,6 +15,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
 
@@ -109,7 +110,7 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 	}
 
 	if certBytes == nil {
-		return nil, fmt.Errorf("cert not found for user [%s]", userName)
+		return nil, identity.ErrUserNotFound
 	}
 
 	privateKey, err := mgr.getEmbeddedPrivateKey(userName)
