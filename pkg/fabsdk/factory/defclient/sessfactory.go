@@ -8,13 +8,11 @@ package defclient
 
 import (
 	apichclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	apichmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	apiresmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 	"github.com/pkg/errors"
@@ -30,18 +28,22 @@ func NewSessionClientFactory() *SessionClientFactory {
 }
 
 // NewChannelMgmtClient returns a client that manages channels (create/join channel)
-func (f *SessionClientFactory) NewChannelMgmtClient(providers apisdk.Providers, session apisdk.SessionContext) (apichmgmt.ChannelMgmtClient, error) {
+func (f *SessionClientFactory) NewChannelMgmtClient(providers apisdk.Providers, session apisdk.SessionContext) (apiresmgmt.ChannelMgmtClient, error) {
 	// For now settings are the same as for system client
 	resource, err := providers.FabricProvider().CreateResourceClient(session)
 	if err != nil {
 		return nil, err
 	}
-	ctx := chmgmtclient.Context{
+	ctx := resmgmtclient.Context{
 		ProviderContext: providers,
 		IdentityContext: session,
 		Resource:        resource,
 	}
-	return chmgmtclient.New(ctx)
+	client, err := resmgmtclient.NewChannelMgmtClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 // NewResourceMgmtClient returns a client that manages resources
@@ -64,7 +66,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers,
 		ChannelProvider:   chProvider,
 		FabricProvider:    fabProvider,
 	}
-	return resmgmtclient.New(ctx, filter)
+	return resmgmtclient.NewResourceMgmtClient(ctx, filter)
 }
 
 // NewChannelClient returns a client that can execute transactions on specified channel

@@ -10,7 +10,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
@@ -143,7 +142,7 @@ func newClientOptions(options []ClientOption) (*clientOptions, error) {
 }
 
 // ChannelMgmt returns a client API for managing channels.
-func (c *ClientContext) ChannelMgmt() (chmgmt.ChannelMgmtClient, error) {
+func (c *ClientContext) ChannelMgmt() (resmgmt.ChannelMgmtClient, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
