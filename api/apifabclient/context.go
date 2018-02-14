@@ -9,12 +9,13 @@ package apifabclient
 import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 )
 
 // Context supplies the configuration and signing identity to client objects.
 type Context interface {
 	ProviderContext
-	IdentityContext
+	identity.Context
 }
 
 // ProviderContext supplies the configuration to client objects.
@@ -26,7 +27,7 @@ type ProviderContext interface {
 
 // ChannelProvider supplies Channel related-objects for the named channel.
 type ChannelProvider interface {
-	NewChannelService(ic IdentityContext, channelID string) (ChannelService, error)
+	NewChannelService(ic identity.Context, channelID string) (ChannelService, error)
 }
 
 // ChannelService supplies services related to a channel.

@@ -11,6 +11,7 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	idapi "github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -31,14 +32,14 @@ type Client struct {
 	channels        map[string]fab.Channel
 	cryptoSuite     apicryptosuite.CryptoSuite
 	stateStore      kvstore.KVStore
-	signingIdentity fab.IdentityContext
+	signingIdentity idapi.Context
 	config          config.Config
 	signingManager  fab.SigningManager
 }
 
 type fabContext struct {
 	fab.ProviderContext
-	fab.IdentityContext
+	idapi.Context
 }
 
 // NewClient returns a Client instance.
@@ -58,7 +59,7 @@ func (c *Client) NewChannel(name string) (fab.Channel, error) {
 		return nil, errors.Errorf("channel %s already exists", name)
 	}
 
-	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	ctx := fabContext{ProviderContext: c, Context: c.signingIdentity}
 	channel, err := channel.New(ctx, chconfig.NewChannelCfg(name))
 	if err != nil {
 		return nil, err
@@ -140,7 +141,7 @@ func (c *Client) SetSigningManager(signingMgr fab.SigningManager) {
  * this cache will not be established and the application is responsible for setting the user context again when the application
  * crashed and is recovered.
  */
-func (c *Client) SaveUserToStateStore(user fab.User) error {
+func (c *Client) SaveUserToStateStore(user idapi.User) error {
 	if user == nil {
 		return errors.New("user required")
 	}
@@ -175,7 +176,7 @@ func (c *Client) SaveUserToStateStore(user fab.User) error {
  * @returns {Promise} A Promise for a {User} object upon successful restore, or if the user by the name
  * does not exist in the state store, returns null without rejecting the promise
  */
-func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
+func (c *Client) LoadUserFromStateStore(name string) (idapi.User, error) {
 	if name == "" {
 		return nil, nil
 	}
@@ -223,7 +224,7 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
  * @returns {byte[]} The bytes of the ConfigUpdate protobuf
  */
 func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
-	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	ctx := fabContext{ProviderContext: c, Context: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.ExtractChannelConfig(configEnvelope)
 }
@@ -234,8 +235,8 @@ func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
  * @param {byte[]} config - The Configuration Update in byte form
  * @return {ConfigSignature} - The signature of the current user on the config bytes
  */
-func (c *Client) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
-	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+func (c *Client) SignChannelConfig(config []byte, signer idapi.Context) (*common.ConfigSignature, error) {
+	ctx := fabContext{ProviderContext: c, Context: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.SignChannelConfig(config, signer)
 }
@@ -262,14 +263,14 @@ func (c *Client) SignChannelConfig(config []byte, signer fab.IdentityContext) (*
  * @returns {Result} Result Object with status on the create process.
  */
 func (c *Client) CreateChannel(request fab.CreateChannelRequest) (fab.TransactionID, error) {
-	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	ctx := fabContext{ProviderContext: c, Context: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.CreateChannel(request)
 }
 
 // QueryChannels queries the names of all the channels that a peer has joined.
 func (c *Client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) {
-	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	ctx := fabContext{ProviderContext: c, Context: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.QueryChannels(peer)
 }
@@ -277,24 +278,24 @@ func (c *Client) QueryChannels(peer fab.Peer) (*pb.ChannelQueryResponse, error) 
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
 // Returns the details of all chaincodes installed on a peer.
 func (c *Client) QueryInstalledChaincodes(peer fab.Peer) (*pb.ChaincodeQueryResponse, error) {
-	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	ctx := fabContext{ProviderContext: c, Context: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.QueryInstalledChaincodes(peer)
 }
 
 // InstallChaincode sends an install proposal to one or more endorsing peers.
 func (c *Client) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.TransactionProposalResponse, string, error) {
-	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
+	ctx := fabContext{ProviderContext: c, Context: c.signingIdentity}
 	rc := resource.New(ctx)
 	return rc.InstallChaincode(req)
 }
 
 // IdentityContext returns the current identity for signing.
-func (c *Client) IdentityContext() fab.IdentityContext {
+func (c *Client) IdentityContext() idapi.Context {
 	return c.signingIdentity
 }
 
 // SetIdentityContext sets the identity for signing
-func (c *Client) SetIdentityContext(user fab.IdentityContext) {
+func (c *Client) SetIdentityContext(user idapi.Context) {
 	c.signingIdentity = user
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	idmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/idmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 )
@@ -35,7 +36,8 @@ type ServiceProviderFactory interface {
 // OrgClientFactory allows overriding default clients and providers of an organization
 // Currently, a context is created for each organization that the client app needs.
 type OrgClientFactory interface {
-	//NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error)
+	NewIdentityMgmtClient(sdk Providers, org string) (idmgmt.IdentityMgmtClient, error)
+	// NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error)
 	NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fab.CredentialManager, error)
 }
 

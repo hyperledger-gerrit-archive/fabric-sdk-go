@@ -17,6 +17,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -42,7 +43,7 @@ const (
 type context interface {
 	SigningManager() fab.SigningManager
 	Config() apiconfig.Config
-	fab.IdentityContext
+	identity.Context
 }
 
 // New create a transaction with proposal response, following the endorsement policy.

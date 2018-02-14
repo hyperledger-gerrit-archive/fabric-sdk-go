@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	fcConsumer "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/events/consumer"
 	client "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -44,7 +45,7 @@ type mockEventClientFactory struct {
 	clients []*mockEventClient
 }
 
-func (mecf *mockEventClientFactory) newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration,
+func (mecf *mockEventClientFactory) newEventsClient(provider fab.ProviderContext, identity identity identity.Context, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration,
 	adapter fcConsumer.EventAdapter, kap keepalive.ClientParameters, failFast bool, allowInsecure bool) (fab.EventsClient, error) {
 	mec := &mockEventClient{
 		PeerAddress: peerAddress,
@@ -111,7 +112,7 @@ func createMockedEventHub() (*EventHub, *mockEventClientFactory, error) {
 	client := client.NewClient(mocks.NewMockConfig())
 	ctx := Context{
 		ProviderContext: client,
-		IdentityContext: client.IdentityContext(),
+		Context:         client.IdentityContext(),
 	}
 	eventHub, err := New(ctx)
 	if err != nil {
