@@ -10,18 +10,19 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 )
 
 // FabricProvider enables access to fabric objects such as peer and user based on config or context.
 type FabricProvider interface {
-	CreateChannelClient(user apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error)
-	CreateChannelLedger(ic apifabclient.IdentityContext, name string) (apifabclient.ChannelLedger, error)
-	CreateChannelConfig(user apifabclient.IdentityContext, name string) (apifabclient.ChannelConfig, error)
-	CreateResourceClient(user apifabclient.IdentityContext) (apifabclient.Resource, error)
-	CreateEventHub(ic apifabclient.IdentityContext, name string) (apifabclient.EventHub, error)
-	CreateCAClient(orgID string) (apifabca.FabricCAClient, error)
+	CreateIdentityClient(orgID string) (apifabca.FabricCAClient, error)
+	CreateChannelClient(user identity.Context, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error)
+	CreateChannelLedger(ic identity.Context, name string) (apifabclient.ChannelLedger, error)
+	CreateChannelConfig(user identity.Context, name string) (apifabclient.ChannelConfig, error)
+	CreateResourceClient(user identity.Context) (apifabclient.Resource, error)
+	CreateEventHub(ic identity.Context, name string) (apifabclient.EventHub, error)
 
 	CreatePeerFromConfig(peerCfg *apiconfig.NetworkPeer) (apifabclient.Peer, error)
 	CreateOrdererFromConfig(cfg *apiconfig.OrdererConfig) (apifabclient.Orderer, error)
-	CreateUser(name string, signingIdentity *apifabclient.SigningIdentity) (apifabclient.User, error)
+	CreateUser(name string, signingIdentity *apifabclient.SigningIdentity) (identity.User, error)
 }
