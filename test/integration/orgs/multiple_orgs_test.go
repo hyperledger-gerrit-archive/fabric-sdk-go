@@ -24,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -251,7 +252,7 @@ func verifyValue(t *testing.T, chClient chclient.ChannelClient, expected int) {
 
 }
 
-func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) fab.IdentityContext {
+func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) identity.Context {
 
 	session, err := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName)).Session()
 	if err != nil {

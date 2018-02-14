@@ -13,6 +13,7 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -24,14 +25,14 @@ var logger = logging.NewLogger("fabric_sdk_go")
 // ChannelMgmtClient enables managing channels in Fabric network.
 type ChannelMgmtClient struct {
 	provider fab.ProviderContext
-	identity fab.IdentityContext
+	identity identity.Context
 	resource fab.Resource
 }
 
 // Context holds the providers and services needed to create a ChannelMgmtClient.
 type Context struct {
 	fab.ProviderContext
-	fab.IdentityContext
+	identity.Context
 	Resource fab.Resource
 }
 
@@ -39,7 +40,7 @@ type Context struct {
 func New(c Context) (*ChannelMgmtClient, error) {
 	cc := &ChannelMgmtClient{
 		provider: c.ProviderContext,
-		identity: c.IdentityContext,
+		identity: c.Context,
 		resource: c.Resource,
 	}
 	return cc, nil

@@ -9,6 +9,7 @@ package defclient
 import (
 	apichclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	apichmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	apiidmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/idmgmtclient"
 	apiresmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/discovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/idmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 	"github.com/pkg/errors"
 )
@@ -29,6 +31,15 @@ func NewSessionClientFactory() *SessionClientFactory {
 	return &f
 }
 
+// NewIdentityMgmtClient returns a client that manages channels (create/join channel)
+func (f *SessionClientFactory) NewIdentityMgmtClient(providers apisdk.Providers, org string) (apiidmgmt.IdentityMgmtClient, error) {
+	ctx := idmgmtclient.Context{
+		ProviderContext: providers,
+		MspID:           org,
+	}
+	return idmgmtclient.New(ctx)
+}
+
 // NewChannelMgmtClient returns a client that manages channels (create/join channel)
 func (f *SessionClientFactory) NewChannelMgmtClient(providers apisdk.Providers, session apisdk.SessionContext) (apichmgmt.ChannelMgmtClient, error) {
 	// For now settings are the same as for system client
@@ -38,7 +49,7 @@ func (f *SessionClientFactory) NewChannelMgmtClient(providers apisdk.Providers, 
 	}
 	ctx := chmgmtclient.Context{
 		ProviderContext: providers,
-		IdentityContext: session,
+		Context:         session,
 		Resource:        resource,
 	}
 	return chmgmtclient.New(ctx)
@@ -58,7 +69,7 @@ func (f *SessionClientFactory) NewResourceMgmtClient(providers apisdk.Providers,
 
 	ctx := resmgmtclient.Context{
 		ProviderContext:   providers,
-		IdentityContext:   session,
+		Context:           session,
 		Resource:          resource,
 		DiscoveryProvider: discovery,
 		ChannelProvider:   chProvider,

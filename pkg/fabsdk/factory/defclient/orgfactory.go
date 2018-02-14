@@ -10,7 +10,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	idmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/idmgmtclient"
 	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/idmgmtclient"
+	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 )
 
 // OrgClientFactory represents the default org provider factory.
@@ -20,6 +23,16 @@ type OrgClientFactory struct{}
 func NewOrgClientFactory() *OrgClientFactory {
 	f := OrgClientFactory{}
 	return &f
+}
+
+// NewIdentityMgmtClient returns a client that manages identities on the network
+func (f *OrgClientFactory) NewIdentityMgmtClient(providers apisdk.Providers, org string) (idmgmt.IdentityMgmtClient, error) {
+
+	ctx := idmgmtclient.Context{
+		ProviderContext: providers,
+		MspID:           org,
+	}
+	return idmgmtclient.New(ctx)
 }
 
 /*
