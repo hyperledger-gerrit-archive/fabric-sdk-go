@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -136,10 +137,10 @@ type CustomFabricProvider struct {
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *CustomFabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
+func (f *CustomFabricProvider) CreateChannelConfig(ic identity.Context, channelID string) (apifabclient.ChannelConfig, error) {
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Context:         ic,
 	}
 
 	return chconfig.New(ctx, channelID, chconfig.WithOrderer(f.orderer))

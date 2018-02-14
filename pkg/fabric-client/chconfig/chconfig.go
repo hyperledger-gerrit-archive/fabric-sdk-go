@@ -10,6 +10,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -43,7 +44,7 @@ type Option func(opts *Opts) error
 // Context holds the providers and identity
 type Context struct {
 	fab.ProviderContext
-	fab.IdentityContext
+	identity.Context
 }
 
 // ChannelConfig implements query channel configuration

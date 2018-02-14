@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -195,7 +196,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 }
 
 type mockSession struct {
-	apifabclient.IdentityContext
+	identity.Context
 	IsChError bool
 	IsEHError bool
 }
@@ -207,7 +208,7 @@ func newMockSession() *mockSession {
 func newMockSessionWithUser(username, mspID string) *mockSession {
 	ic := fabmocks.NewMockUserWithMSPID(username, mspID)
 	session := mockSession{
-		IdentityContext: ic,
+		Context: ic,
 	}
 	return &session
 }

@@ -72,7 +72,7 @@ func TestSaveChannelFailure(t *testing.T) {
 
 	ctx := Context{
 		ProviderContext: errCtx,
-		IdentityContext: user,
+		Context:         user,
 		Resource:        resource,
 	}
 	cc, err := New(ctx)
@@ -141,7 +141,7 @@ func setupChannelMgmtClient(t *testing.T) *ChannelMgmtClient {
 
 	ctx := Context{
 		ProviderContext: fabCtx,
-		IdentityContext: fabCtx,
+		Context:         fabCtx,
 		Resource:        resource,
 	}
 	consClient, err := New(ctx)

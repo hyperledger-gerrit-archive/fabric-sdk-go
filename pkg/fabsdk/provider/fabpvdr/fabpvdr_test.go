@@ -53,12 +53,12 @@ func TestCreateResourceClient(t *testing.T) {
 	}
 }
 
-func TestCreateCAClient(t *testing.T) {
+func TestCreateIdentityClient(t *testing.T) {
 	p := newMockFabricProvider(t)
 
 	org := "org1"
 
-	client, err := p.CreateCAClient(org)
+	client, err := p.CreateIdentityClient(org)
 	if err != nil {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}

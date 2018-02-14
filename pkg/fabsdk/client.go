@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
@@ -40,7 +41,7 @@ type clientProvider func() (*clientContext, error)
 
 type clientContext struct {
 	opts          *contextOptions
-	identity      apifabclient.IdentityContext
+	identity      identity.Context
 	providers     providers
 	clientFactory apisdk.SessionClientFactory
 }

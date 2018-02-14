@@ -18,6 +18,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -61,20 +62,20 @@ type EventHub struct {
 	eventsClientFactory eventClientFactory
 	// FabricClient
 	provider fab.ProviderContext
-	identity fab.IdentityContext
+	identity identity.Context
 	kap      keepalive.ClientParameters
 	failFast bool
 }
 
 // eventClientFactory creates an EventsClient instance
 type eventClientFactory interface {
-	newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool) (fab.EventsClient, error)
+	newEventsClient(provider fab.ProviderContext, identity identity.Context, peerAddress string, certificate *x509.Certificate, serverHostOverride string, regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool) (fab.EventsClient, error)
 }
 
 // consumerClientFactory is the default implementation oif the eventClientFactory
 type consumerClientFactory struct{}
 
-func (ccf *consumerClientFactory) newEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverHostOverride string,
+func (ccf *consumerClientFactory) newEventsClient(provider fab.ProviderContext, identity identity.Context, peerAddress string, certificate *x509.Certificate, serverHostOverride string,
 	regTimeout time.Duration, adapter cnsmr.EventAdapter, kap keepalive.ClientParameters, failFast bool) (fab.EventsClient, error) {
 	return consumer.NewEventsClient(provider, identity, peerAddress, certificate, serverHostOverride, regTimeout, adapter, kap, failFast)
 }
@@ -82,7 +83,7 @@ func (ccf *consumerClientFactory) newEventsClient(provider fab.ProviderContext, 
 // Context holds the providers and services needed to create an EventHub.
 type Context struct {
 	fab.ProviderContext
-	fab.IdentityContext
+	identity.Context
 }
 
 // New creates an EventHub from context.
@@ -93,7 +94,7 @@ func New(ctx Context) (*EventHub, error) {
 		interestedEvents:    nil,
 		eventsClientFactory: &consumerClientFactory{},
 		provider:            ctx.ProviderContext,
-		identity:            ctx.IdentityContext,
+		identity:            ctx.Context,
 	}
 	// register default transaction callback
 	eventHub.RegisterBlockEvent(eventHub.txCallback)
