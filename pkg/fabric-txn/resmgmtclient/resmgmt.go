@@ -13,6 +13,7 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
@@ -26,7 +27,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 // ResourceMgmtClient enables managing resources in Fabric network.
 type ResourceMgmtClient struct {
 	provider          fab.ProviderContext
-	identity          fab.IdentityContext
+	identity          identity.Context
 	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
 	channelProvider   fab.ChannelProvider
 	fabricProvider    api.FabricProvider
@@ -57,7 +58,7 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 // Context holds the providers and services needed to create a ChannelClient.
 type Context struct {
 	fab.ProviderContext
-	fab.IdentityContext
+	identity.Context
 	DiscoveryProvider fab.DiscoveryProvider
 	ChannelProvider   fab.ChannelProvider
 	FabricProvider    api.FabricProvider
@@ -66,7 +67,7 @@ type Context struct {
 
 type fabContext struct {
 	fab.ProviderContext
-	fab.IdentityContext
+	identity.Context
 }
 
 // New returns a ResourceMgmtClient instance

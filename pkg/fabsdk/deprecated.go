@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
@@ -117,7 +118,7 @@ func (sdk *FabricSDK) NewChannelClient(channelID string, userName string, opts .
 }
 
 // NewPreEnrolledUser returns a new pre-enrolled user
-func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (apifabclient.IdentityContext, error) {
+func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (identity.Context, error) {
 	return sdk.newUser(orgID, userName)
 }
 

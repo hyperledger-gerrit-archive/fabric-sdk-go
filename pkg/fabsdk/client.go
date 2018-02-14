@@ -11,7 +11,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
+	idmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/idmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
@@ -40,7 +42,7 @@ type clientProvider func() (*clientContext, error)
 
 type clientContext struct {
 	opts          *contextOptions
-	identity      apifabclient.IdentityContext
+	identity      identity.Context
 	providers     providers
 	clientFactory apisdk.SessionClientFactory
 }
@@ -153,6 +155,22 @@ func (c *ClientContext) ChannelMgmt() (chmgmt.ChannelMgmtClient, error) {
 	client, err := p.clientFactory.NewChannelMgmtClient(p.providers, session)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create new channel management client")
+	}
+
+	return client, nil
+}
+
+// IdentityMgmt returns a client API for managing identities.
+func (c *ClientContext) IdentityMgmt() (idmgmt.IdentityMgmtClient, error) {
+	p, err := c.provider()
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to get client provider context")
+	}
+
+	session := newSession(p.identity, p.providers.ChannelProvider())
+	client, err := p.clientFactory.NewIdentityMgmtClient(p.providers, session)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create new identity management client")
 	}
 
 	return client, nil

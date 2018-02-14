@@ -11,6 +11,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
@@ -253,7 +254,7 @@ func (sdk *FabricSDK) context() *sdkContext {
 	return &c
 }
 
-func (sdk *FabricSDK) newUser(orgID string, userName string) (apifabclient.IdentityContext, error) {
+func (sdk *FabricSDK) newUser(orgID string, userName string) (identity.Context, error) {
 
 	credentialMgr, err := sdk.opts.Context.NewCredentialManager(orgID, sdk.config, sdk.cryptoSuite)
 	if err != nil {

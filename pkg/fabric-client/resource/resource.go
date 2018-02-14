@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
@@ -66,7 +67,7 @@ func (c *Resource) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
 }
 
 // SignChannelConfig signs a configuration.
-func (c *Resource) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
+func (c *Resource) SignChannelConfig(config []byte, signer identity.Context) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {

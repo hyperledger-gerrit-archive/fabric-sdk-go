@@ -107,7 +107,7 @@ func TestNoSigningUserFailure(t *testing.T) {
 
 	ctx := Context{
 		ProviderContext:   fabCtx,
-		IdentityContext:   fabCtx,
+		Context:           fabCtx,
 		Resource:          resource,
 		ChannelProvider:   chProvider,
 		DiscoveryProvider: discovery,
@@ -1066,7 +1066,7 @@ func setupResMgmtClient(fabCtx fab.Context, discErr error, t *testing.T) *Resour
 
 	ctx := Context{
 		ProviderContext:   fabCtx,
-		IdentityContext:   fabCtx,
+		Context:           fabCtx,
 		Resource:          resource,
 		ChannelProvider:   chProvider,
 		DiscoveryProvider: discovery,

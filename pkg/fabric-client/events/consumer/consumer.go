@@ -19,6 +19,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
@@ -47,12 +48,12 @@ type eventsClient struct {
 	tlsCertHash            []byte
 	clientConn             *grpc.ClientConn
 	provider               fab.ProviderContext
-	identity               fab.IdentityContext
+	identity               identity.Context
 	processEventsCompleted chan struct{}
 }
 
 //NewEventsClient Returns a new grpc.ClientConn to the configured local PEER.
-func NewEventsClient(provider fab.ProviderContext, identity fab.IdentityContext, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
+func NewEventsClient(provider fab.ProviderContext, identity identity.Context, peerAddress string, certificate *x509.Certificate, serverhostoverride string, regTimeout time.Duration, adapter consumer.EventAdapter) (fab.EventsClient, error) {
 	var err error
 	if regTimeout < 100*time.Millisecond {
 		regTimeout = 100 * time.Millisecond

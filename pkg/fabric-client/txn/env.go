@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -24,7 +25,7 @@ import (
 // NewID computes a TransactionID for the current user context
 //
 // TODO: Determine if this function should be exported after refactoring is completed.
-func NewID(signingIdentity fab.IdentityContext) (fab.TransactionID, error) {
+func NewID(signingIdentity identity.Context) (fab.TransactionID, error) {
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
@@ -111,7 +112,7 @@ func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (
 }
 
 // CreateHeader creates a Header from a ChannelHeader.
-func CreateHeader(ctx fab.IdentityContext, channelHeader *common.ChannelHeader, txnID fab.TransactionID) (*common.Header, error) {
+func CreateHeader(ctx identity.Context, channelHeader *common.ChannelHeader, txnID fab.TransactionID) (*common.Header, error) {
 	creator, err := ctx.Identity()
 	if err != nil {
 		return nil, errors.WithMessage(err, "extracting creator from identity context failed")
