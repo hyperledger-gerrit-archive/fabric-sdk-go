@@ -8,13 +8,16 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmtclient
 
 import (
+	"io/ioutil"
 	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -70,8 +73,25 @@ type fabContext struct {
 	fab.IdentityContext
 }
 
-// New returns a ResourceMgmtClient instance
-func New(ctx Context, filter resmgmt.TargetFilter) (*ResourceMgmtClient, error) {
+// ChannelMgmtClient enables managing channels in Fabric network.
+type ChannelMgmtClient struct {
+	provider fab.ProviderContext
+	identity fab.IdentityContext
+	resource fab.Resource
+}
+
+//NewChannelMgmtClient to create new management client
+func NewChannelMgmtClient(c Context) (*ChannelMgmtClient, error) {
+	cc := &ChannelMgmtClient{
+		provider: c.ProviderContext,
+		identity: c.IdentityContext,
+		resource: c.Resource,
+	}
+	return cc, nil
+}
+
+// NewResourceMgmtClient returns a ResourceMgmtClient instance
+func NewResourceMgmtClient(ctx Context, filter resmgmt.TargetFilter) (*ResourceMgmtClient, error) {
 
 	rcFilter := filter
 	if rcFilter == nil {
@@ -502,4 +522,94 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 		tpp[i] = peers[i]
 	}
 	return tpp
+}
+
+// SaveChannel creates or updates channel
+func (cc *ChannelMgmtClient) SaveChannel(req resmgmt.SaveChannelRequest, options ...resmgmt.Option) error {
+
+	opts, err := cc.prepareSaveChannelOpts(options...)
+	if err != nil {
+		return err
+	}
+
+	if req.ChannelID == "" || req.ChannelConfig == "" {
+		return errors.New("must provide channel ID and channel config")
+	}
+
+	logger.Debugf("***** Saving channel: %s *****\n", req.ChannelID)
+
+	// Signing user has to belong to one of configured channel organisations
+	// In case that order org is one of channel orgs we can use context user
+	signer := cc.identity
+	if req.SigningIdentity != nil {
+		// Retrieve custom signing identity here
+		signer = req.SigningIdentity
+	}
+
+	if signer == nil {
+		return errors.New("must provide signing user")
+	}
+
+	configTx, err := ioutil.ReadFile(req.ChannelConfig)
+	if err != nil {
+		return errors.WithMessage(err, "reading channel config file failed")
+	}
+
+	chConfig, err := cc.resource.ExtractChannelConfig(configTx)
+	if err != nil {
+		return errors.WithMessage(err, "extracting channel config failed")
+	}
+
+	configSignature, err := cc.resource.SignChannelConfig(chConfig, signer)
+	if err != nil {
+		return errors.WithMessage(err, "signing configuration failed")
+	}
+
+	var configSignatures []*common.ConfigSignature
+	configSignatures = append(configSignatures, configSignature)
+
+	// Figure out orderer configuration
+	var ordererCfg *config.OrdererConfig
+	if opts.OrdererID != "" {
+		ordererCfg, err = cc.provider.Config().OrdererConfig(opts.OrdererID)
+	} else {
+		// Default is random orderer from configuration
+		ordererCfg, err = cc.provider.Config().RandomOrdererConfig()
+	}
+
+	// Check if retrieving orderer configuration went ok
+	if err != nil || ordererCfg == nil {
+		return errors.Errorf("failed to retrieve orderer config: %s", err)
+	}
+
+	orderer, err := orderer.New(cc.provider.Config(), orderer.FromOrdererConfig(ordererCfg))
+	if err != nil {
+		return errors.WithMessage(err, "failed to create new orderer from config")
+	}
+
+	request := fab.CreateChannelRequest{
+		Name:       req.ChannelID,
+		Orderer:    orderer,
+		Config:     chConfig,
+		Signatures: configSignatures,
+	}
+
+	_, err = cc.resource.CreateChannel(request)
+	if err != nil {
+		return errors.WithMessage(err, "create channel failed")
+	}
+
+	return nil
+}
+
+//prepareSaveChannelOpts Reads chmgmt.Opts from chmgmt.Option array
+func (cc *ChannelMgmtClient) prepareSaveChannelOpts(options ...resmgmt.Option) (resmgmt.Opts, error) {
+	saveChannelOpts := resmgmt.Opts{}
+	for _, option := range options {
+		err := option(&saveChannelOpts)
+		if err != nil {
+			return saveChannelOpts, errors.WithMessage(err, "Failed to read save channel opts")
+		}
+	}
+	return saveChannelOpts, nil
 }
