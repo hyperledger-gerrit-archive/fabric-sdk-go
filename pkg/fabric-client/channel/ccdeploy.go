@@ -15,6 +15,7 @@ import (
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 )
 
 // ChaincodeProposalType reflects transitions in the chaincode lifecycle
@@ -37,7 +38,7 @@ type ChaincodeDeployRequest struct {
 }
 
 // CreateChaincodeDeployProposal creates an instantiate or upgrade chaincode proposal.
-func CreateChaincodeDeployProposal(ctx fab.IdentityContext, deploy ChaincodeProposalType, channelID string, chaincode ChaincodeDeployRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeDeployProposal(ctx identity.Context, deploy ChaincodeProposalType, channelID string, chaincode ChaincodeDeployRequest) (*fab.TransactionProposal, error) {
 
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincode.Name, Path: chaincode.Path, Version: chaincode.Version},

@@ -9,8 +9,11 @@ package defclient
 import (
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	credentialMgr "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/idmgmtclient"
+	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 )
 
@@ -52,12 +55,41 @@ func TestNewCredentialManager(t *testing.T) {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	mspClient, err := factory.NewCredentialManager("org1", config, cryptosuite)
+	cm, err := factory.NewCredentialManager("org1", config, cryptosuite)
 	if err != nil {
 		t.Fatalf("Unexpected error creating credential manager %v", err)
 	}
+	_, ok := cm.(*credentialMgr.CredentialManager)
+	if !ok {
+		t.Fatalf("Unexpected credential manager created")
+	}
+}
 
-	_, ok := mspClient.(*credentialMgr.CredentialManager)
+func TestNewIdentityManager(t *testing.T) {
+	config, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	coreFactory := defcore.NewProviderFactory()
+	cryptosuite, err := coreFactory.NewCryptoSuiteProvider(config)
+	if err != nil {
+		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
+	}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockSDK := mockapisdk.NewMockProviders(mockCtrl)
+
+	mockSDK.EXPECT().Config().Return(config)
+	mockSDK.EXPECT().CryptoSuite().Return(cryptosuite)
+
+	factory := NewOrgClientFactory()
+	imc, err := factory.NewIdentityManager(mockSDK, "Org1")
+	if err != nil {
+		t.Fatalf("Unexpected error creating credential manager %v", err)
+	}
+	_, ok := imc.(*idmgmtclient.IdentityManager)
 	if !ok {
 		t.Fatalf("Unexpected credential manager created")
 	}

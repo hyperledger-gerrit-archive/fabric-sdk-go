@@ -15,6 +15,7 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	chmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
@@ -27,7 +28,7 @@ import (
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
 	SDK             *fabsdk.FabricSDK
-	Identity        fab.IdentityContext
+	Identity        identity.Context
 	Client          fab.Resource
 	Transactor      fab.Transactor
 	Targets         []fab.ProposalProcessor
@@ -149,6 +150,22 @@ func getOrgTargets(config apiconfig.Config, org string) ([]fab.ProposalProcessor
 		targets = append(targets, target)
 	}
 	return targets, nil
+}
+
+func (setup *BaseSetupImpl) setupEventHub(client *fabsdk.FabricSDK, identity identity.Context) error {
+	eventHub, err := client.FabricProvider().CreateEventHub(identity, setup.ChannelID)
+	if err != nil {
+		return err
+	}
+
+	if setup.ConnectEventHub {
+		if err := eventHub.Connect(); err != nil {
+			return errors.WithMessage(err, "eventHub connect failed")
+		}
+	}
+	setup.EventHub = eventHub
+
+	return nil
 }
 
 // InitConfig ...

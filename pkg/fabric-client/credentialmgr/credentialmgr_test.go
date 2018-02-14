@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -29,12 +30,12 @@ func TestCredentialManager(t *testing.T) {
 	}
 
 	_, err = credentialMgr.GetSigningIdentity("")
-	if err == nil {
+	if err == nil || err == identity.ErrUserNotFound {
 		t.Fatalf("Should have failed to retrieve signing identity for empty user name")
 	}
 
 	_, err = credentialMgr.GetSigningIdentity("Non-Existent")
-	if err == nil {
+	if err != identity.ErrUserNotFound {
 		t.Fatalf("Should have failed to retrieve signing identity for non-existent user")
 	}
 

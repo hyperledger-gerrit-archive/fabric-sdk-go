@@ -10,6 +10,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
@@ -64,7 +65,7 @@ func (c *sdkContext) ChannelProvider() apifabclient.ChannelProvider {
 }
 
 type identityOptions struct {
-	identity apifabclient.IdentityContext
+	identity identity.Context
 	ok       bool
 }
 
@@ -90,7 +91,7 @@ func WithUser(name string) IdentityOption {
 }
 
 // WithIdentity uses a pre-constructed identity object as the credential for the session
-func WithIdentity(identity apifabclient.IdentityContext) IdentityOption {
+func WithIdentity(identity identity.Context) IdentityOption {
 	return func(o *identityOptions, sdk *FabricSDK, orgName string) error {
 		if o.ok {
 			return errors.New("Identity already determined")
@@ -101,7 +102,7 @@ func WithIdentity(identity apifabclient.IdentityContext) IdentityOption {
 	}
 }
 
-func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (apifabclient.IdentityContext, error) {
+func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (identity.Context, error) {
 	opts := identityOptions{}
 
 	for _, option := range options {
@@ -121,13 +122,13 @@ func (sdk *FabricSDK) newIdentity(orgName string, options ...IdentityOption) (ap
 // session represents an identity being used with clients along with services
 // that associate with that identity (particularly the channel service).
 type session struct {
-	apifabclient.IdentityContext
+	identity.Context
 }
 
 // newSession creates a session from a context and a user (TODO)
-func newSession(ic apifabclient.IdentityContext, cp apifabclient.ChannelProvider) *session {
+func newSession(ic identity.Context, cp apifabclient.ChannelProvider) *session {
 	s := session{
-		IdentityContext: ic,
+		Context: ic,
 	}
 
 	return &s
