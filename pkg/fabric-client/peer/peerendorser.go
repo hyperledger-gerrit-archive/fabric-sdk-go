@@ -81,24 +81,21 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 }
 
 // ProcessTransactionProposal sends the transaction proposal to a peer and returns the response.
-func (p *peerEndorser) ProcessTransactionProposal(proposal apifabclient.TransactionProposal) (apifabclient.TransactionProposalResponse, error) {
-	logger.Debugf("Processing proposal using endorser :%s", p.target)
+func (p *peerEndorser) ProcessTransactionProposal(request apifabclient.ProcessProposalRequest) (*apifabclient.TransactionProposalResponse, error) {
+	logger.Debugf("Processing proposal using endorser: %s", p.target)
 
-	proposalResponse, err := p.sendProposal(proposal)
+	proposalResponse, err := p.sendProposal(request)
 	if err != nil {
-		return apifabclient.TransactionProposalResponse{
-				Proposal: proposal,
-				Endorser: p.target,
-			}, errors.Wrapf(err, "Transaction processor (%s) returned error for txID '%s'",
-				p.target, proposal.TxnID.ID)
+		tpr := apifabclient.TransactionProposalResponse{Endorser: p.target}
+		return &tpr, errors.Wrapf(err, "Transaction processor (%s) returned error for txn ID: %s", p.target, request.TxnID.ID)
 	}
 
-	return apifabclient.TransactionProposalResponse{
-		Proposal:         proposal,
+	tpr := apifabclient.TransactionProposalResponse{
 		ProposalResponse: proposalResponse,
 		Endorser:         p.target, // TODO: what format is expected for Endorser? Just target? URL?
 		Status:           proposalResponse.GetResponse().Status,
-	}, nil
+	}
+	return &tpr, nil
 }
 
 func (p *peerEndorser) conn() (*grpc.ClientConn, error) {
@@ -111,7 +108,7 @@ func (p *peerEndorser) releaseConn(conn *grpc.ClientConn) {
 	conn.Close()
 }
 
-func (p *peerEndorser) sendProposal(proposal apifabclient.TransactionProposal) (*pb.ProposalResponse, error) {
+func (p *peerEndorser) sendProposal(proposal apifabclient.ProcessProposalRequest) (*pb.ProposalResponse, error) {
 	conn, err := p.conn()
 	if err != nil {
 		return nil, status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), []interface{}{p.target})
