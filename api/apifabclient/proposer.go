@@ -12,12 +12,14 @@ import (
 
 // ProposalProcessor simulates transaction proposal, so that a client can submit the result for ordering.
 type ProposalProcessor interface {
-	ProcessTransactionProposal(proposal TransactionProposal) (TransactionProposalResponse, error)
+	ProcessTransactionProposal(ProcessProposalRequest) (*TransactionProposalResponse, error)
 }
 
 // ProposalSender provides the ability for a transaction proposal to be created and sent.
 type ProposalSender interface {
-	SendTransactionProposal(ChaincodeInvokeRequest, []ProposalProcessor) ([]*TransactionProposalResponse, TransactionID, error)
+	//CreateTxnID() (TransactionID, error)
+	CreateTransactionProposal(TransactionProposalRequest) (*TransactionProposal, error)
+	SendTransactionProposal(*TransactionProposal, []ProposalProcessor) ([]*TransactionProposalResponse, error)
 }
 
 // TransactionID contains the ID of a Fabric Transaction Proposal
@@ -26,7 +28,17 @@ type TransactionID struct {
 	Nonce []byte
 }
 
+// TransactionProposalRequest contains the parameters for sending a transaction proposal.
+type TransactionProposalRequest struct {
+	ChaincodeID  string
+	TransientMap map[string][]byte
+	Fcn          string
+	Args         [][]byte
+}
+
 // ChaincodeInvokeRequest contains the parameters for sending a transaction proposal.
+//
+// Deprecated: this struct has been replaced by TransactionProposalRequest.
 type ChaincodeInvokeRequest struct {
 	Targets      []ProposalProcessor // TODO: remove
 	ChaincodeID  string
@@ -35,19 +47,20 @@ type ChaincodeInvokeRequest struct {
 	Args         [][]byte
 }
 
-// TransactionProposal requests simulation of a proposed transaction from transaction processors.
+// TransactionProposal contains a marashalled transaction proposal.
 type TransactionProposal struct {
-	TxnID TransactionID
+	TxnID TransactionID // TODO: remove?
+	*pb.Proposal
+}
 
+// ProcessProposalRequest requests simulation of a proposed transaction from transaction processors.
+type ProcessProposalRequest struct {
 	SignedProposal *pb.SignedProposal
-	Proposal       *pb.Proposal
 }
 
 // TransactionProposalResponse respresents the result of transaction proposal processing.
 type TransactionProposalResponse struct {
 	Endorser string
 	Status   int32
-
-	Proposal         TransactionProposal
-	ProposalResponse *pb.ProposalResponse
+	*pb.ProposalResponse
 }
