@@ -296,6 +296,26 @@ func TestIsChaincodeInstalled(t *testing.T) {
 
 }
 
+func TestQueryInstalledChaincodes(t *testing.T) {
+
+	rc := setupDefaultResMgmtClient(t)
+
+	// Test error
+	_, err := rc.QueryInstalledChaincodes(nil)
+	if err == nil {
+		t.Fatalf("QueryInstalledChaincodes: peer cannot be nil")
+	}
+
+	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP"}
+
+	// Test success (valid peer)
+	_, err = rc.QueryInstalledChaincodes(peer)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+
 func TestInstallCCWithOpts(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)

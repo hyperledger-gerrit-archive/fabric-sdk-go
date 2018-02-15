@@ -11,6 +11,7 @@ import (
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 // TargetFilter allows for filtering target peers
@@ -78,4 +79,8 @@ type ResourceMgmtClient interface {
 
 	// JoinChannel allows for peers to join existing channel with optional custom options (specific peers, filtered peers)
 	JoinChannel(channelID string, options ...Option) error
+
+	// QueryInstalledChaincodes queries the installed chaincodes on a peer.
+	// Returns the details of all chaincodes installed on a peer.
+	QueryInstalledChaincodes(proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error)
 }

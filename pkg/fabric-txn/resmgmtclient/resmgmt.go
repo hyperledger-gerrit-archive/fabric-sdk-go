@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
 
@@ -333,6 +334,12 @@ func (rc *ResourceMgmtClient) UpgradeCC(channelID string, req resmgmt.UpgradeCCR
 
 	return rc.sendCCProposal(Upgrade, channelID, resmgmt.InstantiateCCRequest(req), options...)
 
+}
+
+// QueryInstalledChaincodes queries the installed chaincodes on a peer.
+// Returns the details of all chaincodes installed on a peer.
+func (rc *ResourceMgmtClient) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
+	return rc.resource.QueryInstalledChaincodes(proposalProcessor)
 }
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
