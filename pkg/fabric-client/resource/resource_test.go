@@ -142,7 +142,7 @@ func TestQueryByChaincode(t *testing.T) {
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "peer1.example.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Status: 200}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeProposal{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -162,7 +162,7 @@ func TestQueryByChaincodeBadStatus(t *testing.T) {
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Status: 99}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeProposal{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -177,7 +177,7 @@ func TestQueryByChaincodeError(t *testing.T) {
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Error: errors.New("error")}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeProposal{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}

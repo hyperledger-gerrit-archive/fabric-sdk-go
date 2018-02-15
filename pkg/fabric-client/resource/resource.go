@@ -212,7 +212,7 @@ func (c *Resource) JoinChannel(request fab.JoinChannelRequest) error {
 	var args [][]byte
 	args = append(args, genesisBlockBytes)
 
-	pr := fab.ChaincodeInvokeRequest{
+	pr := fab.ChaincodeInvokeProposal{
 		ChaincodeID: "cscc",
 		Fcn:         "JoinChain",
 		Args:        args,
@@ -327,7 +327,7 @@ func (c *Resource) QueryChannels(peer fab.ProposalProcessor) (*pb.ChannelQueryRe
 		return nil, errors.New("peer required")
 	}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeProposal{
 		ChaincodeID: "cscc",
 		Fcn:         "GetChannels",
 	}
@@ -352,7 +352,7 @@ func (c *Resource) QueryInstalledChaincodes(peer fab.ProposalProcessor) (*pb.Cha
 		return nil, errors.New("peer required")
 	}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := fab.ChaincodeInvokeProposal{
 		ChaincodeID: "lscc",
 		Fcn:         "getinstalledchaincodes",
 	}
@@ -401,39 +401,18 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.Tra
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to create chaincode deploy proposal")
 	}
-	proposalBytes, err := protos_utils.GetBytesProposal(proposal)
-	if err != nil {
-		return nil, "", err
-	}
-	user := c.clientContext
-	if user == nil {
-		return nil, "", errors.New("User context is nil")
-	}
-
-	signingMgr := c.clientContext.SigningManager()
-	if signingMgr == nil {
-		return nil, "", errors.Errorf("signing manager is nil")
-	}
-
-	signature, err := signingMgr.Sign(proposalBytes, user.PrivateKey())
-	if err != nil {
-		return nil, "", err
-	}
-
-	signedProposal := &pb.SignedProposal{ProposalBytes: proposalBytes, Signature: signature}
 
 	txnID := fab.TransactionID{ID: txID} // Nonce is missing
 
-	transactionProposalResponse, err := txn.SendProposal(&fab.TransactionProposal{
-		SignedProposal: signedProposal,
-		Proposal:       proposal,
-		TxnID:          txnID,
+	transactionProposalResponse, err := txn.SendProposal(c.clientContext, &fab.TransactionProposal{
+		Proposal: proposal,
+		TxnID:    txnID,
 	}, req.Targets)
 
 	return transactionProposalResponse, txID, err
 }
 
-func (c *Resource) queryChaincode(request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([][]byte, error) {
+func (c *Resource) queryChaincode(request fab.ChaincodeInvokeProposal, targets []fab.ProposalProcessor) ([][]byte, error) {
 	var errors multi.Errors
 	responses := [][]byte{}
 
@@ -448,17 +427,17 @@ func (c *Resource) queryChaincode(request fab.ChaincodeInvokeRequest, targets []
 	return responses, errors.ToError()
 }
 
-func (c *Resource) queryChaincodeWithTarget(request fab.ChaincodeInvokeRequest, target fab.ProposalProcessor) ([]byte, error) {
+func (c *Resource) queryChaincodeWithTarget(request fab.ChaincodeInvokeProposal, target fab.ProposalProcessor) ([]byte, error) {
 	const systemChannel = ""
 
 	targets := []fab.ProposalProcessor{target}
 
-	tp, err := txn.NewProposal(c.clientContext, systemChannel, request)
+	tp, err := txn.CreateChaincodeInvokeProposal(c.clientContext, systemChannel, request)
 	if err != nil {
 		return nil, errors.WithMessage(err, "NewProposal failed")
 	}
 
-	tpr, err := txn.SendProposal(tp, targets)
+	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
 	if err != nil {
 		return nil, errors.WithMessage(err, "SendProposal failed")
 	}
