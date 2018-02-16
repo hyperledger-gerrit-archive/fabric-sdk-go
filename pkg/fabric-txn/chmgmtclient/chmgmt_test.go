@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chmgmtclient"
 
+	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -114,6 +115,28 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	err = cc.SaveChannel(req, opts)
 	if err == nil {
 		t.Fatal("Should have failed for invalid orderer ID")
+	}
+}
+
+func TestSaveChannelWithMultipleIdenities(t *testing.T) {
+	cc := setupChannelMgmtClient(t)
+
+	// empty list of signing identities (defaults to context user)
+	req := chmgmtclient.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentity: []apifabclient.IdentityContext{}}
+
+	err := cc.SaveChannel(req, chmgmtclient.WithOrdererID(""))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// multiple signing identities
+	secondUser := fcmocks.NewMockUser("test2")
+	secondCtx := fcmocks.NewMockContext(secondUser)
+	req = chmgmtclient.SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: channelConfig, SigningIdentity: []apifabclient.IdentityContext{cc.identity, secondCtx}}
+
+	err = cc.SaveChannel(req, chmgmtclient.WithOrdererID(""))
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

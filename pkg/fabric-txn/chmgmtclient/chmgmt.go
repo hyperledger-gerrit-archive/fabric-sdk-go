@@ -61,13 +61,17 @@ func (cc *ChannelMgmtClient) SaveChannel(req chmgmt.SaveChannelRequest, options 
 
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
-	signer := cc.identity
-	if req.SigningIdentity != nil {
-		// Retrieve custom signing identity here
-		signer = req.SigningIdentity
-	}
+	var signers []fab.IdentityContext
 
-	if signer == nil {
+	if (len(req.SigningIdentity) > 0) && (req.SigningIdentity[0] != nil) {
+		for _, id := range req.SigningIdentity {
+			if id != nil {
+				signers = append(signers, id)
+			}
+		}
+	} else if cc.identity != nil {
+		signers = append(signers, cc.identity)
+	} else {
 		return errors.New("must provide signing user")
 	}
 
@@ -81,13 +85,14 @@ func (cc *ChannelMgmtClient) SaveChannel(req chmgmt.SaveChannelRequest, options 
 		return errors.WithMessage(err, "extracting channel config failed")
 	}
 
-	configSignature, err := cc.resource.SignChannelConfig(chConfig, signer)
-	if err != nil {
-		return errors.WithMessage(err, "signing configuration failed")
-	}
-
 	var configSignatures []*common.ConfigSignature
-	configSignatures = append(configSignatures, configSignature)
+	for _, signer := range signers {
+		configSignature, err := cc.resource.SignChannelConfig(chConfig, signer)
+		if err != nil {
+			return errors.WithMessage(err, "signing configuration failed")
+		}
+		configSignatures = append(configSignatures, configSignature)
+	}
 
 	// Figure out orderer configuration
 	var ordererCfg *config.OrdererConfig

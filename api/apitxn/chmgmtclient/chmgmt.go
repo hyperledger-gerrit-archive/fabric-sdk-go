@@ -14,8 +14,8 @@ type SaveChannelRequest struct {
 	ChannelID string
 	// Path to channel configuration file
 	ChannelConfig string
-	// User that signs channel configuration
-	SigningIdentity fab.IdentityContext
+	// Users that sign channel configuration
+	SigningIdentity []fab.IdentityContext
 }
 
 // Opts contains options for saving channel, this struct is intended for reference only.

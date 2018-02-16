@@ -105,7 +105,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 	setup.Targets = targets
 
 	// Create channel for tests
-	req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
+	req := chmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: []fab.IdentityContext{session}}
 	InitializeChannel(sdk, setup.OrgID, req, targets)
 
 	// Create the channel transactor
