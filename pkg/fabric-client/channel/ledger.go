@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
-	"bytes"
 	"net/http"
 	"strconv"
 
@@ -253,17 +252,23 @@ func (c *Ledger) QueryConfigBlock(peers []fab.Peer, minResponses int) (*common.C
 		return nil, errors.Errorf("Required minimum %d endorsments got %d", minResponses, len(responses))
 	}
 
-	r := responses[0]
-	for _, p := range responses {
-		if bytes.Compare(r, p) != 0 {
-			return nil, errors.New("Payloads for config block do not match")
-		}
-	}
+	var block *common.Block
 
-	block := &common.Block{}
-	err = proto.Unmarshal(responses[0], block)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal block failed")
+	for i, r := range responses {
+		b := &common.Block{}
+		err = proto.Unmarshal(r, b)
+		if err != nil {
+			return nil, errors.Wrap(err, "unmarshal block failed")
+		}
+
+		// Compare payloads
+		if i == 0 {
+			block = b
+		} else {
+			if !proto.Equal(block.Data, b.Data) {
+				return nil, errors.New("Payloads for config block do not match")
+			}
+		}
 	}
 
 	if block.Data == nil || block.Data.Data == nil {
