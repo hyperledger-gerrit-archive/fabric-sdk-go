@@ -50,7 +50,7 @@ type ClientContext struct {
 	CryptoSuite core.CryptoSuite
 	Discovery   fab.DiscoveryService
 	Selection   fab.SelectionService
-	Channel     fab.Channel // TODO: this should be removed when we have MSP split out.
+	MemberID    fab.ChannelMemberID
 	Transactor  fab.Transactor
 	EventHub    fab.EventHub
 }

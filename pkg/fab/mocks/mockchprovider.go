@@ -88,6 +88,11 @@ func (cs *MockChannelService) Config() (fab.ChannelConfig, error) {
 	return nil, nil
 }
 
+// MemberID returns member ID
+func (cs *MockChannelService) MemberID() (fab.ChannelMemberID, error) {
+	return NewMockMemberID(), nil
+}
+
 // Ledger ...
 func (cs *MockChannelService) Ledger() (fab.ChannelLedger, error) {
 	return nil, nil
