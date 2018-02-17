@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/member"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events"
 	identityImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
@@ -116,6 +117,11 @@ func (f *FabricProvider) CreateChannelConfig(ic context.IdentityContext, channel
 	}
 
 	return chconfig.New(ctx, channelID)
+}
+
+// CreateChannelMemberID returns a channel member identifier
+func (f *FabricProvider) CreateChannelMemberID(cfg fab.ChannelCfg) (fab.ChannelMemberID, error) {
+	return member.New(member.Context{ProviderContext: f.providerContext}, cfg)
 }
 
 // CreateChannelTransactor initializes the transactor

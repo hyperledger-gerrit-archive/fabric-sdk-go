@@ -21,6 +21,7 @@ type FabricProvider interface {
 	CreateChannelConfig(user context.IdentityContext, name string) (fab.ChannelConfig, error)
 	CreateResourceClient(user context.IdentityContext) (api.Resource, error)
 	CreateChannelTransactor(ic context.IdentityContext, cfg fab.ChannelCfg) (fab.Transactor, error)
+	CreateChannelMemberID(cfg fab.ChannelCfg) (fab.ChannelMemberID, error)
 	CreateEventHub(ic context.IdentityContext, name string) (fab.EventHub, error)
 	CreateIdentityManager(orgID string) (fab.IdentityManager, error)
 

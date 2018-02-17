@@ -103,3 +103,8 @@ func (cs *ChannelService) Ledger() (fab.ChannelLedger, error) {
 func (cs *ChannelService) Transactor() (fab.Transactor, error) {
 	return cs.fabricProvider.CreateChannelTransactor(cs.identityContext, cs.cfg)
 }
+
+// MemberID returns the member identifier for this channel
+func (cs *ChannelService) MemberID() (fab.ChannelMemberID, error) {
+	return cs.fabricProvider.CreateChannelMemberID(cs.cfg)
+}
