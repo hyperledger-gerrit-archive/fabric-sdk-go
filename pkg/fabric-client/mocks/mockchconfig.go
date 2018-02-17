@@ -18,10 +18,11 @@ type MockChannelCfg struct {
 	MockAnchorPeers []*fab.OrgAnchorPeer
 	MockOrderers    []string
 	MockVersions    *fab.Versions
+	MockMemberID    fab.ChannelMemberID
 }
 
 // NewMockChannelCfg ...
-func NewMockChannelCfg(name string) fab.ChannelCfg {
+func NewMockChannelCfg(name string) *MockChannelCfg {
 	return &MockChannelCfg{MockName: name}
 }
 
@@ -33,6 +34,11 @@ func (cfg *MockChannelCfg) Name() string {
 // Msps returns msps
 func (cfg *MockChannelCfg) Msps() []*msp.MSPConfig {
 	return cfg.MockMsps
+}
+
+// MemberID returns member identity
+func (cfg *MockChannelCfg) MemberID() fab.ChannelMemberID {
+	return cfg.MockMemberID
 }
 
 // AnchorPeers returns anchor peers

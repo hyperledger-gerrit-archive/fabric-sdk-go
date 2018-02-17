@@ -36,7 +36,7 @@ type ChannelClient struct {
 	context    fab.ProviderContext
 	discovery  fab.DiscoveryService
 	selection  fab.SelectionService
-	channel    fab.Channel
+	memberID   fab.ChannelMemberID
 	transactor fab.Transactor
 	eventHub   fab.EventHub
 	greylist   *greylist.Filter
@@ -64,18 +64,12 @@ func New(c Context) (*ChannelClient, error) {
 		return nil, errors.WithMessage(err, "transactor creation failed")
 	}
 
-	// TODO - this should be removed once MSP is split out.
-	channel, err := c.ChannelService.Channel()
-	if err != nil {
-		return nil, errors.WithMessage(err, "channel client creation failed")
-	}
-
 	channelClient := ChannelClient{
 		greylist:   greylistProvider,
 		context:    c,
 		discovery:  discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
 		selection:  c.SelectionService,
-		channel:    channel,
+		memberID:   c.ChannelService.MemberID(),
 		transactor: transactor,
 		eventHub:   eventHub,
 	}
@@ -158,7 +152,7 @@ func (cc *ChannelClient) prepareHandlerContexts(request chclient.Request, option
 	clientContext := &chclient.ClientContext{
 		Selection:  cc.selection,
 		Discovery:  cc.discovery,
-		Channel:    cc.channel,
+		MemberID:   cc.memberID,
 		Transactor: cc.transactor,
 		EventHub:   cc.eventHub,
 	}

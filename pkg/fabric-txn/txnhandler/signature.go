@@ -10,14 +10,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 
-	"github.com/golang/protobuf/proto"
-
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -64,41 +61,12 @@ func (f *SignatureValidationHandler) validate(txProposalResponse []*apifabclient
 }
 
 func verifyProposalResponse(res *pb.ProposalResponse, ctx *chclient.ClientContext) error {
-
 	if res.GetEndorsement() == nil {
 		return errors.Errorf("Missing endorsement in proposal response")
 	}
 
-	serializedIdentity := &msp.SerializedIdentity{}
-	if err := proto.Unmarshal(res.GetEndorsement().Endorser, serializedIdentity); err != nil {
-		return errors.WithMessage(err, "Unmarshal endorser error")
-	}
-
-	// TODO ctx.Channel is temporary and needs to be replaced with an MSP interface from channel service.
-	if ctx.Channel.MSPManager() == nil {
-		return errors.Errorf("Channel %s msp manager is nil", ctx.Channel.Name())
-	}
-
-	msps, err := ctx.Channel.MSPManager().GetMSPs()
-	if err != nil {
-		return errors.WithMessage(err, "GetMSPs return error:%v")
-	}
-	if len(msps) == 0 {
-		return errors.Errorf("Channel %s msps is empty", ctx.Channel.Name())
-	}
-
-	msp := msps[serializedIdentity.Mspid]
-	if msp == nil {
-		return errors.Errorf("MSP %s not found", serializedIdentity.Mspid)
-	}
-
-	creator, err := msp.DeserializeIdentity(res.GetEndorsement().Endorser)
-	if err != nil {
-		return errors.WithMessage(err, "Failed to deserialize creator identity")
-	}
-
-	// ensure that creator is a valid certificate
-	err = creator.Validate()
+	creatorID := res.GetEndorsement().Endorser
+	err := ctx.MemberID.Validate(creatorID)
 	if err != nil {
 		return errors.WithMessage(err, "The creator certificate is not valid")
 	}
@@ -107,7 +75,7 @@ func verifyProposalResponse(res *pb.ProposalResponse, ctx *chclient.ClientContex
 	digest := append(res.GetPayload(), res.GetEndorsement().Endorser...)
 
 	// validate the signature
-	err = creator.Verify(digest, res.GetEndorsement().Signature)
+	err = ctx.MemberID.Verify(creatorID, digest, res.GetEndorsement().Signature)
 	if err != nil {
 		return errors.WithMessage(err, "The creator's signature over the proposal is not valid")
 	}
