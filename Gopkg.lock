@@ -73,7 +73,8 @@
     "x509",
     "x509/pkix"
   ]
-  revision = "565dc33ed1f4f57523d464a59b3ece8c93944dce"
+  revision = "2d8ad8bd45bd4dfadaaf561201464af13aa5a9e8"
+  source = "github.com/troyronda/certificate-transparency-go"
 
 [[projects]]
   branch = "master"
@@ -102,7 +103,7 @@
   branch = "master"
   name = "github.com/miekg/pkcs11"
   packages = ["."]
-  revision = "57296583125bf58643f8bac3635bc1af1d65a6df"
+  revision = "88ac7c418f89b164432a00c46ec7b7612d686b57"
 
 [[projects]]
   branch = "master"
@@ -171,6 +172,8 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
+    "cryptobyte",
+    "cryptobyte/asn1",
     "ocsp",
     "pkcs12",
     "pkcs12/internal/rc2",
@@ -263,6 +266,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bf7647808493a0217336ed9f3c07da164a6142d847d7834df008df7dc6ce62ad"
+  inputs-digest = "bfb42f2f414afd51800ce4299793670a3917d3304fe4c1812f674daa85524ad4"
   solver-name = "gps-cdcl"
   solver-version = 1
