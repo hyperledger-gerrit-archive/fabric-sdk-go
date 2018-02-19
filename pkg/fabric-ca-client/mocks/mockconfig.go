@@ -31,7 +31,15 @@ func (c *MockConfig) Client() (*apiconfig.ClientConfig, error) {
 
 // CAConfig return ca configuration
 func (c *MockConfig) CAConfig(org string) (*apiconfig.CAConfig, error) {
-	return &apiconfig.CAConfig{URL: c.CAServerURL, CAName: "test", TLSCACerts: apiconfig.MutualTLSConfig{}}, nil
+	return &apiconfig.CAConfig{
+		URL:        c.CAServerURL,
+		CAName:     "test",
+		TLSCACerts: apiconfig.MutualTLSConfig{},
+		Registrar: apiconfig.Registrar{
+			EnrollID:     "admin",
+			EnrollSecret: "adminpw",
+		},
+	}, nil
 }
 
 //CAServerCertPems Read configuration option for the server certificate embedded pems
@@ -136,6 +144,11 @@ func (c *MockConfig) MspID(org string) (string, error) {
 // PeerMspID not implemented
 func (c *MockConfig) PeerMspID(name string) (string, error) {
 	return "", nil
+}
+
+// UserStorePath ...
+func (c *MockConfig) UserStorePath() string {
+	return "/tmp/userstore"
 }
 
 // KeyStorePath ...

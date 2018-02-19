@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
@@ -36,13 +37,13 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("Client CryptoSuite should not be nil after setCryptoSuite")
 	}
 
-	//Client tests: LoadUserFromStateStore successful nill user
-	user, err := client.LoadUserFromStateStore("")
-	if err != nil {
-		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
+	//Client tests: LoadUserFromStateStore ErrNotFound
+	_, err = client.LoadUserFromStateStore("")
+	if err == nil {
+		t.Fatalf("client.LoadUserFromStateStore should return ErrNotFound")
 	}
-	if user != nil {
-		t.Fatalf("client.LoadUserFromStateStore should return nil user")
+	if err != identity.ErrUserNotFound {
+		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
 	}
 
 	//Client tests: Should return error "user required"
@@ -54,13 +55,13 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("client.SaveUserToStateStore didn't return right error")
 	}
 
-	//Client tests: LoadUserFromStateStore with no context in memory or persisted returns nil
-	user, err = client.LoadUserFromStateStore("someUser")
-	if err != nil {
-		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
+	//Client tests: LoadUserFromStateStore with no context in memory or persisted returns ErrUserNotFound
+	_, err = client.LoadUserFromStateStore("someUser")
+	if err == nil {
+		t.Fatalf("client.LoadUserFromStateStore should return ErrNotFound")
 	}
-	if user != nil {
-		t.Fatalf("client.LoadUserFromStateStore should return nil user")
+	if err != identity.ErrUserNotFound {
+		t.Fatalf("client.LoadUserFromStateStore return error[%s]", err)
 	}
 
 	//Client tests: Should throw "stateStore is nil"

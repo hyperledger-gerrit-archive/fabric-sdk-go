@@ -11,6 +11,7 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	idapi "github.com/hyperledger/fabric-sdk-go/api/core/identity"
 	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -177,10 +178,10 @@ func (c *Client) SaveUserToStateStore(user fab.User) error {
  */
 func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
 	if name == "" {
-		return nil, nil
+		return nil, idapi.ErrUserNotFound
 	}
 	if c.stateStore == nil {
-		return nil, nil
+		return nil, idapi.ErrUserNotFound
 	}
 	if c.cryptoSuite == nil {
 		return nil, errors.New("cryptoSuite required")
@@ -188,7 +189,7 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
 	value, err := c.stateStore.Load(name)
 	if err != nil {
 		if err == kvstore.ErrNotFound {
-			return nil, nil
+			return nil, idapi.ErrUserNotFound
 		}
 		return nil, err
 	}

@@ -4,10 +4,17 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package apifabca
+package identity
 
 import (
+	"errors"
+
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+)
+
+var (
+	// ErrUserNotFound indicates the entity was not found
+	ErrUserNotFound = errors.New("user not found")
 )
 
 // User represents users that have been enrolled and represented by
@@ -25,16 +32,18 @@ import (
 // An application cannot use the Peer identity to sign things because the application doesn’t
 // have access to the Peer identity’s private key.
 type User interface {
+	Context
+
 	Name() string
-	Roles() []string
-	MspID() string
-
-	// ECerts
 	EnrollmentCertificate() []byte
-	PrivateKey() apicryptosuite.Key
+	Roles() []string
+}
 
+// Context supplies the serialized identity and key reference.
+//
+// TODO - refactor SigningIdentity and this interface.
+type Context interface {
+	MspID() string
 	Identity() ([]byte, error)
-
-	// TODO: TCerts
-	//GenerateTcerts(count int, attributes []string)
+	PrivateKey() apicryptosuite.Key
 }
