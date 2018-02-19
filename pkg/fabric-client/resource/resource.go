@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -36,88 +35,6 @@ type Resource struct {
 func New(ctx fab.Context) *Resource {
 	c := Resource{clientContext: ctx}
 	return &c
-}
-
-// ExtractChannelConfig extracts the protobuf 'ConfigUpdate' object out of the 'ConfigEnvelope'.
-func (c *Resource) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
-	logger.Debug("extractConfigUpdate - start")
-
-	envelope := &common.Envelope{}
-	err := proto.Unmarshal(configEnvelope, envelope)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal config envelope failed")
-	}
-
-	payload := &common.Payload{}
-	err = proto.Unmarshal(envelope.Payload, payload)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal envelope payload failed")
-	}
-
-	configUpdateEnvelope := &common.ConfigUpdateEnvelope{}
-	err = proto.Unmarshal(payload.Data, configUpdateEnvelope)
-	if err != nil {
-		return nil, errors.Wrap(err, "unmarshal config update envelope")
-	}
-
-	return configUpdateEnvelope.ConfigUpdate, nil
-}
-
-// SignChannelConfig signs a configuration.
-func (c *Resource) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
-	logger.Debug("SignChannelConfig - start")
-
-	if config == nil {
-		return nil, errors.New("channel configuration required")
-	}
-
-	signingUser := signer
-	// If signing user is not provided default to client's user context
-	if signingUser == nil {
-		signingUser = c.clientContext
-	}
-
-	if signingUser == nil {
-		return nil, errors.New("user context required")
-	}
-
-	creator, err := signingUser.Identity()
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get user context's identity")
-	}
-	txnID, err := txn.NewID(signingUser)
-	if err != nil {
-		return nil, errors.Wrap(err, "New Transaction ID failed")
-	}
-
-	// signature is across a signature header and the config update
-	signatureHeader := &common.SignatureHeader{
-		Creator: creator,
-		Nonce:   txnID.Nonce,
-	}
-	signatureHeaderBytes, err := proto.Marshal(signatureHeader)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal signatureHeader failed")
-	}
-
-	signingMgr := c.clientContext.SigningManager()
-	if signingMgr == nil {
-		return nil, errors.New("signing manager is nil")
-	}
-
-	// get all the bytes to be signed together, then sign
-	signingBytes := fcutils.ConcatenateBytes(signatureHeaderBytes, config)
-	signature, err := signingMgr.Sign(signingBytes, signingUser.PrivateKey())
-	if err != nil {
-		return nil, errors.WithMessage(err, "signing of channel config failed")
-	}
-
-	// build the return object
-	configSignature := &common.ConfigSignature{
-		SignatureHeader: signatureHeaderBytes,
-		Signature:       signature,
-	}
-	return configSignature, nil
 }
 
 // CreateChannel calls the orderer to start building the new channel.

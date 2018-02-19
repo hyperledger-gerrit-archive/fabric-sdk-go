@@ -20,10 +20,6 @@ type Resource interface {
 
 	GenesisBlockFromOrderer(channelName string, orderer Orderer) (*common.Block, error)
 	JoinChannel(request JoinChannelRequest) error
-
-	// TODO - the following methods are utilities
-	ExtractChannelConfig(configEnvelope []byte) ([]byte, error)
-	SignChannelConfig(config []byte, signer IdentityContext) (*common.ConfigSignature, error)
 }
 
 // CreateChannelRequest requests channel creation on the network

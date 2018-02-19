@@ -7,8 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"bytes"
-
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -29,23 +27,6 @@ func NewMockInvalidResource() *MockResource {
 // NewMockResource ...
 func NewMockResource() *MockResource {
 	return &MockResource{}
-}
-
-// ExtractChannelConfig ...
-func (c *MockResource) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
-	if bytes.Compare(configEnvelope, []byte("ExtractChannelConfigError")) == 0 {
-		return nil, errors.New("Mock extract channel config error")
-	}
-
-	return configEnvelope, nil
-}
-
-// SignChannelConfig ...
-func (c *MockResource) SignChannelConfig(config []byte, signer fab.IdentityContext) (*common.ConfigSignature, error) {
-	if bytes.Compare(config, []byte("SignChannelConfigError")) == 0 {
-		return nil, errors.New("Mock sign channel config error")
-	}
-	return nil, nil
 }
 
 // CreateChannel ...
