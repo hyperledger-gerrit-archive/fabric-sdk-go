@@ -24,39 +24,48 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
+// TransactionID contains the ID of a Fabric Transaction Proposal
+type TransactionID struct {
+	id      string
+	creator []byte
+	nonce   []byte
+}
+
+func (tid *TransactionID) String() string {
+	return tid.id
+}
+
 // NewID computes a TransactionID for the current user context
-//
-// TODO: Determine if this function should be exported after refactoring is completed.
-func NewID(ctx fab.Context) (fab.TransactionID, error) {
+func NewID(ctx fab.Context) (*TransactionID, error) {
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "nonce creation failed")
+		return nil, errors.WithMessage(err, "nonce creation failed")
 	}
 
 	creator, err := ctx.Identity()
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "identity from context failed")
+		return nil, errors.WithMessage(err, "identity from context failed")
 	}
 
 	ho := cryptosuite.GetSHA256Opts() // TODO: make configurable
 	h, err := ctx.CryptoSuite().GetHash(ho)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "hash function creation failed")
+		return nil, errors.WithMessage(err, "hash function creation failed")
 	}
 
 	id, err := computeTxnID(nonce, creator, h)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "txn ID computation failed")
+		return nil, errors.WithMessage(err, "txn ID computation failed")
 	}
 
-	txnID := fab.TransactionID{
-		ID:      id,
-		Creator: creator,
-		Nonce:   nonce,
+	txnID := TransactionID{
+		id:      id,
+		creator: creator,
+		nonce:   nonce,
 	}
 
-	return txnID, nil
+	return &txnID, nil
 }
 
 func computeTxnID(nonce, creator []byte, h hash.Hash) (string, error) {
@@ -98,11 +107,11 @@ type ChannelHeaderOpts struct {
 //
 // TODO: Determine if this function should be exported after refactoring is completed.
 func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (*common.ChannelHeader, error) {
-	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, opts.ChannelID, opts.TxnID.ID, opts.Epoch, opts.ChaincodeID, opts.Timestamp)
+	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, opts.ChannelID, opts.TxnID.String(), opts.Epoch, opts.ChaincodeID, opts.Timestamp)
 	channelHeader := &common.ChannelHeader{
 		Type:        int32(headerType),
 		ChannelId:   opts.ChannelID,
-		TxId:        opts.TxnID.ID,
+		TxId:        opts.TxnID.String(),
 		Epoch:       opts.Epoch,
 		TlsCertHash: opts.TLSCertHash,
 	}
@@ -134,15 +143,15 @@ func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (
 }
 
 // CreateHeader creates a Header from a ChannelHeader.
-func CreateHeader(ctx fab.IdentityContext, channelHeader *common.ChannelHeader, txnID fab.TransactionID) (*common.Header, error) {
-	creator, err := ctx.Identity()
-	if err != nil {
-		return nil, errors.WithMessage(err, "extracting creator from identity context failed")
+func CreateHeader(txid fab.TransactionID, channelHeader *common.ChannelHeader) (*common.Header, error) {
+	tid, ok := txid.(*TransactionID)
+	if !ok {
+		return nil, errors.New("type of transaction ID is unexpected")
 	}
 
 	signatureHeader := &common.SignatureHeader{
-		Creator: creator,
-		Nonce:   txnID.Nonce,
+		Creator: tid.creator,
+		Nonce:   tid.nonce,
 	}
 	sh, err := proto.Marshal(signatureHeader)
 	if err != nil {
@@ -157,4 +166,19 @@ func CreateHeader(ctx fab.IdentityContext, channelHeader *common.ChannelHeader, 
 		ChannelHeader:   ch,
 	}
 	return header, nil
+}
+
+// CreateSignatureHeader creates a SignatureHeader based on the nonce and creator within transaction ID.
+func CreateSignatureHeader(txid fab.TransactionID) (*common.SignatureHeader, error) {
+	tid, ok := txid.(*TransactionID)
+	if !ok {
+		return nil, errors.New("type of transaction ID is unexpected")
+	}
+
+	signatureHeader := common.SignatureHeader{
+		Creator: tid.creator,
+		Nonce:   tid.nonce,
+	}
+
+	return &signatureHeader, nil
 }

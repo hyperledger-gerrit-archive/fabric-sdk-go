@@ -643,7 +643,7 @@ func createAndSendTransactionProposal(sender apifabclient.ProposalSender, chrequ
 	}
 	tpreq, err := sender.CreateChaincodeInvokeProposal(request)
 	if err != nil {
-		return nil, apifabclient.TransactionID{}, errors.WithMessage(err, "creation of transaction proposal failed")
+		return nil, nil, errors.WithMessage(err, "creation of transaction proposal failed")
 	}
 
 	tpr, err := sender.SendTransactionProposal(tpreq, targets)

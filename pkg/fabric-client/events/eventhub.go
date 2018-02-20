@@ -444,15 +444,15 @@ func (eventHub *EventHub) UnregisterChaincodeEvent(cbe *fab.ChainCodeCBE) {
 // callback: Function that takes a single parameter which
 // is a json object representation of type "message Transaction"
 func (eventHub *EventHub) RegisterTxEvent(txnID fab.TransactionID, callback func(string, pb.TxValidationCode, error)) {
-	logger.Debugf("reg txid %s\n", txnID.ID)
-	eventHub.txRegistrants.Store(txnID.ID, callback)
+	logger.Debugf("reg txid %s\n", txnID.String())
+	eventHub.txRegistrants.Store(txnID.String(), callback)
 }
 
 // UnregisterTxEvent unregister transactional event registration.
 // txid: transaction id
 func (eventHub *EventHub) UnregisterTxEvent(txnID fab.TransactionID) {
-	logger.Debugf("un-reg txid %s\n", txnID.ID)
-	eventHub.txRegistrants.Delete(txnID.ID)
+	logger.Debugf("un-reg txid %s\n", txnID.String())
+	eventHub.txRegistrants.Delete(txnID.String())
 }
 
 /**

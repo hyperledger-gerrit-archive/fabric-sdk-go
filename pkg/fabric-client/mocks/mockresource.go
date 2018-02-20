@@ -42,10 +42,10 @@ func (c *MockResource) SignChannelConfig(config []byte, signer fab.IdentityConte
 // CreateChannel ...
 func (c *MockResource) CreateChannel(request fab.CreateChannelRequest) (fab.TransactionID, error) {
 	if c.errorScenario {
-		return fab.TransactionID{}, errors.New("Create Channel Error")
+		return nil, errors.New("Create Channel Error")
 	}
 
-	return fab.TransactionID{}, nil
+	return nil, nil
 }
 
 //QueryChannels ...

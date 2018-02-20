@@ -76,7 +76,7 @@ func (c *Resource) CreateChannel(request fab.CreateChannelRequest) (fab.Transact
 		haveEnvelope = true
 	}
 
-	if !haveEnvelope && request.TxnID.ID == "" {
+	if !haveEnvelope && request.TxnID == nil {
 		txnID, err := txn.NewID(c.clientContext)
 		if err != nil {
 			return txnID, err
@@ -118,7 +118,7 @@ func (c *Resource) GenesisBlockFromOrderer(channelName string, orderer fab.Order
 	if err != nil {
 		return nil, errors.Wrap(err, "BuildChannelHeader failed")
 	}
-	seekHeader, err := txn.CreateHeader(c.clientContext, seekInfoHeader, txnID)
+	seekHeader, err := txn.CreateHeader(txnID, seekInfoHeader)
 	if err != nil {
 		return nil, errors.Wrap(err, "BuildHeader failed")
 	}
@@ -179,12 +179,8 @@ func (c *Resource) createOrUpdateChannel(request fab.CreateChannelRequest, haveE
 		return errors.New("missing signatures request parameter for the new channel")
 	}
 
-	if request.TxnID.ID == "" && !haveEnvelope {
+	if request.TxnID == nil && !haveEnvelope {
 		return errors.New("txId required")
-	}
-
-	if request.TxnID.Nonce == nil && !haveEnvelope {
-		return errors.New("nonce required")
 	}
 
 	if request.Orderer == nil {
@@ -226,7 +222,7 @@ func (c *Resource) createOrUpdateChannel(request fab.CreateChannelRequest, haveE
 			return errors.WithMessage(err, "BuildChannelHeader failed")
 		}
 
-		header, err := txn.CreateHeader(c.clientContext, channelHeader, request.TxnID)
+		header, err := txn.CreateHeader(request.TxnID, channelHeader)
 		if err != nil {
 			return errors.Wrap(err, "BuildHeader failed")
 		}
@@ -354,7 +350,7 @@ func (c *Resource) InstallChaincode(req fab.InstallChaincodeRequest) ([]*fab.Tra
 
 	transactionProposalResponse, err := txn.SendProposal(c.clientContext, prop, req.Targets)
 
-	return transactionProposalResponse, prop.TxnID.ID, err
+	return transactionProposalResponse, prop.TxnID.String(), err
 }
 
 func (c *Resource) queryChaincode(request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([][]byte, error) {

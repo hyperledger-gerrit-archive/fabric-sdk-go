@@ -252,7 +252,7 @@ func moveFundsAndGetTxID(t *testing.T, channel chclient.ChannelClient, chaincode
 		return "", errors.WithMessage(err, "execute move funds failed")
 	}
 
-	return resp.TransactionID.ID, nil
+	return resp.TransactionID.String(), nil
 }
 
 func testQueryConfigBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
