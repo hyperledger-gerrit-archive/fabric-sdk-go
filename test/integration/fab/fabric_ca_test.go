@@ -48,15 +48,12 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 		t.Fatalf("GetCAConfig returned error: %s", err)
 	}
 
-	client := client.NewClient(testFabricConfig)
-
 	cryptoSuiteProvider, err := cryptosuite.GetSuiteByConfig(testFabricConfig)
 	if err != nil {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
 
 	stateStorePath := "/tmp/enroll_user"
-	client.SetCryptoSuite(cryptoSuiteProvider)
 	stateStore, err := kvs.NewFileKeyValueStore(&kvs.FileKeyValueStoreOptions{
 		Path: stateStorePath,
 		KeySerializer: func(key interface{}) (string, error) {
@@ -70,7 +67,8 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
-	client.SetStateStore(stateStore)
+	client, _ := client.NewClient(testFabricConfig,
+		client.WithCryptoSuite(cryptoSuiteProvider), client.WithStateStore(stateStore))
 
 	caClient, err := fabricCAClient.NewFabricCAClient(org1Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
@@ -227,9 +225,7 @@ func TestEnrollAndTransact(t *testing.T) {
 	myUser.SetEnrollmentCertificate(cert)
 	myUser.SetPrivateKey(key)
 
-	testClient := client.NewClient(testFabricConfig)
-	testClient.SetIdentityContext(myUser)
-	testClient.SetSigningManager(signingManager)
+	testClient, _ := client.NewClient(testFabricConfig, client.WithIdentityContext(myUser), client.WithSigningManager(signingManager))
 
 	_, err = testClient.QueryChannels(testPeer)
 	if err != nil {

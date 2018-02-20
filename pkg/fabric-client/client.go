@@ -26,6 +26,9 @@ import (
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
+// Option describes a functional parameter for the New constructor
+type Option func(*Client) error
+
 // Client enables access to a Fabric network.
 type Client struct {
 	channels        map[string]fab.Channel
@@ -44,10 +47,19 @@ type fabContext struct {
 // NewClient returns a Client instance.
 //
 // Deprecated: see fabsdk package.
-func NewClient(config config.Config) *Client {
+func NewClient(config config.Config, opts ...Option) (*Client, error) {
+	client := &Client{config: config}
+	for _, opt := range opts {
+		err := opt(client)
+
+		if err != nil {
+			return nil, err
+		}
+	}
 	channels := make(map[string]fab.Channel)
-	c := Client{channels: channels, config: config}
-	return &c
+	client.channels = channels
+	client.config = config
+	return client, nil
 }
 
 // NewChannel returns a channel instance with the given name.
@@ -90,7 +102,7 @@ func (c *Client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, e
 	return nil, errors.Errorf("Not implemented yet")
 }
 
-// SetStateStore ...
+// WithStateStore ...
 //
 // Deprecated: see fabsdk package.
 /*
@@ -99,8 +111,11 @@ func (c *Client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, e
  * so that multiple app instances can share app state via the database (note that this doesn’t necessarily make the app stateful).
  * This API makes this pluggable so that different store implementations can be selected by the application.
  */
-func (c *Client) SetStateStore(stateStore kvstore.KVStore) {
-	c.stateStore = stateStore
+func WithStateStore(stateStore kvstore.KVStore) Option {
+	return func(c *Client) error {
+		c.stateStore = stateStore
+		return nil
+	}
 }
 
 // StateStore is a convenience method for obtaining the state store object in use for this client.
@@ -108,11 +123,14 @@ func (c *Client) StateStore() kvstore.KVStore {
 	return c.stateStore
 }
 
-// SetCryptoSuite is a convenience method for obtaining the state store object in use for this client.
+// WithCryptoSuite is a convenience method for obtaining the state store object in use for this client
 //
 // Deprecated: see fabsdk package.
-func (c *Client) SetCryptoSuite(cryptoSuite apicryptosuite.CryptoSuite) {
-	c.cryptoSuite = cryptoSuite
+func WithCryptoSuite(cryptoSuite apicryptosuite.CryptoSuite) Option {
+	return func(c *Client) error {
+		c.cryptoSuite = cryptoSuite
+		return nil
+	}
 }
 
 // CryptoSuite is a convenience method for obtaining the CryptoSuite object in use for this client.
@@ -125,11 +143,15 @@ func (c *Client) SigningManager() fab.SigningManager {
 	return c.signingManager
 }
 
-// SetSigningManager is a convenience method to set signing manager
+// WithSigningManager is a functional option for the client
 //
 // Deprecated: see fabsdk package.
-func (c *Client) SetSigningManager(signingMgr fab.SigningManager) {
-	c.signingManager = signingMgr
+func WithSigningManager(signingMgr fab.SigningManager) Option {
+
+	return func(c *Client) error {
+		c.signingManager = signingMgr
+		return nil
+	}
 }
 
 // SaveUserToStateStore ...
@@ -294,7 +316,11 @@ func (c *Client) IdentityContext() fab.IdentityContext {
 	return c.signingIdentity
 }
 
-// SetIdentityContext sets the identity for signing
-func (c *Client) SetIdentityContext(user fab.IdentityContext) {
-	c.signingIdentity = user
+//WithIdentityContext is a functional option for the client
+func WithIdentityContext(user fab.IdentityContext) Option {
+
+	return func(c *Client) error {
+		c.signingIdentity = user
+		return nil
+	}
 }

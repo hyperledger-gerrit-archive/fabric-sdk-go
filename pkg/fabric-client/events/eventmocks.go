@@ -108,7 +108,10 @@ func (mec *mockEventClient) Stop() error {
 }
 
 func createMockedEventHub() (*EventHub, *mockEventClientFactory, error) {
-	client := client.NewClient(mocks.NewMockConfig())
+	client, err := client.NewClient(mocks.NewMockConfig())
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "Error creating new client")
+	}
 	ctx := Context{
 		ProviderContext: client,
 		IdentityContext: client.IdentityContext(),

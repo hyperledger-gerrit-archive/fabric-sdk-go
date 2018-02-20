@@ -21,17 +21,17 @@ import (
 var testMsp = "testMsp"
 
 func TestClientMethods(t *testing.T) {
-	client := NewClient(mocks.NewMockConfig())
-	if client.CryptoSuite() != nil {
-		t.Fatalf("Client CryptoSuite should initially be nil")
-	}
-
 	s, err := sw.GetSuiteWithDefaultEphemeral()
 	if err != nil {
 		t.Fatalf("Failed getting ephemeral software-based BCCSP [%s]", err)
 	}
 
-	client.SetCryptoSuite(s)
+	client, err := NewClient(mocks.NewMockConfig(), WithCryptoSuite(s))
+	if err != nil {
+		t.Fatalf("Failed creating new client [%s]", err)
+
+	}
+
 	if client.CryptoSuite() == nil {
 		t.Fatalf("Client CryptoSuite should not be nil after setCryptoSuite")
 	}
@@ -64,7 +64,11 @@ func TestClientMethods(t *testing.T) {
 	}
 
 	//Client tests: Should throw "stateStore is nil"
-	client.SetStateStore(nil)
+	client, err = NewClient(mocks.NewMockConfig(), WithStateStore(nil))
+	if err != nil {
+		t.Fatalf("Failed creating new client [%s]", err)
+
+	}
 	err = client.SaveUserToStateStore(mocks.NewMockUser("hello"))
 	if err == nil {
 		t.Fatalf("client.SaveUserToStateStore didn't return error")
@@ -100,7 +104,11 @@ func TestClientMethods(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
-	client.SetStateStore(stateStore)
+	client, err = NewClient(mocks.NewMockConfig(), WithStateStore(stateStore))
+	if err != nil {
+		t.Fatalf("Failed creating new client [%s]", err)
+
+	}
 	client.StateStore().Store("testvalue", []byte("data"))
 	value, err := client.StateStore().Load("testvalue")
 	if err != nil {
@@ -115,8 +123,11 @@ func TestClientMethods(t *testing.T) {
 	}
 
 	// Set and use siging manager
-	client.SetSigningManager(mocks.NewMockSigningManager())
+	client, err = NewClient(mocks.NewMockConfig(), WithSigningManager(mocks.NewMockSigningManager()))
+	if err != nil {
+		t.Fatalf("Failed creating new client [%s]", err)
 
+	}
 	greeting := []byte("Hello")
 	signedObj, err := client.SigningManager().Sign(greeting, nil)
 	if err != nil {
@@ -129,9 +140,13 @@ func TestClientMethods(t *testing.T) {
 }
 
 func TestQueryMethodsOnClient(t *testing.T) {
-	client := NewClient(mocks.NewMockConfig())
+	client, err := NewClient(mocks.NewMockConfig())
+	if err != nil {
+		t.Fatalf("Failed creating new client [%s]", err)
 
-	_, err := client.QueryChannels(nil)
+	}
+
+	_, err = client.QueryChannels(nil)
 	if err == nil {
 		t.Fatalf("QueryChanels: peer cannot be nil")
 	}
