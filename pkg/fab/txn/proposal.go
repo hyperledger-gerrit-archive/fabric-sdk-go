@@ -12,16 +12,20 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
 // CreateChaincodeInvokeProposal creates a proposal for transaction.
-func CreateChaincodeInvokeProposal(txid fab.TransactionID, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeInvokeProposal(th fab.TransactionHeader, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
+	txh, ok := th.(*TransactionHeader)
+	if !ok {
+		return nil, errors.New("transaction header is unexpected type")
+	}
+
 	if request.ChaincodeID == "" {
 		return nil, errors.New("ChaincodeID is required")
 	}
@@ -42,13 +46,13 @@ func CreateChaincodeInvokeProposal(txid fab.TransactionID, channelID string, req
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: request.ChaincodeID},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	proposal, _, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(txid.ID, common.HeaderType_ENDORSER_TRANSACTION, channelID, ccis, txid.Nonce, txid.Creator, request.TransientMap)
+	proposal, _, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(txh.id, common.HeaderType_ENDORSER_TRANSACTION, txh.channelID, ccis, txh.nonce, txh.creator, request.TransientMap)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create chaincode proposal")
 	}
 
 	tp := fab.TransactionProposal{
-		TxnID:    txid,
+		TxnID:    fab.TransactionID(txh.id),
 		Proposal: proposal,
 	}
 
