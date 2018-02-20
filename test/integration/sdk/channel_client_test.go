@@ -159,7 +159,7 @@ type testHandler struct {
 
 func (h *testHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
 	if h.txID != nil {
-		*h.txID = requestContext.Response.TransactionID.ID
+		*h.txID = requestContext.Response.TransactionID.String()
 		h.t.Logf("Custom handler writing TxID [%s]", *h.txID)
 	}
 	if h.endorser != nil && len(requestContext.Response.Responses) > 0 {
@@ -216,8 +216,8 @@ func testInvokeHandler(ccID string, chClient chclient.ChannelClient, t *testing.
 	if len(response.Responses) == 0 {
 		t.Fatalf("Expecting more than one endorsement responses but got none")
 	}
-	if txID != response.TransactionID.ID {
-		t.Fatalf("Expecting TxID [%s] but got [%s]", response.TransactionID.ID, txID)
+	if txID != response.TransactionID.String() {
+		t.Fatalf("Expecting TxID [%s] but got [%s]", response.TransactionID.String(), txID)
 	}
 	if endorser != response.Responses[0].Endorser {
 		t.Fatalf("Expecting endorser [%s] but got [%s]", response.Responses[0].Endorser, endorser)
@@ -267,8 +267,8 @@ func testChaincodeEvent(ccID string, chClient chclient.ChannelClient, t *testing
 	select {
 	case ccEvent := <-notifier:
 		t.Logf("Received cc event: %s", ccEvent)
-		if ccEvent.TxID != response.TransactionID.ID {
-			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, response.TransactionID.ID)
+		if ccEvent.TxID != response.TransactionID.String() {
+			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, response.TransactionID.String())
 		}
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)
@@ -301,8 +301,8 @@ func testChaincodeEventListener(ccID string, chClient chclient.ChannelClient, li
 	select {
 	case ccEvent := <-notifier:
 		t.Logf("Received cc event: %s", ccEvent)
-		if ccEvent.TxID != response.TransactionID.ID {
-			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, response.TransactionID.ID)
+		if ccEvent.TxID != response.TransactionID.String() {
+			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, response.TransactionID.String())
 		}
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC for eventId(%s)\n", eventID)

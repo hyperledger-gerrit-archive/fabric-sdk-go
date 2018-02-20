@@ -23,7 +23,7 @@ type MockTransactor struct {
 func (t *MockTransactor) CreateTransactionID() (fab.TransactionID, error) {
 	txid, err := txn.NewID(t.Ctx)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "new transaction ID failed")
+		return nil, errors.WithMessage(err, "new transaction ID failed")
 	}
 
 	return txid, nil

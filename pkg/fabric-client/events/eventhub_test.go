@@ -67,7 +67,7 @@ func TestDeadlock(t *testing.T) {
 
 		go client.MockEvent(&pb.Event{
 			Event: (&MockTxEventBuilder{
-				TxID:      transactionID.ID,
+				TxID:      transactionID.String(),
 				ChannelID: channelID,
 			}).Build(),
 		})
@@ -86,7 +86,7 @@ func TestDeadlock(t *testing.T) {
 		}
 
 		received := newCompletionHandler(timeout)
-		registration := eventHub.RegisterChaincodeEvent(ccID, eventName.ID, func(event *fab.ChaincodeEvent) {
+		registration := eventHub.RegisterChaincodeEvent(ccID, eventName.String(), func(event *fab.ChaincodeEvent) {
 			ccCompletion.done()
 			received.done()
 		})
@@ -94,7 +94,7 @@ func TestDeadlock(t *testing.T) {
 		go client.MockEvent(&pb.Event{
 			Event: (&MockCCEventBuilder{
 				CCID:      ccID,
-				EventName: eventName.ID,
+				EventName: eventName.String(),
 			}).Build(),
 		})
 
@@ -201,7 +201,7 @@ func TestChaincodeBlockEvent(t *testing.T) {
 			CCID:      ccID,
 			EventName: eventName,
 			ChannelID: channelID,
-			TxID:      txID.ID,
+			TxID:      txID.String(),
 		}).Build(),
 	})
 
@@ -261,7 +261,7 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 			CCID:      ccID,
 			EventName: eventName,
 			ChannelID: channelID,
-			TxID:      txID.ID,
+			TxID:      txID.String(),
 		}).BuildWithTxValidationFlag(false),
 	})
 
@@ -308,7 +308,7 @@ func TestInvalidTxStatusError(t *testing.T) {
 	go client.MockEvent(&pb.Event{
 		Event: (&MockTxEventBuilder{
 			ChannelID: channelID,
-			TxID:      txID.ID,
+			TxID:      txID.String(),
 		}).BuildWithTxValidationCode(validationCode),
 	})
 

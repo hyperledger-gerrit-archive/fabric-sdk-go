@@ -86,8 +86,7 @@ func createTransactionProposal(t *testing.T, transactor apifabclient.Transactor)
 	tp, err := txn.CreateChaincodeInvokeProposal(txid, "testChannel", request)
 	assert.Nil(t, err)
 
-	assert.NotEmpty(t, tp.TxnID.ID)
-	assert.NotEmpty(t, tp.TxnID.Nonce)
+	assert.NotEmpty(t, tp.TxnID.String())
 
 	return tp
 }

@@ -30,6 +30,11 @@ func CreateChaincodeInvokeProposal(txid fab.TransactionID, channelID string, req
 		return nil, errors.New("Fcn is required")
 	}
 
+	tid, ok := txid.(*TransactionID)
+	if !ok {
+		return nil, errors.New("type of transaction ID is unexpected")
+	}
+
 	// Add function name to arguments
 	argsArray := make([][]byte, len(request.Args)+1)
 	argsArray[0] = []byte(request.Fcn)
@@ -42,7 +47,7 @@ func CreateChaincodeInvokeProposal(txid fab.TransactionID, channelID string, req
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: request.ChaincodeID},
 		Input: &pb.ChaincodeInput{Args: argsArray}}}
 
-	proposal, _, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(txid.ID, common.HeaderType_ENDORSER_TRANSACTION, channelID, ccis, txid.Nonce, txid.Creator, request.TransientMap)
+	proposal, _, err := protos_utils.CreateChaincodeProposalWithTxIDNonceAndTransient(tid.id, common.HeaderType_ENDORSER_TRANSACTION, channelID, ccis, tid.nonce, tid.creator, request.TransientMap)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create chaincode proposal")
 	}

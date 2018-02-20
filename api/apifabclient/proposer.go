@@ -24,16 +24,9 @@ type ProposalSender interface {
 	SendTransactionProposal(*TransactionProposal, []ProposalProcessor) ([]*TransactionProposalResponse, error)
 }
 
-// TransactionID contains the ID of a Fabric Transaction Proposal
-// TODO: change to interface?
-type TransactionID struct {
-	ID      string
-	Creator []byte
-	Nonce   []byte
-}
-
-func (tid *TransactionID) String() string {
-	return tid.ID
+// TransactionID provides the ID of a Fabric Transaction Proposal
+type TransactionID interface {
+	String() string
 }
 
 // ChaincodeInvokeRequest contains the parameters for sending a transaction proposal.

@@ -455,19 +455,19 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	collConfig []*common.CollectionConfig, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+		return nil, nil, errors.New("chaincodeName is required")
 	}
 	if chaincodePath == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+		return nil, nil, errors.New("chaincodePath is required")
 	}
 	if chaincodeVersion == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+		return nil, nil, errors.New("chaincodeVersion is required")
 	}
 	if chaincodePolicy == nil {
-		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+		return nil, nil, errors.New("chaincodePolicy is required")
 	}
 	if len(targets) == 0 {
-		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+		return nil, nil, errors.New("missing peer objects for chaincode proposal")
 	}
 
 	cp := ChaincodeDeployRequest{
@@ -481,12 +481,12 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 
 	txid, err := txn.NewID(c.clientContext)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
+		return nil, nil, errors.WithMessage(err, "create transaction ID failed")
 	}
 
 	tp, err := CreateChaincodeDeployProposal(txid, InstantiateChaincode, c.name, cp)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+		return nil, nil, errors.WithMessage(err, "creation of chaincode proposal failed")
 	}
 
 	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
@@ -499,19 +499,19 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 	chaincodePolicy *common.SignaturePolicyEnvelope, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+		return nil, nil, errors.New("chaincodeName is required")
 	}
 	if chaincodePath == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+		return nil, nil, errors.New("chaincodePath is required")
 	}
 	if chaincodeVersion == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+		return nil, nil, errors.New("chaincodeVersion is required")
 	}
 	if chaincodePolicy == nil {
-		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+		return nil, nil, errors.New("chaincodePolicy is required")
 	}
 	if len(targets) == 0 {
-		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+		return nil, nil, errors.New("missing peer objects for chaincode proposal")
 	}
 
 	cp := ChaincodeDeployRequest{
@@ -524,12 +524,12 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 
 	txid, err := txn.NewID(c.clientContext)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
+		return nil, nil, errors.WithMessage(err, "create transaction ID failed")
 	}
 
 	tp, err := CreateChaincodeDeployProposal(txid, UpgradeChaincode, c.name, cp)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+		return nil, nil, errors.WithMessage(err, "creation of chaincode proposal failed")
 	}
 
 	tpr, err := txn.SendProposal(c.clientContext, tp, targets)

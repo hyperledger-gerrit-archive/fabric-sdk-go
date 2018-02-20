@@ -95,7 +95,7 @@ func orderersByTarget(ctx fab.Context) (map[string]apiconfig.OrdererConfig, erro
 func (t *Transactor) CreateTransactionID() (fab.TransactionID, error) {
 	txid, err := txn.NewID(t.ctx)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "new transaction ID failed")
+		return nil, errors.WithMessage(err, "new transaction ID failed")
 	}
 
 	return txid, nil

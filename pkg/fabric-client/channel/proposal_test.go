@@ -74,7 +74,7 @@ func TestSendInstantiateProposal(t *testing.T) {
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), nil, targets)
 
-	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
+	if err != nil || len(tresponse) == 0 || txnid.String() == "" {
 		t.Fatal("Send Instantiate Proposal Test failed")
 	}
 
@@ -91,7 +91,7 @@ func TestSendInstantiateProposal(t *testing.T) {
 	}
 	tresponse, txnid, err = channel.SendInstantiateProposal("qscc", nil, "test",
 		"1", cauthdsl.SignedByMspMember("Org1MSP"), collConfig, targets)
-	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
+	if err != nil || len(tresponse) == 0 || txnid.String() == "" {
 		t.Fatal("Send Instantiate Proposal Test failed")
 	}
 }
@@ -148,7 +148,7 @@ func TestSendUpgradeProposal(t *testing.T) {
 	tresponse, txnid, err = channel.SendUpgradeProposal("qscc", nil, "test",
 		"2", cauthdsl.SignedByMspMember("Org1MSP"), targets)
 
-	if err != nil || len(tresponse) == 0 || txnid.ID == "" {
+	if err != nil || len(tresponse) == 0 || txnid.String() == "" {
 		t.Fatal("Send Upgrade Proposal Test failed")
 	}
 
