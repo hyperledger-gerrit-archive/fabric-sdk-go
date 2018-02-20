@@ -11,11 +11,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
@@ -26,8 +25,8 @@ type FabricSDK struct {
 	opts options
 
 	config            apiconfig.Config
-	stateStore        kvstore.KVStore
-	cryptoSuite       apicryptosuite.CryptoSuite
+	stateStore        core.KVStore
+	cryptoSuite       core.CryptoSuite
 	discoveryProvider apifabclient.DiscoveryProvider
 	selectionProvider apifabclient.SelectionProvider
 	signingManager    apifabclient.SigningManager

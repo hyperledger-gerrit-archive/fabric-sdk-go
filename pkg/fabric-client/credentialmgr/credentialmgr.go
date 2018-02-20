@@ -15,10 +15,9 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr/persistence"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -32,16 +31,16 @@ type CredentialManager struct {
 	orgName        string
 	orgMspID       string
 	embeddedUsers  map[string]apiconfig.TLSKeyPair
-	privKeyStore   kvstore.KVStore
-	certStore      kvstore.KVStore
+	privKeyStore   core.KVStore
+	certStore      core.KVStore
 	config         apiconfig.Config
-	cryptoProvider apicryptosuite.CryptoSuite
+	cryptoProvider core.CryptoSuite
 }
 
 // NewCredentialManager Constructor for a credential manager.
 // @param {string} orgName - organisation id
 // @returns {CredentialManager} new credential manager
-func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (apifabclient.CredentialManager, error) {
+func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider core.CryptoSuite) (apifabclient.CredentialManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
@@ -58,8 +57,8 @@ func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvide
 		return nil, errors.New("Either a cryptopath or an embedded list of users is required")
 	}
 
-	var privKeyStore kvstore.KVStore
-	var certStore kvstore.KVStore
+	var privKeyStore core.KVStore
+	var certStore core.KVStore
 
 	orgCryptoPathTemplate := orgConfig.CryptoPath
 	if orgCryptoPathTemplate != "" {
@@ -159,11 +158,11 @@ func (mgr *CredentialManager) getEmbeddedCertBytes(userName string) ([]byte, err
 	return pemBytes, nil
 }
 
-func (mgr *CredentialManager) getEmbeddedPrivateKey(userName string) (apicryptosuite.Key, error) {
+func (mgr *CredentialManager) getEmbeddedPrivateKey(userName string) (core.Key, error) {
 	keyPem := mgr.embeddedUsers[strings.ToLower(userName)].Key.Pem
 	keyPath := mgr.embeddedUsers[strings.ToLower(userName)].Key.Path
 
-	var privateKey apicryptosuite.Key
+	var privateKey core.Key
 	var pemBytes []byte
 	var err error
 
@@ -231,7 +230,7 @@ func (mgr *CredentialManager) getCertBytesFromCertStore(userName string) ([]byte
 		UserName: userName,
 	})
 	if err != nil {
-		if err == kvstore.ErrNotFound {
+		if err == core.ErrNotFound {
 			return nil, nil
 		}
 		return nil, err
@@ -243,7 +242,7 @@ func (mgr *CredentialManager) getCertBytesFromCertStore(userName string) ([]byte
 	return certBytes, nil
 }
 
-func (mgr *CredentialManager) getPrivateKeyFromCert(userName string, cert []byte) (apicryptosuite.Key, error) {
+func (mgr *CredentialManager) getPrivateKeyFromCert(userName string, cert []byte) (core.Key, error) {
 	if cert == nil {
 		return nil, errors.New("cert is nil")
 	}
@@ -255,13 +254,13 @@ func (mgr *CredentialManager) getPrivateKeyFromCert(userName string, cert []byte
 	if err == nil {
 		return privKey, nil
 	}
-	if err != kvstore.ErrNotFound {
+	if err != core.ErrNotFound {
 		return nil, errors.WithMessage(err, "fetching private key from key store failed")
 	}
 	return mgr.cryptoProvider.GetKey(pubKey.SKI())
 }
 
-func (mgr *CredentialManager) getPrivateKeyFromKeyStore(userName string, ski []byte) (apicryptosuite.Key, error) {
+func (mgr *CredentialManager) getPrivateKeyFromKeyStore(userName string, ski []byte) (core.Key, error) {
 	pemBytes, err := mgr.getPrivateKeyPemFromKeyStore(userName, ski)
 	if err != nil {
 		return nil, err
@@ -269,5 +268,5 @@ func (mgr *CredentialManager) getPrivateKeyFromKeyStore(userName string, ski []b
 	if pemBytes != nil {
 		return fabricCaUtil.ImportBCCSPKeyFromPEMBytes(pemBytes, mgr.cryptoProvider, true)
 	}
-	return nil, kvstore.ErrNotFound
+	return nil, core.ErrNotFound
 }
