@@ -6,9 +6,9 @@ SPDX-License-Identifier: Apache-2.0
 
 package apifabclient
 
-import "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+import "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 
 // SigningManager signs object with provided key
 type SigningManager interface {
-	Sign([]byte, apicryptosuite.Key) ([]byte, error)
+	Sign([]byte, core.Key) ([]byte, error)
 }

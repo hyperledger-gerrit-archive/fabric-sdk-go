@@ -16,7 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -31,7 +31,7 @@ type FabricCA struct {
 // @param {api.Config} client config for fabric-ca services
 // @returns {api.FabricCAClient} FabricCAClient implementation
 // @returns {error} error, if any
-func NewFabricCAClient(org string, config config.Config, cryptoSuite apicryptosuite.CryptoSuite) (*FabricCA, error) {
+func NewFabricCAClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (*FabricCA, error) {
 	if org == "" || config == nil || cryptoSuite == nil {
 		return nil, errors.New("organization, config and cryptoSuite are required to load CA config")
 	}
@@ -103,7 +103,7 @@ func (fabricCAServices *FabricCA) CAName() string {
 // enrollmentID The registered ID to use for enrollment
 // enrollmentSecret The secret associated with the enrollment ID
 // Returns X509 certificate
-func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (apicryptosuite.Key, []byte, error) {
+func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
 	if enrollmentID == "" {
 		return nil, nil, errors.New("enrollmentID required")
 	}
@@ -124,7 +124,7 @@ func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret s
 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
-func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (apicryptosuite.Key, []byte, error) {
+func (fabricCAServices *FabricCA) Reenroll(user sdkApi.User) (core.Key, []byte, error) {
 	if user == nil {
 		return nil, nil, errors.New("user required")
 	}

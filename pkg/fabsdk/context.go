@@ -8,10 +8,9 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 	"github.com/pkg/errors"
 )
 
@@ -29,7 +28,7 @@ func (c *fabContext) Config() apiconfig.Config {
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
-func (c *fabContext) CryptoSuite() apicryptosuite.CryptoSuite {
+func (c *fabContext) CryptoSuite() core.CryptoSuite {
 	return c.sdk.cryptoSuite
 }
 
@@ -39,7 +38,7 @@ func (c *fabContext) SigningManager() apifabclient.SigningManager {
 }
 
 // StateStore returns state store
-func (c *sdkContext) StateStore() kvstore.KVStore {
+func (c *sdkContext) StateStore() core.KVStore {
 	return c.sdk.stateStore
 }
 
