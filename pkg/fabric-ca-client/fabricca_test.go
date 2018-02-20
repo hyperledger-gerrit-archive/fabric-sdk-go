@@ -20,15 +20,15 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-ca-client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 var configImp config.Config
-var cryptoSuiteProvider apicryptosuite.CryptoSuite
+var cryptoSuiteProvider core.CryptoSuite
 var org1 = "peerorg1"
 var caServerURL = "http://localhost:8090"
 var wrongCAServerURL = "http://localhost:8091"

@@ -8,7 +8,7 @@ package apifabclient
 
 import (
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 // Context supplies the configuration and signing identity to client objects.
@@ -21,7 +21,7 @@ type Context interface {
 type ProviderContext interface {
 	SigningManager() SigningManager
 	Config() config.Config
-	CryptoSuite() apicryptosuite.CryptoSuite
+	CryptoSuite() core.CryptoSuite
 }
 
 // ChannelProvider supplies Channel related-objects for the named channel.

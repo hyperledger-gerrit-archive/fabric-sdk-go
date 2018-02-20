@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package apifabclient
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 // SigningIdentity is the identity object that encapsulates the user's private key for signing
@@ -15,7 +15,7 @@ import (
 type SigningIdentity struct {
 	MspID          string
 	EnrollmentCert []byte
-	PrivateKey     apicryptosuite.Key
+	PrivateKey     core.Key
 }
 
 // CredentialManager retrieves user's signing identity
