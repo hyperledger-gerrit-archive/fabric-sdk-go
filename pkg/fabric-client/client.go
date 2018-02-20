@@ -11,15 +11,14 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	channel "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/resource"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -29,8 +28,8 @@ var logger = logging.NewLogger("fabric_sdk_go")
 // Client enables access to a Fabric network.
 type Client struct {
 	channels        map[string]fab.Channel
-	cryptoSuite     apicryptosuite.CryptoSuite
-	stateStore      kvstore.KVStore
+	cryptoSuite     core.CryptoSuite
+	stateStore      core.KVStore
 	signingIdentity fab.IdentityContext
 	config          config.Config
 	signingManager  fab.SigningManager
@@ -95,28 +94,28 @@ func (c *Client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, e
 // Deprecated: see fabsdk package.
 /*
  * The SDK should have a built-in key value store implementation (suggest a file-based implementation to allow easy setup during
- * development). But production systems would want a store backed by database for more robust kvstore and clustering,
+ * development). But production systems would want a store backed by database for more robust core and clustering,
  * so that multiple app instances can share app state via the database (note that this doesn’t necessarily make the app stateful).
  * This API makes this pluggable so that different store implementations can be selected by the application.
  */
-func (c *Client) SetStateStore(stateStore kvstore.KVStore) {
+func (c *Client) SetStateStore(stateStore core.KVStore) {
 	c.stateStore = stateStore
 }
 
 // StateStore is a convenience method for obtaining the state store object in use for this client.
-func (c *Client) StateStore() kvstore.KVStore {
+func (c *Client) StateStore() core.KVStore {
 	return c.stateStore
 }
 
 // SetCryptoSuite is a convenience method for obtaining the state store object in use for this client.
 //
 // Deprecated: see fabsdk package.
-func (c *Client) SetCryptoSuite(cryptoSuite apicryptosuite.CryptoSuite) {
+func (c *Client) SetCryptoSuite(cryptoSuite core.CryptoSuite) {
 	c.cryptoSuite = cryptoSuite
 }
 
 // CryptoSuite is a convenience method for obtaining the CryptoSuite object in use for this client.
-func (c *Client) CryptoSuite() apicryptosuite.CryptoSuite {
+func (c *Client) CryptoSuite() core.CryptoSuite {
 	return c.cryptoSuite
 }
 
@@ -187,7 +186,7 @@ func (c *Client) LoadUserFromStateStore(name string) (fab.User, error) {
 	}
 	value, err := c.stateStore.Load(name)
 	if err != nil {
-		if err == kvstore.ErrNotFound {
+		if err == core.ErrNotFound {
 			return nil, nil
 		}
 		return nil, err

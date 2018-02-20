@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package apifabclient
 
-import "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+import "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 
 // User represents users that have been enrolled and represented by
 // an enrollment certificate (ECert) and a signing key. The ECert must have
@@ -36,5 +36,5 @@ type User interface {
 type IdentityContext interface {
 	MspID() string
 	Identity() ([]byte, error)
-	PrivateKey() apicryptosuite.Key
+	PrivateKey() core.Key
 }

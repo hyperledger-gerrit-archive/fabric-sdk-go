@@ -9,12 +9,11 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	apicryptosuite "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	chclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	resmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	kvstore "github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	core "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 // MockCoreProviders is a mock of CoreProviders interface
@@ -53,9 +52,9 @@ func (mr *MockCoreProvidersMockRecorder) Config() *gomock.Call {
 }
 
 // CryptoSuite mocks base method
-func (m *MockCoreProviders) CryptoSuite() apicryptosuite.CryptoSuite {
+func (m *MockCoreProviders) CryptoSuite() core.CryptoSuite {
 	ret := m.ctrl.Call(m, "CryptoSuite")
-	ret0, _ := ret[0].(apicryptosuite.CryptoSuite)
+	ret0, _ := ret[0].(core.CryptoSuite)
 	return ret0
 }
 
@@ -89,9 +88,9 @@ func (mr *MockCoreProvidersMockRecorder) SigningManager() *gomock.Call {
 }
 
 // StateStore mocks base method
-func (m *MockCoreProviders) StateStore() kvstore.KVStore {
+func (m *MockCoreProviders) StateStore() core.KVStore {
 	ret := m.ctrl.Call(m, "StateStore")
-	ret0, _ := ret[0].(kvstore.KVStore)
+	ret0, _ := ret[0].(core.KVStore)
 	return ret0
 }
 
@@ -207,9 +206,9 @@ func (mr *MockProvidersMockRecorder) Config() *gomock.Call {
 }
 
 // CryptoSuite mocks base method
-func (m *MockProviders) CryptoSuite() apicryptosuite.CryptoSuite {
+func (m *MockProviders) CryptoSuite() core.CryptoSuite {
 	ret := m.ctrl.Call(m, "CryptoSuite")
-	ret0, _ := ret[0].(apicryptosuite.CryptoSuite)
+	ret0, _ := ret[0].(core.CryptoSuite)
 	return ret0
 }
 
@@ -267,9 +266,9 @@ func (mr *MockProvidersMockRecorder) SigningManager() *gomock.Call {
 }
 
 // StateStore mocks base method
-func (m *MockProviders) StateStore() kvstore.KVStore {
+func (m *MockProviders) StateStore() core.KVStore {
 	ret := m.ctrl.Call(m, "StateStore")
-	ret0, _ := ret[0].(kvstore.KVStore)
+	ret0, _ := ret[0].(core.KVStore)
 	return ret0
 }
 
@@ -302,9 +301,9 @@ func (m *MockCoreProviderFactory) EXPECT() *MockCoreProviderFactoryMockRecorder 
 }
 
 // NewCryptoSuiteProvider mocks base method
-func (m *MockCoreProviderFactory) NewCryptoSuiteProvider(arg0 apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+func (m *MockCoreProviderFactory) NewCryptoSuiteProvider(arg0 apiconfig.Config) (core.CryptoSuite, error) {
 	ret := m.ctrl.Call(m, "NewCryptoSuiteProvider", arg0)
-	ret0, _ := ret[0].(apicryptosuite.CryptoSuite)
+	ret0, _ := ret[0].(core.CryptoSuite)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -328,7 +327,7 @@ func (mr *MockCoreProviderFactoryMockRecorder) NewFabricProvider(arg0 interface{
 }
 
 // NewSigningManager mocks base method
-func (m *MockCoreProviderFactory) NewSigningManager(arg0 apicryptosuite.CryptoSuite, arg1 apiconfig.Config) (apifabclient.SigningManager, error) {
+func (m *MockCoreProviderFactory) NewSigningManager(arg0 core.CryptoSuite, arg1 apiconfig.Config) (apifabclient.SigningManager, error) {
 	ret := m.ctrl.Call(m, "NewSigningManager", arg0, arg1)
 	ret0, _ := ret[0].(apifabclient.SigningManager)
 	ret1, _ := ret[1].(error)
@@ -341,9 +340,9 @@ func (mr *MockCoreProviderFactoryMockRecorder) NewSigningManager(arg0, arg1 inte
 }
 
 // NewStateStoreProvider mocks base method
-func (m *MockCoreProviderFactory) NewStateStoreProvider(arg0 apiconfig.Config) (kvstore.KVStore, error) {
+func (m *MockCoreProviderFactory) NewStateStoreProvider(arg0 apiconfig.Config) (core.KVStore, error) {
 	ret := m.ctrl.Call(m, "NewStateStoreProvider", arg0)
-	ret0, _ := ret[0].(kvstore.KVStore)
+	ret0, _ := ret[0].(core.KVStore)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -426,7 +425,7 @@ func (m *MockOrgClientFactory) EXPECT() *MockOrgClientFactoryMockRecorder {
 }
 
 // NewCredentialManager mocks base method
-func (m *MockOrgClientFactory) NewCredentialManager(arg0 string, arg1 apiconfig.Config, arg2 apicryptosuite.CryptoSuite) (apifabclient.CredentialManager, error) {
+func (m *MockOrgClientFactory) NewCredentialManager(arg0 string, arg1 apiconfig.Config, arg2 core.CryptoSuite) (apifabclient.CredentialManager, error) {
 	ret := m.ctrl.Call(m, "NewCredentialManager", arg0, arg1, arg2)
 	ret0, _ := ret[0].(apifabclient.CredentialManager)
 	ret1, _ := ret[1].(error)

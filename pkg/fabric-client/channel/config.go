@@ -9,7 +9,7 @@ package channel
 import (
 	"github.com/golang/protobuf/proto"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 
@@ -80,7 +80,7 @@ func createConfigEnvelope(data []byte) (*common.ConfigEnvelope, error) {
 	return configEnvelope, nil
 }
 
-func loadMSPs(mspConfigs []*mb.MSPConfig, cs apicryptosuite.CryptoSuite) ([]msp.MSP, error) {
+func loadMSPs(mspConfigs []*mb.MSPConfig, cs core.CryptoSuite) ([]msp.MSP, error) {
 	logger.Debugf("loadMSPs - start number of msps=%d", len(mspConfigs))
 
 	msps := []msp.MSP{}
