@@ -8,9 +8,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	apicryptosuite "github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	apifabca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
 	api "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	core "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 // MockFabricCAClient is a mock of FabricCAClient interface
@@ -49,9 +49,9 @@ func (mr *MockFabricCAClientMockRecorder) CAName() *gomock.Call {
 }
 
 // Enroll mocks base method
-func (m *MockFabricCAClient) Enroll(arg0, arg1 string) (apicryptosuite.Key, []byte, error) {
+func (m *MockFabricCAClient) Enroll(arg0, arg1 string) (core.Key, []byte, error) {
 	ret := m.ctrl.Call(m, "Enroll", arg0, arg1)
-	ret0, _ := ret[0].(apicryptosuite.Key)
+	ret0, _ := ret[0].(core.Key)
 	ret1, _ := ret[1].([]byte)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -63,9 +63,9 @@ func (mr *MockFabricCAClientMockRecorder) Enroll(arg0, arg1 interface{}) *gomock
 }
 
 // Reenroll mocks base method
-func (m *MockFabricCAClient) Reenroll(arg0 apifabca.User) (apicryptosuite.Key, []byte, error) {
+func (m *MockFabricCAClient) Reenroll(arg0 apifabca.User) (core.Key, []byte, error) {
 	ret := m.ctrl.Call(m, "Reenroll", arg0)
-	ret0, _ := ret[0].(apicryptosuite.Key)
+	ret0, _ := ret[0].(core.Key)
 	ret1, _ := ret[1].([]byte)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2

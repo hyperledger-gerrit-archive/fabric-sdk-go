@@ -15,13 +15,13 @@ import (
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 // MockProviderContext holds core providers to enable mocking.
 type MockProviderContext struct {
 	config         config.Config
-	cryptoSuite    apicryptosuite.CryptoSuite
+	cryptoSuite    core.CryptoSuite
 	signingManager fab.SigningManager
 }
 
@@ -36,7 +36,7 @@ func NewMockProviderContext() *MockProviderContext {
 }
 
 // NewMockProviderContextCustom creates a MockProviderContext consisting of the arguments
-func NewMockProviderContextCustom(config config.Config, cryptoSuite apicryptosuite.CryptoSuite, signer fab.SigningManager) *MockProviderContext {
+func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer fab.SigningManager) *MockProviderContext {
 	context := MockProviderContext{
 		config:         config,
 		signingManager: signer,
@@ -56,7 +56,7 @@ func (pc *MockProviderContext) SetConfig(config config.Config) {
 }
 
 // CryptoSuite returns the mock crypto suite.
-func (pc *MockProviderContext) CryptoSuite() apicryptosuite.CryptoSuite {
+func (pc *MockProviderContext) CryptoSuite() core.CryptoSuite {
 	return pc.cryptoSuite
 }
 
