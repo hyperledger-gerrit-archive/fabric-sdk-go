@@ -13,8 +13,8 @@ import (
 	apifabclient "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	chclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	resmgmtclient "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	kvstore "github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	kvstore "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/kvstore"
 )
 
 // MockCoreProviders is a mock of CoreProviders interface

@@ -11,7 +11,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/kvstore"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"

@@ -11,8 +11,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/kvstore"
 	"github.com/pkg/errors"
 )
 

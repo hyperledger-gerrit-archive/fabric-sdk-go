@@ -13,7 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/kvstore"
 )
 
 // CoreProviderFactory allows overriding of primitives and the fabric core object provider

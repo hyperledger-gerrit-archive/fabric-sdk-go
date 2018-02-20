@@ -14,7 +14,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/kvstore"
 	"github.com/pkg/errors"
 )
 

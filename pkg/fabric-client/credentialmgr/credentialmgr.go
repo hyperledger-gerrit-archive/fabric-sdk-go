@@ -15,8 +15,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/kvstore"
 
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"

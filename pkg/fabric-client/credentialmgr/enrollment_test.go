@@ -17,9 +17,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	camocks "github.com/hyperledger/fabric-sdk-go/api/apifabca/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr/persistence"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/kvstore"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
