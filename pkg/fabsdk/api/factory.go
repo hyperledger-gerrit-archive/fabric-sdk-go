@@ -8,19 +8,18 @@ package api
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	resmgmt "github.com/hyperledger/fabric-sdk-go/api/apitxn/resmgmtclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 // CoreProviderFactory allows overriding of primitives and the fabric core object provider
 type CoreProviderFactory interface {
-	NewStateStoreProvider(config apiconfig.Config) (kvstore.KVStore, error)
-	NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error)
-	NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error)
+	NewStateStoreProvider(config apiconfig.Config) (core.KVStore, error)
+	NewCryptoSuiteProvider(config apiconfig.Config) (core.CryptoSuite, error)
+	NewSigningManager(cryptoProvider core.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error)
 	NewFabricProvider(context fab.ProviderContext) (FabricProvider, error)
 }
 
@@ -34,8 +33,8 @@ type ServiceProviderFactory interface {
 // OrgClientFactory allows overriding default clients and providers of an organization
 // Currently, a context is created for each organization that the client app needs.
 type OrgClientFactory interface {
-	//NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error)
-	NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fab.CredentialManager, error)
+	//NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider core.CryptoSuite) (fabca.FabricCAClient, error)
+	NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider core.CryptoSuite) (fab.CredentialManager, error)
 }
 
 // SessionClientFactory allows overriding default clients and providers of a session

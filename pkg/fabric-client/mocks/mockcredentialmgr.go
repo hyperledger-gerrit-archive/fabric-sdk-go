@@ -8,8 +8,8 @@ package mocks
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 // MockCredentialManager is a mock CredentialManager
@@ -17,7 +17,7 @@ type MockCredentialManager struct {
 }
 
 // NewMockCredentialManager Constructor for a credential manager.
-func NewMockCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (apifabclient.CredentialManager, error) {
+func NewMockCredentialManager(orgName string, config apiconfig.Config, cryptoProvider core.CryptoSuite) (apifabclient.CredentialManager, error) {
 	mcm := MockCredentialManager{}
 	return &mcm, nil
 }

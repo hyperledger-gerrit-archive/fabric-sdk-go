@@ -8,12 +8,11 @@ package fabsdk
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
@@ -22,8 +21,8 @@ import (
 )
 
 type mockCorePkg struct {
-	stateStore     kvstore.KVStore
-	cryptoSuite    apicryptosuite.CryptoSuite
+	stateStore     core.KVStore
+	cryptoSuite    core.CryptoSuite
 	signingManager apifabclient.SigningManager
 	fabricProvider apisdk.FabricProvider
 }
@@ -63,15 +62,15 @@ func newMockCorePkg(config apiconfig.Config) (*mockCorePkg, error) {
 	return &c, nil
 }
 
-func (mc *mockCorePkg) NewStateStoreProvider(config apiconfig.Config) (kvstore.KVStore, error) {
+func (mc *mockCorePkg) NewStateStoreProvider(config apiconfig.Config) (core.KVStore, error) {
 	return mc.stateStore, nil
 }
 
-func (mc *mockCorePkg) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+func (mc *mockCorePkg) NewCryptoSuiteProvider(config apiconfig.Config) (core.CryptoSuite, error) {
 	return mc.cryptoSuite, nil
 }
 
-func (mc *mockCorePkg) NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (apifabclient.SigningManager, error) {
+func (mc *mockCorePkg) NewSigningManager(cryptoProvider core.CryptoSuite, config apiconfig.Config) (apifabclient.SigningManager, error) {
 	return mc.signingManager, nil
 }
 

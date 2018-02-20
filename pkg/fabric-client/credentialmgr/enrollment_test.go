@@ -15,11 +15,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	camocks "github.com/hyperledger/fabric-sdk-go/api/apifabca/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr/persistence"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
@@ -105,7 +104,7 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 }
 
 // Simulate caClient.Enroll()
-func prepareForEnroll(t *testing.T, mc *camocks.MockFabricCAClient, cs apicryptosuite.CryptoSuite) {
+func prepareForEnroll(t *testing.T, mc *camocks.MockFabricCAClient, cs core.CryptoSuite) {
 	// A real caClient.Enroll() generates a CSR. In the process, a crypto suite generates
 	// a new key pair, and the private key is stored into crypto suite private key storage.
 
@@ -132,7 +131,7 @@ NrfToiPzJpEFPGF+/8CpzOkl91oz+XJsvdgf5wIgI/e8mpvpplUQbU52+LejA36D
 CsbWERvZPjR/GFEDEvc=
 -----END CERTIFICATE-----`)
 
-	var privateKey apicryptosuite.Key
+	var privateKey core.Key
 	var err error
 
 	mc.EXPECT().Enroll(gomock.Any(), gomock.Any()).Do(func(enrollmentID string, enrollmentSecret string) {
@@ -142,7 +141,7 @@ CsbWERvZPjR/GFEDEvc=
 	}).Return(privateKey, certBytes, err)
 }
 
-func getCertStore(config apiconfig.Config, orgName string) (kvstore.KVStore, error) {
+func getCertStore(config apiconfig.Config, orgName string) (core.KVStore, error) {
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
 		return nil, err
