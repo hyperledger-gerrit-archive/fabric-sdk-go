@@ -8,10 +8,9 @@ package defcore
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
@@ -36,7 +35,7 @@ func NewProviderFactory() *ProviderFactory {
 }
 
 // NewStateStoreProvider creates a KeyValueStore using the SDK's default implementation
-func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (kvstore.KVStore, error) {
+func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (core.KVStore, error) {
 
 	var stateStorePath = f.stateStoreOpts.Path
 	if stateStorePath == "" {
@@ -55,13 +54,13 @@ func (f *ProviderFactory) NewStateStoreProvider(config apiconfig.Config) (kvstor
 }
 
 // NewCryptoSuiteProvider returns a new default implementation of BCCSP
-func (f *ProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
+func (f *ProviderFactory) NewCryptoSuiteProvider(config apiconfig.Config) (core.CryptoSuite, error) {
 	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(config)
 	return cryptoSuiteProvider, err
 }
 
 // NewSigningManager returns a new default implementation of signing manager
-func (f *ProviderFactory) NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error) {
+func (f *ProviderFactory) NewSigningManager(cryptoProvider core.CryptoSuite, config apiconfig.Config) (fab.SigningManager, error) {
 	return signingMgr.NewSigningManager(cryptoProvider, config)
 }
 

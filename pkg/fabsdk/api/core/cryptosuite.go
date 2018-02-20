@@ -21,7 +21,7 @@ CryptoSuite interface defined in this file acts as a wrapper for
 ‘github.com.hyperledger.fabric.bccsp.BCCSP’ interface
 */
 
-package apicryptosuite
+package core
 
 import (
 	"crypto"

@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package apifabca
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 // User represents users that have been enrolled and represented by
@@ -31,7 +31,7 @@ type User interface {
 
 	// ECerts
 	EnrollmentCertificate() []byte
-	PrivateKey() apicryptosuite.Key
+	PrivateKey() core.Key
 
 	Identity() ([]byte, error)
 

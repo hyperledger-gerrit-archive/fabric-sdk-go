@@ -12,9 +12,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 func TestBadConfig(t *testing.T) {
@@ -82,7 +82,7 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	verifySuiteType(t, c, "*pkcs11.impl")
 }
 
-func verifySuiteType(t *testing.T, c apicryptosuite.CryptoSuite, expectedType string) {
+func verifySuiteType(t *testing.T, c core.CryptoSuite, expectedType string) {
 	w, ok := c.(*wrapper.CryptoSuite)
 	if !ok {
 		t.Fatal("Unexpected cryptosuite type")

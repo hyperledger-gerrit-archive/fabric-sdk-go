@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package chclient
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 )
 
 //Handler for chaining transaction executions
@@ -19,7 +19,7 @@ type Handler interface {
 
 //ClientContext contains context parameters for handler execution
 type ClientContext struct {
-	CryptoSuite apicryptosuite.CryptoSuite
+	CryptoSuite core.CryptoSuite
 	Discovery   apifabclient.DiscoveryService
 	Selection   apifabclient.SelectionService
 	Channel     apifabclient.Channel // TODO: this should be removed when we have MSP split out.

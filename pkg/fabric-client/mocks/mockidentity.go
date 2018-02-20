@@ -9,7 +9,7 @@ package mocks
 import (
 	"crypto"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 
 	"time"
 
@@ -75,7 +75,7 @@ func (id *MockIdentity) Serialize() ([]byte, error) {
 	return nil, nil
 }
 
-func (id *MockIdentity) getHashOpt(hashFamily string) (apicryptosuite.HashOpts, error) {
+func (id *MockIdentity) getHashOpt(hashFamily string) (core.HashOpts, error) {
 
 	return nil, nil
 }

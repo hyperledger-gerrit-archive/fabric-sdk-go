@@ -16,10 +16,10 @@ import (
 
 	api "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	pkcsFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
@@ -163,7 +163,7 @@ func configurePKCS11Options(hashFamily string, securityLevel int) *pkcs11.PKCS11
 
 }
 
-func verifyHashFn(t *testing.T, c apicryptosuite.CryptoSuite) {
+func verifyHashFn(t *testing.T, c core.CryptoSuite) {
 	msg := []byte("Hello")
 	e := sha256.Sum256(msg)
 	a, err := c.Hash(msg, &bccsp.SHA256Opts{})
