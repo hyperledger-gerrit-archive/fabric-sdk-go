@@ -7,9 +7,11 @@ package fab
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -29,6 +31,8 @@ func TestMain(m *testing.M) {
 func setup() {
 	// do any test setup for all tests here...
 	var err error
+
+	rand.Seed(time.Now().UnixNano())
 
 	testSetup := integration.BaseSetupImpl{
 		ConfigFile: "../" + integration.ConfigTestFile,
