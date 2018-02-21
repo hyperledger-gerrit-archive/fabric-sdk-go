@@ -39,7 +39,8 @@ type HandlerRegistry map[reflect.Type]Handler
 
 // Dispatcher is responsible for handling all events, including connection and registration events originating from the client,
 // and events originating from the channel event service. All events are processed in a single Go routine
-// in order to avoid any race conditions. This avoids the need for synchronization.
+// in order to avoid any race conditions and to ensure that events are processed in the order that they are received.
+// This also avoids the need for synchronization.
 type Dispatcher struct {
 	opts                       Options
 	handlers                   map[reflect.Type]Handler
