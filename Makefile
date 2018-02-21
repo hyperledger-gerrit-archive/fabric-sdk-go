@@ -27,7 +27,7 @@ DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
 # Fabric versions used in the Makefile
-FABRIC_STABLE_VERSION           := 1.0.5
+FABRIC_STABLE_VERSION           := 1.0.6
 FABRIC_STABLE_VERSION_MINOR     := 1.0
 FABRIC_STABLE_VERSION_MAJOR     := 1
 FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.2
@@ -131,7 +131,7 @@ export FABRIC_SDKGO_DEPEND_INSTALL=true
 
 FABRIC_STABLE_INTTEST        := true
 FABRIC_STABLE_PKCS11_INTTEST := true
-FABRIC_PREV_INTTEST          := true
+FABRIC_PREV_INTTEST          := false
 FABRIC_PRERELEASE_INTTEST    := true
 FABRIC_DEVSTABLE_INTTEST     := false
 endif
