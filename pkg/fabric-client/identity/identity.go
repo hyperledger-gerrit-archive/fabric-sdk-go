@@ -35,8 +35,8 @@ type JSON struct {
 // @param {string} name - The user name
 // @param {string} mspID - The mspID for this user
 // @returns {ca.User} new user
-func NewUser(name string, mspID string) *User {
-	return &User{name: name, mspID: mspID}
+func NewUser(mspID string, name string) *User {
+	return &User{mspID: mspID, name: name}
 }
 
 // Name Get the user name.
