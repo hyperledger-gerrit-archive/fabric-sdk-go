@@ -492,3 +492,15 @@ func (m *MockConfig) TimeoutOrDefault(arg0 apiconfig.TimeoutType) time.Duration 
 func (mr *MockConfigMockRecorder) TimeoutOrDefault(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TimeoutOrDefault", reflect.TypeOf((*MockConfig)(nil).TimeoutOrDefault), arg0)
 }
+
+// UserStorePath mocks base method
+func (m *MockConfig) UserStorePath() string {
+	ret := m.ctrl.Call(m, "UserStorePath")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// UserStorePath indicates an expected call of UserStorePath
+func (mr *MockConfigMockRecorder) UserStorePath() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserStorePath", reflect.TypeOf((*MockConfig)(nil).UserStorePath))
+}
