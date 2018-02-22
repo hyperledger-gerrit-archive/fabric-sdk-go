@@ -424,17 +424,17 @@ func (m *MockOrgClientFactory) EXPECT() *MockOrgClientFactoryMockRecorder {
 	return m.recorder
 }
 
-// NewCredentialManager mocks base method
-func (m *MockOrgClientFactory) NewCredentialManager(arg0 string, arg1 core.Config, arg2 core.CryptoSuite) (api.CredentialManager, error) {
-	ret := m.ctrl.Call(m, "NewCredentialManager", arg0, arg1, arg2)
-	ret0, _ := ret[0].(api.CredentialManager)
+// NewIdentityManager mocks base method
+func (m *MockOrgClientFactory) NewIdentityManager(arg0 string, arg1 core.Config, arg2 core.CryptoSuite) (fab.IdentityManager, error) {
+	ret := m.ctrl.Call(m, "NewIdentityManager", arg0, arg1, arg2)
+	ret0, _ := ret[0].(fab.IdentityManager)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NewCredentialManager indicates an expected call of NewCredentialManager
-func (mr *MockOrgClientFactoryMockRecorder) NewCredentialManager(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCredentialManager", reflect.TypeOf((*MockOrgClientFactory)(nil).NewCredentialManager), arg0, arg1, arg2)
+// NewIdentityManager indicates an expected call of NewIdentityManager
+func (mr *MockOrgClientFactoryMockRecorder) NewIdentityManager(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewIdentityManager", reflect.TypeOf((*MockOrgClientFactory)(nil).NewIdentityManager), arg0, arg1, arg2)
 }
 
 // MockSessionClientFactory is a mock of SessionClientFactory interface
