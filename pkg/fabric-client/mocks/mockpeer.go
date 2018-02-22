@@ -13,7 +13,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -86,7 +86,7 @@ func (p *MockPeer) URL() string {
 }
 
 // ProcessTransactionProposal does not send anything anywhere but returns an empty mock ProposalResponse
-func (p *MockPeer) ProcessTransactionProposal(tp apifabclient.ProcessProposalRequest) (*apifabclient.TransactionProposalResponse, error) {
+func (p *MockPeer) ProcessTransactionProposal(tp context.ProcessProposalRequest) (*context.TransactionProposalResponse, error) {
 	if p.RWLock != nil {
 		p.RWLock.Lock()
 		defer p.RWLock.Unlock()
@@ -98,12 +98,12 @@ func (p *MockPeer) ProcessTransactionProposal(tp apifabclient.ProcessProposalReq
 		sID := &msp.SerializedIdentity{Mspid: "Org1MSP", IdBytes: []byte(certPem)}
 		endorser, err := proto.Marshal(sID)
 		if err != nil {
-			return &apifabclient.TransactionProposalResponse{}, err
+			return &context.TransactionProposalResponse{}, err
 		}
 		p.Endorser = endorser
 	}
 
-	return &apifabclient.TransactionProposalResponse{
+	return &context.TransactionProposalResponse{
 		Endorser: p.MockURL,
 		Status:   p.Status,
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{

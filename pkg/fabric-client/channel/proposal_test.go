@@ -12,12 +12,12 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/golang/mock/gomock"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
+	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/context/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
 
@@ -31,11 +31,11 @@ func TestSendInstantiateProposal(t *testing.T) {
 	defer mockCtrl.Finish()
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
-	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99}
+	tpr := context.TransactionProposalResponse{Endorser: "example.com", Status: 99}
 
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(&tpr, nil)
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(&tpr, nil)
-	targets := []fab.ProposalProcessor{proc}
+	targets := []context.ProposalProcessor{proc}
 
 	//Add a Peer
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}}
@@ -106,10 +106,10 @@ func TestSendUpgradeProposal(t *testing.T) {
 	defer mockCtrl.Finish()
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
-	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
+	tpr := context.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
 
 	proc.EXPECT().ProcessTransactionProposal(gomock.Any()).Return(&tpr, nil)
-	targets := []fab.ProposalProcessor{proc}
+	targets := []context.ProposalProcessor{proc}
 
 	//Add a Peer
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}

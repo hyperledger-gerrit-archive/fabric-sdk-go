@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/pkg/errors"
 )
@@ -165,7 +165,7 @@ func TestQueryOnSystemChannel(t *testing.T) {
 		t.Fatalf("Error adding peer to channel: %s", err)
 	}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "ccID",
 		Fcn:         "method",
 		Args:        [][]byte{[]byte("arg")},
@@ -181,7 +181,7 @@ func TestQueryBySystemChaincode(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Status: 200}
 	channel.AddPeer(&peer)
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}

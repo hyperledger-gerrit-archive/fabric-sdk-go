@@ -15,10 +15,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/pkg/errors"
 )
@@ -140,8 +141,8 @@ func TestStore(t *testing.T) {
 	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate()); err != nil {
 		t.Fatalf("checkStoreValue %s failed [%s]", user2.Name(), err)
 	}
-	if err := checkStoreValue(store, user1, nil); err != apifabclient.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected apifabclient.ErrUserNotFound, got: %v", user1.Name(), err)
+	if err := checkStoreValue(store, user1, nil); err != context.ErrUserNotFound {
+		t.Fatalf("checkStoreValue %s failed, expected context.ErrUserNotFound, got: %v", user1.Name(), err)
 	}
 
 	// Check ke2, value2
@@ -151,17 +152,17 @@ func TestStore(t *testing.T) {
 	if err := store.Delete(user2); err != nil {
 		t.Fatalf("Delete %s failed [%s]", user2.Name(), err)
 	}
-	if err := checkStoreValue(store, user2, nil); err != apifabclient.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected apifabclient.ErrUserNotFound, got: %v", user2.Name(), err)
+	if err := checkStoreValue(store, user2, nil); err != context.ErrUserNotFound {
+		t.Fatalf("checkStoreValue %s failed, expected context.ErrUserNotFound, got: %v", user2.Name(), err)
 	}
 
 	// Check non-existing key
-	nonExistingKey := apifabclient.UserKey{
+	nonExistingKey := context.UserKey{
 		MspID: "Orgx",
 		Name:  "userx",
 	}
 	_, err = store.Load(nonExistingKey)
-	if err == nil || err != apifabclient.ErrUserNotFound {
+	if err == nil || err != context.ErrUserNotFound {
 		t.Fatal("fetching value for non-existing key should return ErrUserNotFound")
 	}
 }
@@ -188,7 +189,7 @@ func cleanup(t *testing.T, storePath string) {
 	}
 }
 
-func checkStoreValue(store *CertFileUserStore, user apifabclient.User, expected []byte) error {
+func checkStoreValue(store *CertFileUserStore, user context.User, expected []byte) error {
 	userKey := userKeyFromUser(user)
 	storeKey := storeKeyFromUserKey(userKeyFromUser(user))
 	v, err := store.Load(userKey)

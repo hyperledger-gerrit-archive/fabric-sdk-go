@@ -12,16 +12,16 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
 )
 
 // CreateChaincodeInvokeProposal creates a proposal for transaction.
-func CreateChaincodeInvokeProposal(txid fab.TransactionID, channelID string, request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeInvokeProposal(txid contextApi.TransactionID, channelID string, request contextApi.ChaincodeInvokeRequest) (*contextApi.TransactionProposal, error) {
 	if request.ChaincodeID == "" {
 		return nil, errors.New("ChaincodeID is required")
 	}
@@ -47,7 +47,7 @@ func CreateChaincodeInvokeProposal(txid fab.TransactionID, channelID string, req
 		return nil, errors.Wrap(err, "failed to create chaincode proposal")
 	}
 
-	tp := fab.TransactionProposal{
+	tp := contextApi.TransactionProposal{
 		TxnID:    txid,
 		Proposal: proposal,
 	}
@@ -76,7 +76,7 @@ func signProposal(ctx context, proposal *pb.Proposal) (*pb.SignedProposal, error
 }
 
 // SendProposal sends a TransactionProposal to ProposalProcessor.
-func SendProposal(ctx context, proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+func SendProposal(ctx context, proposal *contextApi.TransactionProposal, targets []contextApi.ProposalProcessor) ([]*contextApi.TransactionProposalResponse, error) {
 
 	if proposal == nil {
 		return nil, errors.New("proposal is required")
@@ -91,16 +91,16 @@ func SendProposal(ctx context, proposal *fab.TransactionProposal, targets []fab.
 		return nil, errors.WithMessage(err, "sign proposal failed")
 	}
 
-	request := fab.ProcessProposalRequest{SignedProposal: signedProposal}
+	request := contextApi.ProcessProposalRequest{SignedProposal: signedProposal}
 
 	var responseMtx sync.Mutex
-	var transactionProposalResponses []*fab.TransactionProposalResponse
+	var transactionProposalResponses []*contextApi.TransactionProposalResponse
 	var wg sync.WaitGroup
 	errs := multi.Errors{}
 
 	for _, p := range targets {
 		wg.Add(1)
-		go func(processor fab.ProposalProcessor) {
+		go func(processor contextApi.ProposalProcessor) {
 			defer wg.Done()
 
 			resp, err := processor.ProcessTransactionProposal(request)

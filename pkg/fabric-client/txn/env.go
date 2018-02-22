@@ -17,9 +17,8 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
@@ -27,30 +26,30 @@ import (
 // NewID computes a TransactionID for the current user context
 //
 // TODO: Determine if this function should be exported after refactoring is completed.
-func NewID(ctx fab.Context) (fab.TransactionID, error) {
+func NewID(ctx contextApi.Context) (contextApi.TransactionID, error) {
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "nonce creation failed")
+		return contextApi.TransactionID{}, errors.WithMessage(err, "nonce creation failed")
 	}
 
 	creator, err := ctx.Identity()
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "identity from context failed")
+		return contextApi.TransactionID{}, errors.WithMessage(err, "identity from context failed")
 	}
 
 	ho := cryptosuite.GetSHA256Opts() // TODO: make configurable
 	h, err := ctx.CryptoSuite().GetHash(ho)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "hash function creation failed")
+		return contextApi.TransactionID{}, errors.WithMessage(err, "hash function creation failed")
 	}
 
 	id, err := computeTxnID(nonce, creator, h)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "txn ID computation failed")
+		return contextApi.TransactionID{}, errors.WithMessage(err, "txn ID computation failed")
 	}
 
-	txnID := fab.TransactionID{
+	txnID := contextApi.TransactionID{
 		ID:      id,
 		Creator: creator,
 		Nonce:   nonce,
@@ -73,7 +72,7 @@ func computeTxnID(nonce, creator []byte, h hash.Hash) (string, error) {
 }
 
 // signPayload signs payload
-func signPayload(ctx context, payload *common.Payload) (*fab.SignedEnvelope, error) {
+func signPayload(ctx context, payload *common.Payload) (*contextApi.SignedEnvelope, error) {
 	payloadBytes, err := proto.Marshal(payload)
 	if err != nil {
 		return nil, errors.WithMessage(err, "marshaling of payload failed")
@@ -84,13 +83,13 @@ func signPayload(ctx context, payload *common.Payload) (*fab.SignedEnvelope, err
 	if err != nil {
 		return nil, errors.WithMessage(err, "signing of payload failed")
 	}
-	return &fab.SignedEnvelope{Payload: payloadBytes, Signature: signature}, nil
+	return &contextApi.SignedEnvelope{Payload: payloadBytes, Signature: signature}, nil
 }
 
 // ChannelHeaderOpts holds the parameters to create a ChannelHeader.
 type ChannelHeaderOpts struct {
 	ChannelID   string
-	TxnID       fab.TransactionID
+	TxnID       contextApi.TransactionID
 	Epoch       uint64
 	ChaincodeID string
 	Timestamp   time.Time
@@ -137,7 +136,7 @@ func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (
 }
 
 // createHeader creates a Header from a ChannelHeader.
-func createHeader(txnID fab.TransactionID, channelHeader *common.ChannelHeader) (*common.Header, error) {
+func createHeader(txnID contextApi.TransactionID, channelHeader *common.ChannelHeader) (*common.Header, error) {
 
 	signatureHeader := &common.SignatureHeader{
 		Creator: txnID.Creator,
@@ -159,7 +158,7 @@ func createHeader(txnID fab.TransactionID, channelHeader *common.ChannelHeader) 
 }
 
 // CreatePayload creates a slice of payload bytes from a ChannelHeader and a data slice.
-func CreatePayload(txnID fab.TransactionID, channelHeader *common.ChannelHeader, data []byte) (*common.Payload, error) {
+func CreatePayload(txnID contextApi.TransactionID, channelHeader *common.ChannelHeader, data []byte) (*common.Payload, error) {
 	header, err := createHeader(txnID, channelHeader)
 	if err != nil {
 		return nil, errors.Wrap(err, "header creation failed")

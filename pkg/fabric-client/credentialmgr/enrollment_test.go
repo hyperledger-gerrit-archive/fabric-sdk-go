@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	camocks "github.com/hyperledger/fabric-sdk-go/api/apifabca/mocks"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
+	camocks "github.com/hyperledger/fabric-sdk-go/pkg/context/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"

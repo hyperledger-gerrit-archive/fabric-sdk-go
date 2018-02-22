@@ -15,18 +15,20 @@ import (
 	"testing"
 	"time"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
 	"github.com/pkg/errors"
 )
 
 func TestNewTransaction(t *testing.T) {
 
-	txnReq := fab.TransactionRequest{
-		Proposal:          &fab.TransactionProposal{Proposal: &pb.Proposal{}},
-		ProposalResponses: []*fab.TransactionProposalResponse{},
+	txnReq := contextApi.TransactionRequest{
+		Proposal:          &contextApi.TransactionProposal{Proposal: &pb.Proposal{}},
+		ProposalResponses: []*contextApi.TransactionProposalResponse{},
 	}
 	//Test Empty proposal response scenario
 	_, err := New(txnReq)
@@ -37,23 +39,23 @@ func TestNewTransaction(t *testing.T) {
 
 	//Test invalid proposal header scenario
 
-	txid := fab.TransactionID{
+	txid := contextApi.TransactionID{
 		ID: "1234",
 	}
 
-	proposal := fab.TransactionProposal{
+	proposal := contextApi.TransactionProposal{
 		TxnID:    txid,
 		Proposal: &pb.Proposal{Header: []byte("TEST"), Extension: []byte(""), Payload: []byte("")},
 	}
 
-	proposalResp := fab.TransactionProposalResponse{
+	proposalResp := contextApi.TransactionProposalResponse{
 		Endorser:         "http://peer1.com",
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
-	txnReq = fab.TransactionRequest{
+	txnReq = contextApi.TransactionRequest{
 		Proposal:          &proposal,
-		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
+		ProposalResponses: []*contextApi.TransactionProposalResponse{&proposalResp},
 	}
 	_, err = New(txnReq)
 
@@ -62,19 +64,19 @@ func TestNewTransaction(t *testing.T) {
 	}
 
 	//Test invalid proposal payload scenario
-	proposal = fab.TransactionProposal{
+	proposal = contextApi.TransactionProposal{
 		TxnID:    txid,
 		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("TEST")},
 	}
 
-	proposalResp = fab.TransactionProposalResponse{
+	proposalResp = contextApi.TransactionProposalResponse{
 		Endorser:         "http://peer1.com",
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
-	txnReq = fab.TransactionRequest{
+	txnReq = contextApi.TransactionRequest{
 		Proposal:          &proposal,
-		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
+		ProposalResponses: []*contextApi.TransactionProposalResponse{&proposalResp},
 	}
 	_, err = New(txnReq)
 	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
@@ -82,19 +84,19 @@ func TestNewTransaction(t *testing.T) {
 	}
 
 	//Test proposal response
-	proposal = fab.TransactionProposal{
+	proposal = contextApi.TransactionProposal{
 		TxnID:    txid,
 		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
 	}
 
-	proposalResp = fab.TransactionProposalResponse{
+	proposalResp = contextApi.TransactionProposalResponse{
 		Endorser:         "http://peer1.com",
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 99, Payload: []byte("")}},
 	}
 
-	txnReq = fab.TransactionRequest{
+	txnReq = contextApi.TransactionRequest{
 		Proposal:          &proposal,
-		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
+		ProposalResponses: []*contextApi.TransactionProposalResponse{&proposalResp},
 	}
 	_, err = New(txnReq)
 	if err == nil || err.Error() != "proposal response was not successful, error code 99, msg success" {
@@ -102,19 +104,19 @@ func TestNewTransaction(t *testing.T) {
 	}
 
 	//Test repeated field header nil scenario
-	proposal = fab.TransactionProposal{
+	proposal = contextApi.TransactionProposal{
 		TxnID:    txid,
 		Proposal: &pb.Proposal{Header: []byte(""), Extension: []byte(""), Payload: []byte("")},
 	}
 
-	proposalResp = fab.TransactionProposalResponse{
+	proposalResp = contextApi.TransactionProposalResponse{
 		Endorser:         "http://peer1.com",
 		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Status: 200, Payload: []byte("")}},
 	}
 
-	txnReq = fab.TransactionRequest{
+	txnReq = contextApi.TransactionRequest{
 		Proposal:          &proposal,
-		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
+		ProposalResponses: []*contextApi.TransactionProposalResponse{&proposalResp},
 	}
 	_, err = New(txnReq)
 	if err == nil || err.Error() != "repeated field endorsements has nil element" {
@@ -141,15 +143,15 @@ func TestBroadcastEnvelope(t *testing.T) {
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
-	lsnr1 := make(chan *fab.SignedEnvelope)
-	lsnr2 := make(chan *fab.SignedEnvelope)
+	lsnr1 := make(chan *contextApi.SignedEnvelope)
+	lsnr2 := make(chan *contextApi.SignedEnvelope)
 	//Create mock orderers
 	orderer1 := mocks.NewMockOrderer("1", lsnr1)
 	orderer2 := mocks.NewMockOrderer("2", lsnr2)
 
-	orderers := []fab.Orderer{orderer1, orderer2}
+	orderers := []contextApi.Orderer{orderer1, orderer2}
 
-	sigEnvelope := &fab.SignedEnvelope{
+	sigEnvelope := &contextApi.SignedEnvelope{
 		Signature: []byte(""),
 		Payload:   []byte(""),
 	}
@@ -207,7 +209,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 		}
 	}
 
-	emptyOrderers := []fab.Orderer{}
+	emptyOrderers := []contextApi.Orderer{}
 	_, err = broadcastEnvelope(ctx, sigEnvelope, emptyOrderers)
 
 	if err == nil || err.Error() != "orderers not set" {
@@ -229,7 +231,7 @@ func TestSendTransaction(t *testing.T) {
 
 	//Create mock orderer
 	orderer := mocks.NewMockOrderer("", nil)
-	orderers := []fab.Orderer{orderer}
+	orderers := []contextApi.Orderer{orderer}
 
 	//Call Send Transaction with nil tx
 	response, err = Send(ctx, nil, orderers)
@@ -240,8 +242,8 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Create tx with nil proposal
-	txn := fab.Transaction{
-		Proposal: &fab.TransactionProposal{
+	txn := contextApi.Transaction{
+		Proposal: &contextApi.TransactionProposal{
 			Proposal: nil,
 		},
 		Transaction: &pb.Transaction{},
@@ -256,8 +258,8 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Create tx with improper proposal header
-	txn = fab.Transaction{
-		Proposal: &fab.TransactionProposal{
+	txn = contextApi.Transaction{
+		Proposal: &contextApi.TransactionProposal{
 			Proposal: &pb.Proposal{Header: []byte("TEST")},
 		},
 		Transaction: &pb.Transaction{},
@@ -271,8 +273,8 @@ func TestSendTransaction(t *testing.T) {
 	}
 
 	//Create tx with proper proposal header
-	txn = fab.Transaction{
-		Proposal: &fab.TransactionProposal{
+	txn = contextApi.Transaction{
+		Proposal: &contextApi.TransactionProposal{
 			Proposal: &pb.Proposal{Header: []byte(""), Payload: []byte(""), Extension: []byte("")},
 		},
 		Transaction: &pb.Transaction{},
@@ -328,8 +330,8 @@ func TestConcurrentOrderers(t *testing.T) {
 
 	orderers := setupMassiveTestOrderer(numOrderers)
 
-	txn := fab.Transaction{
-		Proposal: &fab.TransactionProposal{
+	txn := contextApi.Transaction{
+		Proposal: &contextApi.TransactionProposal{
 			Proposal: &pb.Proposal{},
 		},
 		Transaction: &pb.Transaction{},
@@ -340,8 +342,8 @@ func TestConcurrentOrderers(t *testing.T) {
 	}
 }
 
-func setupMassiveTestOrderer(numberOfOrderers int) []fab.Orderer {
-	orderers := []fab.Orderer{}
+func setupMassiveTestOrderer(numberOfOrderers int) []contextApi.Orderer {
+	orderers := []contextApi.Orderer{}
 
 	for i := 0; i < numberOfOrderers; i++ {
 		orderer := mocks.NewMockOrderer(fmt.Sprintf("http://mock%d.orderers.r.us", i), nil)

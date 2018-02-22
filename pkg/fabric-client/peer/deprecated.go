@@ -9,9 +9,9 @@ package peer
 import (
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -132,6 +132,6 @@ func NewPeer(url string, config apiconfig.Config) (*Peer, error) {
 
 // NewPeerFromProcessor constructs a Peer with a ProposalProcessor to simulate transactions.
 // Deprecated: use peer.New() instead
-func NewPeerFromProcessor(url string, processor apifabclient.ProposalProcessor, config apiconfig.Config) (*Peer, error) {
+func NewPeerFromProcessor(url string, processor context.ProposalProcessor, config apiconfig.Config) (*Peer, error) {
 	return &Peer{url: url, processor: processor}, nil
 }

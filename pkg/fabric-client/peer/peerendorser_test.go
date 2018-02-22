@@ -20,11 +20,11 @@ import (
 	grpcCodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -279,7 +279,7 @@ func TestProcessProposalGoodDial(t *testing.T) {
 	}
 }
 
-func testProcessProposal(t *testing.T, url string) (*apifabclient.TransactionProposalResponse, error) {
+func testProcessProposal(t *testing.T, url string) (*context.TransactionProposalResponse, error) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	config := mock_apiconfig.DefaultMockConfig(mockCtrl)
@@ -308,8 +308,8 @@ func getPeerEndorserRequest(url string, cert *x509.Certificate, serverHostOverri
 
 }
 
-func mockProcessProposalRequest() apifabclient.ProcessProposalRequest {
-	return apifabclient.ProcessProposalRequest{
+func mockProcessProposalRequest() context.ProcessProposalRequest {
+	return context.ProcessProposalRequest{
 		SignedProposal: &pb.SignedProposal{},
 	}
 }

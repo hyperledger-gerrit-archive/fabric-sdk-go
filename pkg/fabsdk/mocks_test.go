@@ -7,13 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
@@ -22,10 +21,10 @@ import (
 )
 
 type mockCorePkg struct {
-	stateStore     kvstore.KVStore
+	stateStore     context.KVStore
 	cryptoSuite    apicryptosuite.CryptoSuite
-	signingManager apifabclient.SigningManager
-	fabricProvider apisdk.FabricProvider
+	signingManager context.SigningManager
+	fabricProvider context.FabricProvider
 }
 
 func newMockCorePkg(config apiconfig.Config) (*mockCorePkg, error) {
@@ -63,7 +62,7 @@ func newMockCorePkg(config apiconfig.Config) (*mockCorePkg, error) {
 	return &c, nil
 }
 
-func (mc *mockCorePkg) NewStateStoreProvider(config apiconfig.Config) (kvstore.KVStore, error) {
+func (mc *mockCorePkg) NewStateStoreProvider(config apiconfig.Config) (context.KVStore, error) {
 	return mc.stateStore, nil
 }
 
@@ -71,11 +70,11 @@ func (mc *mockCorePkg) NewCryptoSuiteProvider(config apiconfig.Config) (apicrypt
 	return mc.cryptoSuite, nil
 }
 
-func (mc *mockCorePkg) NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (apifabclient.SigningManager, error) {
+func (mc *mockCorePkg) NewSigningManager(cryptoProvider apicryptosuite.CryptoSuite, config apiconfig.Config) (context.SigningManager, error) {
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) NewFabricProvider(ctx apifabclient.ProviderContext) (apisdk.FabricProvider, error) {
+func (mc *mockCorePkg) NewFabricProvider(ctx context.ProviderContext) (context.FabricProvider, error) {
 	return mc.fabricProvider, nil
 }
 
@@ -87,35 +86,35 @@ type mockPkgSuite struct {
 	errOnLogger  bool
 }
 
-func (ps *mockPkgSuite) Core() (apisdk.CoreProviderFactory, error) {
+func (ps *mockPkgSuite) Core() (context.CoreProviderFactory, error) {
 	if ps.errOnCore {
 		return nil, errors.New("Error")
 	}
 	return defcore.NewProviderFactory(), nil
 }
 
-func (ps *mockPkgSuite) Service() (apisdk.ServiceProviderFactory, error) {
+func (ps *mockPkgSuite) Service() (context.ServiceProviderFactory, error) {
 	if ps.errOnService {
 		return nil, errors.New("Error")
 	}
 	return defsvc.NewProviderFactory(), nil
 }
 
-func (ps *mockPkgSuite) Context() (apisdk.OrgClientFactory, error) {
+func (ps *mockPkgSuite) Context() (context.OrgClientFactory, error) {
 	if ps.errOnContext {
 		return nil, errors.New("Error")
 	}
 	return defclient.NewOrgClientFactory(), nil
 }
 
-func (ps *mockPkgSuite) Session() (apisdk.SessionClientFactory, error) {
+func (ps *mockPkgSuite) Session() (SessionClientFactory, error) {
 	if ps.errOnSession {
 		return nil, errors.New("Error")
 	}
 	return defclient.NewSessionClientFactory(), nil
 }
 
-func (ps *mockPkgSuite) Logger() (apilogging.LoggerProvider, error) {
+func (ps *mockPkgSuite) Logger() (api.LoggerProvider, error) {
 	if ps.errOnLogger {
 		return nil, errors.New("Error")
 	}

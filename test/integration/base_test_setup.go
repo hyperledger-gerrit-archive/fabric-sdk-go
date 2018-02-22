@@ -11,12 +11,12 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -26,11 +26,11 @@ import (
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
 	SDK             *fabsdk.FabricSDK
-	Identity        fab.IdentityContext
-	Client          fab.Resource
-	Transactor      fab.Transactor
-	Targets         []fab.ProposalProcessor
-	EventHub        fab.EventHub
+	Identity        context.IdentityContext
+	Client          context.Resource
+	Transactor      context.Transactor
+	Targets         []context.ProposalProcessor
+	EventHub        context.EventHub
 	ConnectEventHub bool
 	ConfigFile      string
 	OrgID           string
@@ -133,8 +133,8 @@ func (setup *BaseSetupImpl) Initialize() error {
 	return nil
 }
 
-func getOrgTargets(config apiconfig.Config, org string) ([]fab.ProposalProcessor, error) {
-	targets := []fab.ProposalProcessor{}
+func getOrgTargets(config apiconfig.Config, org string) ([]context.ProposalProcessor, error) {
+	targets := []context.ProposalProcessor{}
 
 	peerConfig, err := config.PeersConfig(org)
 	if err != nil {
@@ -156,9 +156,9 @@ func (setup *BaseSetupImpl) InitConfig() apiconfig.ConfigProvider {
 }
 
 // InstallCC use low level client to install chaincode
-func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *fab.CCPackage, targets []fab.ProposalProcessor) error {
+func (setup *BaseSetupImpl) InstallCC(name string, path string, version string, ccPackage *context.CCPackage, targets []context.ProposalProcessor) error {
 
-	icr := fab.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
+	icr := context.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage, Targets: targets}
 
 	_, _, err := setup.Client.InstallChaincode(icr)
 	if err != nil {
@@ -208,10 +208,10 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.IdentityOption, 
 }
 
 // CreateAndSendTransactionProposal ... TODO duplicate
-func CreateAndSendTransactionProposal(transactor fab.ProposalSender, chainCodeID string,
-	fcn string, args [][]byte, targets []fab.ProposalProcessor, transientData map[string][]byte) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, error) {
+func CreateAndSendTransactionProposal(transactor context.ProposalSender, chainCodeID string,
+	fcn string, args [][]byte, targets []context.ProposalProcessor, transientData map[string][]byte) ([]*context.TransactionProposalResponse, *context.TransactionProposal, error) {
 
-	propReq := fab.ChaincodeInvokeRequest{
+	propReq := context.ChaincodeInvokeRequest{
 		Fcn:          fcn,
 		Args:         args,
 		TransientMap: transientData,
@@ -228,9 +228,9 @@ func CreateAndSendTransactionProposal(transactor fab.ProposalSender, chainCodeID
 }
 
 // CreateAndSendTransaction ...
-func CreateAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionProposal, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
+func CreateAndSendTransaction(transactor context.Sender, proposal *context.TransactionProposal, resps []*context.TransactionProposalResponse) (*context.TransactionResponse, error) {
 
-	txRequest := fab.TransactionRequest{
+	txRequest := context.TransactionRequest{
 		Proposal:          proposal,
 		ProposalResponses: resps,
 	}
@@ -256,7 +256,7 @@ func CreateAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionPr
 // returns a boolean channel which receives true when the event is complete
 // and an error channel for errors
 // TODO - Duplicate
-func RegisterTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub) (chan bool, chan error) {
+func RegisterTxEvent(t *testing.T, txID context.TransactionID, eventHub context.EventHub) (chan bool, chan error) {
 	done := make(chan bool)
 	fail := make(chan error)
 
