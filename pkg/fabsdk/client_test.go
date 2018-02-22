@@ -100,7 +100,7 @@ func TestWithOrg(t *testing.T) {
 
 	_, err = sdk.NewClient(WithUser(clientValidExtraUser), WithOrg(clientValidExtraOrg)).ResourceMgmt()
 	if err != nil {
-		t.Fatalf("Expected no error from Client, but got %v", err)
+		t.Fatalf("Expected no error from Client(WithOrg), but got %v", err)
 	}
 }
 
