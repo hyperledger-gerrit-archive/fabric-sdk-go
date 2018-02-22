@@ -12,3 +12,11 @@ import "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 type SigningManager interface {
 	Sign([]byte, core.Key) ([]byte, error)
 }
+
+// SigningIdentity is the identity object that encapsulates the user's private key for signing
+// and the user's enrollment certificate (identity)
+type SigningIdentity struct {
+	MspID          string
+	EnrollmentCert []byte
+	PrivateKey     core.Key
+}

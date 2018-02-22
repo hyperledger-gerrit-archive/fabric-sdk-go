@@ -261,12 +261,12 @@ func (sdk *FabricSDK) context() *sdkContext {
 
 func (sdk *FabricSDK) newUser(orgID string, userName string) (context.IdentityContext, error) {
 
-	credentialMgr, err := sdk.opts.Context.CreateCredentialManager(orgID, sdk.config, sdk.cryptoSuite)
+	identityMgr, err := sdk.opts.Context.New(orgID, sdk.config, sdk.cryptoSuite)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get credential manager")
+		return nil, errors.WithMessage(err, "failed to get identity manager")
 	}
 
-	signingIdentity, err := credentialMgr.GetSigningIdentity(userName)
+	signingIdentity, err := identityMgr.GetSigningIdentity(userName)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get signing identity")
 	}
