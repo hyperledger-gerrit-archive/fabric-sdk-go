@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package credentialmgr
+package identitymgr
 
 import (
 	"math/rand"
@@ -46,7 +46,7 @@ XdsmTcdRvJ3TS/6HCA==
 
 var msp = "Org1"
 
-func TestCredentialManager(t *testing.T) {
+func TestIdentityManager(t *testing.T) {
 
 	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
@@ -85,17 +85,17 @@ func TestCredentialManager(t *testing.T) {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	credentialMgr, err := NewCredentialManager(msp, config, cryptoSuite)
+	identityMgr, err := NewIdentityManager(msp, config, cryptoSuite)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
 
-	_, err = credentialMgr.GetSigningIdentity("")
+	_, err = identityMgr.GetSigningIdentity("")
 	if err == nil {
 		t.Fatalf("Should have failed to retrieve signing identity for empty user name")
 	}
 
-	_, err = credentialMgr.GetSigningIdentity("Non-Existent")
+	_, err = identityMgr.GetSigningIdentity("Non-Existent")
 	if err == nil {
 		t.Fatalf("Should have failed to retrieve signing identity for non-existent user")
 	}
@@ -103,7 +103,7 @@ func TestCredentialManager(t *testing.T) {
 	testUserName := createRandomName()
 
 	// Should not find the user
-	if err := checkSigningIdentity(credentialMgr, testUserName); err != api.ErrUserNotFound {
+	if err := checkSigningIdentity(identityMgr, testUserName); err != api.ErrUserNotFound {
 		t.Fatalf("expected ErrUserNotFound, got: %s", err)
 	}
 
@@ -120,13 +120,13 @@ func TestCredentialManager(t *testing.T) {
 	}
 
 	// Should succeed after enrollment
-	if err := checkSigningIdentity(credentialMgr, testUserName); err != nil {
+	if err := checkSigningIdentity(identityMgr, testUserName); err != nil {
 		t.Fatalf("checkSigningIdentity failed: %s", err)
 	}
 }
 
-func checkSigningIdentity(credentialMgr api.CredentialManager, user string) error {
-	id, err := credentialMgr.GetSigningIdentity(user)
+func checkSigningIdentity(identityMgr api.IdentityManager, user string) error {
+	id, err := identityMgr.GetSigningIdentity(user)
 	if err == api.ErrUserNotFound {
 		return err
 	}
@@ -149,7 +149,7 @@ func checkSigningIdentity(credentialMgr api.CredentialManager, user string) erro
 	return nil
 }
 
-func TestInvalidOrgCredentialManager(t *testing.T) {
+func TestInvalidOrgIdentityManager(t *testing.T) {
 
 	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
@@ -157,48 +157,48 @@ func TestInvalidOrgCredentialManager(t *testing.T) {
 	}
 
 	// Invalid Org
-	_, err = NewCredentialManager("invalidOrg", config, &fcmocks.MockCryptoSuite{})
+	_, err = NewIdentityManager("invalidOrg", config, &fcmocks.MockCryptoSuite{})
 	if err == nil {
 		t.Fatalf("Should have failed to setup manager for invalid org")
 	}
 
 }
 
-func TestCredentialManagerFromEmbeddedCryptoConfig(t *testing.T) {
+func TestIdentityManagerFromEmbeddedCryptoConfig(t *testing.T) {
 	config, err := config.FromFile("../../../test/fixtures/config/config_test_embedded_pems.yaml")()
 
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	credentialMgr, err := NewCredentialManager(msp, config, cryptosuite.GetDefault())
+	identityMgr, err := NewIdentityManager(msp, config, cryptosuite.GetDefault())
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
 
-	_, err = credentialMgr.GetSigningIdentity("")
+	_, err = identityMgr.GetSigningIdentity("")
 	if err == nil {
 		t.Fatalf("Should get error for empty user name")
 	}
 
-	_, err = credentialMgr.GetSigningIdentity("Non-Existent")
+	_, err = identityMgr.GetSigningIdentity("Non-Existent")
 	if err != api.ErrUserNotFound {
 		t.Fatalf("Should get ErrUserNotFound for non-existent user, got %v", err)
 	}
 
-	if err := checkSigningIdentity(credentialMgr, "EmbeddedUser"); err != nil {
+	if err := checkSigningIdentity(identityMgr, "EmbeddedUser"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
 
-	if err := checkSigningIdentity(credentialMgr, "EmbeddedUserWithPaths"); err != nil {
+	if err := checkSigningIdentity(identityMgr, "EmbeddedUserWithPaths"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
 
-	if err := checkSigningIdentity(credentialMgr, "EmbeddedUserMixed"); err != nil {
+	if err := checkSigningIdentity(identityMgr, "EmbeddedUserMixed"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
 
-	if err := checkSigningIdentity(credentialMgr, "EmbeddedUserMixed2"); err != nil {
+	if err := checkSigningIdentity(identityMgr, "EmbeddedUserMixed2"); err != nil {
 		t.Fatalf("checkSigningIdentity failes: %s", err)
 	}
 }

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package credentialmgr
+package identitymgr
 
 import (
 	"strings"
@@ -14,13 +14,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	camocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 )
 
-func TestCredentialManagerWithEnrollment(t *testing.T) {
+func TestIdentityManagerWithEnrollment(t *testing.T) {
 	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -49,16 +49,16 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 
 	cs, err := sw.GetSuiteByConfig(config)
 
-	credentialMgr, err := NewCredentialManager(orgName, config, cs)
+	identityMgr, err := NewIdentityManager(orgName, config, cs)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
 
-	if err := checkSigningIdentity(credentialMgr, "User1"); err != nil {
+	if err := checkSigningIdentity(identityMgr, "User1"); err != nil {
 		t.Fatalf("checkSigningIdentity failed: %s", err)
 	}
 
-	// Refers to the same location used by the CredentialManager
+	// Refers to the same location used by the IdentityManager
 	userStore, err := identity.NewCertFileUserStore(clientCofig.CredentialStore.Path, cs)
 	if err != nil {
 		t.Fatalf("Failed to setup userStore: %s", err)
@@ -66,7 +66,7 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 
 	userToEnroll := "enrollmentID"
 
-	if err := checkSigningIdentity(credentialMgr, userToEnroll); err == nil {
+	if err := checkSigningIdentity(identityMgr, userToEnroll); err == nil {
 		t.Fatalf("checkSigningIdentity should fail for user who hasn't been enrolled")
 	}
 
@@ -91,7 +91,7 @@ func TestCredentialManagerWithEnrollment(t *testing.T) {
 		t.Fatalf("userStore.Store: %s", err)
 	}
 
-	if err := checkSigningIdentity(credentialMgr, userToEnroll); err != nil {
+	if err := checkSigningIdentity(identityMgr, userToEnroll); err != nil {
 		t.Fatalf("checkSigningIdentity shouldn't fail for user who hasn been just enrolled: %s", err)
 	}
 }

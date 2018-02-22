@@ -16,7 +16,7 @@ type SigningIdentity struct {
 	PrivateKey     core.Key
 }
 
-// CredentialManager retrieves user's signing identity
-type CredentialManager interface {
+// IdentityManager retrieves user's signing identity
+type IdentityManager interface {
 	GetSigningIdentity(name string) (*SigningIdentity, error)
 }
