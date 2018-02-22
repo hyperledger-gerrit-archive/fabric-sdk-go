@@ -18,7 +18,7 @@ import (
 	"reflect"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig/mocks"
 )
 
 func TestTLSConfigErrorAddingCertificate(t *testing.T) {

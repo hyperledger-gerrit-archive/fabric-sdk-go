@@ -15,7 +15,7 @@ import (
 
 	"reflect"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -36,7 +36,7 @@ func TestDeadlock(t *testing.T) {
 		return
 	}
 
-	t.Log("EventHub Concurrency test")
+	t.Log("EventHubConnection Concurrency test")
 
 	client := clientFactory.clients[0]
 	if client == nil {
@@ -86,7 +86,7 @@ func TestDeadlock(t *testing.T) {
 		}
 
 		received := newCompletionHandler(timeout)
-		registration := eventHub.RegisterChaincodeEvent(ccID, eventName.ID, func(event *fab.ChaincodeEvent) {
+		registration := eventHub.RegisterChaincodeEvent(ccID, eventName.ID, func(event *context.ChaincodeEvent) {
 			ccCompletion.done()
 			received.done()
 		})
@@ -129,17 +129,17 @@ func TestChaincodeEvent(t *testing.T) {
 		return
 	}
 
-	t.Log("EventHub Chaincode event test")
+	t.Log("EventHubConnection Chaincode event test")
 
 	client := clientFactory.clients[0]
 	if client == nil {
 		t.Fatalf("No client")
 	}
 
-	eventReceived := make(chan *fab.ChaincodeEvent)
+	eventReceived := make(chan *context.ChaincodeEvent)
 
 	// Register for CC event
-	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *fab.ChaincodeEvent) {
+	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *context.ChaincodeEvent) {
 		eventReceived <- event
 	})
 
@@ -152,7 +152,7 @@ func TestChaincodeEvent(t *testing.T) {
 	})
 
 	// Wait for the CC event
-	var event *fab.ChaincodeEvent
+	var event *context.ChaincodeEvent
 	select {
 	case event = <-eventReceived:
 		eventHub.UnregisterChaincodeEvent(registration)
@@ -188,10 +188,10 @@ func TestChaincodeBlockEvent(t *testing.T) {
 		t.Fatalf("No client")
 	}
 
-	eventReceived := make(chan *fab.ChaincodeEvent)
+	eventReceived := make(chan *context.ChaincodeEvent)
 
 	// Register for CC event
-	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *fab.ChaincodeEvent) {
+	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *context.ChaincodeEvent) {
 		eventReceived <- event
 	})
 
@@ -206,7 +206,7 @@ func TestChaincodeBlockEvent(t *testing.T) {
 	})
 
 	// Wait for CC event
-	var event *fab.ChaincodeEvent
+	var event *context.ChaincodeEvent
 	select {
 	case event = <-eventReceived:
 		eventHub.UnregisterChaincodeEvent(registration)
@@ -248,10 +248,10 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 		t.Fatalf("No client")
 	}
 
-	eventReceived := make(chan *fab.ChaincodeEvent)
+	eventReceived := make(chan *context.ChaincodeEvent)
 
 	// Register for CC event
-	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *fab.ChaincodeEvent) {
+	registration := eventHub.RegisterChaincodeEvent(ccID, eventName, func(event *context.ChaincodeEvent) {
 		eventReceived <- event
 	})
 
@@ -266,7 +266,7 @@ func TestChaincodeBlockEventWithInvalidTx(t *testing.T) {
 	})
 
 	// Wait for CC event
-	var event *fab.ChaincodeEvent
+	var event *context.ChaincodeEvent
 	select {
 	case event = <-eventReceived:
 		t.Fatalf("CC event is not expected to be triggered for a CC Block Event with invalid Tx flag")
@@ -496,7 +496,7 @@ func TestRegisterChaincodeEvent(t *testing.T) {
 }
 
 // private test callback to be executed on chaincode event
-func (w *callbackWrapper) testChaincodeCallback(ce *fab.ChaincodeEvent) {
+func (w *callbackWrapper) testChaincodeCallback(ce *context.ChaincodeEvent) {
 	w.t.Logf("Received CC event: %v", ce)
 }
 
@@ -521,7 +521,7 @@ func TestDisconnectWhenDisconnected(t *testing.T) {
 
 func verifyDisconnectedEventHub(eventHub *EventHub, t *testing.T) {
 	if eventHub.connected == true {
-		t.Fatalf("EventHub is not disconnected after Disconnect call")
+		t.Fatalf("EventHubConnection is not disconnected after Disconnect call")
 	}
 }
 
@@ -534,7 +534,7 @@ func TestConnectWhenConnected(t *testing.T) {
 	eventHub.connected = true
 	err = eventHub.Connect()
 	if err != nil {
-		t.Fatalf("EventHub failed to connect after Connect call %s", err)
+		t.Fatalf("EventHubConnection failed to connect after Connect call %s", err)
 	}
 }
 
@@ -596,7 +596,7 @@ func TestConnectWithInterestsFalseAndGetInterests(t *testing.T) {
 }
 
 func TestInterfaces(t *testing.T) {
-	var apiEventHub fab.EventHub
+	var apiEventHub context.EventHub
 	var eventHub EventHub
 
 	apiEventHub = &eventHub

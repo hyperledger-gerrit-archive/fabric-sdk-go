@@ -9,7 +9,7 @@ package fab
 import (
 	"testing"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
@@ -23,7 +23,7 @@ func TestChannelQueries(t *testing.T) {
 
 }
 
-func testQueryChannels(t *testing.T, client fab.Resource, target fab.ProposalProcessor) {
+func testQueryChannels(t *testing.T, client context.Resource, target context.ProposalProcessor) {
 
 	// Our target will be primary peer on this channel
 	t.Logf("****QueryChannels for %s", target)
@@ -38,7 +38,7 @@ func testQueryChannels(t *testing.T, client fab.Resource, target fab.ProposalPro
 
 }
 
-func testInstalledChaincodes(t *testing.T, ccID string, client fab.Resource, target fab.ProposalProcessor) {
+func testInstalledChaincodes(t *testing.T, ccID string, client context.Resource, target context.ProposalProcessor) {
 
 	// Our target will be primary peer on this channel
 	t.Logf("****QueryInstalledChaincodes for %s", target)

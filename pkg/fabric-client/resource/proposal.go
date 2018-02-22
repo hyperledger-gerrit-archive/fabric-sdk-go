@@ -13,9 +13,9 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -37,7 +37,7 @@ type ChaincodePackage struct {
 }
 
 // CreateChaincodeInstallProposal creates an install chaincode proposal.
-func CreateChaincodeInstallProposal(txid fab.TransactionID, request ChaincodeInstallRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeInstallProposal(txid context.TransactionID, request ChaincodeInstallRequest) (*context.TransactionProposal, error) {
 
 	// Generate arguments for install
 	args := [][]byte{}
@@ -56,7 +56,7 @@ func CreateChaincodeInstallProposal(txid fab.TransactionID, request ChaincodeIns
 	}
 	args = append(args, ccdsBytes)
 
-	cir := fab.ChaincodeInvokeRequest{
+	cir := context.ChaincodeInvokeRequest{
 		ChaincodeID: "lscc",
 		Fcn:         "install",
 		Args:        args,
@@ -66,7 +66,7 @@ func CreateChaincodeInstallProposal(txid fab.TransactionID, request ChaincodeIns
 }
 
 // CreateConfigSignature creates a ConfigSignature for the current context.
-func CreateConfigSignature(ctx fab.Context, config []byte) (*common.ConfigSignature, error) {
+func CreateConfigSignature(ctx context.Context, config []byte) (*common.ConfigSignature, error) {
 
 	creator, err := ctx.Identity()
 	if err != nil {

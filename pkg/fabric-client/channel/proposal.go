@@ -8,14 +8,13 @@ package channel
 
 import (
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
-
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 )
 
 // ChaincodeProposalType reflects transitions in the chaincode lifecycle
@@ -38,7 +37,7 @@ type ChaincodeDeployRequest struct {
 }
 
 // CreateChaincodeDeployProposal creates an instantiate or upgrade chaincode proposal.
-func CreateChaincodeDeployProposal(txid fab.TransactionID, deploy ChaincodeProposalType, channelID string, chaincode ChaincodeDeployRequest) (*fab.TransactionProposal, error) {
+func CreateChaincodeDeployProposal(txid context.TransactionID, deploy ChaincodeProposalType, channelID string, chaincode ChaincodeDeployRequest) (*context.TransactionProposal, error) {
 
 	// Generate arguments for deploy (channel, marshaled CCDS, marshaled chaincode policy, marshaled collection policy)
 	args := [][]byte{}
@@ -82,7 +81,7 @@ func CreateChaincodeDeployProposal(txid fab.TransactionID, deploy ChaincodePropo
 		return nil, errors.WithMessage(err, "chaincode deployment type unknown")
 	}
 
-	cir := fab.ChaincodeInvokeRequest{
+	cir := context.ChaincodeInvokeRequest{
 		ChaincodeID: "lscc",
 		Fcn:         fcn,
 		Args:        args,

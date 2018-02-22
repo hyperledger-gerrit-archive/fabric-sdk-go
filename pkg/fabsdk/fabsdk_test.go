@@ -12,7 +12,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/config"
-	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
+	mockcontextsdk "github.com/hyperledger/fabric-sdk-go/pkg/context/mocks"
+	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/mocks"
 	"github.com/pkg/errors"
 )
 
@@ -65,7 +66,7 @@ func TestWithCorePkg(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	factory := mockapisdk.NewMockCoreProviderFactory(mockCtrl)
+	factory := mockcontextsdk.NewMockCoreProviderFactory(mockCtrl)
 
 	factory.EXPECT().NewCryptoSuiteProvider(c).Return(nil, nil)
 	factory.EXPECT().NewStateStoreProvider(c).Return(nil, nil)
@@ -92,7 +93,7 @@ func TestWithServicePkg(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	factory := mockapisdk.NewMockServiceProviderFactory(mockCtrl)
+	factory := mockcontextsdk.NewMockServiceProviderFactory(mockCtrl)
 
 	factory.EXPECT().NewDiscoveryProvider(c).Return(nil, nil)
 	factory.EXPECT().NewSelectionProvider(c).Return(nil, nil)
@@ -135,7 +136,7 @@ func TestWithContextPkg(t *testing.T) {
 	// Create mock to ensure the provided factory is called.
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	factory := mockapisdk.NewMockOrgClientFactory(mockCtrl)
+	factory := mockcontextsdk.NewMockOrgClientFactory(mockCtrl)
 
 	factory.EXPECT().NewCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite).Return(cm, nil)
 

@@ -9,8 +9,8 @@ package channel
 import (
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
@@ -19,13 +19,13 @@ import (
 
 // Transactor enables sending transactions and transaction proposals on the channel.
 type Transactor struct {
-	ctx       fab.Context
+	ctx       context.Context
 	ChannelID string
-	orderers  []fab.Orderer
+	orderers  []context.Orderer
 }
 
 // NewTransactor returns a Transactor for the current context and channel config.
-func NewTransactor(ctx fab.Context, cfg fab.ChannelCfg) (*Transactor, error) {
+func NewTransactor(ctx context.Context, cfg context.ChannelCfg) (*Transactor, error) {
 	orderers, err := orderersFromChannelCfg(ctx, cfg)
 	if err != nil {
 		return nil, errors.WithMessage(err, "reading orderers from channel config failed")
@@ -43,8 +43,8 @@ func NewTransactor(ctx fab.Context, cfg fab.ChannelCfg) (*Transactor, error) {
 	return &t, nil
 }
 
-func orderersFromChannelCfg(ctx fab.Context, cfg fab.ChannelCfg) ([]fab.Orderer, error) {
-	orderers := []fab.Orderer{}
+func orderersFromChannelCfg(ctx context.Context, cfg context.ChannelCfg) ([]context.Orderer, error) {
+	orderers := []context.Orderer{}
 	ordererDict, err := orderersByTarget(ctx)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func orderersFromChannelCfg(ctx fab.Context, cfg fab.ChannelCfg) ([]fab.Orderer,
 	return orderers, nil
 }
 
-func orderersByTarget(ctx fab.Context) (map[string]apiconfig.OrdererConfig, error) {
+func orderersByTarget(ctx context.Context) (map[string]apiconfig.OrdererConfig, error) {
 	ordererDict := map[string]apiconfig.OrdererConfig{}
 	orderersConfig, err := ctx.Config().OrderersConfig()
 	if err != nil {
@@ -92,17 +92,17 @@ func orderersByTarget(ctx fab.Context) (map[string]apiconfig.OrdererConfig, erro
 }
 
 // CreateTransactionID creates a Transaction ID based on the current context.
-func (t *Transactor) CreateTransactionID() (fab.TransactionID, error) {
+func (t *Transactor) CreateTransactionID() (context.TransactionID, error) {
 	txid, err := txn.NewID(t.ctx)
 	if err != nil {
-		return fab.TransactionID{}, errors.WithMessage(err, "new transaction ID failed")
+		return context.TransactionID{}, errors.WithMessage(err, "new transaction ID failed")
 	}
 
 	return txid, nil
 }
 
 // CreateChaincodeInvokeProposal creates a Transaction Proposal based on the current context and channel ID.
-func (t *Transactor) CreateChaincodeInvokeProposal(request fab.ChaincodeInvokeRequest) (*fab.TransactionProposal, error) {
+func (t *Transactor) CreateChaincodeInvokeProposal(request context.ChaincodeInvokeRequest) (*context.TransactionProposal, error) {
 	txid, err := t.CreateTransactionID()
 	if err != nil {
 		return nil, errors.WithMessage(err, "create transaction ID failed")
@@ -117,17 +117,17 @@ func (t *Transactor) CreateChaincodeInvokeProposal(request fab.ChaincodeInvokeRe
 }
 
 // SendTransactionProposal sends a TransactionProposal to the target peers.
-func (t *Transactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+func (t *Transactor) SendTransactionProposal(proposal *context.TransactionProposal, targets []context.ProposalProcessor) ([]*context.TransactionProposalResponse, error) {
 	return txn.SendProposal(t.ctx, proposal, targets)
 }
 
 // CreateTransaction create a transaction with proposal response.
 // TODO: should this be removed as it is purely a wrapper?
-func (t *Transactor) CreateTransaction(request fab.TransactionRequest) (*fab.Transaction, error) {
+func (t *Transactor) CreateTransaction(request context.TransactionRequest) (*context.Transaction, error) {
 	return txn.New(request)
 }
 
 // SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
-func (t *Transactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
+func (t *Transactor) SendTransaction(tx *context.Transaction) (*context.TransactionResponse, error) {
 	return txn.Send(t.ctx, tx, t.orderers)
 }

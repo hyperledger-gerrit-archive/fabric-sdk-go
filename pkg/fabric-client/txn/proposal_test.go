@@ -14,12 +14,12 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
-
+	apicontext "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/mocks"
 )
 
 const (
@@ -31,7 +31,7 @@ func TestNewTransactionProposal(t *testing.T) {
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
-	request := fab.ChaincodeInvokeRequest{
+	request := apicontext.ChaincodeInvokeRequest{
 		ChaincodeID: "qscc",
 		Fcn:         "Hello",
 	}
@@ -66,7 +66,7 @@ func TestSendTransactionProposal(t *testing.T) {
 		MockRoles: []string{}, MockCert: nil, Status: 200, Payload: []byte("A"),
 		ResponseMessage: responseMessage}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := apicontext.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 		Args:        [][]byte{[]byte{1, 2, 3}},
@@ -82,7 +82,7 @@ func TestSendTransactionProposal(t *testing.T) {
 		t.Fatalf("new transaction proposal failed: %s", err)
 	}
 
-	tpr, err := SendProposal(ctx, tp, []fab.ProposalProcessor{&peer})
+	tpr, err := SendProposal(ctx, tp, []apicontext.ProposalProcessor{&peer})
 	if err != nil {
 		t.Fatalf("send transaction proposal failed: %s", err)
 	}
@@ -98,7 +98,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
-	request := fab.ChaincodeInvokeRequest{
+	request := apicontext.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -118,7 +118,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		t.Fatalf("Expected error")
 	}
 
-	request = fab.ChaincodeInvokeRequest{
+	request = apicontext.ChaincodeInvokeRequest{
 		Fcn: "Hello",
 	}
 
@@ -127,7 +127,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		t.Fatalf("Expected error")
 	}
 
-	request = fab.ChaincodeInvokeRequest{
+	request = apicontext.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 	}
 
@@ -136,7 +136,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		t.Fatalf("Expected error")
 	}
 
-	request = fab.ChaincodeInvokeRequest{
+	request = apicontext.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -153,7 +153,7 @@ func TestConcurrentPeers(t *testing.T) {
 	user := mocks.NewMockUserWithMSPID("test", "1234")
 	ctx := mocks.NewMockContext(user)
 
-	result, err := SendProposal(ctx, &fab.TransactionProposal{
+	result, err := SendProposal(ctx, &apicontext.TransactionProposal{
 		Proposal: &pb.Proposal{},
 	}, peers)
 	if err != nil {
@@ -172,21 +172,21 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_apifabclient.NewMockProposalProcessor(mockCtrl)
+	proc := mock_context.NewMockProposalProcessor(mockCtrl)
 
 	stp, err := signProposal(ctx, &pb.Proposal{})
 	if err != nil {
 		t.Fatalf("signProposal returned error: %s", err)
 	}
-	tp := fab.ProcessProposalRequest{
+	tp := apicontext.ProcessProposalRequest{
 		SignedProposal: stp,
 	}
 
-	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99}
+	tpr := apicontext.TransactionProposalResponse{Endorser: "example.com", Status: 99}
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, nil)
-	targets := []fab.ProposalProcessor{proc}
+	targets := []apicontext.ProposalProcessor{proc}
 
-	result, err := SendProposal(ctx, &fab.TransactionProposal{
+	result, err := SendProposal(ctx, &apicontext.TransactionProposal{
 		Proposal: &pb.Proposal{},
 	}, nil)
 
@@ -194,15 +194,15 @@ func TestSendTransactionProposalToProcessors(t *testing.T) {
 		t.Fatalf("Test SendTransactionProposal failed, validation on peer is nil is not working as expected: %v", err)
 	}
 
-	result, err = SendProposal(ctx, &fab.TransactionProposal{
+	result, err = SendProposal(ctx, &apicontext.TransactionProposal{
 		Proposal: &pb.Proposal{},
-	}, []fab.ProposalProcessor{})
+	}, []apicontext.ProposalProcessor{})
 
 	if result != nil || err == nil || err.Error() != "targets is required" {
 		t.Fatalf("Test SendTransactionProposal failed, validation on missing peer objects is not working: %v", err)
 	}
 
-	result, err = SendProposal(ctx, &fab.TransactionProposal{
+	result, err = SendProposal(ctx, &apicontext.TransactionProposal{
 		Proposal: &pb.Proposal{}}, targets)
 
 	if result == nil || err != nil {
@@ -218,24 +218,24 @@ func TestProposalResponseError(t *testing.T) {
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	proc := mock_apifabclient.NewMockProposalProcessor(mockCtrl)
-	proc2 := mock_apifabclient.NewMockProposalProcessor(mockCtrl)
+	proc := mock_context.NewMockProposalProcessor(mockCtrl)
+	proc2 := mock_context.NewMockProposalProcessor(mockCtrl)
 
 	stp, err := signProposal(ctx, &pb.Proposal{})
 	if err != nil {
 		t.Fatalf("signProposal returned error: %s", err)
 	}
-	tp := fab.ProcessProposalRequest{
+	tp := apicontext.ProcessProposalRequest{
 		SignedProposal: stp,
 	}
 
 	// Test with error from lower layer
-	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 200}
+	tpr := apicontext.TransactionProposalResponse{Endorser: "example.com", Status: 200}
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, testError)
 	proc2.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, testError)
 
-	targets := []fab.ProposalProcessor{proc, proc2}
-	_, err = SendProposal(ctx, &fab.TransactionProposal{
+	targets := []apicontext.ProposalProcessor{proc, proc2}
+	_, err = SendProposal(ctx, &apicontext.TransactionProposal{
 		Proposal: &pb.Proposal{},
 	}, targets)
 	errs, ok := err.(multi.Errors)
@@ -243,8 +243,8 @@ func TestProposalResponseError(t *testing.T) {
 	assert.Equal(t, testError, errs[0])
 }
 
-func setupMassiveTestPeers(numberOfPeers int) []fab.ProposalProcessor {
-	peers := []fab.ProposalProcessor{}
+func setupMassiveTestPeers(numberOfPeers int) []apicontext.ProposalProcessor {
+	peers := []apicontext.ProposalProcessor{}
 
 	for i := 0; i < numberOfPeers; i++ {
 		peer := mocks.MockPeer{MockName: fmt.Sprintf("MockPeer%d", i), MockURL: fmt.Sprintf("http://mock%d.peers.r.us", i),

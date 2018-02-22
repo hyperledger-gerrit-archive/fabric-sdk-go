@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	m "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
 )
@@ -204,7 +204,7 @@ func (msp *bccspmsp) Setup(conf1 *m.MSPConfig) error {
 	conf := &m.FabricMSPConfig{}
 	err := proto.Unmarshal(conf1.Config, conf)
 	if err != nil {
-		return errors.Wrap(err, "failed unmarshalling fabric msp config")
+		return errors.Wrap(err, "failed unmarshalling fabric msp apiconfig")
 	}
 
 	// set the name for this msp

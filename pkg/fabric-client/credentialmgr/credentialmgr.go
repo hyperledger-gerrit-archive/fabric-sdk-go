@@ -13,13 +13,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/credentialmgr/persistence"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -33,17 +32,17 @@ type CredentialManager struct {
 	orgName         string
 	orgMspID        string
 	embeddedUsers   map[string]apiconfig.TLSKeyPair
-	mspPrivKeyStore kvstore.KVStore
-	mspCertStore    kvstore.KVStore
+	mspPrivKeyStore context.KVStore
+	mspCertStore    context.KVStore
 	config          apiconfig.Config
 	cryptoProvider  apicryptosuite.CryptoSuite
-	userStore       apifabclient.UserStore
+	userStore       context.UserStore
 }
 
 // NewCredentialManager Constructor for a credential manager.
 // @param {string} orgName - organisation id
 // @returns {CredentialManager} new credential manager
-func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (apifabclient.CredentialManager, error) {
+func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (context.CredentialManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
@@ -60,8 +59,8 @@ func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvide
 		return nil, errors.New("Either a cryptopath or an embedded list of users is required")
 	}
 
-	var mspPrivKeyStore kvstore.KVStore
-	var mspCertStore kvstore.KVStore
+	var mspPrivKeyStore context.KVStore
+	var mspCertStore context.KVStore
 
 	orgCryptoPathTemplate := orgConfig.CryptoPath
 	if orgCryptoPathTemplate != "" {
@@ -81,7 +80,7 @@ func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvide
 	}
 
 	// In the future, shared UserStore from the SDK context will be used
-	var userStore apifabclient.UserStore
+	var userStore context.UserStore
 	clientCofig, err := config.Client()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to retrieve client config")
@@ -103,19 +102,19 @@ func NewCredentialManager(orgName string, config apiconfig.Config, cryptoProvide
 }
 
 // GetSigningIdentity will sign the given object with provided key,
-func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient.SigningIdentity, error) {
+func (mgr *CredentialManager) GetSigningIdentity(userName string) (*context.SigningIdentity, error) {
 	if userName == "" {
 		return nil, errors.New("username is required")
 	}
 
-	var signingIdentity *apifabclient.SigningIdentity
+	var signingIdentity *context.SigningIdentity
 
 	if mgr.userStore != nil {
-		user, err := mgr.userStore.Load(apifabclient.UserKey{MspID: mgr.orgMspID, Name: userName})
+		user, err := mgr.userStore.Load(context.UserKey{MspID: mgr.orgMspID, Name: userName})
 		if err == nil {
-			signingIdentity = &apifabclient.SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
+			signingIdentity = &context.SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
 		} else {
-			if err != apifabclient.ErrUserNotFound {
+			if err != context.ErrUserNotFound {
 				return nil, errors.Wrapf(err, "getting private key from cert failed")
 			}
 			// Not found, continue
@@ -123,17 +122,17 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 	}
 	if signingIdentity == nil {
 		certBytes, err := mgr.getEmbeddedCertBytes(userName)
-		if err != nil && err != apifabclient.ErrUserNotFound {
+		if err != nil && err != context.ErrUserNotFound {
 			return nil, errors.WithMessage(err, "fetching embedded cert failed")
 		}
 		if certBytes == nil {
 			certBytes, err = mgr.getCertBytesFromCertStore(userName)
-			if err != nil && err != apifabclient.ErrUserNotFound {
+			if err != nil && err != context.ErrUserNotFound {
 				return nil, errors.WithMessage(err, "fetching cert from store failed")
 			}
 		}
 		if certBytes == nil {
-			return nil, apifabclient.ErrUserNotFound
+			return nil, context.ErrUserNotFound
 		}
 		privateKey, err := mgr.getEmbeddedPrivateKey(userName)
 		if err != nil {
@@ -152,7 +151,7 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*apifabclient
 		if err != nil {
 			return nil, errors.WithMessage(err, "MSP ID config read failed")
 		}
-		signingIdentity = &apifabclient.SigningIdentity{MspID: mspID, PrivateKey: privateKey, EnrollmentCert: certBytes}
+		signingIdentity = &context.SigningIdentity{MspID: mspID, PrivateKey: privateKey, EnrollmentCert: certBytes}
 	}
 
 	return signingIdentity, nil
@@ -163,7 +162,7 @@ func (mgr *CredentialManager) getEmbeddedCertBytes(userName string) ([]byte, err
 	certPath := mgr.embeddedUsers[strings.ToLower(userName)].Cert.Path
 
 	if certPem == "" && certPath == "" {
-		return nil, apifabclient.ErrUserNotFound
+		return nil, context.ErrUserNotFound
 	}
 
 	var pemBytes []byte
@@ -246,15 +245,15 @@ func (mgr *CredentialManager) getPrivateKeyPemFromKeyStore(userName string, ski 
 
 func (mgr *CredentialManager) getCertBytesFromCertStore(userName string) ([]byte, error) {
 	if mgr.mspCertStore == nil {
-		return nil, apifabclient.ErrUserNotFound
+		return nil, context.ErrUserNotFound
 	}
 	cert, err := mgr.mspCertStore.Load(&persistence.CertKey{
 		MspID:    mgr.orgMspID,
 		UserName: userName,
 	})
 	if err != nil {
-		if err == kvstore.ErrNotFound {
-			return nil, apifabclient.ErrUserNotFound
+		if err == context.ErrNotFound {
+			return nil, context.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -277,7 +276,7 @@ func (mgr *CredentialManager) getPrivateKeyFromCert(userName string, cert []byte
 	if err == nil {
 		return privKey, nil
 	}
-	if err != kvstore.ErrNotFound {
+	if err != context.ErrNotFound {
 		return nil, errors.WithMessage(err, "fetching private key from key store failed")
 	}
 	return mgr.cryptoProvider.GetKey(pubKey.SKI())
@@ -291,5 +290,5 @@ func (mgr *CredentialManager) getPrivateKeyFromKeyStore(userName string, ski []b
 	if pemBytes != nil {
 		return fabricCaUtil.ImportBCCSPKeyFromPEMBytes(pemBytes, mgr.cryptoProvider, true)
 	}
-	return nil, kvstore.ErrNotFound
+	return nil, context.ErrNotFound
 }

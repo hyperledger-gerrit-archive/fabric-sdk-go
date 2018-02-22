@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
 
@@ -15,13 +15,13 @@ import (
 type MockChannelCfg struct {
 	MockName        string
 	MockMsps        []*msp.MSPConfig
-	MockAnchorPeers []*fab.OrgAnchorPeer
+	MockAnchorPeers []*context.OrgAnchorPeer
 	MockOrderers    []string
-	MockVersions    *fab.Versions
+	MockVersions    *context.Versions
 }
 
 // NewMockChannelCfg ...
-func NewMockChannelCfg(name string) fab.ChannelCfg {
+func NewMockChannelCfg(name string) context.ChannelCfg {
 	return &MockChannelCfg{MockName: name}
 }
 
@@ -36,7 +36,7 @@ func (cfg *MockChannelCfg) Msps() []*msp.MSPConfig {
 }
 
 // AnchorPeers returns anchor peers
-func (cfg *MockChannelCfg) AnchorPeers() []*fab.OrgAnchorPeer {
+func (cfg *MockChannelCfg) AnchorPeers() []*context.OrgAnchorPeer {
 	return cfg.MockAnchorPeers
 }
 
@@ -46,22 +46,22 @@ func (cfg *MockChannelCfg) Orderers() []string {
 }
 
 // Versions returns versions
-func (cfg *MockChannelCfg) Versions() *fab.Versions {
+func (cfg *MockChannelCfg) Versions() *context.Versions {
 	return cfg.MockVersions
 }
 
 // MockChannelConfig mocks query channel configuration
 type MockChannelConfig struct {
 	channelID string
-	ctx       fab.Context
+	ctx       context.Context
 }
 
 // NewMockChannelConfig mocks channel config implementation
-func NewMockChannelConfig(ctx fab.Context, channelID string) (*MockChannelConfig, error) {
+func NewMockChannelConfig(ctx context.Context, channelID string) (*MockChannelConfig, error) {
 	return &MockChannelConfig{channelID: channelID, ctx: ctx}, nil
 }
 
 // Query mocks query for channel configuration
-func (c *MockChannelConfig) Query() (fab.ChannelCfg, error) {
+func (c *MockChannelConfig) Query() (context.ChannelCfg, error) {
 	return NewMockChannelCfg(c.channelID), nil
 }

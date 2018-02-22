@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 )
 
 // MockSigningManager is mock signing manager
@@ -19,7 +19,7 @@ type MockSigningManager struct {
 }
 
 // NewMockSigningManager Constructor for a mock signing manager.
-func NewMockSigningManager() apifabclient.SigningManager {
+func NewMockSigningManager() context.SigningManager {
 	return &MockSigningManager{}
 }
 

@@ -9,16 +9,15 @@ package orderer
 import (
 	"time"
 
-	"golang.org/x/net/context"
+	grpcContext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/spf13/cast"
@@ -26,6 +25,7 @@ import (
 	"crypto/x509"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
@@ -68,7 +68,7 @@ func New(config apiconfig.Config, opts ...Option) (*Orderer, error) {
 	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(orderer.failFast)))
 	orderer.dialTimeout = config.TimeoutOrDefault(apiconfig.OrdererConnection)
 
-	//tls config
+	//tls apiconfig
 	tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
 	if err != nil {
 		return nil, err
@@ -208,20 +208,20 @@ func (o *Orderer) URL() string {
 }
 
 // SendBroadcast Send the created transaction to Orderer.
-func (o *Orderer) SendBroadcast(envelope *fab.SignedEnvelope) (*common.Status, error) {
+func (o *Orderer) SendBroadcast(envelope *context.SignedEnvelope) (*common.Status, error) {
 	return o.sendBroadcast(envelope, o.secured)
 }
 
 // SendDeliver sends a deliver request to the ordering service and returns the
 // blocks requested
 // envelope: contains the seek request for blocks
-func (o *Orderer) SendDeliver(envelope *fab.SignedEnvelope) (chan *common.Block,
+func (o *Orderer) SendDeliver(envelope *context.SignedEnvelope) (chan *common.Block,
 	chan error) {
 	return o.sendDeliver(envelope, o.secured)
 }
 
 // SendBroadcast Send the created transaction to Orderer.
-func (o *Orderer) sendBroadcast(envelope *fab.SignedEnvelope, secured bool) (*common.Status, error) {
+func (o *Orderer) sendBroadcast(envelope *context.SignedEnvelope, secured bool) (*common.Status, error) {
 	var grpcOpts []grpc.DialOption
 	grpcOpts = append(grpcOpts, o.grpcDialOption...)
 	if secured {
@@ -230,8 +230,8 @@ func (o *Orderer) sendBroadcast(envelope *fab.SignedEnvelope, secured bool) (*co
 		grpcOpts = append(grpcOpts, grpc.WithInsecure())
 	}
 
-	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, o.dialTimeout)
+	ctx := grpcContext.Background()
+	ctx, _ = grpcContext.WithTimeout(ctx, o.dialTimeout)
 	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
 
 	if err != nil {
@@ -295,7 +295,7 @@ func (o *Orderer) sendBroadcast(envelope *fab.SignedEnvelope, secured bool) (*co
 // SendDeliver sends a deliver request to the ordering service and returns the
 // blocks requested
 // envelope: contains the seek request for blocks
-func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan *common.Block,
+func (o *Orderer) sendDeliver(envelope *context.SignedEnvelope, secured bool) (chan *common.Block,
 	chan error) {
 	responses := make(chan *common.Block)
 	errs := make(chan error, 1)
@@ -314,8 +314,8 @@ func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan 
 		grpcOpts = append(o.grpcDialOption, grpc.WithInsecure())
 	}
 
-	ctx := context.Background()
-	ctx, _ = context.WithTimeout(ctx, o.dialTimeout)
+	ctx := grpcContext.Background()
+	ctx, _ = grpcContext.WithTimeout(ctx, o.dialTimeout)
 	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
 	if err != nil {
 		errs <- err

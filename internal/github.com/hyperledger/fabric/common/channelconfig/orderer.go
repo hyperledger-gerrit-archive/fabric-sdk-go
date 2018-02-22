@@ -11,7 +11,7 @@ Please review third_party pinning scripts and patches for more details.
 package channelconfig
 
 const (
-	// OrdererGroupKey is the group name for the orderer config
+	// OrdererGroupKey is the group name for the orderer apiconfig
 	OrdererGroupKey = "Orderer"
 )
 

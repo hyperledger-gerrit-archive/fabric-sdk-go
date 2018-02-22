@@ -14,9 +14,9 @@ import (
 	"strings"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 )
 
@@ -56,7 +56,7 @@ func TestCryptoSuiteByConfig(t *testing.T) {
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
 	mockConfig.EXPECT().Ephemeral().Return(false)
 
-	//Get cryptosuite using config
+	//Get cryptosuite using apiconfig
 	samplecryptoSuite, err := getSuiteByConfig(mockConfig)
 	utils.VerifyEmpty(t, err, "Not supposed to get error on GetSuiteByConfig call : %s", err)
 	utils.VerifyNotEmpty(t, samplecryptoSuite, "Supposed to get valid cryptosuite")
@@ -79,7 +79,7 @@ func TestCryptoSuiteByConfigFailures(t *testing.T) {
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
 	mockConfig.EXPECT().Ephemeral().Return(false)
 
-	//Get cryptosuite using config
+	//Get cryptosuite using apiconfig
 	samplecryptoSuite, err := getSuiteByConfig(mockConfig)
 	utils.VerifyNotEmpty(t, err, "Supposed to get error on GetSuiteByConfig call : %s", err)
 	utils.VerifyEmpty(t, samplecryptoSuite, "Not supposed to get valid cryptosuite")

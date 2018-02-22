@@ -21,12 +21,12 @@ Please review third_party pinning scripts and patches for more details.
 package lib
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tls"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 )
 
-// ClientConfig is the fabric-ca client's config
+// ClientConfig is the fabric-ca client's apiconfig
 type ClientConfig struct {
 	Debug      bool   `def:"false" opt:"d" help:"Enable debug level logging"`
 	URL        string `def:"http://localhost:7054" opt:"u" help:"URL of fabric-ca-server"`

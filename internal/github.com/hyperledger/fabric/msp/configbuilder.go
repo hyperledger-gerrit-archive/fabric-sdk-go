@@ -52,7 +52,7 @@ const (
 	keystore             = "keystore"
 	intermediatecerts    = "intermediatecerts"
 	crlsfolder           = "crls"
-	configfilename       = "config.yaml"
+	configfilename       = "apiconfig.yaml"
 	tlscacerts           = "tlscacerts"
 	tlsintermediatecerts = "tlsintermediatecerts"
 )

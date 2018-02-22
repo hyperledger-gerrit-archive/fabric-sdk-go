@@ -13,8 +13,8 @@ import (
 
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
@@ -36,7 +36,7 @@ func initSuite(defaultSuite apicryptosuite.CryptoSuite) error {
 	return nil
 }
 
-//GetDefault returns default apicryptosuite
+//GetDefault returns default core
 func GetDefault() apicryptosuite.CryptoSuite {
 	if atomic.LoadInt32(&initialized) > 0 {
 		return defaultCryptoSuite

@@ -14,10 +14,11 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig/mocks"
+	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/context/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/pkg/errors"
 )
@@ -185,7 +186,7 @@ func TestDeprecatedProposalProcessorSendProposal(t *testing.T) {
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
 	tp := mockProcessProposalRequest()
-	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99}
+	tpr := context.TransactionProposalResponse{Endorser: "example.com", Status: 99}
 
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, nil)
 
@@ -215,7 +216,7 @@ func TestDeprecatedPeersToTxnProcessors(t *testing.T) {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
 
-	peers := []fab.Peer{peer1, peer2}
+	peers := []context.Peer{peer1, peer2}
 	processors := PeersToTxnProcessors(peers)
 
 	for i := range peers {
@@ -226,7 +227,7 @@ func TestDeprecatedPeersToTxnProcessors(t *testing.T) {
 }
 
 func TestDeprecatedInterfaces(t *testing.T) {
-	var apiPeer fab.Peer
+	var apiPeer context.Peer
 	var peer Peer
 
 	apiPeer = &peer
@@ -250,7 +251,7 @@ func TestNewPeerFromConfig(t *testing.T) {
 	}
 	_, err := NewPeerFromConfig(networkPeer, mocks.NewMockConfig())
 	if err != nil {
-		t.Fatalf("Failed to create new peer from config: %v", err)
+		t.Fatalf("Failed to create new peer from apiconfig: %v", err)
 	}
 
 }

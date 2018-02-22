@@ -11,8 +11,8 @@ import (
 
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	cutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/pkg/errors"
 )
 

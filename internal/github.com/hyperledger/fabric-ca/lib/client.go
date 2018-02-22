@@ -37,11 +37,11 @@ import (
 
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/cloudflare/cfssl/csr"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tls"
 	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -65,7 +65,7 @@ type Client struct {
 func (c *Client) Init() error {
 	if !c.initialized {
 		cfg := c.Config
-		log.Debugf("Initializing client with config: %+v", cfg)
+		log.Debugf("Initializing client with apiconfig: %+v", cfg)
 		if cfg.MSPDir == "" {
 			cfg.MSPDir = "msp"
 		}
@@ -119,7 +119,7 @@ func (c *Client) initHTTPClient() error {
 
 		tlsConfig, err2 := tls.GetClientTLSConfig(&c.Config.TLS, c.csp)
 		if err2 != nil {
-			return fmt.Errorf("Failed to get client TLS config: %s", err2)
+			return fmt.Errorf("Failed to get client TLS apiconfig: %s", err2)
 		}
 		tr.TLSClientConfig = tlsConfig
 	}

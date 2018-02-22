@@ -12,9 +12,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 )
 
 func TestBadConfig(t *testing.T) {
@@ -25,7 +25,7 @@ func TestBadConfig(t *testing.T) {
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 	mockConfig.EXPECT().SecurityProvider().Return("UNKNOWN")
 
-	//Get cryptosuite using config
+	//Get cryptosuite using apiconfig
 	_, err := GetSuiteByConfig(mockConfig)
 	if err == nil {
 		t.Fatalf("Unknown security provider should return error")
@@ -43,7 +43,7 @@ func TestCryptoSuiteByConfigSW(t *testing.T) {
 	mockConfig.EXPECT().KeyStorePath().Return("")
 	mockConfig.EXPECT().Ephemeral().Return(true)
 
-	//Get cryptosuite using config
+	//Get cryptosuite using apiconfig
 	c, err := GetSuiteByConfig(mockConfig)
 	if err != nil {
 		t.Fatalf("Not supposed to get error, but got: %v", err)
@@ -63,7 +63,7 @@ func TestCryptoSuiteByBadConfigSW(t *testing.T) {
 	mockConfig.EXPECT().KeyStorePath().Return("")
 	mockConfig.EXPECT().Ephemeral().Return(true)
 
-	//Get cryptosuite using config
+	//Get cryptosuite using apiconfig
 	_, err := GetSuiteByConfig(mockConfig)
 	if err == nil {
 		t.Fatalf("Bad configuration should return error")

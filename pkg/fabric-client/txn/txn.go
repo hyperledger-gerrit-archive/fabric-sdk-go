@@ -15,9 +15,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
@@ -36,12 +35,12 @@ const (
 )
 
 type context interface {
-	fab.ProviderContext
-	fab.IdentityContext
+	contextApi.ProviderContext
+	contextApi.IdentityContext
 }
 
 // New create a transaction with proposal response, following the endorsement policy.
-func New(request fab.TransactionRequest) (*fab.Transaction, error) {
+func New(request contextApi.TransactionRequest) (*contextApi.Transaction, error) {
 	if len(request.ProposalResponses) == 0 {
 		return nil, errors.New("at least one proposal response is necessary")
 	}
@@ -103,14 +102,14 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 	taas := make([]*pb.TransactionAction, 1)
 	taas[0] = taa
 
-	return &fab.Transaction{
+	return &contextApi.Transaction{
 		Transaction: &pb.Transaction{Actions: taas},
 		Proposal:    proposal,
 	}, nil
 }
 
 // Send send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
-func Send(ctx context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func Send(ctx context, tx *contextApi.Transaction, orderers []contextApi.Orderer) (*contextApi.TransactionResponse, error) {
 	if orderers == nil || len(orderers) == 0 {
 		return nil, errors.New("orderers is nil")
 	}
@@ -145,7 +144,7 @@ func Send(ctx context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.Transa
 
 // BroadcastPayload will send the given payload to some orderer, picking random endpoints
 // until all are exhausted
-func BroadcastPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func BroadcastPayload(ctx context, payload *common.Payload, orderers []contextApi.Orderer) (*contextApi.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
@@ -161,20 +160,20 @@ func BroadcastPayload(ctx context, payload *common.Payload, orderers []fab.Order
 
 // broadcastEnvelope will send the given envelope to some orderer, picking random endpoints
 // until all are exhausted
-func broadcastEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func broadcastEnvelope(ctx context, envelope *contextApi.SignedEnvelope, orderers []contextApi.Orderer) (*contextApi.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
 	}
 
 	// Copy aside the ordering service endpoints
-	randOrderers := []fab.Orderer{}
+	randOrderers := []contextApi.Orderer{}
 	for _, o := range orderers {
 		randOrderers = append(randOrderers, o)
 	}
 
 	// Iterate them in a random order and try broadcasting 1 by 1
-	var errResp *fab.TransactionResponse
+	var errResp *contextApi.TransactionResponse
 	for _, i := range rand.Perm(len(randOrderers)) {
 		resp := sendBroadcast(envelope, randOrderers[i])
 		if resp.Err != nil {
@@ -186,20 +185,20 @@ func broadcastEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab
 	return errResp, nil
 }
 
-func sendBroadcast(envelope *fab.SignedEnvelope, orderer fab.Orderer) *fab.TransactionResponse {
+func sendBroadcast(envelope *contextApi.SignedEnvelope, orderer contextApi.Orderer) *contextApi.TransactionResponse {
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 	if _, err := orderer.SendBroadcast(envelope); err != nil {
 		logger.Debugf("Receive Error Response from orderer :%v\n", err)
-		return &fab.TransactionResponse{Orderer: orderer.URL(),
+		return &contextApi.TransactionResponse{Orderer: orderer.URL(),
 			Err: errors.Wrapf(err, "calling orderer '%s' failed", orderer.URL())}
 	}
 
 	logger.Debugf("Receive Success Response from orderer\n")
-	return &fab.TransactionResponse{Orderer: orderer.URL(), Err: nil}
+	return &contextApi.TransactionResponse{Orderer: orderer.URL(), Err: nil}
 }
 
 // SendPayload sends the given payload to each orderer and returns a block response
-func SendPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (*common.Block, error) {
+func SendPayload(ctx context, payload *common.Payload, orderers []contextApi.Orderer) (*common.Block, error) {
 	if orderers == nil || len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
 	}
@@ -213,7 +212,7 @@ func SendPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (
 }
 
 // sendEnvelope sends the given envelope to each orderer and returns a block response
-func sendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*common.Block, error) {
+func sendEnvelope(ctx context, envelope *contextApi.SignedEnvelope, orderers []contextApi.Orderer) (*common.Block, error) {
 
 	var blockResponse *common.Block
 	var errorResponse error
@@ -224,7 +223,7 @@ func sendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orde
 	// Send the request to all orderers and return as soon as one responds with a block.
 	for _, o := range orderers {
 
-		go func(orderer fab.Orderer) {
+		go func(orderer contextApi.Orderer) {
 			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 
 			blocks, errs := orderer.SendDeliver(envelope)
@@ -287,7 +286,7 @@ type Status struct {
 // transaction completes. If the code is TxValidationCode_VALID then
 // the transaction committed successfully, otherwise the code indicates the error
 // that occurred.
-func RegisterStatus(txID fab.TransactionID, eventHub fab.EventHub) chan Status {
+func RegisterStatus(txID contextApi.TransactionID, eventHub contextApi.EventHub) chan Status {
 	statusNotifier := make(chan Status)
 
 	eventHub.RegisterTxEvent(txID, func(txId string, code pb.TxValidationCode, err error) {

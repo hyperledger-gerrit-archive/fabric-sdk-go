@@ -11,10 +11,10 @@ import (
 	"path"
 	"testing"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,7 +36,7 @@ func TestCreateChaincodeInstallProposal(t *testing.T) {
 	prop, err := CreateChaincodeInstallProposal(txid, request)
 	assert.Nil(t, err, "CreateChaincodeInstallProposal failed")
 
-	_, err = txn.SendProposal(c.clientContext, prop, []fab.ProposalProcessor{&peer})
+	_, err = txn.SendProposal(c.clientContext, prop, []context.ProposalProcessor{&peer})
 	assert.Nil(t, err, "sending mock proposal failed")
 }
 

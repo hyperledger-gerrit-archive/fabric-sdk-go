@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
@@ -44,7 +44,7 @@ func runWithNoOrdererConfig(t *testing.T, configOpt apiconfig.ConfigProvider, sd
 	// Release all channel client resources
 	defer chClient.Close()
 
-	response, err := chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(api.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
@@ -58,14 +58,14 @@ func runWithNoOrdererConfig(t *testing.T, configOpt apiconfig.ConfigProvider, sd
 	eventID := "test([a-zA-Z]+)"
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
-	notifier := make(chan *chclient.CCEvent)
+	notifier := make(chan *api.CCEvent)
 	rce, err := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 	if err != nil {
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
 
 	// Move funds
-	response, err = chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err = chClient.Execute(api.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -84,7 +84,7 @@ func runWithNoOrdererConfig(t *testing.T, configOpt apiconfig.ConfigProvider, sd
 	}
 
 	// Verify move funds transaction result
-	response, err = chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err = chClient.Query(api.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds after transaction: %s", err)
 	}
@@ -101,7 +101,7 @@ type mockDiscoveryFilter struct {
 }
 
 // Accept returns true if this peer is to be included in the target list
-func (df *mockDiscoveryFilter) Accept(peer apifabclient.Peer) bool {
+func (df *mockDiscoveryFilter) Accept(peer context.Peer) bool {
 	df.called = true
 	return true
 }

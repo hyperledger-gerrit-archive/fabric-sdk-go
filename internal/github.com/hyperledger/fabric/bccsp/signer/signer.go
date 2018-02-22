@@ -23,7 +23,7 @@ import (
 	"crypto"
 	"io"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/pkg/errors"

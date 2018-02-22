@@ -391,7 +391,7 @@ func (msp *bccspmsp) setupV1(conf1 *m.FabricMSPConfig) error {
 }
 
 func (msp *bccspmsp) preSetupV1(conf *m.FabricMSPConfig) error {
-	// setup crypto config
+	// setup crypto apiconfig
 	if err := msp.setupCrypto(conf); err != nil {
 		return err
 	}
