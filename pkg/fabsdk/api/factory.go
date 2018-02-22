@@ -32,8 +32,7 @@ type ServiceProviderFactory interface {
 // OrgClientFactory allows overriding default clients and providers of an organization
 // Currently, a context is created for each organization that the client app needs.
 type OrgClientFactory interface {
-	//CreateMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error)
-	CreateCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error)
+	NewIdentityManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (fab.IdentityManager, error)
 }
 
 // SessionClientFactory allows overriding default clients and providers of a session

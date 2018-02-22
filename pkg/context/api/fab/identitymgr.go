@@ -7,18 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
-// FabricCAClient is the client interface for fabric-ca
-type FabricCAClient interface {
+// IdentityManager retrieves user's signing identity
+type IdentityManager interface {
 	CAName() string
-	// Reenroll to renew user's enrollment certificate
 	Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error)
-	Reenroll(user contextApi.User) (core.Key, []byte, error)
+	Reenroll(user api.User) (core.Key, []byte, error)
 	Register(request *RegistrationRequest) (string, error)
 	Revoke(request *RevocationRequest) (*RevocationResponse, error)
+	GetSigningIdentity(name string) (*api.SigningIdentity, error)
 }
 
 // AttributeRequest is a request for an attribute.

@@ -127,7 +127,7 @@ func TestWithContextPkg(t *testing.T) {
 		t.Fatalf("Unexpected error getting context: %s", err)
 	}
 
-	cm, err := ctx.CreateCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite)
+	cm, err := ctx.NewIdentityManager(sdkValidClientOrg1, c, core.cryptoSuite)
 	if err != nil {
 		t.Fatalf("Unexpected error getting credential manager: %s", err)
 	}
@@ -137,7 +137,7 @@ func TestWithContextPkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockOrgClientFactory(mockCtrl)
 
-	factory.EXPECT().CreateCredentialManager(sdkValidClientOrg1, c, core.cryptoSuite).Return(cm, nil)
+	factory.EXPECT().NewIdentityManager(sdkValidClientOrg1, c, core.cryptoSuite).Return(cm, nil)
 
 	sdk, err = New(WithConfig(c), WithCorePkg(core), WithContextPkg(factory))
 	if err != nil {
