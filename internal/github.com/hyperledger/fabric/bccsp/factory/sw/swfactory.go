@@ -42,7 +42,7 @@ func (f *SWFactory) Name() string {
 func (f *SWFactory) Get(swOpts *SwOpts) (bccsp.BCCSP, error) {
 	// Validate arguments
 	if swOpts == nil {
-		return nil, errors.New("Invalid config. It must not be nil.")
+		return nil, errors.New("Invalid apiconfig. It must not be nil.")
 	}
 
 	var ks bccsp.KeyStore

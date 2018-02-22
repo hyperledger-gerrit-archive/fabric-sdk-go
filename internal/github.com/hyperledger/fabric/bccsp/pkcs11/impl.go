@@ -44,7 +44,7 @@ var (
 // New returns a new instance of the software-based BCCSP
 // set at the passed security level, hash family and KeyStore.
 func New(opts PKCS11Opts, keyStore bccsp.KeyStore) (bccsp.BCCSP, error) {
-	// Init config
+	// Init apiconfig
 	conf := &config{}
 	err := conf.setSecurityLevel(opts.SecLevel, opts.HashFamily)
 	if err != nil {

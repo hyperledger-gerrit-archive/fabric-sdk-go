@@ -14,13 +14,13 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
 	"github.com/pkg/errors"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	ca "github.com/hyperledger/fabric-sdk-go/api/apifabca"
+	ca "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	config "github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/sw"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
@@ -33,7 +33,7 @@ var org1 = "peerorg1"
 var caServerURL = "http://localhost:8090"
 var wrongCAServerURL = "http://localhost:8091"
 
-// TestMain Load testing config
+// TestMain Load testing apiconfig
 func TestMain(m *testing.M) {
 	configImp = mocks.NewMockConfig(caServerURL)
 	cryptoSuiteProvider, _ = cryptosuiteimpl.GetSuiteByConfig(configImp)

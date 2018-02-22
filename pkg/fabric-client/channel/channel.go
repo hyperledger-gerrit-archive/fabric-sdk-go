@@ -13,9 +13,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
@@ -30,13 +30,13 @@ var logger = logging.NewLogger("fabric_sdk_go")
 // the orderers to isolate transactions delivery to peers participating on channel.
 type Channel struct {
 	name          string // aka channel ID
-	peers         map[string]fab.Peer
-	orderers      map[string]fab.Orderer
-	clientContext fab.Context
-	primaryPeer   fab.Peer
+	peers         map[string]context.Peer
+	orderers      map[string]context.Orderer
+	clientContext context.Context
+	primaryPeer   context.Peer
 	mspManager    msp.MSPManager
-	anchorPeers   []*fab.OrgAnchorPeer
-	transactor    fab.Transactor
+	anchorPeers   []*context.OrgAnchorPeer
+	transactor    context.Transactor
 	initialized   bool
 }
 
@@ -44,12 +44,12 @@ type Channel struct {
 // name: used to identify different channel instances. The naming of channel instances
 // is enforced by the ordering service and must be unique within the blockchain network.
 // client: Provides operational context such as submitting User etc.
-func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
+func New(ctx context.Context, cfg context.ChannelCfg) (*Channel, error) {
 	if ctx == nil {
 		return nil, errors.Errorf("client is required")
 	}
-	p := make(map[string]fab.Peer)
-	o := make(map[string]fab.Orderer)
+	p := make(map[string]context.Peer)
+	o := make(map[string]context.Orderer)
 
 	transactor, err := NewTransactor(ctx, cfg)
 	if err != nil {
@@ -89,12 +89,12 @@ func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
 	c.mspManager = mspManager
 	c.anchorPeers = cfg.AnchorPeers()
 
-	// Add orderer if specified in config
+	// Add orderer if specified in apiconfig
 	for _, name := range cfg.Orderers() {
 		//Get orderer config by orderer address
 		oCfg, err := getOrdererConfig(ctx.Config(), name)
 		if err != nil {
-			return nil, errors.Errorf("failed to retrieve orderer config...: %s", err)
+			return nil, errors.Errorf("failed to retrieve orderer apiconfig...: %s", err)
 		}
 
 		var o *orderer.Orderer
@@ -105,7 +105,7 @@ func New(ctx fab.Context, cfg fab.ChannelCfg) (*Channel, error) {
 		}
 
 		if err != nil {
-			return nil, errors.WithMessage(err, "failed to create new orderer from config")
+			return nil, errors.WithMessage(err, "failed to create new orderer from apiconfig")
 		}
 
 		c.orderers[o.URL()] = o
@@ -123,7 +123,7 @@ func (c *Channel) Name() string {
 
 // AddPeer adds a peer endpoint to channel.
 // It returns error if the peer with that url already exists.
-func (c *Channel) AddPeer(peer fab.Peer) error {
+func (c *Channel) AddPeer(peer context.Peer) error {
 	url := peer.URL()
 	if c.peers[url] != nil {
 		return errors.Errorf("peer with URL %s already exists", url)
@@ -133,7 +133,7 @@ func (c *Channel) AddPeer(peer fab.Peer) error {
 }
 
 // RemovePeer remove a peer endpoint from channel.
-func (c *Channel) RemovePeer(peer fab.Peer) {
+func (c *Channel) RemovePeer(peer context.Peer) {
 	url := peer.URL()
 	if c.peers[url] != nil {
 		delete(c.peers, url)
@@ -142,8 +142,8 @@ func (c *Channel) RemovePeer(peer fab.Peer) {
 }
 
 // Peers returns the peers of of the channel.
-func (c *Channel) Peers() []fab.Peer {
-	var peersArray []fab.Peer
+func (c *Channel) Peers() []context.Peer {
+	var peersArray []context.Peer
 	for _, v := range c.peers {
 		peersArray = append(peersArray, v)
 	}
@@ -152,8 +152,8 @@ func (c *Channel) Peers() []fab.Peer {
 
 // AnchorPeers returns the anchor peers for this channel.
 // Note: channel.Initialize() must be called first to retrieve anchor peers
-func (c *Channel) AnchorPeers() []fab.OrgAnchorPeer {
-	anchors := []fab.OrgAnchorPeer{}
+func (c *Channel) AnchorPeers() []context.OrgAnchorPeer {
+	anchors := []context.OrgAnchorPeer{}
 	for _, anchor := range c.anchorPeers {
 		anchors = append(anchors, *anchor)
 	}
@@ -166,7 +166,7 @@ func (c *Channel) AnchorPeers() []fab.OrgAnchorPeer {
 // Default: When no primary peer has been set the first peer
 // on the list will be used.
 // It returns error when peer is not on the existing peer list
-func (c *Channel) SetPrimaryPeer(peer fab.Peer) error {
+func (c *Channel) SetPrimaryPeer(peer context.Peer) error {
 
 	if !c.isValidPeer(peer) {
 		return errors.New("primary peer must be on this channel peer list")
@@ -179,7 +179,7 @@ func (c *Channel) SetPrimaryPeer(peer fab.Peer) error {
 // PrimaryPeer gets the primary peer -- the peer to use for doing queries.
 // Default: When no primary peer has been set the first peer
 // from map range will be used.
-func (c *Channel) PrimaryPeer() fab.Peer {
+func (c *Channel) PrimaryPeer() context.Peer {
 
 	if c.primaryPeer != nil {
 		return c.primaryPeer
@@ -202,7 +202,7 @@ func (c *Channel) PrimaryPeer() fab.Peer {
 // All APIs concerning the orderer will broadcast to all orderers simultaneously.
 // orderer: An instance of the Orderer interface.
 // Returns error if the orderer with that url already exists.
-func (c *Channel) AddOrderer(orderer fab.Orderer) error {
+func (c *Channel) AddOrderer(orderer context.Orderer) error {
 	url := orderer.URL()
 	if c.orderers[url] != nil {
 		return errors.Errorf("orderer with URL %s already exists", url)
@@ -213,7 +213,7 @@ func (c *Channel) AddOrderer(orderer fab.Orderer) error {
 
 // RemoveOrderer removes orderer endpoint from a channel object, this is a local-only operation.
 // orderer: An instance of the Orderer class.
-func (c *Channel) RemoveOrderer(orderer fab.Orderer) {
+func (c *Channel) RemoveOrderer(orderer context.Orderer) {
 	url := orderer.URL()
 	if c.orderers[url] != nil {
 		delete(c.orderers, url)
@@ -222,8 +222,8 @@ func (c *Channel) RemoveOrderer(orderer fab.Orderer) {
 }
 
 // Orderers gets the orderers of a channel.
-func (c *Channel) Orderers() []fab.Orderer {
-	var orderersArray []fab.Orderer
+func (c *Channel) Orderers() []context.Orderer {
+	var orderersArray []context.Orderer
 	for _, v := range c.orderers {
 		orderersArray = append(orderersArray, v)
 	}
@@ -265,7 +265,7 @@ func (c *Channel) OrganizationUnits() ([]string, error) {
 
 // Utility function to ensure that a peer exists on this channel.
 // It returns true if peer exists on this channel
-func (c *Channel) isValidPeer(peer fab.Peer) bool {
+func (c *Channel) isValidPeer(peer context.Peer) bool {
 	return peer != nil && c.peers[peer.URL()] != nil
 }
 
@@ -336,7 +336,7 @@ func (c *Channel) QueryInfo() (*common.BlockchainInfo, error) {
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
-	resps, err := l.QueryInfo([]fab.ProposalProcessor{c.PrimaryPeer()})
+	resps, err := l.QueryInfo([]context.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +352,7 @@ func (c *Channel) QueryBlockByHash(blockHash []byte) (*common.Block, error) {
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
-	resps, err := l.QueryBlockByHash(blockHash, []fab.ProposalProcessor{c.PrimaryPeer()})
+	resps, err := l.QueryBlockByHash(blockHash, []context.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +369,7 @@ func (c *Channel) QueryBlock(blockNumber int) (*common.Block, error) {
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
-	resps, err := l.QueryBlock(blockNumber, []fab.ProposalProcessor{c.PrimaryPeer()})
+	resps, err := l.QueryBlock(blockNumber, []context.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
 	}
@@ -386,7 +386,7 @@ func (c *Channel) QueryTransaction(transactionID string) (*pb.ProcessedTransacti
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
-	resps, err := l.QueryTransaction(transactionID, []fab.ProposalProcessor{c.PrimaryPeer()})
+	resps, err := l.QueryTransaction(transactionID, []context.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +401,7 @@ func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, err
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
-	resps, err := l.QueryInstantiatedChaincodes([]fab.ProposalProcessor{c.PrimaryPeer()})
+	resps, err := l.QueryInstantiatedChaincodes([]context.ProposalProcessor{c.PrimaryPeer()})
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +411,7 @@ func (c *Channel) QueryInstantiatedChaincodes() (*pb.ChaincodeQueryResponse, err
 
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
-func (c *Channel) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error) {
+func (c *Channel) QueryConfigBlock(targets []context.ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error) {
 	l, err := NewLedger(c.clientContext, c.name)
 	if err != nil {
 		return nil, errors.WithMessage(err, "ledger client creation failed")
@@ -425,7 +425,7 @@ func (c *Channel) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses
 // from the arguments that this is a query request. The chaincode must also return
 // results in the byte array format and the caller will have to be able to decode.
 // these results.
-func (c *Channel) QueryByChaincode(request fab.ChaincodeInvokeRequest) ([][]byte, error) {
+func (c *Channel) QueryByChaincode(request context.ChaincodeInvokeRequest) ([][]byte, error) {
 	targets, err := c.chaincodeInvokeRequestAddDefaultPeers(request.Targets)
 	if err != nil {
 		return nil, err
@@ -438,7 +438,7 @@ func (c *Channel) QueryByChaincode(request fab.ChaincodeInvokeRequest) ([][]byte
 // QueryBySystemChaincode invokes a chaincode that isn't part of a channel.
 //
 // TODO: This function's name is confusing - call the normal QueryByChaincode for system chaincode on a channel.
-func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([][]byte, error) {
+func (c *Channel) QueryBySystemChaincode(request context.ChaincodeInvokeRequest) ([][]byte, error) {
 	targets, err := c.chaincodeInvokeRequestAddDefaultPeers(request.Targets)
 	if err != nil {
 		return nil, err
@@ -452,22 +452,22 @@ func (c *Channel) QueryBySystemChaincode(request fab.ChaincodeInvokeRequest) ([]
 func (c *Channel) SendInstantiateProposal(chaincodeName string,
 	args [][]byte, chaincodePath string, chaincodeVersion string,
 	chaincodePolicy *common.SignaturePolicyEnvelope,
-	collConfig []*common.CollectionConfig, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+	collConfig []*common.CollectionConfig, targets []context.ProposalProcessor) ([]*context.TransactionProposalResponse, context.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+		return nil, context.TransactionID{}, errors.New("chaincodeName is required")
 	}
 	if chaincodePath == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+		return nil, context.TransactionID{}, errors.New("chaincodePath is required")
 	}
 	if chaincodeVersion == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+		return nil, context.TransactionID{}, errors.New("chaincodeVersion is required")
 	}
 	if chaincodePolicy == nil {
-		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+		return nil, context.TransactionID{}, errors.New("chaincodePolicy is required")
 	}
 	if len(targets) == 0 {
-		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+		return nil, context.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
 	}
 
 	cp := ChaincodeDeployRequest{
@@ -481,12 +481,12 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 
 	txid, err := txn.NewID(c.clientContext)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
+		return nil, context.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
 	}
 
 	tp, err := CreateChaincodeDeployProposal(txid, InstantiateChaincode, c.name, cp)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+		return nil, context.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
 	}
 
 	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
@@ -496,22 +496,22 @@ func (c *Channel) SendInstantiateProposal(chaincodeName string,
 // SendUpgradeProposal sends an upgrade proposal to one or more endorsing peers.
 func (c *Channel) SendUpgradeProposal(chaincodeName string,
 	args [][]byte, chaincodePath string, chaincodeVersion string,
-	chaincodePolicy *common.SignaturePolicyEnvelope, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, fab.TransactionID, error) {
+	chaincodePolicy *common.SignaturePolicyEnvelope, targets []context.ProposalProcessor) ([]*context.TransactionProposalResponse, context.TransactionID, error) {
 
 	if chaincodeName == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeName is required")
+		return nil, context.TransactionID{}, errors.New("chaincodeName is required")
 	}
 	if chaincodePath == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodePath is required")
+		return nil, context.TransactionID{}, errors.New("chaincodePath is required")
 	}
 	if chaincodeVersion == "" {
-		return nil, fab.TransactionID{}, errors.New("chaincodeVersion is required")
+		return nil, context.TransactionID{}, errors.New("chaincodeVersion is required")
 	}
 	if chaincodePolicy == nil {
-		return nil, fab.TransactionID{}, errors.New("chaincodePolicy is required")
+		return nil, context.TransactionID{}, errors.New("chaincodePolicy is required")
 	}
 	if len(targets) == 0 {
-		return nil, fab.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
+		return nil, context.TransactionID{}, errors.New("missing peer objects for chaincode proposal")
 	}
 
 	cp := ChaincodeDeployRequest{
@@ -524,19 +524,19 @@ func (c *Channel) SendUpgradeProposal(chaincodeName string,
 
 	txid, err := txn.NewID(c.clientContext)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
+		return nil, context.TransactionID{}, errors.WithMessage(err, "create transaction ID failed")
 	}
 
 	tp, err := CreateChaincodeDeployProposal(txid, UpgradeChaincode, c.name, cp)
 	if err != nil {
-		return nil, fab.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
+		return nil, context.TransactionID{}, errors.WithMessage(err, "creation of chaincode proposal failed")
 	}
 
 	tpr, err := txn.SendProposal(c.clientContext, tp, targets)
 	return tpr, tp.TxnID, err
 }
 
-func validateChaincodeInvokeRequest(request fab.ChaincodeInvokeRequest) error {
+func validateChaincodeInvokeRequest(request context.ChaincodeInvokeRequest) error {
 	if request.ChaincodeID == "" {
 		return errors.New("ChaincodeID is required")
 	}
@@ -547,7 +547,7 @@ func validateChaincodeInvokeRequest(request fab.ChaincodeInvokeRequest) error {
 	return nil
 }
 
-func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(targets []fab.ProposalProcessor) ([]fab.ProposalProcessor, error) {
+func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(targets []context.ProposalProcessor) ([]context.ProposalProcessor, error) {
 	// Use default peers if targets are not specified.
 	if targets == nil || len(targets) == 0 {
 		if c.peers == nil || len(c.peers) == 0 {
@@ -561,8 +561,8 @@ func (c *Channel) chaincodeInvokeRequestAddDefaultPeers(targets []fab.ProposalPr
 }
 
 // peersToTxnProcessors converts a slice of Peers to a slice of ProposalProcessors
-func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
-	tpp := make([]fab.ProposalProcessor, len(peers))
+func peersToTxnProcessors(peers []context.Peer) []context.ProposalProcessor {
+	tpp := make([]context.ProposalProcessor, len(peers))
 
 	for i := range peers {
 		tpp[i] = peers[i]

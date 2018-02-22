@@ -31,6 +31,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	mrand "math/rand"
+
 	"net/http"
 	"path/filepath"
 	"reflect"
@@ -38,8 +39,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 
 	"github.com/pkg/errors"
 

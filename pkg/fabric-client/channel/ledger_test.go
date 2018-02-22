@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -21,12 +21,12 @@ func TestQueryMethods(t *testing.T) {
 	channel, _ := setupTestLedger()
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil}
 
-	_, err := channel.QueryBlock(-1, []fab.ProposalProcessor{&peer})
+	_, err := channel.QueryBlock(-1, []context.ProposalProcessor{&peer})
 	if err == nil {
 		t.Fatalf("Query block cannot be negative number")
 	}
 
-	_, err = channel.QueryBlockByHash(nil, []fab.ProposalProcessor{&peer})
+	_, err = channel.QueryBlockByHash(nil, []context.ProposalProcessor{&peer})
 	if err == nil {
 		t.Fatalf("Query hash cannot be nil")
 	}
@@ -37,13 +37,13 @@ func TestChannelQueryBlock(t *testing.T) {
 	channel, _ := setupTestLedger()
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200}
 
-	_, err := channel.QueryBlock(1, []fab.ProposalProcessor{&peer})
+	_, err := channel.QueryBlock(1, []context.ProposalProcessor{&peer})
 
 	if err != nil {
 		t.Fatalf("Test channel query block failed: %s", err)
 	}
 
-	_, err = channel.QueryBlockByHash([]byte(""), []fab.ProposalProcessor{&peer})
+	_, err = channel.QueryBlockByHash([]byte(""), []context.ProposalProcessor{&peer})
 
 	if err != nil {
 		t.Fatal("Test channel query block by hash failed,")
@@ -55,7 +55,7 @@ func TestQueryInstantiatedChaincodes(t *testing.T) {
 	channel, _ := setupTestLedger()
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200}
 
-	res, err := channel.QueryInstantiatedChaincodes([]fab.ProposalProcessor{&peer})
+	res, err := channel.QueryInstantiatedChaincodes([]context.ProposalProcessor{&peer})
 
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryInstatiated chaincode failed: %v", err)
@@ -67,7 +67,7 @@ func TestQueryTransaction(t *testing.T) {
 	channel, _ := setupTestLedger()
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200}
 
-	res, err := channel.QueryTransaction("txid", []fab.ProposalProcessor{&peer})
+	res, err := channel.QueryTransaction("txid", []context.ProposalProcessor{&peer})
 
 	if err != nil || res == nil {
 		t.Fatal("Test QueryTransaction failed")
@@ -78,7 +78,7 @@ func TestQueryInfo(t *testing.T) {
 	channel, _ := setupTestLedger()
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200}
 
-	res, err := channel.QueryInfo([]fab.ProposalProcessor{&peer})
+	res, err := channel.QueryInfo([]context.ProposalProcessor{&peer})
 
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryInfo failed: %v", err)
@@ -89,19 +89,19 @@ func TestQueryConfig(t *testing.T) {
 	channel, _ := setupTestLedger()
 
 	// empty targets
-	_, err := channel.QueryConfigBlock([]fab.ProposalProcessor{}, 1)
+	_, err := channel.QueryConfigBlock([]context.ProposalProcessor{}, 1)
 	if err == nil {
 		t.Fatalf("Should have failed due to empty targets")
 	}
 
 	// min endorsers <= 0
-	_, err = channel.QueryConfigBlock([]fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 0)
+	_, err = channel.QueryConfigBlock([]context.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 0)
 	if err == nil {
 		t.Fatalf("Should have failed due to empty targets")
 	}
 
 	// peer without payload
-	_, err = channel.QueryConfigBlock([]fab.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 1)
+	_, err = channel.QueryConfigBlock([]context.ProposalProcessor{mocks.NewMockPeer("Peer1", "http://peer1.com")}, 1)
 	if err == nil {
 		t.Fatalf("Should have failed due to nil block metadata")
 	}
@@ -130,13 +130,13 @@ func TestQueryConfig(t *testing.T) {
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload, Status: 200}
 
 	// fail with min endorsers
-	res, err := channel.QueryConfigBlock([]fab.ProposalProcessor{&peer}, 2)
+	res, err := channel.QueryConfigBlock([]context.ProposalProcessor{&peer}, 2)
 	if err == nil {
 		t.Fatalf("Should have failed with since there's one endorser and at least two are required")
 	}
 
 	// success with one endorser
-	res, err = channel.QueryConfigBlock([]fab.ProposalProcessor{&peer}, 1)
+	res, err = channel.QueryConfigBlock([]context.ProposalProcessor{&peer}, 1)
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryConfig failed: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestQueryConfig(t *testing.T) {
 	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, Payload: payload, Status: 200}
 
 	// success with two endorsers
-	res, err = channel.QueryConfigBlock([]fab.ProposalProcessor{&peer, &peer2}, 2)
+	res, err = channel.QueryConfigBlock([]context.ProposalProcessor{&peer, &peer2}, 2)
 	if err != nil || res == nil {
 		t.Fatalf("Test QueryConfig failed: %v", err)
 	}
@@ -171,7 +171,7 @@ func TestQueryConfig(t *testing.T) {
 
 	// peer 2 now had different payload; query config block should fail
 	peer2.Payload = payload2
-	res, err = channel.QueryConfigBlock([]fab.ProposalProcessor{&peer, &peer2}, 2)
+	res, err = channel.QueryConfigBlock([]context.ProposalProcessor{&peer, &peer2}, 2)
 	if err == nil {
 		t.Fatalf("Should have failed for different block payloads")
 	}
@@ -207,12 +207,12 @@ func TestQueryConfigBlockDifferentMetadata(t *testing.T) {
 	peer1 := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: payload1, Status: 200}
 	peer2 := mocks.MockPeer{MockName: "Peer2", MockURL: "http://peer2.com", MockRoles: []string{}, MockCert: nil, Payload: payload2, Status: 200}
 
-	_, err = channel.QueryConfigBlock([]fab.ProposalProcessor{&peer1, &peer2}, 2)
+	_, err = channel.QueryConfigBlock([]context.ProposalProcessor{&peer1, &peer2}, 2)
 	assert.Nil(t, err, "Expected success querying blocks with identical block data payloads")
 }
 
 func TestFilterResponses(t *testing.T) {
-	tprs := []*fab.TransactionProposalResponse{}
+	tprs := []*context.TransactionProposalResponse{}
 	err := fmt.Errorf("test")
 	for i := 0; i <= 100; i++ {
 		var s int
@@ -221,7 +221,7 @@ func TestFilterResponses(t *testing.T) {
 		} else {
 			s = 500
 		}
-		tprs = append(tprs, &fab.TransactionProposalResponse{Status: int32(s)})
+		tprs = append(tprs, &context.TransactionProposalResponse{Status: int32(s)})
 	}
 	f, errs := filterResponses(tprs, err)
 	assert.Len(t, f, 51)

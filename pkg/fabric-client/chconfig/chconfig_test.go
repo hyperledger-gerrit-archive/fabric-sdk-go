@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 )
@@ -23,7 +23,7 @@ func TestChannelConfigWithPeer(t *testing.T) {
 	ctx := setupTestContext()
 	peer := getPeerWithConfigBlockPayload(t)
 
-	channelConfig, err := New(ctx, channelID, WithPeers([]fab.Peer{peer}), WithMinResponses(1))
+	channelConfig, err := New(ctx, channelID, WithPeers([]context.Peer{peer}), WithMinResponses(1))
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -43,7 +43,7 @@ func TestChannelConfigWithPeerError(t *testing.T) {
 	ctx := setupTestContext()
 	peer := getPeerWithConfigBlockPayload(t)
 
-	channelConfig, err := New(ctx, channelID, WithPeers([]fab.Peer{peer}), WithMinResponses(2))
+	channelConfig, err := New(ctx, channelID, WithPeers([]context.Peer{peer}), WithMinResponses(2))
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
@@ -76,13 +76,13 @@ func setupTestChannel(name string) (*channel.Channel, error) {
 	return channel.New(ctx, mocks.NewMockChannelCfg(name))
 }
 
-func setupTestContext() fab.Context {
+func setupTestContext() context.Context {
 	user := mocks.NewMockUser("test")
 	ctx := mocks.NewMockContext(user)
 	return ctx
 }
 
-func getPeerWithConfigBlockPayload(t *testing.T) fab.Peer {
+func getPeerWithConfigBlockPayload(t *testing.T) context.Peer {
 
 	// create config block builder in order to create valid payload
 	builder := &mocks.MockConfigBlockBuilder{

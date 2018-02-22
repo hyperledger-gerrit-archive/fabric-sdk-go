@@ -9,11 +9,10 @@ package chpvdr
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
@@ -65,11 +64,11 @@ type MockProviderFactory struct {
 // CustomFabricProvider overrides channel config default implementation
 type MockFabricProvider struct {
 	*fabpvdr.FabricProvider
-	providerContext apifabclient.ProviderContext
+	providerContext context.ProviderContext
 }
 
-// CreateChannelConfig initializes the channel config
-func (f *MockFabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext, channelID string) (apifabclient.ChannelConfig, error) {
+// CreateChannelConfig initializes the channel apiconfig
+func (f *MockFabricProvider) CreateChannelConfig(ic context.IdentityContext, channelID string) (context.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
@@ -81,7 +80,7 @@ func (f *MockFabricProvider) CreateChannelConfig(ic apifabclient.IdentityContext
 }
 
 // CreateChannelClient overrides the default.
-func (f *MockFabricProvider) CreateChannelClient(ic apifabclient.IdentityContext, cfg apifabclient.ChannelCfg) (apifabclient.Channel, error) {
+func (f *MockFabricProvider) CreateChannelClient(ic context.IdentityContext, cfg context.ChannelCfg) (context.Channel, error) {
 	ctx := chconfig.Context{
 		ProviderContext: f.providerContext,
 		IdentityContext: ic,
@@ -95,7 +94,7 @@ func (f *MockFabricProvider) CreateChannelClient(ic apifabclient.IdentityContext
 }
 
 // NewFabricProvider mocks new default implementation of fabric primitives
-func (f *MockProviderFactory) NewFabricProvider(context apifabclient.ProviderContext) (api.FabricProvider, error) {
+func (f *MockProviderFactory) NewFabricProvider(context context.ProviderContext) (context.FabricProvider, error) {
 	fabProvider := fabpvdr.New(context)
 
 	cfp := MockFabricProvider{

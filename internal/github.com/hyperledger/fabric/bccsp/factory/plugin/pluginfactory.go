@@ -41,14 +41,14 @@ func (f *PluginFactory) Name() string {
 
 // Get returns an instance of BCCSP using Opts.
 func (f *PluginFactory) Get(pluginOpts *PluginOpts) (bccsp.BCCSP, error) {
-	// check for valid config
+	// check for valid apiconfig
 	if pluginOpts == nil {
-		return nil, errors.New("Invalid config. It must not be nil.")
+		return nil, errors.New("Invalid apiconfig. It must not be nil.")
 	}
 
 	// Library is required property
 	if pluginOpts.Library == "" {
-		return nil, errors.New("Invalid config: missing property 'Library'")
+		return nil, errors.New("Invalid apiconfig: missing property 'Library'")
 	}
 
 	// make sure the library exists

@@ -7,10 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package sw
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
@@ -18,7 +18,7 @@ import (
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
-//GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
+//GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given apiconfig
 func GetSuiteByConfig(config apiconfig.Config) (apicryptosuite.CryptoSuite, error) {
 	// TODO: delete this check?
 	if config.SecurityProvider() != "SW" {
@@ -54,7 +54,7 @@ func getBCCSPFromOpts(config *bccspSw.SwOpts) (bccsp.BCCSP, error) {
 	return csp, nil
 }
 
-//GetOptsByConfig Returns Factory opts for given SDK config
+//GetOptsByConfig Returns Factory opts for given SDK apiconfig
 func getOptsByConfig(c apiconfig.Config) *bccspSw.SwOpts {
 	opts := &bccspSw.SwOpts{
 		HashFamily: c.SecurityAlgorithm(),

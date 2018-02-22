@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	mock_fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig/mocks"
+	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/context/mocks"
 	"github.com/pkg/errors"
 )
 
@@ -78,7 +78,7 @@ func TestNewPeerTLSFromCertBad(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	//config := mock_apiconfig.DefaultMockConfig(mockCtrl)
+	//apiconfig := mock_apiconfig.DefaultMockConfig(mockCtrl)
 	config := mock_apiconfig.NewMockConfig(mockCtrl)
 	config.EXPECT().TimeoutOrDefault(apiconfig.Endorser).Return(time.Second * 5)
 	config.EXPECT().TLSCACertPool(gomock.Any()).Return(nil, errors.New("failed to get certpool")).AnyTimes()
@@ -197,7 +197,7 @@ func TestProposalProcessorSendProposal(t *testing.T) {
 	proc := mock_fab.NewMockProposalProcessor(mockCtrl)
 
 	tp := mockProcessProposalRequest()
-	tpr := fab.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
+	tpr := context.TransactionProposalResponse{Endorser: "example.com", Status: 99, ProposalResponse: nil}
 
 	proc.EXPECT().ProcessTransactionProposal(tp).Return(&tpr, nil)
 
@@ -227,7 +227,7 @@ func TestPeersToTxnProcessors(t *testing.T) {
 		t.Fatalf("Failed to create NewPeer error(%v)", err)
 	}
 
-	peers := []fab.Peer{peer1, peer2}
+	peers := []context.Peer{peer1, peer2}
 	processors := PeersToTxnProcessors(peers)
 
 	for i := range peers {
@@ -238,7 +238,7 @@ func TestPeersToTxnProcessors(t *testing.T) {
 }
 
 func TestInterfaces(t *testing.T) {
-	var apiPeer fab.Peer
+	var apiPeer context.Peer
 	var peer Peer
 
 	apiPeer = &peer

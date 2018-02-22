@@ -11,7 +11,7 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 )
 
 // MockConfig ...
@@ -24,7 +24,7 @@ func NewMockConfig(CAServerURL string) apiconfig.Config {
 	return &MockConfig{CAServerURL: CAServerURL}
 }
 
-// Client returns the Client config
+// Client returns the Client apiconfig
 func (c *MockConfig) Client() (*apiconfig.ClientConfig, error) {
 	return nil, nil
 }

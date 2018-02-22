@@ -11,18 +11,18 @@ import (
 	"encoding/hex"
 	"hash"
 
-	config "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
+	config "github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 )
 
 // MockProviderContext holds core providers to enable mocking.
 type MockProviderContext struct {
 	config         config.Config
 	cryptoSuite    apicryptosuite.CryptoSuite
-	signingManager fab.SigningManager
+	signingManager context.SigningManager
 }
 
 // NewMockProviderContext creates a MockProviderContext consisting of defaults
@@ -36,7 +36,7 @@ func NewMockProviderContext() *MockProviderContext {
 }
 
 // NewMockProviderContextCustom creates a MockProviderContext consisting of the arguments
-func NewMockProviderContextCustom(config config.Config, cryptoSuite apicryptosuite.CryptoSuite, signer fab.SigningManager) *MockProviderContext {
+func NewMockProviderContextCustom(config config.Config, cryptoSuite apicryptosuite.CryptoSuite, signer context.SigningManager) *MockProviderContext {
 	context := MockProviderContext{
 		config:         config,
 		signingManager: signer,
@@ -61,18 +61,18 @@ func (pc *MockProviderContext) CryptoSuite() apicryptosuite.CryptoSuite {
 }
 
 // SigningManager returns the mock signing manager.
-func (pc *MockProviderContext) SigningManager() fab.SigningManager {
+func (pc *MockProviderContext) SigningManager() context.SigningManager {
 	return pc.signingManager
 }
 
 // MockContext holds core providers and identity to enable mocking.
 type MockContext struct {
 	*MockProviderContext
-	fab.IdentityContext
+	context.IdentityContext
 }
 
 // NewMockContext creates a MockContext consisting of defaults and an identity
-func NewMockContext(ic fab.IdentityContext) *MockContext {
+func NewMockContext(ic context.IdentityContext) *MockContext {
 	ctx := MockContext{
 		MockProviderContext: NewMockProviderContext(),
 		IdentityContext:     ic,
@@ -81,27 +81,27 @@ func NewMockContext(ic fab.IdentityContext) *MockContext {
 }
 
 // NewMockTxnID creates mock TxnID based on mock user.
-func NewMockTxnID() (fab.TransactionID, error) {
+func NewMockTxnID() (context.TransactionID, error) {
 	user := NewMockUser("test")
 
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
 	if err != nil {
-		return fab.TransactionID{}, err
+		return context.TransactionID{}, err
 	}
 
 	creator, err := user.Identity()
 	if err != nil {
-		return fab.TransactionID{}, err
+		return context.TransactionID{}, err
 	}
 
 	h := sha256.New()
 	id, err := computeTxnID(nonce, creator, h)
 	if err != nil {
-		return fab.TransactionID{}, err
+		return context.TransactionID{}, err
 	}
 
-	txnID := fab.TransactionID{
+	txnID := context.TransactionID{
 		ID:    id,
 		Nonce: nonce,
 	}

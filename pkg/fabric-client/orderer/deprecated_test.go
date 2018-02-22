@@ -14,11 +14,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/pkg/errors"
@@ -33,7 +33,7 @@ func TestDeprecatedSendDeliver(t *testing.T) {
 
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 	// Test deliver happy path
-	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs := orderer.SendDeliver(&context.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		if string(block.Data.Data[0]) != "test" {
@@ -61,7 +61,7 @@ func TestDeprecatedSendDeliver(t *testing.T) {
 	// Test deliver with deliver error from OS
 	testError := errors.New("test error")
 	mockServer.DeliverError = testError
-	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs = orderer.SendDeliver(&context.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		t.Fatalf("Expected error got block: %#v", block)
@@ -75,7 +75,7 @@ func TestDeprecatedSendDeliver(t *testing.T) {
 
 	orderer, _ = NewOrderer(testOrdererURL+"invalid-test", "", "", mocks.NewMockConfig(), kap)
 	// Test deliver happy path
-	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs = orderer.SendDeliver(&context.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
@@ -120,14 +120,14 @@ func TestDeprecatedSendBroadcast(t *testing.T) {
 	_, addr := startMockServer(t, grpcServer)
 
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
-	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 
 	if err != nil {
 		t.Fatalf("Test SendBroadcast was not supposed to fail")
 	}
 
 	orderer, _ = NewOrderer(testOrdererURL+"Test", "", "", mocks.NewMockConfig(), kap)
-	_, err = orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err = orderer.SendBroadcast(&context.SignedEnvelope{})
 
 	if err == nil || !strings.HasPrefix(err.Error(), "NewAtomicBroadcastClient") {
 		t.Fatalf("Test SendBroadcast was supposed to fail with expected error, instead it fail with [%s] error", err)
@@ -150,7 +150,7 @@ func TestDeprecatedSendDeliverServerBadResponse(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors := orderer.SendDeliver(&context.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -180,7 +180,7 @@ func TestDeprecatedSendDeliverServerSuccessResponse(t *testing.T) {
 
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors := orderer.SendDeliver(&context.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -205,7 +205,7 @@ func TestDeprecatedSendDeliverFailure(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors := orderer.SendDeliver(&context.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -230,7 +230,7 @@ func TestDeprecatedSendBroadcastServerBadResponse(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
-	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 
 	if err == nil {
 		t.Fatalf("Expected error")
@@ -252,7 +252,7 @@ func TestDeprecatedSendBroadcastError(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := NewOrderer("grpc://"+addr, "", "", mocks.NewMockConfig(), kap)
 
-	status, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	status, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 
 	if err == nil || status != nil {
 		t.Fatalf("expected Send Broadcast to fail with error, but got %s", err)
@@ -261,7 +261,7 @@ func TestDeprecatedSendBroadcastError(t *testing.T) {
 }
 
 func TestDeprecatedInterfaces(t *testing.T) {
-	var apiOrderer fab.Orderer
+	var apiOrderer context.Orderer
 	var orderer Orderer
 
 	apiOrderer = &orderer

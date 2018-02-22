@@ -43,7 +43,7 @@ func (f *PKCS11Factory) Name() string {
 func (f *PKCS11Factory) Get(p11Opts *pkcs11.PKCS11Opts) (bccsp.BCCSP, error) {
 	// Validate arguments
 	if p11Opts == nil {
-		return nil, errors.New("Invalid config. It must not be nil.")
+		return nil, errors.New("Invalid apiconfig. It must not be nil.")
 	}
 
 	//TODO: PKCS11 does not need a keystore, but we have not migrated all of PKCS11 BCCSP to PKCS11 yet

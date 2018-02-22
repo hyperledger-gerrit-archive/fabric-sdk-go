@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/spf13/cast"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -46,7 +46,7 @@ func NewOrderer(url string, certPath string, serverHostOverride string, config a
 	return &Orderer{url: urlutil.ToAddress(url), grpcDialOption: opts, dialTimeout: timeout}, nil
 }
 
-// NewOrdererFromConfig returns an Orderer instance constructed from orderer config
+// NewOrdererFromConfig returns an Orderer instance constructed from orderer apiconfig
 // Deprecated: use orderer.New() instead
 func NewOrdererFromConfig(ordererCfg *apiconfig.OrdererConfig, config apiconfig.Config) (*Orderer, error) {
 
