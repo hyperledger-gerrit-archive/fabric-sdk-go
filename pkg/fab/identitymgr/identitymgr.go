@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package credentialmgr
+package identitymgr
 
 import (
 	"fmt"
@@ -13,21 +13,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
-
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/credentialmgr/persistence"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identitymgr/persistence"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
-// CredentialManager is used for retriving user's signing identity (ecert + private key)
-type CredentialManager struct {
+// IdentityManager is used for retriving user's signing identity (ecert + private key)
+type IdentityManager struct {
 	orgName         string
 	orgMspID        string
 	embeddedUsers   map[string]core.TLSKeyPair
@@ -38,10 +37,10 @@ type CredentialManager struct {
 	userStore       api.UserStore
 }
 
-// NewCredentialManager Constructor for a credential manager.
+// NewIdentityManager Constructor for a credential manager.
 // @param {string} orgName - organisation id
-// @returns {CredentialManager} new credential manager
-func NewCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error) {
+// @returns {IdentityManager} new credential manager
+func NewIdentityManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.IdentityManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
@@ -88,7 +87,7 @@ func NewCredentialManager(orgName string, config core.Config, cryptoProvider cor
 		userStore, err = identity.NewCertFileUserStore(clientCofig.CredentialStore.Path, cryptoProvider)
 	}
 
-	return &CredentialManager{
+	return &IdentityManager{
 		orgName:         orgName,
 		orgMspID:        orgConfig.MspID,
 		config:          config,
@@ -101,7 +100,7 @@ func NewCredentialManager(orgName string, config core.Config, cryptoProvider cor
 }
 
 // GetSigningIdentity will sign the given object with provided key,
-func (mgr *CredentialManager) GetSigningIdentity(userName string) (*api.SigningIdentity, error) {
+func (mgr *IdentityManager) GetSigningIdentity(userName string) (*api.SigningIdentity, error) {
 	if userName == "" {
 		return nil, errors.New("username is required")
 	}
@@ -156,7 +155,7 @@ func (mgr *CredentialManager) GetSigningIdentity(userName string) (*api.SigningI
 	return signingIdentity, nil
 }
 
-func (mgr *CredentialManager) getEmbeddedCertBytes(userName string) ([]byte, error) {
+func (mgr *IdentityManager) getEmbeddedCertBytes(userName string) ([]byte, error) {
 	certPem := mgr.embeddedUsers[strings.ToLower(userName)].Cert.Pem
 	certPath := mgr.embeddedUsers[strings.ToLower(userName)].Cert.Path
 
@@ -179,7 +178,7 @@ func (mgr *CredentialManager) getEmbeddedCertBytes(userName string) ([]byte, err
 	return pemBytes, nil
 }
 
-func (mgr *CredentialManager) getEmbeddedPrivateKey(userName string) (core.Key, error) {
+func (mgr *IdentityManager) getEmbeddedPrivateKey(userName string) (core.Key, error) {
 	keyPem := mgr.embeddedUsers[strings.ToLower(userName)].Key.Pem
 	keyPath := mgr.embeddedUsers[strings.ToLower(userName)].Key.Path
 
@@ -222,7 +221,7 @@ func (mgr *CredentialManager) getEmbeddedPrivateKey(userName string) (core.Key, 
 	return privateKey, nil
 }
 
-func (mgr *CredentialManager) getPrivateKeyPemFromKeyStore(userName string, ski []byte) ([]byte, error) {
+func (mgr *IdentityManager) getPrivateKeyPemFromKeyStore(userName string, ski []byte) ([]byte, error) {
 	if mgr.mspPrivKeyStore == nil {
 		return nil, nil
 	}
@@ -242,7 +241,7 @@ func (mgr *CredentialManager) getPrivateKeyPemFromKeyStore(userName string, ski 
 	return keyBytes, nil
 }
 
-func (mgr *CredentialManager) getCertBytesFromCertStore(userName string) ([]byte, error) {
+func (mgr *IdentityManager) getCertBytesFromCertStore(userName string) ([]byte, error) {
 	if mgr.mspCertStore == nil {
 		return nil, api.ErrUserNotFound
 	}
@@ -263,7 +262,7 @@ func (mgr *CredentialManager) getCertBytesFromCertStore(userName string) ([]byte
 	return certBytes, nil
 }
 
-func (mgr *CredentialManager) getPrivateKeyFromCert(userName string, cert []byte) (core.Key, error) {
+func (mgr *IdentityManager) getPrivateKeyFromCert(userName string, cert []byte) (core.Key, error) {
 	if cert == nil {
 		return nil, errors.New("cert is nil")
 	}
@@ -281,7 +280,7 @@ func (mgr *CredentialManager) getPrivateKeyFromCert(userName string, cert []byte
 	return mgr.cryptoProvider.GetKey(pubKey.SKI())
 }
 
-func (mgr *CredentialManager) getPrivateKeyFromKeyStore(userName string, ski []byte) (core.Key, error) {
+func (mgr *IdentityManager) getPrivateKeyFromKeyStore(userName string, ski []byte) (core.Key, error) {
 	pemBytes, err := mgr.getPrivateKeyPemFromKeyStore(userName, ski)
 	if err != nil {
 		return nil, err

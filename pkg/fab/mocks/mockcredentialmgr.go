@@ -11,18 +11,18 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
-// MockCredentialManager is a mock CredentialManager
-type MockCredentialManager struct {
+// MockIdentityManager is a mock IdentityManager
+type MockIdentityManager struct {
 }
 
-// NewMockCredentialManager Constructor for a credential manager.
-func NewMockCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error) {
-	mcm := MockCredentialManager{}
+// NewMockIdentityManager Constructor for a credential manager.
+func NewMockIdentityManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.IdentityManager, error) {
+	mcm := MockIdentityManager{}
 	return &mcm, nil
 }
 
 // GetSigningIdentity will sign the given object with provided key,
-func (mgr *MockCredentialManager) GetSigningIdentity(userName string) (*api.SigningIdentity, error) {
+func (mgr *MockIdentityManager) GetSigningIdentity(userName string) (*api.SigningIdentity, error) {
 
 	si := api.SigningIdentity{}
 	return &si, nil
