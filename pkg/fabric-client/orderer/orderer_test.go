@@ -18,10 +18,10 @@ import (
 	grpccodes "google.golang.org/grpc/codes"
 
 	"github.com/golang/mock/gomock"
-	apiconfig "github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig/mocks"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -55,7 +55,7 @@ func TestSendDeliver(t *testing.T) {
 
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), FromOrdererConfig(ordererConfig))
 	// Test deliver happy path
-	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs := orderer.SendDeliver(&context.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		if string(block.Data.Data[0]) != "test" {
@@ -83,7 +83,7 @@ func TestSendDeliver(t *testing.T) {
 	// Test deliver with deliver error from OS
 	testError := errors.New("test error")
 	mockServer.DeliverError = testError
-	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs = orderer.SendDeliver(&context.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		t.Fatalf("Expected error got block: %#v", block)
@@ -97,7 +97,7 @@ func TestSendDeliver(t *testing.T) {
 
 	orderer, _ = New(mocks.NewMockConfig(), WithURL(testOrdererURL+"invalid-test"), FromOrdererConfig(ordererConfig))
 	// Test deliver happy path
-	blocks, errs = orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs = orderer.SendDeliver(&context.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
@@ -191,7 +191,7 @@ func TestSendBroadcast(t *testing.T) {
 	_, addr := startMockServer(t, grpcServer)
 	ordererConfig := getGRPCOpts(addr, true, false)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), FromOrdererConfig(ordererConfig), WithInsecure())
-	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 
 	if err != nil {
 		t.Fatalf("Test SendBroadcast was not supposed to fail")
@@ -199,7 +199,7 @@ func TestSendBroadcast(t *testing.T) {
 
 	orderer, _ = New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"), FromOrdererConfig(ordererConfig))
 	orderer.dialTimeout = 15
-	_, err = orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err = orderer.SendBroadcast(&context.SignedEnvelope{})
 	if err == nil {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
 	}
@@ -225,7 +225,7 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors := orderer.SendDeliver(&context.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -255,7 +255,7 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors := orderer.SendDeliver(&context.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -280,7 +280,7 @@ func TestSendDeliverFailure(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	blocks, errors := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errors := orderer.SendDeliver(&context.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -305,7 +305,7 @@ func TestSendBroadcastServerBadResponse(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 
 	if err == nil {
 		t.Fatalf("Expected error")
@@ -327,7 +327,7 @@ func TestSendBroadcastError(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	statusCode, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	statusCode, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 
 	if err == nil || statusCode != nil {
 		t.Fatalf("expected Send Broadcast to fail with error, but got %s", err)
@@ -350,7 +350,7 @@ func TestBroadcastBadDial(t *testing.T) {
 	orderer.grpcDialOption = append(orderer.grpcDialOption, grpc.WithBlock())
 	orderer.secured = true
 	orderer.allowInsecure = true
-	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 	assert.NotNil(t, err)
 
 	if err == nil || !strings.Contains(err.Error(), "CONNECTION_FAILED") {
@@ -360,7 +360,7 @@ func TestBroadcastBadDial(t *testing.T) {
 }
 
 func TestInterfaces(t *testing.T) {
-	var apiOrderer fab.Orderer
+	var apiOrderer context.Orderer
 	var orderer Orderer
 
 	apiOrderer = &orderer
@@ -436,7 +436,7 @@ func getGRPCOpts(addr string, failFast bool, keepAliveOptions bool) *apiconfig.O
 func TestForDeadlineExceeded(t *testing.T) {
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"))
 	orderer.dialTimeout = 1 * time.Second
-	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 	if err == nil || !strings.HasPrefix(err.Error(), "NewAtomicBroadcastClient") {
 		t.Fatalf("Test SendBroadcast was supposed to fail with 'gRPC Transport Status Code: (4) DeadlineExceeded', instead it failed with [%s] error", err)
 	}
@@ -451,7 +451,7 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 		fmt.Printf("%v %v %v\n", i, &v, reflect.TypeOf(v))
 
 	}
-	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 	if err == nil {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded' %v", err)
 	}
@@ -463,7 +463,7 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 	orderer, _ = New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 	orderer.dialTimeout = 5 * time.Second
 	// Test deliver happy path
-	blocks, errs := orderer.SendDeliver(&fab.SignedEnvelope{})
+	blocks, errs := orderer.SendDeliver(&context.SignedEnvelope{})
 	select {
 	case block := <-blocks:
 		if string(block.Data.Data[0]) != "test" {
@@ -482,7 +482,7 @@ func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 	ordererConfig := getGRPCOpts("grpc://"+testOrdererURL+"Test", true, true)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"), FromOrdererConfig(ordererConfig))
 	orderer.dialTimeout = 5 * time.Second
-	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err := orderer.SendBroadcast(&context.SignedEnvelope{})
 	if err == nil {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
 	}
@@ -495,7 +495,7 @@ func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 	ordererConfig = getGRPCOpts(testOrdererURL+"Test", false, true)
 	orderer, _ = New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"), FromOrdererConfig(ordererConfig))
 	orderer.dialTimeout = 5 * time.Second
-	_, err = orderer.SendBroadcast(&fab.SignedEnvelope{})
+	_, err = orderer.SendBroadcast(&context.SignedEnvelope{})
 	if err == nil {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
 	}
@@ -522,7 +522,7 @@ func TestNewOrdererFromConfig(t *testing.T) {
 	}
 	_, err := NewOrdererFromConfig(ordererConfig, mocks.NewMockConfig())
 	if err != nil {
-		t.Fatalf("Failed to get new orderer from config %v", err)
+		t.Fatalf("Failed to get new orderer from config%v", err)
 	}
 }
 

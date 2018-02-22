@@ -10,10 +10,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 )
@@ -34,7 +34,7 @@ func randomString(strlen int) string {
 }
 
 // InitializeChannel ...
-func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChannelRequest, targets []fab.ProposalProcessor) error {
+func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChannelRequest, targets []context.ProposalProcessor) error {
 	joinedTargets, err := FilterTargetsJoinedChannel(sdk, orgID, req.ChannelID, targets)
 	if err != nil {
 		return errors.WithMessage(err, "checking for joined targets failed")
@@ -55,8 +55,8 @@ func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChan
 }
 
 // FilterTargetsJoinedChannel filters targets to those that have joined the named channel.
-func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID string, targets []fab.ProposalProcessor) ([]fab.ProposalProcessor, error) {
-	joinedTargets := []fab.ProposalProcessor{}
+func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID string, targets []context.ProposalProcessor) ([]context.ProposalProcessor, error) {
+	joinedTargets := []context.ProposalProcessor{}
 	session, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgID)).Session()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed getting admin user session for org")
@@ -113,8 +113,8 @@ func JoinChannel(sdk *fabsdk.FabricSDK, name string) (bool, error) {
 }
 
 // CreateProposalProcessors initializes target peers based on config
-func CreateProposalProcessors(config apiconfig.Config, orgs []string) ([]fab.ProposalProcessor, error) {
-	peers := []fab.ProposalProcessor{}
+func CreateProposalProcessors(config apiconfig.Config, orgs []string) ([]context.ProposalProcessor, error) {
+	peers := []context.ProposalProcessor{}
 	for _, org := range orgs {
 		peerConfig, err := config.PeersConfig(org)
 		if err != nil {
@@ -136,7 +136,7 @@ func CreateProposalProcessors(config apiconfig.Config, orgs []string) ([]fab.Pro
 
 // HasPeerJoinedChannel checks whether the peer has already joined the channel.
 // It returns true if it has, false otherwise, or an error
-func HasPeerJoinedChannel(client fab.Resource, peer fab.ProposalProcessor, channel string) (bool, error) {
+func HasPeerJoinedChannel(client context.Resource, peer context.ProposalProcessor, channel string) (bool, error) {
 	foundChannel := false
 	response, err := client.QueryChannels(peer)
 	if err != nil {

@@ -12,9 +12,9 @@ import (
 
 	"crypto/x509"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/spf13/cast"
@@ -33,7 +33,7 @@ type Peer struct {
 	config                apiconfig.Config
 	certificate           *x509.Certificate
 	serverName            string
-	processor             fab.ProposalProcessor
+	processor             context.ProposalProcessor
 	name                  string
 	mspID                 string
 	roles                 []string
@@ -189,7 +189,7 @@ func isInsecureConnectionAllowed(peerCfg *apiconfig.NetworkPeer) bool {
 }
 
 // WithPeerProcessor is a functional option for the peer.New constructor that configures the peer's proposal processor
-func WithPeerProcessor(processor fab.ProposalProcessor) Option {
+func WithPeerProcessor(processor context.ProposalProcessor) Option {
 	return func(p *Peer) error {
 		p.processor = processor
 
@@ -250,7 +250,7 @@ func (p *Peer) URL() string {
 }
 
 // ProcessTransactionProposal sends the created proposal to peer for endorsement.
-func (p *Peer) ProcessTransactionProposal(proposal fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
+func (p *Peer) ProcessTransactionProposal(proposal context.ProcessProposalRequest) (*context.TransactionProposalResponse, error) {
 	return p.processor.ProcessTransactionProposal(proposal)
 }
 
@@ -259,8 +259,8 @@ func (p *Peer) String() string {
 }
 
 // PeersToTxnProcessors converts a slice of Peers to a slice of TxnProposalProcessors
-func PeersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
-	tpp := make([]fab.ProposalProcessor, len(peers))
+func PeersToTxnProcessors(peers []context.Peer) []context.ProposalProcessor {
+	tpp := make([]context.ProposalProcessor, len(peers))
 
 	for i := range peers {
 		tpp[i] = peers[i]

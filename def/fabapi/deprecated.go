@@ -8,14 +8,14 @@ SPDX-License-Identifier: Apache-2.0
 package fabapi
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	apisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/pkg/errors"
 )
 
@@ -33,11 +33,11 @@ type Options struct {
 	StateStoreOpts StateStoreOpts
 
 	// Factories to create clients and providers
-	CoreFactory    apisdk.CoreProviderFactory
-	ServiceFactory apisdk.ServiceProviderFactory
-	ContextFactory apisdk.OrgClientFactory
-	SessionFactory apisdk.SessionClientFactory
-	LoggerFactory  apilogging.LoggerProvider
+	CoreFactory    context.CoreProviderFactory
+	ServiceFactory context.ServiceProviderFactory
+	ContextFactory context.OrgClientFactory
+	SessionFactory fabsdk.SessionClientFactory
+	LoggerFactory  api.LoggerProvider
 }
 
 // StateStoreOpts provides setup parameters for KeyValueStore

@@ -13,7 +13,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/txn"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -26,12 +26,12 @@ const (
 
 // Ledger is a client that provides access to the underlying ledger of a channel.
 type Ledger struct {
-	ctx    fab.Context
+	ctx    context.Context
 	chName string
 }
 
 // NewLedger constructs a Ledger client for the current context and named channel.
-func NewLedger(ctx fab.Context, chName string) (*Ledger, error) {
+func NewLedger(ctx context.Context, chName string) (*Ledger, error) {
 	l := Ledger{
 		ctx:    ctx,
 		chName: chName,
@@ -41,14 +41,14 @@ func NewLedger(ctx fab.Context, chName string) (*Ledger, error) {
 
 // QueryInfo queries for various useful information on the state of the channel
 // (height, known peers).
-func (c *Ledger) QueryInfo(targets []fab.ProposalProcessor) ([]*common.BlockchainInfo, error) {
+func (c *Ledger) QueryInfo(targets []context.ProposalProcessor) ([]*common.BlockchainInfo, error) {
 	logger.Debug("queryInfo - start")
 
 	// prepare arguments to call qscc GetChainInfo function
 	var args [][]byte
 	args = append(args, []byte(c.chName))
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "qscc",
 		Fcn:         "GetChainInfo",
 		Args:        args,
@@ -67,7 +67,7 @@ func (c *Ledger) QueryInfo(targets []fab.ProposalProcessor) ([]*common.Blockchai
 	return responses, errs
 }
 
-func createBlockchainInfo(tpr *fab.TransactionProposalResponse) (*common.BlockchainInfo, error) {
+func createBlockchainInfo(tpr *context.TransactionProposalResponse) (*common.BlockchainInfo, error) {
 	response := common.BlockchainInfo{}
 	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
@@ -79,7 +79,7 @@ func createBlockchainInfo(tpr *fab.TransactionProposalResponse) (*common.Blockch
 // QueryBlockByHash queries the ledger for Block by block hash.
 // This query will be made to specified targets.
 // Returns the block.
-func (c *Ledger) QueryBlockByHash(blockHash []byte, targets []fab.ProposalProcessor) ([]*common.Block, error) {
+func (c *Ledger) QueryBlockByHash(blockHash []byte, targets []context.ProposalProcessor) ([]*common.Block, error) {
 
 	if blockHash == nil {
 		return nil, errors.New("blockHash is required")
@@ -90,7 +90,7 @@ func (c *Ledger) QueryBlockByHash(blockHash []byte, targets []fab.ProposalProces
 	args = append(args, []byte(c.chName))
 	args = append(args, blockHash[:len(blockHash)])
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "qscc",
 		Fcn:         "GetBlockByHash",
 		Args:        args,
@@ -113,7 +113,7 @@ func (c *Ledger) QueryBlockByHash(blockHash []byte, targets []fab.ProposalProces
 // This query will be made to specified targets.
 // blockNumber: The number which is the ID of the Block.
 // It returns the block.
-func (c *Ledger) QueryBlock(blockNumber int, targets []fab.ProposalProcessor) ([]*common.Block, error) {
+func (c *Ledger) QueryBlock(blockNumber int, targets []context.ProposalProcessor) ([]*common.Block, error) {
 
 	if blockNumber < 0 {
 		return nil, errors.New("blockNumber must be a positive integer")
@@ -124,7 +124,7 @@ func (c *Ledger) QueryBlock(blockNumber int, targets []fab.ProposalProcessor) ([
 	args = append(args, []byte(c.chName))
 	args = append(args, []byte(strconv.Itoa(blockNumber)))
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "qscc",
 		Fcn:         "GetBlockByNumber",
 		Args:        args,
@@ -144,7 +144,7 @@ func (c *Ledger) QueryBlock(blockNumber int, targets []fab.ProposalProcessor) ([
 	return responses, errs
 }
 
-func createCommonBlock(tpr *fab.TransactionProposalResponse) (*common.Block, error) {
+func createCommonBlock(tpr *context.TransactionProposalResponse) (*common.Block, error) {
 	response := common.Block{}
 	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
@@ -156,14 +156,14 @@ func createCommonBlock(tpr *fab.TransactionProposalResponse) (*common.Block, err
 // QueryTransaction queries the ledger for Transaction by number.
 // This query will be made to specified targets.
 // Returns the ProcessedTransaction information containing the transaction.
-func (c *Ledger) QueryTransaction(transactionID string, targets []fab.ProposalProcessor) ([]*pb.ProcessedTransaction, error) {
+func (c *Ledger) QueryTransaction(transactionID string, targets []context.ProposalProcessor) ([]*pb.ProcessedTransaction, error) {
 
 	// prepare arguments to call qscc GetTransactionByID function
 	var args [][]byte
 	args = append(args, []byte(c.chName))
 	args = append(args, []byte(transactionID))
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "qscc",
 		Fcn:         "GetTransactionByID",
 		Args:        args,
@@ -184,7 +184,7 @@ func (c *Ledger) QueryTransaction(transactionID string, targets []fab.ProposalPr
 	return responses, errs
 }
 
-func createProcessedTransaction(tpr *fab.TransactionProposalResponse) (*pb.ProcessedTransaction, error) {
+func createProcessedTransaction(tpr *context.TransactionProposalResponse) (*pb.ProcessedTransaction, error) {
 	response := pb.ProcessedTransaction{}
 	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
@@ -195,8 +195,8 @@ func createProcessedTransaction(tpr *fab.TransactionProposalResponse) (*pb.Proce
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
 // This query will be made to specified targets.
-func (c *Ledger) QueryInstantiatedChaincodes(targets []fab.ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error) {
-	request := fab.ChaincodeInvokeRequest{
+func (c *Ledger) QueryInstantiatedChaincodes(targets []context.ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error) {
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "lscc",
 		Fcn:         "getchaincodes",
 	}
@@ -215,7 +215,7 @@ func (c *Ledger) QueryInstantiatedChaincodes(targets []fab.ProposalProcessor) ([
 	return responses, errs
 }
 
-func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse) (*pb.ChaincodeQueryResponse, error) {
+func createChaincodeQueryResponse(tpr *context.TransactionProposalResponse) (*pb.ChaincodeQueryResponse, error) {
 	response := pb.ChaincodeQueryResponse{}
 	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
@@ -226,7 +226,7 @@ func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse) (*pb.Cha
 
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
-func (c *Ledger) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error) {
+func (c *Ledger) QueryConfigBlock(targets []context.ProposalProcessor, minResponses int) (*common.ConfigEnvelope, error) {
 
 	if len(targets) == 0 {
 		return nil, errors.New("target(s) required")
@@ -236,7 +236,7 @@ func (c *Ledger) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses 
 		return nil, errors.New("Minimum endorser has to be greater than zero")
 	}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "cscc",
 		Fcn:         "GetConfigBlock",
 		Args:        [][]byte{[]byte(c.chName)},
@@ -279,7 +279,7 @@ func (c *Ledger) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses 
 
 }
 
-func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte {
+func collectProposalResponses(tprs []*context.TransactionProposalResponse) [][]byte {
 	responses := [][]byte{}
 	for _, tpr := range tprs {
 		responses = append(responses, tpr.ProposalResponse.GetResponse().Payload)
@@ -288,7 +288,7 @@ func collectProposalResponses(tprs []*fab.TransactionProposalResponse) [][]byte 
 	return responses
 }
 
-func queryChaincode(ctx fab.Context, channel string, request fab.ChaincodeInvokeRequest, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+func queryChaincode(ctx context.Context, channel string, request context.ChaincodeInvokeRequest, targets []context.ProposalProcessor) ([]*context.TransactionProposalResponse, error) {
 	txid, err := txn.NewID(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "creation of transaction ID failed")
@@ -303,7 +303,7 @@ func queryChaincode(ctx fab.Context, channel string, request fab.ChaincodeInvoke
 	return filterResponses(tprs, errs)
 }
 
-func filterResponses(responses []*fab.TransactionProposalResponse, errs error) ([]*fab.TransactionProposalResponse, error) {
+func filterResponses(responses []*context.TransactionProposalResponse, errs error) ([]*context.TransactionProposalResponse, error) {
 	filteredResponses := responses[:0]
 	for _, response := range responses {
 		if response.Status == http.StatusOK {

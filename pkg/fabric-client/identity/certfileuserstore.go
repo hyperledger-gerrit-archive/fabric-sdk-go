@@ -7,10 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package identity
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/keyvaluestore"
 
 	"github.com/pkg/errors"
@@ -24,14 +23,14 @@ type CertFileUserStore struct {
 	cryptoSuite apicryptosuite.CryptoSuite
 }
 
-func userKeyFromUser(user apifabclient.User) apifabclient.UserKey {
-	return apifabclient.UserKey{
+func userKeyFromUser(user context.User) context.UserKey {
+	return context.UserKey{
 		MspID: user.MspID(),
 		Name:  user.Name(),
 	}
 }
 
-func storeKeyFromUserKey(key apifabclient.UserKey) string {
+func storeKeyFromUserKey(key context.UserKey) string {
 	return key.Name + "@" + key.MspID + "-cert.pem"
 }
 
@@ -56,11 +55,11 @@ func NewCertFileUserStore(path string, cryptoSuite apicryptosuite.CryptoSuite) (
 }
 
 // Load returns the User stored in the store for a key.
-func (s *CertFileUserStore) Load(key apifabclient.UserKey) (apifabclient.User, error) {
+func (s *CertFileUserStore) Load(key context.UserKey) (context.User, error) {
 	cert, err := s.store.Load(storeKeyFromUserKey(key))
 	if err != nil {
-		if err == kvstore.ErrNotFound {
-			return nil, apifabclient.ErrUserNotFound
+		if err == context.ErrNotFound {
+			return nil, context.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -86,7 +85,7 @@ func (s *CertFileUserStore) Load(key apifabclient.UserKey) (apifabclient.User, e
 }
 
 // Store stores a User into store
-func (s *CertFileUserStore) Store(user apifabclient.User) error {
+func (s *CertFileUserStore) Store(user context.User) error {
 	if user == nil {
 		return errors.New("user is nil")
 	}
@@ -95,6 +94,6 @@ func (s *CertFileUserStore) Store(user apifabclient.User) error {
 }
 
 // Delete deletes a User from store
-func (s *CertFileUserStore) Delete(user apifabclient.User) error {
+func (s *CertFileUserStore) Delete(user context.User) error {
 	return s.store.Delete(storeKeyFromUserKey(userKeyFromUser(user)))
 }

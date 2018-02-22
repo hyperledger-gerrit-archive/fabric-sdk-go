@@ -11,12 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/txnhandler"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/txnhandler"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -65,7 +66,7 @@ func TestChannelClient(t *testing.T) {
 
 	// Synchronous transaction
 	response, err := chClient.Execute(
-		chclient.Request{
+		api.Request{
 			ChaincodeID:  chainCodeID,
 			Fcn:          "invoke",
 			Args:         integration.ExampleCCTxArgs(),
@@ -117,9 +118,9 @@ func TestChannelClient(t *testing.T) {
 
 }
 
-func testQuery(expected string, ccID string, chClient chclient.ChannelClient, t *testing.T) {
+func testQuery(expected string, ccID string, chClient *chclient.ChannelClient, t *testing.T) {
 
-	response, err := chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(api.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to invoke example cc: %s", err)
 	}
@@ -129,8 +130,8 @@ func testQuery(expected string, ccID string, chClient chclient.ChannelClient, t 
 	}
 }
 
-func testQueryWithOpts(expected string, ccID string, chClient chclient.ChannelClient, t *testing.T) {
-	response, err := chClient.Query(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+func testQueryWithOpts(expected string, ccID string, chClient *chclient.ChannelClient, t *testing.T) {
+	response, err := chClient.Query(api.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Query returned error: %s", err)
 	}
@@ -139,8 +140,8 @@ func testQueryWithOpts(expected string, ccID string, chClient chclient.ChannelCl
 	}
 }
 
-func testTransaction(ccID string, chClient chclient.ChannelClient, t *testing.T) {
-	response, err := chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+func testTransaction(ccID string, chClient *chclient.ChannelClient, t *testing.T) {
+	response, err := chClient.Execute(api.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -154,10 +155,10 @@ type testHandler struct {
 	txID             *string
 	endorser         *string
 	txValidationCode *pb.TxValidationCode
-	next             chclient.Handler
+	next             api.Handler
 }
 
-func (h *testHandler) Handle(requestContext *chclient.RequestContext, clientContext *chclient.ClientContext) {
+func (h *testHandler) Handle(requestContext *api.RequestContext, clientContext *api.ClientContext) {
 	if h.txID != nil {
 		*h.txID = requestContext.Response.TransactionID.ID
 		h.t.Logf("Custom handler writing TxID [%s]", *h.txID)
@@ -176,7 +177,7 @@ func (h *testHandler) Handle(requestContext *chclient.RequestContext, clientCont
 	}
 }
 
-func testInvokeHandler(ccID string, chClient chclient.ChannelClient, t *testing.T) {
+func testInvokeHandler(ccID string, chClient *chclient.ChannelClient, t *testing.T) {
 	// Insert a custom handler before and after the commit.
 	// Ensure that the handlers are being called by writing out some data
 	// and comparing with response.
@@ -203,7 +204,7 @@ func testInvokeHandler(ccID string, chClient chclient.ChannelClient, t *testing.
 				),
 			),
 		),
-		chclient.Request{
+		api.Request{
 			ChaincodeID: ccID,
 			Fcn:         "invoke",
 			Args:        integration.ExampleCCTxArgs(),
@@ -232,12 +233,12 @@ type TestTxFilter struct {
 	errResponses error
 }
 
-func (tf *TestTxFilter) ProcessTxProposalResponse(txProposalResponse []*apifabclient.TransactionProposalResponse) ([]*apifabclient.TransactionProposalResponse, error) {
+func (tf *TestTxFilter) ProcessTxProposalResponse(txProposalResponse []*context.TransactionProposalResponse) ([]*context.TransactionProposalResponse, error) {
 	if tf.err != nil {
 		return nil, tf.err
 	}
 
-	var newResponses []*apifabclient.TransactionProposalResponse
+	var newResponses []*context.TransactionProposalResponse
 
 	if tf.errResponses != nil {
 		// 404 will cause transaction commit error
@@ -248,18 +249,18 @@ func (tf *TestTxFilter) ProcessTxProposalResponse(txProposalResponse []*apifabcl
 	return newResponses, nil
 }
 
-func testChaincodeEvent(ccID string, chClient chclient.ChannelClient, t *testing.T) {
+func testChaincodeEvent(ccID string, chClient *chclient.ChannelClient, t *testing.T) {
 
 	eventID := "test([a-zA-Z]+)"
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
-	notifier := make(chan *chclient.CCEvent)
+	notifier := make(chan *api.CCEvent)
 	rce, err := chClient.RegisterChaincodeEvent(notifier, ccID, eventID)
 	if err != nil {
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
 
-	response, err := chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err := chClient.Execute(api.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -282,18 +283,18 @@ func testChaincodeEvent(ccID string, chClient chclient.ChannelClient, t *testing
 
 }
 
-func testChaincodeEventListener(ccID string, chClient chclient.ChannelClient, listener chclient.ChannelClient, t *testing.T) {
+func testChaincodeEventListener(ccID string, chClient *chclient.ChannelClient, listener *chclient.ChannelClient, t *testing.T) {
 
 	eventID := "test([a-zA-Z]+)"
 
 	// Register chaincode event (pass in channel which receives event details when the event is complete)
-	notifier := make(chan *chclient.CCEvent)
+	notifier := make(chan *api.CCEvent)
 	rce, err := listener.RegisterChaincodeEvent(notifier, ccID, eventID)
 	if err != nil {
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
 
-	response, err := chClient.Execute(chclient.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err := chClient.Execute(api.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}

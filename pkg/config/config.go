@@ -21,12 +21,11 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-
-	"github.com/hyperledger/fabric-sdk-go/api/apilogging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 	lu "github.com/hyperledger/fabric-sdk-go/pkg/logging/utils"
 	"github.com/pkg/errors"
 
@@ -230,7 +229,7 @@ func getCertPool(myViper *viper.Viper) (*x509.CertPool, error) {
 // setLogLevel will set the log level of the client
 func setLogLevel(myViper *viper.Viper) {
 	loggingLevelString := myViper.GetString("client.logging.level")
-	logLevel := apilogging.INFO
+	logLevel := api.INFO
 	if loggingLevelString != "" {
 		logger.Debugf("%s logging level from the config: %v", logModule, loggingLevelString)
 		var err error
@@ -452,7 +451,7 @@ func (c *Config) TimeoutOrDefault(conn apiconfig.TimeoutType) time.Duration {
 		timeout = c.configViper.GetDuration("client.peer.timeout.executeTxResponse")
 	case apiconfig.DiscoveryGreylistExpiry:
 		timeout = c.configViper.GetDuration("client.peer.timeout.discovery.greylistExpiry")
-	case apiconfig.EventHub:
+	case apiconfig.EventHubConnection:
 		timeout = c.configViper.GetDuration("client.eventService.timeout.connection")
 	case apiconfig.EventReg:
 		timeout = c.configViper.GetDuration("client.eventService.timeout.registrationResponse")

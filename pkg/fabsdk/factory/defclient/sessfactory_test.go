@@ -1,5 +1,3 @@
-// +build testing
-
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -11,19 +9,16 @@ package defclient
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	"github.com/hyperledger/fabric-sdk-go/api/apicryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/kvstore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apicryptosuite"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
-	chImpl "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/chclient"
 
-	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api/mocks"
+	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/context/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/pkg/errors"
@@ -44,15 +39,11 @@ func TestNewChannelClient(t *testing.T) {
 	factory := NewSessionClientFactory()
 	session := newMockSession()
 
-	client, err := factory.NewChannelClient(mockSDK, session, "mychannel", nil)
+	_, err := factory.NewChannelClient(mockSDK, session, "mychannel", nil)
 	if err != nil {
 		t.Fatalf("Unexpected error creating channel client: %v", err)
 	}
 
-	_, ok := client.(*chImpl.ChannelClient)
-	if !ok {
-		t.Fatalf("Unexpected client created")
-	}
 }
 
 func TestNewChannelClientBadChannel(t *testing.T) {
@@ -75,13 +66,13 @@ func TestNewChannelClientBadChannel(t *testing.T) {
 
 type mockProviders struct {
 	CryptoSuite       apicryptosuite.CryptoSuite
-	StateStore        kvstore.KVStore
+	StateStore        context.KVStore
 	Config            apiconfig.Config
-	SigningManager    apifabclient.SigningManager
-	FabricProvider    api.FabricProvider
-	DiscoveryProvider apifabclient.DiscoveryProvider
-	SelectionProvider apifabclient.SelectionProvider
-	ChannelProvider   apifabclient.ChannelProvider
+	SigningManager    context.SigningManager
+	FabricProvider    context.FabricProvider
+	DiscoveryProvider context.DiscoveryProvider
+	SelectionProvider context.SelectionProvider
+	ChannelProvider   context.ChannelProvider
 }
 
 func newMockProviders(t *testing.T) *mockProviders {
@@ -146,7 +137,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 }
 
 type mockSession struct {
-	apifabclient.IdentityContext
+	context.IdentityContext
 	IsChError bool
 	IsEHError bool
 }
@@ -163,14 +154,14 @@ func newMockSessionWithUser(username, mspID string) *mockSession {
 	return &session
 }
 
-func (s *mockSession) Channel(channelID string) (apifabclient.Channel, error) {
+func (s *mockSession) Channel(channelID string) (context.Channel, error) {
 	if s.IsChError {
 		return nil, errors.New("error")
 	}
 	return nil, nil
 }
 
-func (s *mockSession) EventHub(channelID string) (apifabclient.EventHub, error) {
+func (s *mockSession) EventHub(channelID string) (context.EventHub, error) {
 	if s.IsEHError {
 		return nil, errors.New("error")
 	}

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -52,11 +52,11 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Setup mock orderer
-	verifyBroadcast := make(chan *fab.SignedEnvelope)
+	verifyBroadcast := make(chan *context.SignedEnvelope)
 	orderer := mocks.NewMockOrderer(fmt.Sprintf("0.0.0.0:1234"), verifyBroadcast)
 
 	// Create channel without envelope
-	_, err = client.CreateChannel(fab.CreateChannelRequest{
+	_, err = client.CreateChannel(context.CreateChannelRequest{
 		Orderer: orderer,
 		Name:    "mychannel",
 	})
@@ -65,7 +65,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without orderer
-	_, err = client.CreateChannel(fab.CreateChannelRequest{
+	_, err = client.CreateChannel(context.CreateChannelRequest{
 		Envelope: configTx,
 		Name:     "mychannel",
 	})
@@ -74,7 +74,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Create channel without name
-	_, err = client.CreateChannel(fab.CreateChannelRequest{
+	_, err = client.CreateChannel(context.CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 	})
@@ -83,7 +83,7 @@ func TestCreateChannel(t *testing.T) {
 	}
 
 	// Test with valid cofiguration
-	request := fab.CreateChannelRequest{
+	request := context.CreateChannelRequest{
 		Envelope: configTx,
 		Orderer:  orderer,
 		Name:     "mychannel",
@@ -101,7 +101,7 @@ func TestCreateChannel(t *testing.T) {
 }
 
 func TestJoinChannel(t *testing.T) {
-	var peers []fab.ProposalProcessor
+	var peers []context.ProposalProcessor
 
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
@@ -116,7 +116,7 @@ func TestJoinChannel(t *testing.T) {
 
 	genesisBlock := mocks.NewSimpleMockBlock()
 
-	request := fab.JoinChannelRequest{
+	request := context.JoinChannelRequest{
 		Targets: peers,
 		//GenesisBlock: genesisBlock,
 	}
@@ -125,7 +125,7 @@ func TestJoinChannel(t *testing.T) {
 		t.Fatalf("Should not have been able to join channel because of missing GenesisBlock parameter")
 	}
 
-	request = fab.JoinChannelRequest{
+	request = context.JoinChannelRequest{
 		Targets:      peers,
 		GenesisBlock: genesisBlock,
 	}
@@ -141,7 +141,7 @@ func TestJoinChannel(t *testing.T) {
 
 	// Test failed proposal error handling
 	endorserServer.ProposalError = errors.New("Test Error")
-	request = fab.JoinChannelRequest{
+	request = context.JoinChannelRequest{
 		Targets: peers,
 	}
 	err = client.JoinChannel(request)
@@ -161,7 +161,7 @@ func TestQueryByChaincode(t *testing.T) {
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "peer1.example.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Status: 200}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -181,7 +181,7 @@ func TestQueryByChaincodeBadStatus(t *testing.T) {
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Status: 99}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
@@ -196,7 +196,7 @@ func TestQueryByChaincodeError(t *testing.T) {
 
 	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Payload: []byte("A"), Error: errors.New("error")}
 
-	request := fab.ChaincodeInvokeRequest{
+	request := context.ChaincodeInvokeRequest{
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}

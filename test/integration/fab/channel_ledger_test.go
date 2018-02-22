@@ -11,12 +11,13 @@ import (
 	"strconv"
 	"testing"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient/api"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
@@ -29,7 +30,7 @@ const (
 	orgName           = org1Name
 )
 
-func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []fab.ProposalProcessor) {
+func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []context.ProposalProcessor) {
 	sdk, err := fabsdk.New(config.FromFile(sdkConfigFile))
 	if err != nil {
 		t.Fatalf("SDK init failed: %v", err)
@@ -111,9 +112,9 @@ func TestLedgerQueries(t *testing.T) {
 	testQueryConfigBlock(t, ledger, targets)
 }
 
-func changeBlockState(t *testing.T, channel chclient.ChannelClient, chaincodeID string) (string, error) {
+func changeBlockState(t *testing.T, channel *chclient.ChannelClient, chaincodeID string) (string, error) {
 
-	req := chclient.Request{
+	req := api.Request{
 		ChaincodeID: chaincodeID,
 		Fcn:         "invoke",
 		Args:        integration.ExampleCCQueryArgs(),
@@ -147,7 +148,7 @@ func changeBlockState(t *testing.T, channel chclient.ChannelClient, chaincodeID 
 	return txID, nil
 }
 
-func testQueryTransaction(t *testing.T, ledger fab.ChannelLedger, txID string, targets []fab.ProposalProcessor) {
+func testQueryTransaction(t *testing.T, ledger context.ChannelLedger, txID string, targets []context.ProposalProcessor) {
 
 	// Test Query Transaction -- verify that valid transaction has been processed
 	processedTransactions, err := ledger.QueryTransaction(txID, targets)
@@ -168,7 +169,7 @@ func testQueryTransaction(t *testing.T, ledger fab.ChannelLedger, txID string, t
 	}
 }
 
-func testQueryBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
+func testQueryBlock(t *testing.T, ledger context.ChannelLedger, targets []context.ProposalProcessor) {
 
 	// Retrieve current blockchain info
 	bcis, err := ledger.QueryInfo(targets)
@@ -212,7 +213,7 @@ func testQueryBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.Propos
 	}
 }
 
-func testInstantiatedChaincodes(t *testing.T, ccID string, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
+func testInstantiatedChaincodes(t *testing.T, ccID string, ledger context.ChannelLedger, targets []context.ProposalProcessor) {
 
 	// Test Query Instantiated chaincodes
 	chaincodeQueryResponses, err := ledger.QueryInstantiatedChaincodes(targets)
@@ -236,12 +237,12 @@ func testInstantiatedChaincodes(t *testing.T, ccID string, ledger fab.ChannelLed
 }
 
 // MoveFundsAndGetTxID ...
-func moveFundsAndGetTxID(t *testing.T, channel chclient.ChannelClient, chaincodeID string) (string, error) {
+func moveFundsAndGetTxID(t *testing.T, channel *chclient.ChannelClient, chaincodeID string) (string, error) {
 
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	req := chclient.Request{
+	req := api.Request{
 		ChaincodeID:  chaincodeID,
 		Fcn:          "invoke",
 		Args:         integration.ExampleCCTxArgs(),
@@ -255,7 +256,7 @@ func moveFundsAndGetTxID(t *testing.T, channel chclient.ChannelClient, chaincode
 	return resp.TransactionID.ID, nil
 }
 
-func testQueryConfigBlock(t *testing.T, ledger fab.ChannelLedger, targets []fab.ProposalProcessor) {
+func testQueryConfigBlock(t *testing.T, ledger context.ChannelLedger, targets []context.ProposalProcessor) {
 
 	// Retrieve current channel configuration
 	cfgEnvelope, err := ledger.QueryConfigBlock(targets, 1)

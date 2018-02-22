@@ -9,7 +9,6 @@ package chconfig
 import (
 	"github.com/golang/protobuf/proto"
 
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
@@ -22,6 +21,7 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
@@ -32,9 +32,9 @@ const (
 
 // Opts contains options for retrieving channel configuration
 type Opts struct {
-	Orderer      string     // if configured, channel config will be retrieved from this orderer
-	Targets      []fab.Peer // if configured, channel config will be retrieved from peers (targets)
-	MinResponses int        // used with targets option; min number of success responses (from targets/peers)
+	Orderer      string         // if configured, channel config will be retrieved from this orderer
+	Targets      []context.Peer // if configured, channel config will be retrieved from peers (targets)
+	MinResponses int            // used with targets option; min number of success responses (from targets/peers)
 }
 
 // Option func for each Opts argument
@@ -42,14 +42,14 @@ type Option func(opts *Opts) error
 
 // Context holds the providers and identity
 type Context struct {
-	fab.ProviderContext
-	fab.IdentityContext
+	context.ProviderContext
+	context.IdentityContext
 }
 
 // ChannelConfig implements query channel configuration
 type ChannelConfig struct {
 	channelID string
-	ctx       fab.Context
+	ctx       context.Context
 	opts      Opts
 }
 
@@ -57,14 +57,14 @@ type ChannelConfig struct {
 type ChannelCfg struct {
 	name        string
 	msps        []*msp.MSPConfig
-	anchorPeers []*fab.OrgAnchorPeer
+	anchorPeers []*context.OrgAnchorPeer
 	orderers    []string
-	versions    *fab.Versions
+	versions    *context.Versions
 }
 
 // NewChannelCfg creates channel cfg
 // TODO: This is temporary, Remove once we have config injected in sdk
-func NewChannelCfg(name string) fab.ChannelCfg {
+func NewChannelCfg(name string) context.ChannelCfg {
 	return &ChannelCfg{name: name}
 }
 
@@ -79,7 +79,7 @@ func (cfg *ChannelCfg) Msps() []*msp.MSPConfig {
 }
 
 // AnchorPeers returns anchor peers
-func (cfg *ChannelCfg) AnchorPeers() []*fab.OrgAnchorPeer {
+func (cfg *ChannelCfg) AnchorPeers() []*context.OrgAnchorPeer {
 	return cfg.anchorPeers
 }
 
@@ -89,12 +89,12 @@ func (cfg *ChannelCfg) Orderers() []string {
 }
 
 // Versions returns versions
-func (cfg *ChannelCfg) Versions() *fab.Versions {
+func (cfg *ChannelCfg) Versions() *context.Versions {
 	return cfg.versions
 }
 
 // New channel config implementation
-func New(ctx fab.Context, channelID string, options ...Option) (*ChannelConfig, error) {
+func New(ctx context.Context, channelID string, options ...Option) (*ChannelConfig, error) {
 	opts, err := prepareOpts(options...)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func New(ctx fab.Context, channelID string, options ...Option) (*ChannelConfig, 
 }
 
 // Query returns channel configuration
-func (c *ChannelConfig) Query() (fab.ChannelCfg, error) {
+func (c *ChannelConfig) Query() (context.ChannelCfg, error) {
 
 	if c.opts.Orderer != "" {
 		return c.queryOrderer()
@@ -120,7 +120,7 @@ func (c *ChannelConfig) queryPeers() (*ChannelCfg, error) {
 		return nil, errors.WithMessage(err, "NewChannel failed")
 	}
 
-	targets := []fab.ProposalProcessor{}
+	targets := []context.ProposalProcessor{}
 	if c.opts.Targets == nil {
 
 		// Calculate targets from config
@@ -171,7 +171,7 @@ func (c *ChannelConfig) queryOrderer() (*ChannelCfg, error) {
 }
 
 // WithPeers encapsulates peers to Option
-func WithPeers(peers []fab.Peer) Option {
+func WithPeers(peers []context.Peer) Option {
 	return func(opts *Opts) error {
 		opts.Targets = peers
 		return nil
@@ -210,14 +210,14 @@ func extractConfig(channel string, configEnvelope *common.ConfigEnvelope) (*Chan
 
 	group := configEnvelope.Config.ChannelGroup
 
-	versions := &fab.Versions{
+	versions := &context.Versions{
 		Channel: &common.ConfigGroup{},
 	}
 
 	config := &ChannelCfg{
 		name:        channel,
 		msps:        []*msp.MSPConfig{},
-		anchorPeers: []*fab.OrgAnchorPeer{},
+		anchorPeers: []*context.OrgAnchorPeer{},
 		orderers:    []string{},
 		versions:    versions,
 	}
@@ -350,7 +350,7 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 
 		if len(anchorPeers.AnchorPeers) > 0 {
 			for _, anchorPeer := range anchorPeers.AnchorPeers {
-				oap := &fab.OrgAnchorPeer{Org: org, Host: anchorPeer.Host, Port: anchorPeer.Port}
+				oap := &context.OrgAnchorPeer{Org: org, Host: anchorPeer.Host, Port: anchorPeer.Port}
 				configItems.anchorPeers = append(configItems.anchorPeers, oap)
 				logger.Debugf("loadConfigValue - %s   - AnchorPeer :: %s:%d:%s", groupName, oap.Host, oap.Port, oap.Org)
 			}
@@ -469,8 +469,8 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 }
 
 // peersToTxnProcessors converts a slice of Peers to a slice of ProposalProcessors
-func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
-	tpp := make([]fab.ProposalProcessor, len(peers))
+func peersToTxnProcessors(peers []context.Peer) []context.ProposalProcessor {
+	tpp := make([]context.ProposalProcessor, len(peers))
 
 	for i := range peers {
 		tpp[i] = peers[i]

@@ -14,22 +14,23 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabric-client/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
 
-	"github.com/hyperledger/fabric-sdk-go/api/apiconfig"
-	fab "github.com/hyperledger/fabric-sdk-go/api/apifabclient"
-	"github.com/hyperledger/fabric-sdk-go/api/apitxn/chclient"
-	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient/api"
+	resmgmt "github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmtclient"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/apiconfig"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/fabric-txn/selection/dynamicselection"
+	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/selection/dynamicselection"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/chclient"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
@@ -40,8 +41,8 @@ const (
 )
 
 // Peers
-var orgTestPeer0 fab.Peer
-var orgTestPeer1 fab.Peer
+var orgTestPeer0 context.Peer
+var orgTestPeer1 context.Peer
 
 // TestOrgsEndToEnd creates a channel with two organisations, installs chaincode
 // on each of them, and finally invokes a transaction on an org2 peer and queries
@@ -137,14 +138,14 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org1 user queries initial value on both peers
-	response, err := chClientOrg1User.Query(chclient.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClientOrg1User.Query(api.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
 	initial, _ := strconv.Atoi(string(response.Payload))
 
 	// Org2 user moves funds on org2 peer
-	response, err = chClientOrg2User.Execute(chclient.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, chclient.WithProposalProcessor(orgTestPeer1))
+	response, err = chClientOrg2User.Execute(api.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, chclient.WithProposalProcessor(orgTestPeer1))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -180,13 +181,13 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
-	response, err = chClientOrg2User.Execute(chclient.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, chclient.WithProposalProcessor(orgTestPeer1))
+	response, err = chClientOrg2User.Execute(api.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, chclient.WithProposalProcessor(orgTestPeer1))
 	if err == nil {
 		t.Fatalf("Should have failed to move funds due to cc policy")
 	}
 
 	// Org2 user moves funds (cc policy ok since we have provided peers for both Orgs)
-	response, err = chClientOrg2User.Execute(chclient.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, chclient.WithProposalProcessor(orgTestPeer0, orgTestPeer1))
+	response, err = chClientOrg2User.Execute(api.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()}, chclient.WithProposalProcessor(orgTestPeer0, orgTestPeer1))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -214,7 +215,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	// Org2 user moves funds (dynamic selection will inspect chaincode policy to determine endorsers)
-	response, err = chClientOrg2User.Execute(chclient.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err = chClientOrg2User.Execute(api.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -224,13 +225,13 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 }
 
-func verifyValue(t *testing.T, chClient chclient.ChannelClient, expected int) {
+func verifyValue(t *testing.T, chClient *chclient.ChannelClient, expected int) {
 
 	// Assert that funds have changed value on org1 peer
 	var valueInt int
 	for i := 0; i < pollRetries; i++ {
 		// Query final value on org1 peer
-		response, err := chClient.Query(chclient.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, chclient.WithProposalProcessor(orgTestPeer0))
+		response, err := chClient.Query(api.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCQueryArgs()}, chclient.WithProposalProcessor(orgTestPeer0))
 		if err != nil {
 			t.Fatalf("Failed to query funds after transaction: %s", err)
 		}
@@ -250,7 +251,7 @@ func verifyValue(t *testing.T, chClient chclient.ChannelClient, expected int) {
 
 }
 
-func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) fab.IdentityContext {
+func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) context.IdentityContext {
 
 	session, err := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName)).Session()
 	if err != nil {
@@ -289,6 +290,6 @@ type DynamicSelectionProviderFactory struct {
 }
 
 // NewSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config apiconfig.Config) (fab.SelectionProvider, error) {
+func (f *DynamicSelectionProviderFactory) NewSelectionProvider(config apiconfig.Config) (context.SelectionProvider, error) {
 	return selection.NewSelectionProvider(config, f.ChannelUsers, nil)
 }
