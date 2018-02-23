@@ -29,7 +29,7 @@ func (f *OrgClientFactory) NewMSPClient(orgName string, config apiconfig.Config,
 }
 */
 
-// NewCredentialManager returns a new default implementation of the credential manager
-func (f *OrgClientFactory) NewCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error) {
-	return credentialMgr.NewCredentialManager(orgName, config, cryptoProvider)
+// CreateCredentialManager returns a new default implementation of the credential manager
+func (f *OrgClientFactory) CreateCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error) {
+	return credentialMgr.New(orgName, config, cryptoProvider)
 }
