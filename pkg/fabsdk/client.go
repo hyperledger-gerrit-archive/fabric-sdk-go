@@ -16,8 +16,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ClientContext  represents the fabric transaction clients
-type ClientContext struct {
+// ContextProvider represents the fabric transaction clients
+type ContextProvider struct {
 	provider clientProvider
 }
 
@@ -74,8 +74,23 @@ func withConfig(config core.Config) ContextOption {
 	}
 }
 
+//Context returns core context
+func (sdk *FabricSDK) Context(identityOpt context.Option, opts ...ContextOption) *Core {
+	o, _ := newContextOptions(sdk.config, opts)
+	identity, _ := context.New(o.orgID, identityOpt)
+
+	cc := Core{
+		sdk:       sdk,
+		opts:      o,
+		identity:  identity,
+		providers: sdk.context(),
+	}
+
+	return &cc
+}
+
 // NewClient allows creation of transactions using the supplied identity as the credential.
-func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOption) *ClientContext {
+func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOption) *ContextProvider {
 	// delay execution of the following logic to avoid error return from this function.
 	// this is done to allow a cleaner API - i.e., client, err := sdk.NewClient(args).<Desired Interface>(extra args)
 	provider := func() (*clientContext, error) {
@@ -97,7 +112,7 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOptio
 		}
 		return &cc, nil
 	}
-	client := ClientContext{
+	client := ContextProvider{
 		provider: provider,
 	}
 	return &client
@@ -143,7 +158,7 @@ func newClientOptions(options []ClientOption) (*clientOptions, error) {
 }
 
 // ResourceMgmt returns a client API for managing system resources.
-func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, error) {
+func (c *ContextProvider) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
@@ -179,7 +194,7 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, err
 }
 
 // Channel returns a client API for transacting on a channel.
-func (c *ClientContext) Channel(id string, opts ...ClientOption) (*channel.Client, error) {
+func (c *ContextProvider) Channel(id string, opts ...ClientOption) (*channel.Client, error) {
 	p, err := c.provider()
 	if err != nil {
 		return &channel.Client{}, errors.WithMessage(err, "unable to get client provider context")
@@ -198,7 +213,7 @@ func (c *ClientContext) Channel(id string, opts ...ClientOption) (*channel.Clien
 }
 
 // ChannelService returns a client API for interacting with a channel.
-func (c *ClientContext) ChannelService(id string) (fab.ChannelService, error) {
+func (c *ContextProvider) ChannelService(id string) (fab.ChannelService, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")
@@ -211,7 +226,7 @@ func (c *ClientContext) ChannelService(id string) (fab.ChannelService, error) {
 // Session returns the underlying identity of the client.
 //
 // Deprecated: this method is temporary.
-func (c *ClientContext) Session() (context.SessionContext, error) {
+func (c *ContextProvider) Session() (context.SessionContext, error) {
 	p, err := c.provider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to get client provider context")

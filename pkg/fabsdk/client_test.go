@@ -9,6 +9,7 @@ package fabsdk
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/pkg/errors"
@@ -21,6 +22,40 @@ const (
 	clientValidExtraOrg  = "OrgX"
 	clientValidExtraUser = "OrgXUser"
 )
+
+func TestContextOptions(t *testing.T) {
+	sdk, err := New(configImpl.FromFile(clientConfigFile))
+	if err != nil {
+		t.Fatalf("Expected no error from New, but got %v", err)
+	}
+	identity, err := sdk.newUser(identityValidOptOrg, identityValidOptUser)
+	if err != nil {
+		t.Fatalf("Unexpected error loading identity: %v", err)
+	}
+	opt := context.WithIdentity(identity)
+	coreCtx := sdk.Context(opt)
+
+	if coreCtx == nil {
+		t.Fatalf("Expected context")
+	}
+	identityCtx := coreCtx.Identity()
+	ibt, err := identityCtx.Identity()
+	if len(ibt) == 0 {
+		t.Fatalf("Expected identity context")
+	}
+	orgID := identityCtx.MspID()
+	if orgID != "Org2MSP" {
+		t.Fatalf("Expected orgID 'Org2MSP' but got %s", orgID)
+	}
+	//context with org
+	opt = context.WithOrg("Org2")
+	coreCtx = sdk.Context(opt)
+
+	if coreCtx == nil {
+		t.Fatalf("Expected context")
+	}
+
+}
 
 func TestNewGoodClientOpt(t *testing.T) {
 	sdk, err := New(configImpl.FromFile(clientConfigFile))

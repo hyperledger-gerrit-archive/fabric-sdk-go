@@ -205,7 +205,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.signingManager = signingMgr
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.NewFabricProvider(sdk.fabContext())
+	fabricProvider, err := sdk.opts.Core.NewFabricProvider(sdk.context())
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
@@ -245,16 +245,9 @@ func (sdk *FabricSDK) Config() core.Config {
 	return sdk.config
 }
 
-func (sdk *FabricSDK) fabContext() *fabContext {
-	c := fabContext{
+func (sdk *FabricSDK) context() *Core {
+	c := Core{
 		sdk: sdk,
-	}
-	return &c
-}
-
-func (sdk *FabricSDK) context() *sdkContext {
-	c := sdkContext{
-		fabContext: fabContext{sdk},
 	}
 	return &c
 }
@@ -277,4 +270,12 @@ func (sdk *FabricSDK) newUser(orgID string, userName string) (context.IdentityCo
 	}
 
 	return user, nil
+}
+
+//NewChannelContext exposes channel context
+func NewChannelContext(coreContext Core, channelID string) *ChannelContext {
+	cc := ChannelContext{
+		Core:      coreContext,
+		channelID: channelID}
+	return &cc
 }

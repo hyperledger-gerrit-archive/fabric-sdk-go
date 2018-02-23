@@ -59,7 +59,7 @@ func newCCPolicyProvider(sdk *fabsdk.FabricSDK, channelID string, userName strin
 
 type ccPolicyProvider struct {
 	config      core.Config
-	client      *fabsdk.ClientContext
+	client      *fabsdk.ContextProvider
 	channelID   string
 	targetPeers []core.ChannelPeer
 	ccDataMap   map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
