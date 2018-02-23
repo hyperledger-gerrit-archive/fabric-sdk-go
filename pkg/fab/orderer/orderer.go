@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
+	grpcContext "context"
 	"time"
 
-	grpcContext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -231,7 +231,9 @@ func (o *Orderer) sendBroadcast(envelope *fab.SignedEnvelope, secured bool) (*co
 	}
 
 	ctx := grpcContext.Background()
-	ctx, _ = grpcContext.WithTimeout(ctx, o.dialTimeout)
+	ctx, cancel := grpcContext.WithTimeout(ctx, o.dialTimeout)
+	defer cancel()
+
 	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
 
 	if err != nil {
@@ -315,7 +317,9 @@ func (o *Orderer) sendDeliver(envelope *fab.SignedEnvelope, secured bool) (chan 
 	}
 
 	ctx := grpcContext.Background()
-	ctx, _ = grpcContext.WithTimeout(ctx, o.dialTimeout)
+	ctx, cancel := grpcContext.WithTimeout(ctx, o.dialTimeout)
+	defer cancel()
+
 	conn, err := grpc.DialContext(ctx, o.url, grpcOpts...)
 	if err != nil {
 		errs <- err
