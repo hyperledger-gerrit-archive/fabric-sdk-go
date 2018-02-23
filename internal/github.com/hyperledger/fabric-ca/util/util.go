@@ -32,15 +32,15 @@ import (
 	"math/big"
 	mrand "math/rand"
 
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+
 	"net/http"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
 	"time"
-
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
 	"github.com/pkg/errors"
 
@@ -142,7 +142,7 @@ func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, body []byte) (
 //GenRSAToken signs the http body and cert with RSA using RSA private key
 // @csp : BCCSP instance
 /*
-func GenRSAToken(csp apicryptosuite.CryptoSuite, cert []byte, key []byte, body []byte) (string, error) {
+func GenRSAToken(csp core.CryptoSuite, cert []byte, key []byte, body []byte) (string, error) {
 	privKey, err := GetRSAPrivateKey(key)
 	if err != nil {
 		return "", err

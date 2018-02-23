@@ -26,6 +26,8 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+
 	"encoding/pem"
 	"time"
 
@@ -33,7 +35,6 @@ import (
 	bccsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
 	logging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
 )
