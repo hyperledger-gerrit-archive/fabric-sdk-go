@@ -60,9 +60,9 @@ func TestRegisterEnrollRevoke(t *testing.T) {
 	}
 	client.SetStateStore(stateStore)
 
-	caClient, err := fabricCAClient.NewFabricCAClient(org1Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := fabricCAClient.NewIdentityManager(org1Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
-		t.Fatalf("NewFabricCAClient return error: %v", err)
+		t.Fatalf("NewIdentityManager return error: %v", err)
 	}
 
 	// Admin user is used to register, enroll and revoke a test user
@@ -157,9 +157,9 @@ func TestEnrollOrg2(t *testing.T) {
 		t.Fatalf("Failed getting cryptosuite from config : %s", err)
 	}
 
-	caClient, err := fabricCAClient.NewFabricCAClient(org2Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := fabricCAClient.NewIdentityManager(org2Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
-		t.Fatalf("NewFabricCAClient return error: %v", err)
+		t.Fatalf("NewIdentityManager return error: %v", err)
 	}
 
 	key, cert, err := caClient.Enroll("admin", "adminpw")
@@ -198,9 +198,9 @@ func TestEnrollAndTransact(t *testing.T) {
 		t.Fatalf("Could not create signing manager: %s", err)
 	}
 
-	caClient, err := fabricCAClient.NewFabricCAClient(org1Name, testFabricConfig, cryptoSuiteProvider)
+	caClient, err := fabricCAClient.NewIdentityManager(org1Name, testFabricConfig, cryptoSuiteProvider)
 	if err != nil {
-		t.Fatalf("NewFabricCAClient returned error: %v", err)
+		t.Fatalf("NewIdentityManager returned error: %v", err)
 	}
 
 	key, cert, err := caClient.Enroll("admin", "adminpw")

@@ -24,8 +24,8 @@ func NewOrgClientFactory() *OrgClientFactory {
 /*
 // NewMSPClient returns a new default implementation of the MSP client
 // TODO: duplicate of core factory method (remove one) or at least call the core one like in sessfactory
-func (f *OrgClientFactory) NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error) {
-	return fabricCAClient.NewFabricCAClient(orgName, config, cryptoProvider)
+func (f *OrgClientFactory) NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.IdentityManager, error) {
+	return fabricCAClient.NewIdentityManager(orgName, config, cryptoProvider)
 }
 */
 

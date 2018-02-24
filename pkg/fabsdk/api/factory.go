@@ -32,7 +32,7 @@ type ServiceProviderFactory interface {
 // OrgClientFactory allows overriding default clients and providers of an organization
 // Currently, a context is created for each organization that the client app needs.
 type OrgClientFactory interface {
-	//NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.FabricCAClient, error)
+	//NewMSPClient(orgName string, config apiconfig.Config, cryptoProvider apicryptosuite.CryptoSuite) (fabca.IdentityManager, error)
 	NewCredentialManager(orgName string, config core.Config, cryptoProvider core.CryptoSuite) (api.CredentialManager, error)
 }
 

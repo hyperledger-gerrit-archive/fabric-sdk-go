@@ -63,7 +63,7 @@ func TestCreateCAClient(t *testing.T) {
 		t.Fatalf("Unexpected error creating client %v", err)
 	}
 
-	_, ok := client.(*fabricCAClient.FabricCA)
+	_, ok := client.(*fabricCAClient.IdentityManager)
 	if !ok {
 		t.Fatalf("Unexpected client impl created")
 	}

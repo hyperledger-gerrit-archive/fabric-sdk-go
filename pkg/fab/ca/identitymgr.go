@@ -22,17 +22,17 @@ import (
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
-// FabricCA represents a client to Fabric CA.
-type FabricCA struct {
+// IdentityManager provides management of identities within a Fabric network.
+type IdentityManager struct {
 	fabricCAClient *fabric_ca.Client
 }
 
-// NewFabricCAClient creates a new fabric-ca client
+// NewIdentityManager creates a new fabric-ca client
 // @param {string} organization for this CA
 // @param {api.Config} client config for fabric-ca services
-// @returns {api.FabricCAClient} FabricCAClient implementation
+// @returns {api.IdentityManager} IdentityManager implementation
 // @returns {error} error, if any
-func NewFabricCAClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (*FabricCA, error) {
+func NewIdentityManager(org string, config config.Config, cryptoSuite core.CryptoSuite) (*IdentityManager, error) {
 	if org == "" || config == nil || cryptoSuite == nil {
 		return nil, errors.New("organization, config and cryptoSuite are required to load CA config")
 	}
@@ -85,7 +85,7 @@ func NewFabricCAClient(org string, config config.Config, cryptoSuite core.Crypto
 	//Factory opts
 	c.Config.CSP = cryptoSuite
 
-	fabricCAClient := FabricCA{fabricCAClient: c}
+	fabricCAClient := IdentityManager{fabricCAClient: c}
 
 	err = c.Init()
 	if err != nil {
@@ -96,7 +96,7 @@ func NewFabricCAClient(org string, config config.Config, cryptoSuite core.Crypto
 }
 
 // CAName returns the CA name.
-func (fabricCAServices *FabricCA) CAName() string {
+func (fabricCAServices *IdentityManager) CAName() string {
 	return fabricCAServices.fabricCAClient.Config.CAName
 }
 
@@ -104,7 +104,7 @@ func (fabricCAServices *FabricCA) CAName() string {
 // enrollmentID The registered ID to use for enrollment
 // enrollmentSecret The secret associated with the enrollment ID
 // Returns X509 certificate
-func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
+func (fabricCAServices *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) (core.Key, []byte, error) {
 	if enrollmentID == "" {
 		return nil, nil, errors.New("enrollmentID required")
 	}
@@ -125,7 +125,7 @@ func (fabricCAServices *FabricCA) Enroll(enrollmentID string, enrollmentSecret s
 
 // Reenroll an enrolled user in order to receive a signed X509 certificate
 // Returns X509 certificate
-func (fabricCAServices *FabricCA) Reenroll(user contextApi.User) (core.Key, []byte, error) {
+func (fabricCAServices *IdentityManager) Reenroll(user contextApi.User) (core.Key, []byte, error) {
 	if user == nil {
 		return nil, nil, errors.New("user required")
 	}
@@ -154,7 +154,7 @@ func (fabricCAServices *FabricCA) Reenroll(user contextApi.User) (core.Key, []by
 // registrar: The User that is initiating the registration
 // request: Registration Request
 // Returns Enrolment Secret
-func (fabricCAServices *FabricCA) Register(registrar contextApi.User,
+func (fabricCAServices *IdentityManager) Register(registrar contextApi.User,
 	request *fab.RegistrationRequest) (string, error) {
 	// Validate registration request
 	if request == nil {
@@ -191,7 +191,7 @@ func (fabricCAServices *FabricCA) Register(registrar contextApi.User,
 // Revoke a User with the Fabric CA
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
-func (fabricCAServices *FabricCA) Revoke(registrar contextApi.User,
+func (fabricCAServices *IdentityManager) Revoke(registrar contextApi.User,
 	request *fab.RevocationRequest) (*api.RevocationResponse, error) {
 	// Validate revocation request
 	if request == nil {
@@ -213,7 +213,7 @@ func (fabricCAServices *FabricCA) Revoke(registrar contextApi.User,
 }
 
 // createSigningIdentity creates an identity to sign Fabric CA requests with
-func (fabricCAServices *FabricCA) createSigningIdentity(user contextApi.User) (*fabric_ca.Identity, error) {
+func (fabricCAServices *IdentityManager) createSigningIdentity(user contextApi.User) (*fabric_ca.Identity, error) {
 	// Validate user
 	if user == nil {
 		return nil, errors.New("user required")
