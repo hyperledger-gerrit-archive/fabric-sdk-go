@@ -1,0 +1,8 @@
+Code-Review+1: Troy Ronda <troy@troyronda.com>
+Code-Review+2: Aleksandar Likic <aleksandar.likic@securekey.com>
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Submitted-by: Troy Ronda <troy@troyronda.com>
+Submitted-at: Sun, 25 Feb 2018 15:22:53 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/18299
+Project: fabric-sdk-go
+Branch: refs/heads/master
