@@ -145,7 +145,7 @@ func TestWithContextPkg(t *testing.T) {
 	}
 
 	// Use a method that invokes credential manager (e.g., new user)
-	_, err = sdk.newUser(sdkValidClientOrg1, sdkValidClientUser)
+	_, err = sdk.NewUser(sdkValidClientOrg1, sdkValidClientUser)
 	if err != nil {
 		t.Fatalf("Unexpected error getting user: %s", err)
 	}
@@ -183,6 +183,7 @@ func TestWithSessionPkg(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error getting channel management client: %s", err)
 	}
+
 }
 
 func TestErrPkgSuite(t *testing.T) {

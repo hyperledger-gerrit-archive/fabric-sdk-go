@@ -38,6 +38,10 @@ type clientOptions struct {
 
 type clientProvider func() (*clientContext, error)
 
+type providers interface {
+	context.Providers
+}
+
 type clientContext struct {
 	opts          *contextOptions
 	identity      context.IdentityContext
@@ -45,8 +49,10 @@ type clientContext struct {
 	clientFactory api.SessionClientFactory
 }
 
-type providers interface {
-	api.Providers
+//Client fabsdk client
+type Client struct {
+	context.Providers
+	context.IdentityContext
 }
 
 // WithOrg uses the configuration and users from the named organization.
@@ -72,6 +78,28 @@ func withConfig(config core.Config) ContextOption {
 		opts.config = config
 		return nil
 	}
+}
+
+//Context will replace NewClient
+func (sdk *FabricSDK) Context(identityOpt context.ClientOption, opts ...context.ProviderOption) (*context.Client, error) {
+	// delay execution of the following logic to avoid error return from this function.
+	// this is done to allow a cleaner API - i.e., client, err := sdk.NewClient(args).<Desired Interface>(extra args)
+	if identityOpt == nil {
+		return nil, errors.New("Passed identity option is not valid")
+	}
+	provider, err := context.NewProvider(opts...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to retrieve providers")
+	}
+	client, err := context.NewClient(provider, identityOpt)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to retrieve client for provider")
+
+	}
+	//Q how to set fabric procider
+	//	sdk.fabricProvider = provider
+	return client, nil
+
 }
 
 // NewClient allows creation of transactions using the supplied identity as the credential.
@@ -157,18 +185,18 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, err
 	session := newSession(p.identity, p.providers.ChannelProvider())
 
 	fabProvider := p.providers.FabricProvider()
-	resource, err := fabProvider.CreateResourceClient(session)
-	if err != nil {
-		return nil, err
-	}
+	// resource, err := fabProvider.CreateResourceClient(session)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	discovery := p.providers.DiscoveryProvider()
 	chProvider := p.providers.ChannelProvider()
 
 	ctx := resmgmt.Context{
-		ProviderContext:   p.providers,
-		IdentityContext:   session,
-		Resource:          resource,
+		ProviderContext: p.providers,
+		IdentityContext: session,
+		//Resource:          resource,
 		DiscoveryProvider: discovery,
 		ChannelProvider:   chProvider,
 		FabricProvider:    fabProvider,

@@ -21,7 +21,6 @@ import (
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
@@ -73,7 +72,7 @@ type mockProviders struct {
 	StateStore        contextApi.KVStore
 	Config            core.Config
 	SigningManager    contextApi.SigningManager
-	FabricProvider    api.FabricProvider
+	FabricProvider    context.FabricProvider
 	DiscoveryProvider fab.DiscoveryProvider
 	SelectionProvider fab.SelectionProvider
 	ChannelProvider   fab.ChannelProvider

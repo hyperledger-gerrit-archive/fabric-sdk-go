@@ -7,11 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	//"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
 
@@ -21,6 +22,12 @@ type fabContext struct {
 
 type sdkContext struct {
 	fabContext
+}
+
+//ChannelContext channel context
+type ChannelContext struct {
+	channel.Context
+	channelID string
 }
 
 // Config returns the Config provider of sdk.
@@ -39,28 +46,28 @@ func (c *fabContext) SigningManager() contextApi.SigningManager {
 }
 
 // StateStore returns state store
-func (c *sdkContext) StateStore() contextApi.KVStore {
+func (c *fabContext) StateStore() contextApi.KVStore {
 	return c.sdk.stateStore
 }
 
 // DiscoveryProvider returns discovery provider
-func (c *sdkContext) DiscoveryProvider() fab.DiscoveryProvider {
+func (c *fabContext) DiscoveryProvider() fab.DiscoveryProvider {
 	return c.sdk.discoveryProvider
 }
 
 // SelectionProvider returns selection provider
-func (c *sdkContext) SelectionProvider() fab.SelectionProvider {
+func (c *fabContext) SelectionProvider() fab.SelectionProvider {
 	return c.sdk.selectionProvider
 }
 
-// FabricProvider provides fabric objects such as peer and user
-func (c *sdkContext) FabricProvider() api.FabricProvider {
-	return c.sdk.fabricProvider
+// ChannelProvider provides channel services.
+func (c *fabContext) ChannelProvider() fab.ChannelProvider {
+	return c.sdk.channelProvider
 }
 
 // ChannelProvider provides channel services.
-func (c *sdkContext) ChannelProvider() fab.ChannelProvider {
-	return c.sdk.channelProvider
+func (c *fabContext) FabricProvider() context.FabricProvider {
+	return c.sdk.fabricProvider
 }
 
 type identityOptions struct {
@@ -78,7 +85,7 @@ func WithUser(name string) IdentityOption {
 			return errors.New("Identity already determined")
 		}
 
-		identity, err := sdk.newUser(orgName, name)
+		identity, err := sdk.NewUser(orgName, name)
 		if err != nil {
 			return errors.WithMessage(err, "Unable to load identity")
 		}
@@ -136,6 +143,6 @@ func newSession(ic context.IdentityContext, cp fab.ChannelProvider) *session {
 // FabricProvider provides fabric objects such as peer and user
 //
 // TODO: move under Providers()
-func (sdk *FabricSDK) FabricProvider() api.FabricProvider {
+func (sdk *FabricSDK) FabricProvider() context.FabricProvider {
 	return sdk.fabricProvider
 }

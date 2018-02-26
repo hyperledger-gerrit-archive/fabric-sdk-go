@@ -11,16 +11,15 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 	"github.com/pkg/errors"
 )
 
@@ -34,7 +33,7 @@ type FabricSDK struct {
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
 	signingManager    contextApi.SigningManager
-	fabricProvider    sdkApi.FabricProvider
+	fabricProvider    context.FabricProvider
 	channelProvider   *chpvdr.ChannelProvider
 }
 
@@ -205,7 +204,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.signingManager = signingMgr
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.fabContext())
+	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.context())
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
@@ -245,13 +244,13 @@ func (sdk *FabricSDK) Config() core.Config {
 	return sdk.config
 }
 
+//FabContext
 func (sdk *FabricSDK) fabContext() *fabContext {
 	c := fabContext{
 		sdk: sdk,
 	}
 	return &c
 }
-
 func (sdk *FabricSDK) context() *sdkContext {
 	c := sdkContext{
 		fabContext: fabContext{sdk},
@@ -259,7 +258,14 @@ func (sdk *FabricSDK) context() *sdkContext {
 	return &c
 }
 
-func (sdk *FabricSDK) newUser(orgID string, userName string) (context.IdentityContext, error) {
+//provider -TODO
+func (sdk *FabricSDK) provider() *context.Provider {
+	//return sdk.fabricProvider
+	return nil
+}
+
+//NewUser creates new user
+func (sdk *FabricSDK) NewUser(orgID string, userName string) (context.IdentityContext, error) {
 
 	credentialMgr, err := sdk.opts.Context.CreateCredentialManager(orgID, sdk.config, sdk.cryptoSuite)
 	if err != nil {

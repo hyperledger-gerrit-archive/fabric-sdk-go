@@ -25,7 +25,7 @@ type mockCorePkg struct {
 	stateStore     contextApi.KVStore
 	cryptoSuite    core.CryptoSuite
 	signingManager contextApi.SigningManager
-	fabricProvider sdkApi.FabricProvider
+	fabricProvider context.FabricProvider
 }
 
 func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
@@ -75,7 +75,7 @@ func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, con
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) CreateFabricProvider(ctx context.ProviderContext) (sdkApi.FabricProvider, error) {
+func (mc *mockCorePkg) CreateFabricProvider(ctx context.ProviderContext) (context.FabricProvider, error) {
 	return mc.fabricProvider, nil
 }
 

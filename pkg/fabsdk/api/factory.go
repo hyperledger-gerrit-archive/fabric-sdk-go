@@ -19,7 +19,7 @@ type CoreProviderFactory interface {
 	CreateStateStoreProvider(config core.Config) (api.KVStore, error)
 	CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
 	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (api.SigningManager, error)
-	CreateFabricProvider(context context.ProviderContext) (FabricProvider, error)
+	CreateFabricProvider(context context.ProviderContext) (context.FabricProvider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)
@@ -37,5 +37,5 @@ type OrgClientFactory interface {
 
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
-	CreateChannelClient(sdk Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error)
+	CreateChannelClient(sdk context.Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error)
 }
