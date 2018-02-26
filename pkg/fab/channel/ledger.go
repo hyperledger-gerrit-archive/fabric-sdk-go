@@ -197,12 +197,8 @@ func createProcessedTransaction(tpr *fab.TransactionProposalResponse) (*pb.Proce
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on this channel.
 // This query will be made to specified targets.
 func (c *Ledger) QueryInstantiatedChaincodes(targets []fab.ProposalProcessor) ([]*pb.ChaincodeQueryResponse, error) {
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "lscc",
-		Fcn:         "getchaincodes",
-	}
-
-	tprs, errs := queryChaincode(c.ctx, c.chName, request, targets)
+	cir := createChaincodesInvokeRequest()
+	tprs, errs := queryChaincode(c.ctx, c.chName, cir, targets)
 
 	responses := []*pb.ChaincodeQueryResponse{}
 	for _, tpr := range tprs {
@@ -237,12 +233,8 @@ func (c *Ledger) QueryConfigBlock(targets []fab.ProposalProcessor, minResponses 
 		return nil, errors.New("Minimum endorser has to be greater than zero")
 	}
 
-	request := fab.ChaincodeInvokeRequest{
-		ChaincodeID: "cscc",
-		Fcn:         "GetConfigBlock",
-		Args:        [][]byte{[]byte(c.chName)},
-	}
-	tprs, err := queryChaincode(c.ctx, c.chName, request, targets)
+	cir := createConfigBlockInvokeRequest(c.chName)
+	tprs, err := queryChaincode(c.ctx, c.chName, cir, targets)
 	if err != nil && len(tprs) == 0 {
 		return nil, errors.WithMessage(err, "queryChaincode failed")
 	}
