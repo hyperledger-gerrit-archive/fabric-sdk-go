@@ -14,7 +14,6 @@ import (
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
@@ -96,7 +95,7 @@ func (f *MockFabricProvider) CreateChannelClient(ic context.IdentityContext, cfg
 }
 
 // CreateFabricProvider mocks new default implementation of fabric primitives
-func (f *MockProviderFactory) CreateFabricProvider(context context.ProviderContext) (api.FabricProvider, error) {
+func (f *MockProviderFactory) CreateFabricProvider(context context.ProviderContext) (context.FabricProvider, error) {
 	fabProvider := fabpvdr.New(context)
 
 	cfp := MockFabricProvider{

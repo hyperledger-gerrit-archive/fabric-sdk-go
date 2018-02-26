@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	//providers "github.com/hyperledger/fabric-sdk-go/pkg/context/providers"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
@@ -23,7 +24,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -60,7 +60,7 @@ type InstantiateCCRequest struct {
 	CollConfig []*common.CollectionConfig
 }
 
-// UpgradeCCRequest contains upgrade chaincode request parameters
+// UpgradeCCRequest contains upgrade chaincode request parametersfabricPro
 type UpgradeCCRequest struct {
 	Name       string
 	Path       string
@@ -99,7 +99,7 @@ type Client struct {
 	identity          context.IdentityContext
 	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
 	channelProvider   fab.ChannelProvider
-	fabricProvider    sdkApi.FabricProvider
+	fabricProvider    context.FabricProvider
 	discovery         fab.DiscoveryService // global discovery service (detects all peers on the network)
 	resource          api.Resource
 	filter            TargetFilter
@@ -121,7 +121,7 @@ type Context struct {
 	context.IdentityContext
 	DiscoveryProvider fab.DiscoveryProvider
 	ChannelProvider   fab.ChannelProvider
-	FabricProvider    sdkApi.FabricProvider
+	FabricProvider    context.FabricProvider
 	Resource          api.Resource
 }
 

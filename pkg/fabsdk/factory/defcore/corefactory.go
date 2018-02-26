@@ -18,7 +18,6 @@ import (
 	"github.com/pkg/errors"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
-	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
@@ -60,7 +59,7 @@ func (f *ProviderFactory) CreateSigningManager(cryptoProvider core.CryptoSuite, 
 }
 
 // CreateFabricProvider returns a new default implementation of fabric primitives
-func (f *ProviderFactory) CreateFabricProvider(context context.ProviderContext) (sdkApi.FabricProvider, error) {
+func (f *ProviderFactory) CreateFabricProvider(context context.ProviderContext) (context.FabricProvider, error) {
 	return fabpvdr.New(context), nil
 }
 

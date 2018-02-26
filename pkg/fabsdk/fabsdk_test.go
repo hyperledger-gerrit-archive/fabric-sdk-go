@@ -7,10 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/mocks"
 	"github.com/pkg/errors"
@@ -145,7 +147,7 @@ func TestWithContextPkg(t *testing.T) {
 	}
 
 	// Use a method that invokes credential manager (e.g., new user)
-	_, err = sdk.newUser(sdkValidClientOrg1, sdkValidClientUser)
+	_, err = sdk.NewUser(sdkValidClientOrg1, sdkValidClientUser)
 	if err != nil {
 		t.Fatalf("Unexpected error getting user: %s", err)
 	}
@@ -183,6 +185,7 @@ func TestWithSessionPkg(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error getting channel management client: %s", err)
 	}
+
 }
 
 func TestErrPkgSuite(t *testing.T) {
@@ -294,4 +297,31 @@ func TestWithConfigFailure(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected failure due to invalid config")
 	}
+}
+
+func TestNewChannelContext(t *testing.T) {
+	sdk, err := New(configImpl.FromFile(sdkConfigFile))
+	if err != nil {
+		t.Fatalf("Error initializing SDK: %s", err)
+	}
+
+	client1, err := sdk.config.Client()
+	if err != nil {
+		t.Fatalf("Error getting client from config: %s", err)
+	}
+	fmt.Printf("***client1 %v\n", client1)
+	ctxIdentity, err := sdk.NewUser("Org2", "User1")
+	if err != nil {
+		t.Fatalf("Error getting new user SDK: %s", err)
+	}
+	client, err := sdk.Context(context.WithIdentity(ctxIdentity))
+	if err != nil {
+		t.Fatalf("Error getting client context: %s", err)
+	}
+	fmt.Printf("*** %v", client)
+	//cc := NewChannelContext(client, "testChannel")
+	//fmt.Printf("*** cc %v\n", cc)
+	// if cc == nil {
+	// 	t.Fatalf("Error getting client context: %s", err)
+	// }
 }
