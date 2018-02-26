@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -72,6 +74,29 @@ func withConfig(config core.Config) ContextOption {
 		opts.config = config
 		return nil
 	}
+}
+
+//Context returns core context
+func (sdk *FabricSDK) Context(coreOpt context.CoreOption, opts ...ContextOption) *Core {
+	o, _ := newContextOptions(sdk.config, opts)
+	coreCtx, err := context.New(coreOpt)
+	if err != nil {
+		fmt.Printf("Error %v\n", err)
+	}
+	cc := Core{
+		sdk:  sdk,
+		opts: o,
+	}
+	if coreCtx == nil {
+		//error occurred
+		return &cc
+	}
+
+	if coreCtx.Providers != nil {
+		cc.providers = (coreCtx.Providers).(api.Providers)
+	}
+
+	return &cc
 }
 
 // NewClient allows creation of transactions using the supplied identity as the credential.

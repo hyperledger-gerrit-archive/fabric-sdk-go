@@ -12,55 +12,77 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
 
-type fabContext struct {
-	sdk *FabricSDK
+// type fabContext struct {
+// 	sdk *FabricSDK
+// }
+
+// type sdkContext struct {
+// 	fabContext
+// }
+
+//Core client context
+type Core struct {
+	sdk       *FabricSDK
+	opts      *contextOptions
+	identity  context.IdentityContext
+	providers providers
+	//this one will be removed
+	clientFactory sdkApi.SessionClientFactory
 }
 
-type sdkContext struct {
-	fabContext
+//ChannelContext channel context
+type ChannelContext struct {
+	Core
+	channelID string
 }
 
 // Config returns the Config provider of sdk.
-func (c *fabContext) Config() core.Config {
+func (c *Core) Config() core.Config {
 	return c.sdk.config
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
-func (c *fabContext) CryptoSuite() core.CryptoSuite {
+func (c *Core) CryptoSuite() core.CryptoSuite {
 	return c.sdk.cryptoSuite
 }
 
 // SigningManager returns signing manager
-func (c *fabContext) SigningManager() contextApi.SigningManager {
+func (c *Core) SigningManager() contextApi.SigningManager {
 	return c.sdk.signingManager
 }
 
 // StateStore returns state store
-func (c *sdkContext) StateStore() contextApi.KVStore {
+func (c *Core) StateStore() contextApi.KVStore {
 	return c.sdk.stateStore
 }
 
 // DiscoveryProvider returns discovery provider
-func (c *sdkContext) DiscoveryProvider() fab.DiscoveryProvider {
+func (c *Core) DiscoveryProvider() fab.DiscoveryProvider {
 	return c.sdk.discoveryProvider
 }
 
 // SelectionProvider returns selection provider
-func (c *sdkContext) SelectionProvider() fab.SelectionProvider {
+func (c *Core) SelectionProvider() fab.SelectionProvider {
 	return c.sdk.selectionProvider
 }
 
 // FabricProvider provides fabric objects such as peer and user
-func (c *sdkContext) FabricProvider() api.FabricProvider {
+func (c *Core) FabricProvider() api.FabricProvider {
 	return c.sdk.fabricProvider
 }
 
 // ChannelProvider provides channel services.
-func (c *sdkContext) ChannelProvider() fab.ChannelProvider {
+func (c *Core) ChannelProvider() fab.ChannelProvider {
 	return c.sdk.channelProvider
+}
+
+// Identity provides identity context
+func (c *Core) Identity() context.IdentityContext {
+	return c.identity
 }
 
 type identityOptions struct {

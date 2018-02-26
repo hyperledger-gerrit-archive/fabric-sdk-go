@@ -245,16 +245,16 @@ func (sdk *FabricSDK) Config() core.Config {
 	return sdk.config
 }
 
-func (sdk *FabricSDK) fabContext() *fabContext {
-	c := fabContext{
+func (sdk *FabricSDK) fabContext() *Core {
+	c := Core{
 		sdk: sdk,
 	}
 	return &c
 }
 
-func (sdk *FabricSDK) context() *sdkContext {
-	c := sdkContext{
-		fabContext: fabContext{sdk},
+func (sdk *FabricSDK) context() *Core {
+	c := Core{
+		sdk: sdk,
 	}
 	return &c
 }
