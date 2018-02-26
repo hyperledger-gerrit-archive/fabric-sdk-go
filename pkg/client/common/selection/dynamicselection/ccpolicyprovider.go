@@ -130,7 +130,7 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 		}
 
 		// Send query to channel peer
-		request := channel.Request{
+		request := channel.InvokeRequest{
 			ChaincodeID: ccID,
 			Fcn:         ccFcn,
 			Args:        ccArgs,

@@ -88,27 +88,27 @@ func New(c Context) (*Client, error) {
 }
 
 // Query chaincode using request and optional options provided
-func (cc *Client) Query(request Request, options ...Option) (Response, error) {
+func (cc *Client) Query(request InvokeRequest, options ...Option) (InvokeResponse, error) {
 	return cc.InvokeHandler(invoke.NewQueryHandler(), request, cc.addDefaultTimeout(core.Query, options...)...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
-func (cc *Client) Execute(request Request, options ...Option) (Response, error) {
+func (cc *Client) Execute(request InvokeRequest, options ...Option) (InvokeResponse, error) {
 	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, cc.addDefaultTimeout(core.Execute, options...)...)
 }
 
 //InvokeHandler invokes handler using request and options provided
-func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options ...Option) (Response, error) {
+func (cc *Client) InvokeHandler(handler invoke.Handler, request InvokeRequest, options ...Option) (InvokeResponse, error) {
 	//Read execute tx options
 	txnOpts, err := cc.prepareOptsFromOptions(options...)
 	if err != nil {
-		return Response{}, err
+		return InvokeResponse{}, err
 	}
 
 	//Prepare context objects for handler
 	requestContext, clientContext, err := cc.prepareHandlerContexts(request, txnOpts)
 	if err != nil {
-		return Response{}, err
+		return InvokeResponse{}, err
 	}
 
 	complete := make(chan bool)
@@ -124,9 +124,9 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 	}()
 	select {
 	case <-complete:
-		return Response(requestContext.Response), requestContext.Error
+		return InvokeResponse(requestContext.Response), requestContext.Error
 	case <-time.After(requestContext.Opts.Timeout):
-		return Response{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
+		return InvokeResponse{}, status.New(status.ClientStatus, status.Timeout.ToInt32(),
 			"request timed out", nil)
 	}
 }
@@ -153,7 +153,7 @@ func (cc *Client) resolveRetry(ctx *invoke.RequestContext, o opts) bool {
 }
 
 //prepareHandlerContexts prepares context objects for handlers
-func (cc *Client) prepareHandlerContexts(request Request, o opts) (*invoke.RequestContext, *invoke.ClientContext, error) {
+func (cc *Client) prepareHandlerContexts(request InvokeRequest, o opts) (*invoke.RequestContext, *invoke.ClientContext, error) {
 
 	if request.ChaincodeID == "" || request.Fcn == "" {
 		return nil, nil, errors.New("ChaincodeID and Fcn are required")
