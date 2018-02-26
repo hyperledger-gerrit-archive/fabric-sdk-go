@@ -65,7 +65,7 @@ func TestChannelClient(t *testing.T) {
 
 	// Synchronous transaction
 	response, err := chClient.Execute(
-		channel.Request{
+		channel.InvokeRequest{
 			ChaincodeID:  chainCodeID,
 			Fcn:          "invoke",
 			Args:         integration.ExampleCCTxArgs(),
@@ -119,7 +119,7 @@ func TestChannelClient(t *testing.T) {
 
 func testQuery(expected string, ccID string, chClient *channel.Client, t *testing.T) {
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(channel.InvokeRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Failed to invoke example cc: %s", err)
 	}
@@ -130,7 +130,7 @@ func testQuery(expected string, ccID string, chClient *channel.Client, t *testin
 }
 
 func testQueryWithOpts(expected string, ccID string, chClient *channel.Client, t *testing.T) {
-	response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := chClient.Query(channel.InvokeRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
 	if err != nil {
 		t.Fatalf("Query returned error: %s", err)
 	}
@@ -140,7 +140,7 @@ func testQueryWithOpts(expected string, ccID string, chClient *channel.Client, t
 }
 
 func testTransaction(ccID string, chClient *channel.Client, t *testing.T) {
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err := chClient.Execute(channel.InvokeRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -203,7 +203,7 @@ func testInvokeHandler(ccID string, chClient *channel.Client, t *testing.T) {
 				),
 			),
 		),
-		channel.Request{
+		channel.InvokeRequest{
 			ChaincodeID: ccID,
 			Fcn:         "invoke",
 			Args:        integration.ExampleCCTxArgs(),
@@ -259,7 +259,7 @@ func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err := chClient.Execute(channel.InvokeRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -293,7 +293,7 @@ func testChaincodeEventListener(ccID string, chClient *channel.Client, listener 
 		t.Fatalf("Failed to register cc event: %s", err)
 	}
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
+	response, err := chClient.Execute(channel.InvokeRequest{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()})
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}

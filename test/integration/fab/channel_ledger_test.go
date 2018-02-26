@@ -113,7 +113,7 @@ func TestLedgerQueries(t *testing.T) {
 
 func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) (fab.TransactionID, error) {
 
-	req := channel.Request{
+	req := channel.InvokeRequest{
 		ChaincodeID: chaincodeID,
 		Fcn:         "invoke",
 		Args:        integration.ExampleCCQueryArgs(),
@@ -241,7 +241,7 @@ func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID strin
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
 
-	req := channel.Request{
+	req := channel.InvokeRequest{
 		ChaincodeID:  chaincodeID,
 		Fcn:          "invoke",
 		Args:         integration.ExampleCCTxArgs(),
