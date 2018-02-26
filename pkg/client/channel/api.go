@@ -38,7 +38,7 @@ type opts struct {
 type Option func(opts *opts) error
 
 // Request contains the parameters to query and execute an invocation transaction
-type Request struct {
+type InvokeRequest struct {
 	ChaincodeID  string
 	Fcn          string
 	Args         [][]byte
@@ -46,7 +46,7 @@ type Request struct {
 }
 
 //Response contains response parameters for query and execute an invocation transaction
-type Response struct {
+type InvokeResponse struct {
 	Payload          []byte
 	TransactionID    fab.TransactionID
 	TxValidationCode pb.TxValidationCode
