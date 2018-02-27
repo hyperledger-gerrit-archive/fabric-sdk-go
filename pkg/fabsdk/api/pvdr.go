@@ -22,9 +22,9 @@ type FabricProvider interface {
 	CreateChannelTransactor(ic context.IdentityContext, cfg fab.ChannelCfg) (fab.Transactor, error)
 	CreateChannelMembership(cfg fab.ChannelCfg) (fab.ChannelMembership, error)
 	CreateEventHub(ic context.IdentityContext, name string) (fab.EventHub, error)
-
 	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error)
 	CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error)
+	Close()
 }
 
 // Providers represents the SDK configured providers context.
