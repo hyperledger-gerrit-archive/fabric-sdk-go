@@ -76,4 +76,8 @@ const (
 	OrdererResponse
 	// DiscoveryGreylistExpiry discovery Greylist expiration period
 	DiscoveryGreylistExpiry
+	// ConnectionIdle is the timeout for closing idle connections
+	ConnectionIdle
+	// CacheSweepInterval is the duration between cache sweeps
+	CacheSweepInterval
 )
