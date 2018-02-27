@@ -27,6 +27,7 @@ import (
 // FabricProvider represents the default implementation of Fabric objects.
 type FabricProvider struct {
 	providerContext context.ProviderContext
+	connector       *cachingConnector
 }
 
 type fabContext struct {
@@ -36,8 +37,11 @@ type fabContext struct {
 
 // New creates a FabricProvider enabling access to core Fabric objects and functionality.
 func New(ctx context.ProviderContext) *FabricProvider {
+	cc := newCachingConnector()
+
 	f := FabricProvider{
 		providerContext: ctx,
+		connector:       cc,
 	}
 	return &f
 }
@@ -139,7 +143,8 @@ func (f *FabricProvider) CreateUser(name string, signingIdentity *contextApi.Sig
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
 func (f *FabricProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
-	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg))
+	logger.Infof("CreatePeerFromConfig")
+	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg), peerImpl.WithConnProvider(f.connector))
 }
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.
