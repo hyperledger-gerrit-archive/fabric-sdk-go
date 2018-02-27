@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package peer
 
 import (
+	"context"
 	"encoding/pem"
 	"fmt"
 
@@ -18,14 +19,20 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/spf13/cast"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
 
 var logger = logging.NewLogger("fabric_sdk_go")
 
 const (
-	connBlocking = true
+	connBlocking = false
 )
+
+type connProvider interface {
+	DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error)
+	ReleaseConn(conn *grpc.ClientConn)
+}
 
 // Peer represents a node in the target blockchain network to which
 // HFC sends endorsement proposals, transaction ordering or query requests.
@@ -42,6 +49,7 @@ type Peer struct {
 	kap                   keepalive.ClientParameters
 	failFast              bool
 	inSecure              bool
+	connector             connProvider
 }
 
 // Option describes a functional parameter for the New constructor
@@ -49,7 +57,10 @@ type Option func(*Peer) error
 
 // New Returns a new Peer instance
 func New(config core.Config, opts ...Option) (*Peer, error) {
-	peer := &Peer{config: config}
+	peer := &Peer{
+		config:    config,
+		connector: &defConnector{},
+	}
 	var err error
 
 	for _, opt := range opts {
@@ -71,6 +82,7 @@ func New(config core.Config, opts ...Option) (*Peer, error) {
 			kap:                peer.kap,
 			failFast:           peer.failFast,
 			allowInsecure:      peer.inSecure,
+			connector:          peer.connector,
 		}
 		peer.processor, err = newPeerEndorser(&endorseRequest)
 
@@ -197,6 +209,16 @@ func WithPeerProcessor(processor fab.ProposalProcessor) Option {
 	}
 }
 
+// WithConnProvider allows a custom GRPC connection provider to be used.
+func WithConnProvider(provider connProvider) Option {
+	return func(p *Peer) error {
+		logger.Infof("WithConnProvider")
+		p.connector = provider
+
+		return nil
+	}
+}
+
 // Name gets the Peer name.
 func (p *Peer) Name() string {
 	return p.name
@@ -266,4 +288,16 @@ func PeersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 		tpp[i] = peers[i]
 	}
 	return tpp
+}
+
+type defConnector struct{}
+
+func (*defConnector) DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+	logger.Infof("Default DialContext: %s", target)
+	return grpc.DialContext(ctx, target, opts...)
+}
+
+func (*defConnector) ReleaseConn(conn *grpc.ClientConn) {
+	logger.Infof("Default ReleaseConn: %v", conn)
+	conn.Close()
 }

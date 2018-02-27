@@ -23,10 +23,10 @@ type FabricProvider interface {
 	CreateChannelMembership(cfg fab.ChannelCfg) (fab.ChannelMembership, error)
 	CreateEventHub(ic context.IdentityContext, name string) (fab.EventHub, error)
 	CreateIdentityManager(orgID string) (fab.IdentityManager, error)
-
 	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error)
 	CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error)
 	CreateUser(name string, signingIdentity *contextApi.SigningIdentity) (contextApi.User, error)
+	Close()
 }
 
 // Providers represents the SDK configured providers context.
