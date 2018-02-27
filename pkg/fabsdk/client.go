@@ -92,7 +92,7 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOptio
 		cc := clientContext{
 			opts:          o,
 			identity:      identity,
-			providers:     sdk.context(),
+			providers:     sdk.Context(),
 			clientFactory: sdk.opts.Session,
 		}
 		return &cc, nil

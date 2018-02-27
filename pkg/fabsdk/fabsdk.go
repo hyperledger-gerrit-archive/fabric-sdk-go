@@ -252,7 +252,8 @@ func (sdk *FabricSDK) fabContext() *fabContext {
 	return &c
 }
 
-func (sdk *FabricSDK) context() *sdkContext {
+// Context returns the SDK context
+func (sdk *FabricSDK) Context() *sdkContext {
 	c := sdkContext{
 		fabContext: fabContext{sdk},
 	}
