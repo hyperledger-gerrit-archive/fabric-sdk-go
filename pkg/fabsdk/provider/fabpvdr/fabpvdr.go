@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fabpvdr
 
 import (
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -21,9 +23,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	sweepTime = 5 * time.Second
+	idleTime  = 30 * time.Second
+)
+
 // FabricProvider represents the default implementation of Fabric objects.
 type FabricProvider struct {
 	providerContext context.ProviderContext
+	connector       *cachingConnector
 }
 
 type fabContext struct {
@@ -33,10 +41,18 @@ type fabContext struct {
 
 // New creates a FabricProvider enabling access to core Fabric objects and functionality.
 func New(ctx context.ProviderContext) *FabricProvider {
+	cc := newCachingConnector(sweepTime, idleTime)
+
 	f := FabricProvider{
 		providerContext: ctx,
+		connector:       cc,
 	}
 	return &f
+}
+
+// Close frees resources and caches.
+func (f *FabricProvider) Close() {
+	f.connector.Close()
 }
 
 // CreateResourceClient returns a new client initialized for the current instance of the SDK.
@@ -120,7 +136,7 @@ func (f *FabricProvider) CreateChannelTransactor(ic context.IdentityContext, cfg
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
 func (f *FabricProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
-	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg))
+	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg), peerImpl.WithConnProvider(f.connector))
 }
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.
