@@ -197,7 +197,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.fabricProvider = fabricProvider
 
 	// Initialize discovery provider
-	discoveryProvider, err := sdk.opts.Service.CreateDiscoveryProvider(sdk.config)
+	discoveryProvider, err := sdk.opts.Service.CreateDiscoveryProvider(sdk.config, fabricProvider)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize discovery provider")
 	}
@@ -223,6 +223,11 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	sdk.channelProvider = channelProvider
 
 	return nil
+}
+
+// Close frees up caches and connections being maintained by the SDK
+func (sdk *FabricSDK) Close() {
+	sdk.fabricProvider.Close()
 }
 
 // Config returns the SDK's configuration.
