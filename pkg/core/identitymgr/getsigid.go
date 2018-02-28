@@ -46,6 +46,7 @@ func (mgr *IdentityManager) loadUserFromStore(userName string) (core.User, error
 		return nil, core.ErrUserNotFound
 	}
 	var user core.User
+	logger.Infof("-----****----%s, %s", mgr.orgMspID, userName)
 	userData, err := mgr.userStore.Load(UserIdentifier{MspID: mgr.orgMspID, Name: userName})
 	if err != nil {
 		return nil, err

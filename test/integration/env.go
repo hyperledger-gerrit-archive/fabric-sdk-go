@@ -8,7 +8,7 @@ package integration
 
 const (
 	// ConfigTestFile contains the path and filename of the config for integration tests
-	ConfigTestFile = "../fixtures/config/config_test.yaml"
+	ConfigTestFile = "../fixtures/config/config_test_local.yaml"
 
 	//ConfigChBlockTestFile  the path and filename of the config for integration tests in which orderer config is not provided
 	ConfigChBlockTestFile = "../fixtures/config/config_test_no_orderer.yaml"

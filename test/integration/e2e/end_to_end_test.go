@@ -15,5 +15,5 @@ func TestE2E(t *testing.T) {
 	runWithConfigFixture(t)
 
 	//Using setup done set above by end to end test, run below test with new config which has no orderer config inside
-	runWithNoOrdererConfigFixture(t)
+	//runWithNoOrdererConfigFixture(t)
 }

@@ -272,6 +272,12 @@ func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.P
 	if targetFilter != nil {
 		targets = filterTargets(targets, targetFilter)
 	}
+	logger.Debug("*****************")
+	logger.Debug(targets[0].URL())
+	logger.Debug(targets[0].MSPID())
+	logger.Debug(targets[0].Name())
+	logger.Debug(targetFilter)
+	logger.Debug("*****************")
 
 	return targets, nil
 }

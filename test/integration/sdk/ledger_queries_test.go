@@ -52,7 +52,8 @@ func TestLedgerClientQueries(t *testing.T) {
 		t.Fatalf("QueryInfo return error: %v", err)
 	}
 
-	expected := "peer0.org1.example.com"
+	//expected := "peer0.org1.example.com"
+	expected := "localhost:7051"
 	if !strings.Contains(ledgerInfo.Endorser, expected) {
 		t.Fatalf("Expecting %s, got %s", expected, ledgerInfo.Endorser)
 	}
