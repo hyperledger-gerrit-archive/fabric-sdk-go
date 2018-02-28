@@ -13,6 +13,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -58,7 +60,15 @@ func orderersFromChannelCfg(ctx context.Context, cfg fab.ChannelCfg) ([]fab.Orde
 		oCfg, ok := ordererDict[target]
 
 		if !ok {
-			// TODO: need default options
+			// Try to find a match from matchers config
+			matchingOrdererConfig, matchErr := ctx.Config().OrdererConfig(strings.ToLower(target))
+			if matchErr == nil && matchingOrdererConfig != nil {
+				oCfg = *matchingOrdererConfig
+				ok = true
+			}
+
+		}
+		if !ok {
 			o, err := orderer.New(ctx.Config(), orderer.WithURL(target))
 			// TODO: should we fail hard if we cannot configure a default orderer?
 			//if err != nil {
