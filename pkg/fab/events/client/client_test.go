@@ -870,14 +870,13 @@ func txStatusTest(eventClient *Client, ledger servicemocks.Ledger, channelID str
 			)
 
 			select {
-			case txStatus, ok := <-txeventch:
+			case _, ok := <-txeventch:
 				mutex.Lock()
 				if !ok {
 					errs = append(errs, errors.New("unexpected closed channel"))
 				} else {
 					receivedEvents++
 				}
-				fmt.Printf("received TxStatus %#v\n", txStatus)
 				mutex.Unlock()
 			case <-time.After(5 * time.Second):
 				mutex.Lock()
