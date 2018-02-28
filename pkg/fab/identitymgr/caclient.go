@@ -10,7 +10,9 @@ import (
 	"github.com/pkg/errors"
 
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -20,19 +22,64 @@ import (
 // Initialization is lazy, so the client is not required to connect to CA
 // in order to transact with Fabric.
 func (im *IdentityManager) initCAClient() error {
+
 	if im.caClient == nil {
+
+		// Initialize CA client
 		caClient, err := newCAClient(im.orgName, im.config, im.cryptoSuite)
 		if err != nil {
 			return errors.Wrapf(err, "failed to initialie Fabric CA client")
 		}
 		im.caClient = caClient
+	}
+
+	// Allow configuring the registrar in data store after client startup
+	if im.registrar == nil {
+
+		// Read CA configuration
 		caConfig, err := im.config.CAConfig(im.orgName)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get CA configurtion for msp: %s", im.orgName)
 		}
-		im.registrar = caConfig.Registrar
+
+		// If present, attempt to initialize the registrar
+		if caConfig.Registrar.EnrollID != "" {
+			registrar, err := im.getRegistrar(caConfig.Registrar.EnrollID, caConfig.Registrar.EnrollSecret)
+			if err == nil {
+				im.registrar, err = im.caClient.NewIdentity(registrar.PrivateKey, registrar.EnrollmentCert)
+				if err != nil {
+					return errors.Wrap(err, "failed to initialize Fabric CA client")
+				}
+			} else {
+				if err != fab.ErrCARegistrarNotFound {
+					return err
+				}
+			}
+		}
 	}
+
 	return nil
+}
+
+func (im *IdentityManager) getRegistrar(enrollID string, enrollSecret string) (*contextApi.SigningIdentity, error) {
+	si, err := im.GetSigningIdentity(enrollID)
+	if err != nil {
+		if err != contextApi.ErrUserNotFound {
+			return nil, err
+		}
+		if enrollSecret == "" {
+			return nil, fab.ErrCARegistrarNotFound
+		}
+		_, _, err = im.Enroll(enrollID, enrollSecret)
+		if err != nil {
+			return nil, err
+		}
+		si, err = im.GetSigningIdentity(enrollID)
+		if err == contextApi.ErrUserNotFound {
+			return nil, fab.ErrCARegistrarNotFound
+		}
+	}
+	return si, err
 }
 
 func newCAClient(org string, config config.Config, cryptoSuite core.CryptoSuite) (*calib.Client, error) {
