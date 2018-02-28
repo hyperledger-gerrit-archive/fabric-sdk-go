@@ -28,10 +28,17 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
 	"github.com/pkg/errors"
 
+	"regexp"
+	"sync"
+
 	cs "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 )
 
 var logger = logging.NewLogger(logModule)
+
+var peerMatchers = make(map[int]*regexp.Regexp)
+var ordererMatchers = make(map[int]*regexp.Regexp)
+var once sync.Once
 
 const (
 	cmdRoot        = "FABRIC_SDK"
@@ -520,6 +527,12 @@ func (c *Config) cacheNetworkConfiguration() error {
 		return err
 	}
 
+	err = c.configViper.UnmarshalKey("matchers", &networkConfig.Matchers)
+	logger.Debugf("Matchers are: %+v", networkConfig.Matchers)
+	if err != nil {
+		return err
+	}
+
 	c.networkConfig = &networkConfig
 	c.networkConfigCached = true
 	return nil
@@ -575,7 +588,11 @@ func (c *Config) OrdererConfig(name string) (*core.OrdererConfig, error) {
 	}
 	orderer, ok := config.Orderers[strings.ToLower(name)]
 	if !ok {
-		return nil, nil
+		matchingOrdererConfig, matchErr := c.tryMatchingOrdererConfig(strings.ToLower(name))
+		if matchErr != nil {
+			return nil, err
+		}
+		orderer = matchingOrdererConfig
 	}
 
 	if orderer.TLSCACerts.Path != "" {
@@ -599,7 +616,11 @@ func (c *Config) PeersConfig(org string) ([]core.PeerConfig, error) {
 	for _, peerName := range peersConfig {
 		p := config.Peers[strings.ToLower(peerName)]
 		if err = c.verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {
-			return nil, err
+			matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(peerName)
+			if matchErr != nil {
+				return nil, err
+			}
+			p = matchingPeerConfig
 		}
 		if p.TLSCACerts.Path != "" {
 			p.TLSCACerts.Path = substPathVars(p.TLSCACerts.Path)
@@ -608,6 +629,119 @@ func (c *Config) PeersConfig(org string) ([]core.PeerConfig, error) {
 		peers = append(peers, p)
 	}
 	return peers, nil
+}
+
+func (c *Config) tryMatchingPeerConfig(peerName string) (core.PeerConfig, error) {
+	networkConfig, err := c.NetworkConfig()
+	if err != nil {
+		return core.PeerConfig{}, err
+	}
+	error := c.compileMatchers()
+	if error != nil {
+		return core.PeerConfig{}, error
+	}
+	//Return if no peerMatchers are configured
+	if len(peerMatchers) == 0 {
+		return core.PeerConfig{}, errors.New("No Peer matchers are found")
+	}
+	//loop over peermatchers to find the matching peer
+	for k, v := range peerMatchers {
+		if v.MatchString(peerName) {
+			// get the matching matchConfig from the index number
+			peerMatchConfig := networkConfig.Matchers["peer"][k]
+			//Get the peerConfig from mapped host
+			peerConfig, ok := networkConfig.Peers[strings.ToLower(peerMatchConfig.MappedHost)]
+			if !ok {
+				return core.PeerConfig{}, errors.WithMessage(err, "Failed to load config from matched Peer")
+			}
+			//if substitution url is empty, use the same network peer url
+			if peerMatchConfig.SubstitutionURL == "" {
+				s := strings.Split(peerConfig.URL, ":")
+				peerConfig.URL = peerName
+				//append port of matched config
+				if s[1] != "" {
+					peerConfig.URL += ":" + s[1]
+				}
+			} else {
+				//else, replace url with substitution url
+				peerConfig.URL = peerMatchConfig.SubstitutionURL
+			}
+			return peerConfig, nil
+		}
+	}
+	return core.PeerConfig{}, errors.New("No matching peer config found")
+}
+
+func (c *Config) tryMatchingOrdererConfig(ordererName string) (core.OrdererConfig, error) {
+	networkConfig, err := c.NetworkConfig()
+	if err != nil {
+		return core.OrdererConfig{}, err
+	}
+	error := c.compileMatchers()
+	if error != nil {
+		return core.OrdererConfig{}, error
+	}
+	//Return if no ordererMatchers are configured
+	if len(ordererMatchers) == 0 {
+		return core.OrdererConfig{}, errors.New("No Orderer matchers are found")
+	}
+	//loop over orderermatchers to find the matching orderer
+	for k, v := range ordererMatchers {
+		if v.MatchString(ordererName) {
+			// get the matching matchConfig from the index number
+			ordererMatchConfig := networkConfig.Matchers["orderer"][k]
+			//Get the ordererConfig from mapped host
+			ordererConfig, ok := networkConfig.Orderers[strings.ToLower(ordererMatchConfig.MappedHost)]
+			if !ok {
+				return core.OrdererConfig{}, errors.WithMessage(err, "Failed to load config from matched Orderer")
+			}
+			//if substitution url is empty, use the same network orderer url
+			if ordererMatchConfig.SubstitutionURL == "" {
+				s := strings.Split(ordererConfig.URL, ":")
+				ordererConfig.URL = ordererName
+				//append port of matched config
+				if s[1] != "" {
+					ordererConfig.URL += ":" + s[1]
+				}
+			} else {
+				//else, replace url with substitution url
+				ordererConfig.URL = ordererMatchConfig.SubstitutionURL
+			}
+			return ordererConfig, nil
+		}
+	}
+	return core.OrdererConfig{}, errors.New("No matching orderer config found")
+}
+
+func (c *Config) compileMatchers() error {
+	networkConfig, err := c.NetworkConfig()
+	if err != nil {
+		return err
+	}
+	//return no error if matchers is not configured
+	if networkConfig.Matchers == nil {
+		return nil
+	}
+	once.Do(func() {
+		if networkConfig.Matchers["peer"] != nil {
+			peerMatchersConfig := networkConfig.Matchers["peer"]
+			for i := 0; i < len(peerMatchersConfig); i++ {
+				if peerMatchersConfig[i].MatchPattern != "" {
+					peerMatchers[i] = regexp.MustCompile(peerMatchersConfig[i].MatchPattern)
+				}
+			}
+		}
+		if networkConfig.Matchers["orderer"] != nil {
+			ordererMatchersConfig := networkConfig.Matchers["orderer"]
+			for i := 0; i < len(ordererMatchersConfig); i++ {
+				if ordererMatchersConfig[i].MatchPattern != "" {
+					ordererMatchers[i] = regexp.MustCompile(ordererMatchersConfig[i].MatchPattern)
+				}
+			}
+		}
+	})
+
+	return nil
 }
 
 // PeerConfig Retrieves a specific peer from the configuration by org and name
@@ -630,7 +764,32 @@ func (c *Config) PeerConfig(org string, name string) (*core.PeerConfig, error) {
 
 	peerConfig, ok := config.Peers[strings.ToLower(name)]
 	if !ok {
-		return nil, nil
+		matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(strings.ToLower(name))
+		if matchErr != nil {
+			return nil, nil
+		}
+		peerConfig = matchingPeerConfig
+	}
+
+	if peerConfig.TLSCACerts.Path != "" {
+		peerConfig.TLSCACerts.Path = substPathVars(peerConfig.TLSCACerts.Path)
+	}
+	return &peerConfig, nil
+}
+
+// PeerConfig Retrieves a specific peer by name
+func (c *Config) peerConfig(name string) (*core.PeerConfig, error) {
+	config, err := c.NetworkConfig()
+	if err != nil {
+		return nil, err
+	}
+	peerConfig, ok := config.Peers[strings.ToLower(name)]
+	if !ok {
+		matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(strings.ToLower(name))
+		if matchErr != nil {
+			return nil, nil
+		}
+		peerConfig = matchingPeerConfig
 	}
 
 	if peerConfig.TLSCACerts.Path != "" {
@@ -707,7 +866,11 @@ func (c *Config) ChannelPeers(name string) ([]core.ChannelPeer, error) {
 		// Get generic peer configuration
 		p, ok := netConfig.Peers[strings.ToLower(peerName)]
 		if !ok {
-			return nil, errors.Errorf("peer config not found for %s", peerName)
+			matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(strings.ToLower(peerName))
+			if matchErr != nil {
+				return nil, errors.Errorf("peer config not found for %s", peerName)
+			}
+			p = matchingPeerConfig
 		}
 
 		if err = c.verifyPeerConfig(p, peerName, urlutil.IsTLSEnabled(p.URL)); err != nil {

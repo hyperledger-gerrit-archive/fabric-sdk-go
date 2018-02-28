@@ -271,3 +271,27 @@ certificateAuthorities:
 #      enrollSecret: adminpasswd
     # [Optional] The optional name of the CA.
 #    caName: ca.org1.example.com
+
+#Matchers part is all about substitution of network hostnames with static configurations. Regex can be used for this purpose
+#Matchers part is all about substitution of network hostnames with static configurations so that properties can be mapped. Regex can be used for this purpose
+#Substitution url can be empty which means the same network hostname will be used
+#Substitution url can be given same as mapped peer url, so that mapped peer url can be used
+#In any case mappedHost's config will be used, so mapped host cannot be empty, if matchers are used
+matchers:
+  #peer:
+    #- matchPattern: \\*.example.com
+      #substitutionUrl: localhost
+      #mappedHost: peer0.org1.example.com
+
+    #- matchPattern: \\*.example2.com
+      #substitutionUrl: localhost
+      #mappedHost: peer0.org2.example.com
+
+  #orderer:
+    #- matchPattern: \\*.example.com
+      #substitutionUrl: localhost
+      #mappedHost: orderer.example.com
+
+    #- matchPattern: \\*.example2.com
+      #substitutionUrl: localhost
+      #mappedHost: orderer.example.com

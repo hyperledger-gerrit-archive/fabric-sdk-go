@@ -464,6 +464,81 @@ func TestChannelOrderers(t *testing.T) {
 	}
 }
 
+func TestOrdererWithSubstitutedConfig_WithADifferentSubstituteUrl(t *testing.T) {
+	expectedConfig, err := configImpl.OrdererConfig("orderer.example.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if expectedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	fetchedConfig, err := configImpl.OrdererConfig("orderer.example2.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if fetchedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+
+	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACerts.Pem != expectedConfig.TLSCACerts.Pem {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+
+	if fetchedConfig.URL == "orderer.example2.com:7050" || fetchedConfig.URL == expectedConfig.URL {
+		t.Fatalf("Expected Config should have url that is given in substitute url of match pattern")
+	}
+}
+
+func TestOrdererWithSubstitutedConfig_WithEmptySubstituteUrl(t *testing.T) {
+	expectedConfig, err := configImpl.OrdererConfig("orderer.example.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if expectedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	fetchedConfig, err := configImpl.OrdererConfig("orderer.example3.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if fetchedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+
+	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACerts.Pem != expectedConfig.TLSCACerts.Pem {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+
+	if fetchedConfig.URL != "orderer.example3.com:7050" {
+		t.Fatalf("Fetched Config should have the same url")
+	}
+}
+
+func TestOrdererWithSubstitutedConfig_WithSubstituteUrlAsMatchedHost(t *testing.T) {
+	expectedConfig, err := configImpl.OrdererConfig("orderer.example.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if expectedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	fetchedConfig, err := configImpl.OrdererConfig("orderer.example4.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if fetchedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+
+	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACerts.Pem != expectedConfig.TLSCACerts.Pem {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+
+	if fetchedConfig.URL != expectedConfig.URL {
+		t.Fatalf("fetched Config should have the same url as expected config")
+	}
+}
+
 func TestPeersConfig(t *testing.T) {
 	pc, err := configImpl.PeersConfig(org0)
 	if err != nil {
@@ -513,6 +588,81 @@ func TestPeerConfig(t *testing.T) {
 	}
 	if len(pc.GRPCOptions) == 0 || pc.GRPCOptions["ssl-target-name-override"] != "peer0.org1.example.com" {
 		t.Fatalf("Peer %s must have grpcOptions set in config_test.yaml", "peer0")
+	}
+}
+
+func TestPeerWithSubstitutedConfig_WithADifferentSubstituteUrl(t *testing.T) {
+	expectedConfig, err := configImpl.PeerConfig(org1, "peer0.org1.example.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if expectedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	fetchedConfig, err := configImpl.peerConfig("peer3.org1.example.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if fetchedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	//Since we dont have a defined peer config for peer3.org1.example.com, it should follow the matcher rule and match for peer0.org1.example.com
+	if fetchedConfig.EventURL != expectedConfig.EventURL || fetchedConfig.TLSCACerts.Path != expectedConfig.TLSCACerts.Path || len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+
+	if fetchedConfig.URL == "peer3.org1.example.com:7051" || fetchedConfig.URL == expectedConfig.URL {
+		t.Fatalf("Expected Config should have url that is given in substitute url of match pattern")
+	}
+}
+
+func TestPeerWithSubstitutedConfig_WithEmptySubstituteUrl(t *testing.T) {
+	expectedConfig, err := configImpl.PeerConfig(org1, "peer0.org1.example.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if expectedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	fetchedConfig, err := configImpl.peerConfig("peer4.org1.example3.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if fetchedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	//Since we dont have a defined peer config for peer4.org1.example3.com, it should follow the matcher rule and match for peer0.org1.example.com
+	if fetchedConfig.EventURL != expectedConfig.EventURL || fetchedConfig.TLSCACerts.Path != expectedConfig.TLSCACerts.Path || len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+
+	if fetchedConfig.URL != "peer4.org1.example3.com:7051" {
+		t.Fatalf("Fetched Config should have the same url")
+	}
+}
+
+func TestPeerWithSubstitutedConfig_WithSubstituteUrlAsMatchedHost(t *testing.T) {
+	expectedConfig, err := configImpl.PeerConfig(org1, "peer0.org1.example.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if expectedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	fetchedConfig, err := configImpl.peerConfig("peer5.org1.example4.com")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if fetchedConfig.URL == "" {
+		t.Fatalf("Url value for the host is empty")
+	}
+	//Since we dont have a defined peer config for peer5.org1.example4.com, it should follow the matcher rule and match for peer0.org1.example.com
+	if fetchedConfig.EventURL != expectedConfig.EventURL || fetchedConfig.TLSCACerts.Path != expectedConfig.TLSCACerts.Path || len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) {
+		t.Fatalf("Expected Config and fetched config differ")
+	}
+
+	if fetchedConfig.URL != expectedConfig.URL {
+		t.Fatalf("fetched Config should have the same url as expected config")
 	}
 }
 
