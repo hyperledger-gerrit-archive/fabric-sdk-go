@@ -12,6 +12,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/persistence"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -31,7 +33,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 type Client struct {
 	channels        map[string]fab.Channel
 	cryptoSuite     core.CryptoSuite
-	stateStore      contextApi.UserStore
+	stateStore      identitymgr.UserStore
 	signingIdentity context.IdentityContext
 	config          config.Config
 	signingManager  contextApi.SigningManager
@@ -100,12 +102,12 @@ func (c *Client) QueryChannelInfo(name string, peers []fab.Peer) (fab.Channel, e
  * so that multiple app instances can share app state via the database (note that this doesn’t necessarily make the app stateful).
  * This API makes this pluggable so that different store implementations can be selected by the application.
  */
-func (c *Client) SetStateStore(stateStore contextApi.UserStore) {
+func (c *Client) SetStateStore(stateStore identitymgr.UserStore) {
 	c.stateStore = stateStore
 }
 
 // StateStore is a convenience method for obtaining the state store object in use for this client.
-func (c *Client) StateStore() contextApi.UserStore {
+func (c *Client) StateStore() identitymgr.UserStore {
 	return c.stateStore
 }
 
@@ -172,7 +174,7 @@ func (c *Client) LoadUserFromStateStore(mspID string, name string) (contextApi.U
 	if c.cryptoSuite == nil {
 		return nil, errors.New("cryptoSuite required")
 	}
-	user, err := c.stateStore.Load(contextApi.UserKey{MspID: mspID, Name: name})
+	user, err := c.stateStore.Load(persistence.UserIdentifier{MspID: mspID, Name: name})
 	if err != nil {
 		return nil, err
 	}
