@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package channel
+package resmgmt
 
 import (
 	"github.com/golang/protobuf/proto"
@@ -97,12 +97,4 @@ func CreateChaincodeDeployProposal(txh fab.TransactionHeader, deploy ChaincodePr
 	}
 
 	return txn.CreateChaincodeInvokeProposal(txh, cir)
-}
-
-func createChaincodesInvokeRequest() fab.ChaincodeInvokeRequest {
-	cir := fab.ChaincodeInvokeRequest{
-		ChaincodeID: lscc,
-		Fcn:         lsccChaincodes,
-	}
-	return cir
 }
