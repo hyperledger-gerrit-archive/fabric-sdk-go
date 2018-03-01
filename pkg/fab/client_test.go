@@ -20,7 +20,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identity"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/persistence"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/pkg/errors"
 )
@@ -137,7 +138,7 @@ func TestClientMethods(t *testing.T) {
 		t.Fatalf("client.NewChain create wrong chain")
 	}
 
-	stateStore, err := identity.NewCertFileUserStore(storePath, crypto)
+	stateStore, err := persistence.NewCertFileUserStore(storePath, crypto)
 	if err != nil {
 		t.Fatalf("CreateNewFileKeyValueStore return error[%s]", err)
 	}
@@ -152,7 +153,7 @@ func TestClientMethods(t *testing.T) {
 	saveUser := identity.NewUser("myname", "mymsp")
 	saveUser.SetEnrollmentCertificate([]byte(testCert1))
 	client.StateStore().Store(saveUser)
-	retrievedUser, err := client.StateStore().Load(api.UserKey{MspID: saveUser.MspID(), Name: saveUser.Name()})
+	retrievedUser, err := client.StateStore().Load(persistence.UserIdentifier{MspID: saveUser.MspID(), Name: saveUser.Name()})
 	if err != nil {
 		t.Fatalf("client.StateStore().Load() return error[%s]", err)
 	}

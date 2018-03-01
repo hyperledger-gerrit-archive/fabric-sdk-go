@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identity
+package persistence
 
 import (
 	"bytes"
@@ -14,24 +14,12 @@ import (
 	"path"
 	"testing"
 
-	"github.com/golang/mock/gomock"
-
-	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	"github.com/pkg/errors"
 )
 
 var storePathRoot = "/tmp/testcertfileuserstore"
 var storePath = path.Join(storePathRoot, "-certs")
-
-var testPrivKey1 = `-----BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
-5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
-J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
------END PRIVATE KEY-----`
 
 var testCert1 = `-----BEGIN CERTIFICATE-----
 MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
@@ -48,12 +36,6 @@ AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
 XdsmTcdRvJ3TS/6HCA==
 -----END CERTIFICATE-----`
 
-var testPrivKey2 = `-----BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg5Ahcehypz6IpAYy6
-DtIf5zZsRjP4PtsmDhLbBJsXmD6hRANCAAR+YRAn8dFpDQDyvDA7JKPl5PoZenj3
-m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
------END PRIVATE KEY-----`
-
 var testCert2 = `-----BEGIN CERTIFICATE-----
 MIICGjCCAcCgAwIBAgIRAIQkbh9nsGnLmDalAVlj8sUwCgYIKoZIzj0EAwIwczEL
 MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
@@ -69,95 +51,62 @@ NrfToiPzJpEFPGF+/8CpzOkl91oz+XJsvdgf5wIgI/e8mpvpplUQbU52+LejA36D
 CsbWERvZPjR/GFEDEvc=
 -----END CERTIFICATE-----`
 
-func crypto(t *testing.T) core.CryptoSuite {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	mockConfig := mock_core.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("SW")
-	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
-	mockConfig.EXPECT().SecurityLevel().Return(256)
-	mockConfig.EXPECT().KeyStorePath().Return(path.Join(storePathRoot, "-keys"))
-	mockConfig.EXPECT().Ephemeral().Return(false)
-
-	//Get cryptosuite using config
-	c, err := sw.GetSuiteByConfig(mockConfig)
-	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
-	}
-	return c
-}
 func TestStore(t *testing.T) {
 
 	cleanup(t, storePathRoot)
 	defer cleanup(t, storePathRoot)
 
-	crypto := crypto(t)
-
-	_, err := fabricCaUtil.ImportBCCSPKeyFromPEMBytes([]byte(testPrivKey1), crypto, false)
-	if err != nil {
-		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
-	}
-
-	_, err = fabricCaUtil.ImportBCCSPKeyFromPEMBytes([]byte(testPrivKey2), crypto, false)
-	if err != nil {
-		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
-	}
-
-	store, err := NewCertFileUserStore(storePath, crypto)
+	store, err := NewCertFileUserStore(storePath)
 	if err != nil {
 		t.Fatalf("NewFileKeyValueStore failed [%s]", err)
 	}
 	cleanup(t, storePath)
-	err = store.Store(nil)
-	if err == nil {
-		t.Fatal("Store(nil) should throw error")
+
+	user1 := UserData{
+		MspID: "Org1",
+		Name:  "user1",
+		EnrollmentCertificate: []byte(testCert1),
+	}
+	user2 := UserData{
+		MspID: "Org2",
+		Name:  "user2",
+		EnrollmentCertificate: []byte(testCert2),
 	}
 
-	user1 := &User{
-		mspID: "Org1",
-		name:  "user1",
-		enrollmentCertificate: []byte(testCert1),
-	}
-	user2 := &User{
-		mspID: "Org2",
-		name:  "user2",
-		enrollmentCertificate: []byte(testCert2),
-	}
 	if err := store.Store(user1); err != nil {
-		t.Fatalf("Store %s failed [%s]", user1.Name(), err)
+		t.Fatalf("Store %s failed [%s]", user1.Name, err)
 	}
 	if err := store.Store(user2); err != nil {
-		t.Fatalf("Store %s failed [%s]", user2.Name(), err)
+		t.Fatalf("Store %s failed [%s]", user2.Name, err)
 	}
 
 	// Check key1, value1
-	if err := checkStoreValue(store, user1, user1.EnrollmentCertificate()); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", user1.Name(), err)
+	if err := checkStoreValue(store, user1, user1.EnrollmentCertificate); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", user1.Name, err)
 	}
-	if err := store.Delete(user1); err != nil {
-		t.Fatalf("Delete %s failed [%s]", user1.Name(), err)
+	if err := store.Delete(userIdentifier(user1)); err != nil {
+		t.Fatalf("Delete %s failed [%s]", user1.Name, err)
 	}
-	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate()); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", user2.Name(), err)
+	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", user2.Name, err)
 	}
 	if err := checkStoreValue(store, user1, nil); err != api.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected api.ErrUserNotFound, got: %v", user1.Name(), err)
+		t.Fatalf("checkStoreValue %s failed, expected api.ErrUserNotFound, got: %v", user1.Name, err)
 	}
 
 	// Check ke2, value2
-	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate()); err != nil {
-		t.Fatalf("checkStoreValue %s failed [%s]", user2.Name(), err)
+	if err := checkStoreValue(store, user2, user2.EnrollmentCertificate); err != nil {
+		t.Fatalf("checkStoreValue %s failed [%s]", user2.Name, err)
 	}
-	if err := store.Delete(user2); err != nil {
-		t.Fatalf("Delete %s failed [%s]", user2.Name(), err)
+	if err := store.Delete(userIdentifier(user2)); err != nil {
+		t.Fatalf("Delete %s failed [%s]", user2.Name, err)
 	}
 	if err := checkStoreValue(store, user2, nil); err != api.ErrUserNotFound {
-		t.Fatalf("checkStoreValue %s failed, expected api.ErrUserNotFound, got: %v", user2.Name(), err)
+		t.Fatalf("checkStoreValue %s failed, expected api.ErrUserNotFound, got: %v", user2.Name, err)
 	}
 
 	// Check non-existing key
-	nonExistingKey := api.UserKey{
+	nonExistingKey := UserIdentifier{
 		MspID: "Orgx",
 		Name:  "userx",
 	}
@@ -169,16 +118,9 @@ func TestStore(t *testing.T) {
 
 func TestCreateNewStore(t *testing.T) {
 
-	crypto := crypto(t)
-
-	_, err := NewCertFileUserStore("", crypto)
+	_, err := NewCertFileUserStore("")
 	if err == nil {
 		t.Fatal("should return error for empty path")
-	}
-
-	_, err = NewCertFileUserStore("mypath", nil)
-	if err == nil {
-		t.Fatal("should return error for nil cryptosuite")
 	}
 }
 
@@ -189,14 +131,14 @@ func cleanup(t *testing.T, storePath string) {
 	}
 }
 
-func checkStoreValue(store *CertFileUserStore, user api.User, expected []byte) error {
-	userKey := userKeyFromUser(user)
-	storeKey := storeKeyFromUserKey(userKeyFromUser(user))
-	v, err := store.Load(userKey)
+func checkStoreValue(store *CertFileUserStore, user UserData, expected []byte) error {
+	userIdentifier := userIdentifier(user)
+	storeKey := storeKeyFromUserIdentifier(userIdentifier)
+	v, err := store.Load(userIdentifier)
 	if err != nil {
 		return err
 	}
-	if err = compare(v.EnrollmentCertificate(), expected); err != nil {
+	if err = compare(v.EnrollmentCertificate, expected); err != nil {
 		return err
 	}
 	file := path.Join(storePath, storeKey)
@@ -236,4 +178,8 @@ func compare(v interface{}, expected []byte) error {
 		return errors.New("value from store comparison failed")
 	}
 	return nil
+}
+
+func userIdentifier(userData UserData) UserIdentifier {
+	return UserIdentifier{MspID: userData.MspID, Name: userData.Name}
 }
