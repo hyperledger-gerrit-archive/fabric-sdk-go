@@ -8,15 +8,12 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
@@ -259,24 +256,4 @@ func (sdk *FabricSDK) context() *sdkContext {
 		fabContext: fabContext{sdk},
 	}
 	return &c
-}
-
-func (sdk *FabricSDK) newUser(orgName string, userName string) (context.IdentityContext, error) {
-
-	identityMgr, ok := sdk.identityManager[strings.ToLower(orgName)]
-	if !ok {
-		return nil, fmt.Errorf("identity manager not found for org %s", orgName)
-	}
-
-	signingIdentity, err := identityMgr.GetSigningIdentity(userName)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get signing identity")
-	}
-
-	user, err := sdk.fabricProvider.CreateUser(userName, signingIdentity)
-	if err != nil {
-		return nil, errors.WithMessage(err, "NewPreEnrolledUser returned error")
-	}
-
-	return user, nil
 }

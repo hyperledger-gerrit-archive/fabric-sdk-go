@@ -24,7 +24,7 @@ import (
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/persistence"
 )
 
 const (
@@ -74,7 +74,7 @@ func TestMain(m *testing.M) {
 		panic(fmt.Sprintf("Failed initialize cryptoSuite: %v", err))
 	}
 	if fullConfig.CredentialStorePath() != "" {
-		userStore, err = identity.NewCertFileUserStore(fullConfig.CredentialStorePath(), cryptoSuite)
+		userStore, err = persistence.NewCertFileUserStore(fullConfig.CredentialStorePath())
 		if err != nil {
 			panic(fmt.Sprintf("creating a user store failed: %v", err))
 		}
@@ -116,7 +116,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 
 	// Successful enrollment
 	enrollUserName := createRandomName()
-	enrolledUser, err := userStore.Load(api.UserKey{MspID: orgMspID, Name: enrollUserName})
+	enrolledUserData, err := userStore.Load(api.UserKey{MspID: orgMspID, Name: enrollUserName})
 	if err != api.ErrUserNotFound {
 		t.Fatalf("Expected to not find user in user store")
 	}
@@ -124,7 +124,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("identityManager Enroll return error %v", err)
 	}
-	enrolledUser, err = userStore.Load(api.UserKey{MspID: orgMspID, Name: enrollUserName})
+	enrolledUserData, err = userStore.Load(api.UserKey{MspID: orgMspID, Name: enrollUserName})
 	if err != nil {
 		t.Fatalf("Expected to load user from user store")
 	}
@@ -149,6 +149,10 @@ func TestEnrollAndReenroll(t *testing.T) {
 	}
 
 	// Reenroll with appropriate user
+	enrolledUser, err := identityManager.newUser(enrolledUserData)
+	if err != nil {
+		t.Fatalf("newUser return error %v", err)
+	}
 	err = identityManager.Reenroll(enrolledUser)
 	if err != nil {
 		t.Fatalf("Reenroll return error %v", err)

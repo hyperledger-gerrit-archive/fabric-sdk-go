@@ -58,7 +58,11 @@ func TestWithIdentity(t *testing.T) {
 		t.Fatalf("Expected no error from New, but got %v", err)
 	}
 
-	identity, err := sdk.newUser(identityValidOptOrg, identityValidOptUser)
+	identityManager, ok := sdk.context().IdentityManager(identityValidOptOrg)
+	if !ok {
+		t.Fatalf("Invalid organization: %s", identityValidOptOrg)
+	}
+	identity, err := identityManager.GetUser(identityValidOptUser)
 	if err != nil {
 		t.Fatalf("Unexpected error loading identity: %v", err)
 	}
