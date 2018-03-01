@@ -55,7 +55,7 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	}
 	im := make(map[string]contextApi.IdentityManager)
 	for orgName := range netConfig.Organizations {
-		mgr, err := mocks.NewMockIdentityManager(orgName, cs, config)
+		mgr, err := core.CreateIdentityManager(orgName, cs, config)
 		if err != nil {
 			return nil, err
 		}

@@ -24,3 +24,17 @@ type CertKey struct {
 	MspID    string
 	UserName string
 }
+
+// UserData is the representation of User in UserStore
+// PrivateKey is stored separately, in the crypto store
+type UserData struct {
+	Name                  string
+	MspID                 string
+	EnrollmentCertificate []byte
+}
+
+// UserIdentifier is the User's unique identifier
+type UserIdentifier struct {
+	MspID string
+	Name  string
+}

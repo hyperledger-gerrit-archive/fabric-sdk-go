@@ -12,13 +12,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/persistence"
 )
 
 var (
@@ -48,7 +46,7 @@ m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
 	userToEnroll = "enrollmentID"
 
 	userToEnrollMspID       string
-	enrollmentTestUserStore api.UserStore
+	enrollmentTestUserStore UserStore
 )
 
 func TestGetSigningIdentityWithEnrollment(t *testing.T) {
@@ -91,7 +89,7 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	}
 
 	// Refers to the same location used by the IdentityManager
-	enrollmentTestUserStore, err = identity.NewCertFileUserStore(clientCofig.CredentialStore.Path, cs)
+	enrollmentTestUserStore, err = persistence.NewCertFileUserStore(clientCofig.CredentialStore.Path)
 	if err != nil {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
@@ -134,8 +132,11 @@ func prepareForEnroll(t *testing.T, mc *apimocks.MockIdentityManager, cs core.Cr
 
 		// Save the "new" cert to user store
 		// This is done by IdentityManagement.Enroll()
-		user := identity.NewUser(userToEnrollMspID, userToEnroll)
-		user.SetEnrollmentCertificate([]byte(generatedCertBytes))
+		user := persistence.UserData{
+			MspID: userToEnrollMspID,
+			Name:  userToEnroll,
+			EnrollmentCertificate: []byte(generatedCertBytes),
+		}
 		err = enrollmentTestUserStore.Store(user)
 		if err != nil {
 			t.Fatalf("userStore.Store: %s", err)

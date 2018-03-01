@@ -17,7 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/persistence"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/pkg/errors"
 )
@@ -81,7 +81,7 @@ func TestGetSigningIdentity(t *testing.T) {
 
 	// the same location used by credential manager.
 	// in the future all will use common user store instance from the SDK context
-	userStore, err := identity.NewCertFileUserStore(clientCofig.CredentialStore.Path, cryptoSuite)
+	userStore, err := persistence.NewCertFileUserStore(clientCofig.CredentialStore.Path)
 	if err != nil {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
@@ -113,8 +113,11 @@ func TestGetSigningIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
 	}
-	user1 := identity.NewUser(mspID, testUserName)
-	user1.SetEnrollmentCertificate([]byte(testCert))
+	user1 := persistence.UserData{
+		MspID: mspID,
+		Name:  testUserName,
+		EnrollmentCertificate: []byte(testCert),
+	}
 	err = userStore.Store(user1)
 	if err != nil {
 		t.Fatalf("userStore.Store: %s", err)
