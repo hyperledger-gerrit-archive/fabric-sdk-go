@@ -63,6 +63,9 @@ client:
     timeout:
       connection: 3s
       response: 5s
+  channelClient:
+    timeout:
+      connection: 30s
 
 
   # Needed to load users crypto keys and certs.

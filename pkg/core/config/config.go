@@ -458,6 +458,8 @@ func (c *Config) TimeoutOrDefault(conn core.TimeoutType) time.Duration {
 		timeout = c.configViper.GetDuration("client.orderer.timeout.connection")
 	case core.OrdererResponse:
 		timeout = c.configViper.GetDuration("client.orderer.timeout.response")
+	case core.ChannelClient:
+		timeout = c.configViper.GetDuration("client.channelClient.timeout.connection")
 
 	}
 	if timeout == 0 {

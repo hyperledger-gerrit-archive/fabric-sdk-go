@@ -76,4 +76,6 @@ const (
 	OrdererResponse
 	// DiscoveryGreylistExpiry discovery Greylist expiration period
 	DiscoveryGreylistExpiry
+	// ChannelClient connection timeout
+	ChannelClient
 )

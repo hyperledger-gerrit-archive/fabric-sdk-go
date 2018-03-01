@@ -379,6 +379,7 @@ func TestTimeouts(t *testing.T) {
 	configImpl.configViper.Set("client.peer.timeout.queryResponse", "7h")
 	configImpl.configViper.Set("client.peer.timeout.executeTxResponse", "8h")
 	configImpl.configViper.Set("client.orderer.timeout.response", "6s")
+	configImpl.configViper.Set("client.channelClient.timeout.connection", "2m")
 
 	t1 := configImpl.TimeoutOrDefault(api.Endorser)
 	if t1 != time.Second*2 {
@@ -406,6 +407,10 @@ func TestTimeouts(t *testing.T) {
 	}
 	t1 = configImpl.TimeoutOrDefault(api.OrdererResponse)
 	if t1 != time.Second*6 {
+		t.Fatalf("Timeout not read correctly. Got: %s", t1)
+	}
+	t1 = configImpl.TimeoutOrDefault(api.ChannelClient)
+	if t1 != time.Minute*2 {
 		t.Fatalf("Timeout not read correctly. Got: %s", t1)
 	}
 
