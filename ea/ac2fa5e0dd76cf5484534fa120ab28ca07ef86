@@ -1,0 +1,8 @@
+Code-Review+2: Troy Ronda <troy@troyronda.com>
+Code-Review+1: Sandra Vrtikapa <sandra.vrtikapa@securekey.com>
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Submitted-by: Troy Ronda <troy@troyronda.com>
+Submitted-at: Thu, 01 Mar 2018 20:36:35 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/18613
+Project: fabric-sdk-go
+Branch: refs/heads/master
