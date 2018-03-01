@@ -60,16 +60,6 @@ func (mgr *IdentityManager) loadUserFromStore(userName string) (api.User, error)
 	return user, nil
 }
 
-// GetSigningIdentity returns a signing identity for the given user name
-func (mgr *IdentityManager) GetSigningIdentity(userName string) (*api.SigningIdentity, error) {
-	user, err := mgr.GetUser(userName)
-	if err != nil {
-		return nil, err
-	}
-	signingIdentity := &api.SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
-	return signingIdentity, nil
-}
-
 // GetUser returns a user for the given user name
 func (mgr *IdentityManager) GetUser(userName string) (api.User, error) {
 

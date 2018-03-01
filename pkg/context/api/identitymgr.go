@@ -8,8 +8,6 @@ package api
 
 import (
 	"errors"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
 
 var (
@@ -17,17 +15,8 @@ var (
 	ErrCARegistrarNotFound = errors.New("CA registrar not found")
 )
 
-// SigningIdentity is the identity object that encapsulates the user's private key for signing
-// and the user's enrollment certificate (identity)
-type SigningIdentity struct {
-	MspID          string
-	EnrollmentCert []byte
-	PrivateKey     core.Key
-}
-
 // IdentityManager provides management of identities in a Fabric network
 type IdentityManager interface {
-	GetSigningIdentity(name string) (*SigningIdentity, error)
 	GetUser(name string) (User, error)
 	Enroll(enrollmentID string, enrollmentSecret string) error
 	Reenroll(user User) error

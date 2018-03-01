@@ -120,7 +120,7 @@ func (im *IdentityManager) CAName() string {
 // Enroll a registered user in order to receive a signed X509 certificate.
 // A new key pair is generated for the user. The private key and the
 // enrollment certificate issued by the CA are stored in SDK stores.
-// They can be retrieved by calling IdentityManager.GetSigningIdentity().
+// They can be retrieved by calling IdentityManager.GetUser().
 //
 // enrollmentID The registered ID to use for enrollment
 // enrollmentSecret The secret associated with the enrollment ID

@@ -22,15 +22,6 @@ func NewMockIdentityManager(orgName string, cryptoProvider core.CryptoSuite, con
 	return &mcm, nil
 }
 
-// GetSigningIdentity will return an identity that can be used to cryptographically sign an object
-func (mgr *MockIdentityManager) GetSigningIdentity(userName string) (*api.SigningIdentity, error) {
-
-	si := api.SigningIdentity{
-		MspID: "Org1MSP",
-	}
-	return &si, nil
-}
-
 // GetUser will return a user for a given user name
 func (mgr *MockIdentityManager) GetUser(userName string) (api.User, error) {
 	return nil, nil

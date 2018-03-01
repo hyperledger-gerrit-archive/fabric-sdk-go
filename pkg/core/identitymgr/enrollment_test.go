@@ -50,7 +50,7 @@ m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
 	enrollmentTestUserStore api.UserStore
 )
 
-func TestGetSigningIdentityWithEnrollment(t *testing.T) {
+func TestGetUserWithEnrollment(t *testing.T) {
 	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -85,8 +85,8 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
 
-	if err := checkSigningIdentity(identityMgr, "User1"); err != nil {
-		t.Fatalf("checkSigningIdentity failed: %s", err)
+	if err := checkUser(identityMgr, "User1"); err != nil {
+		t.Fatalf("checkUser failed: %s", err)
 	}
 
 	// Refers to the same location used by the IdentityManager
@@ -95,8 +95,8 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	if err := checkSigningIdentity(identityMgr, userToEnroll); err == nil {
-		t.Fatalf("checkSigningIdentity should fail for user who hasn't been enrolled")
+	if err := checkUser(identityMgr, userToEnroll); err == nil {
+		t.Fatalf("checkUser should fail for user who hasn't been enrolled")
 	}
 
 	// Enroll the user
@@ -111,8 +111,8 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 		t.Fatalf("fabricCAClient Enroll failed: %v", err)
 	}
 
-	if err := checkSigningIdentity(identityMgr, userToEnroll); err != nil {
-		t.Fatalf("checkSigningIdentity shouldn't fail for user who hasn been just enrolled: %s", err)
+	if err := checkUser(identityMgr, userToEnroll); err != nil {
+		t.Fatalf("checkUser shouldn't fail for user who hasn been just enrolled: %s", err)
 	}
 }
 

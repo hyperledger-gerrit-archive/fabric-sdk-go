@@ -48,7 +48,7 @@ func (im *IdentityManager) getRegistrarSI(enrollID string, enrollSecret string) 
 		return nil, contextApi.ErrCARegistrarNotFound
 	}
 
-	si, err := im.GetSigningIdentity(enrollID)
+	u, err := im.GetUser(enrollID)
 	if err != nil {
 		if err != contextApi.ErrUserNotFound {
 			return nil, err
@@ -62,12 +62,12 @@ func (im *IdentityManager) getRegistrarSI(enrollID string, enrollSecret string) 
 		if err != nil {
 			return nil, err
 		}
-		si, err = im.GetSigningIdentity(enrollID)
+		u, err = im.GetUser(enrollID)
 		if err != nil {
 			return nil, err
 		}
 	}
-	registrar, err := im.caClient.NewIdentity(si.PrivateKey, si.EnrollmentCert)
+	registrar, err := im.caClient.NewIdentity(u.PrivateKey(), u.EnrollmentCertificate())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create CA signing identity")
 	}

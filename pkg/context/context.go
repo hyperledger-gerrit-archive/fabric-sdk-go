@@ -12,8 +12,6 @@ import (
 )
 
 // IdentityContext supplies the serialized identity and key reference.
-//
-// TODO - refactor SigningIdentity and this interface.
 type IdentityContext interface {
 	MspID() string
 	Identity() ([]byte, error)
