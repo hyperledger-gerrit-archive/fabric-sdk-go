@@ -438,8 +438,22 @@ func (c *Config) CAClientCertPem(org string) (string, error) {
 	return ca.TLSCACerts.Client.Cert.Pem, nil
 }
 
-// TimeoutOrDefault reads connection timeouts for the given connection type
+// TimeoutOrDefault reads connection timeouts for the given connection type, if not found, defaultTimeout is returned
 func (c *Config) TimeoutOrDefault(conn core.TimeoutType) time.Duration {
+	timeout := c.getTimeouts(conn)
+	if timeout == 0 {
+		timeout = defaultTimeout
+	}
+
+	return timeout
+}
+
+// Timeout reads connection timeouts for the given connection type, the default is 0 if type is not found in config
+func (c *Config) Timeout(conn core.TimeoutType) time.Duration {
+	return c.getTimeouts(conn)
+}
+
+func (c *Config) getTimeouts(conn core.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch conn {
 	case core.Endorser:
@@ -459,9 +473,6 @@ func (c *Config) TimeoutOrDefault(conn core.TimeoutType) time.Duration {
 	case core.OrdererResponse:
 		timeout = c.configViper.GetDuration("client.orderer.timeout.response")
 
-	}
-	if timeout == 0 {
-		timeout = defaultTimeout
 	}
 
 	return timeout
