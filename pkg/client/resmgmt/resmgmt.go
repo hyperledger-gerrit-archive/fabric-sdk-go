@@ -13,6 +13,7 @@ import (
 
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -411,6 +412,27 @@ func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...R
 // Returns the details of all chaincodes installed on a peer.
 func (rc *Client) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
 	return rc.resource.QueryInstalledChaincodes(proposalProcessor)
+}
+
+// QueryInstantiatedChaincodes queries the instantiated chaincodes on a peer for specific channel.
+func (rc *Client) QueryInstantiatedChaincodes(channelID string, proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
+
+	ctx := &fabContext{
+		ProviderContext: rc.provider,
+		IdentityContext: rc.identity,
+	}
+
+	l, err := channel.NewLedger(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	responses, err := l.QueryInstantiatedChaincodes([]fab.ProposalProcessor{proposalProcessor})
+	if err != nil {
+		return nil, err
+	}
+
+	return responses[0], nil
 }
 
 // QueryChannels queries the names of all the channels that a peer has joined.
