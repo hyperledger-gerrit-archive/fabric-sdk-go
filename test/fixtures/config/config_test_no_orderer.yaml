@@ -196,8 +196,8 @@ peers:
       ssl-target-name-override: peer0.org1.example.com
       grpc.http2.keepalive_time: 15
       fail-fast: false
-      #will be taken into consideration if address has no protocol defined and secured connection fails
-      allow-insecure: false
+      #will be taken into consideration if address has no protocol defined, if true then grpcs or else grpc
+      allow-insecure: true
 
     tlsCACerts:
       # Certificate location absolute path

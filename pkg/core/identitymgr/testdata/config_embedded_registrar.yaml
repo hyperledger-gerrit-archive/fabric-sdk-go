@@ -243,7 +243,7 @@ orderers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      #will be taken into consideration if address has no protocol defined and secured connection fails
+      #will be taken into consideration if address has no protocol defined, if true then grpcs or else grpc
       allow-insecure: false
 
     tlsCACerts:
@@ -273,7 +273,7 @@ peers:
       keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
-      #will be taken into consideration if address has no protocol defined and secured connection fails
+      #will be taken into consideration if address has no protocol defined, if true then grpcs or else grpc
       allow-insecure: false
 
     tlsCACerts:
@@ -306,7 +306,7 @@ certificateAuthorities:
     # needed to enroll and invoke new users.
     registrar:
       enrollId: EmbeddedRegistrar
-      # Absense of the enrollSecret requires that the registrar is embedded or already enrolled
+      # Absence of the enrollSecret requires that the registrar is embedded or already enrolled
       #enrollSecret: EmbeddedRegistrarPw
     # [Optional] The optional name of the CA.
     caName: ca.org1.example.com
