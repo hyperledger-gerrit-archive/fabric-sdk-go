@@ -27,7 +27,7 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 const (
-	defaultHandlerTimeout = time.Second * 10
+	defaultHandlerTimeout = time.Second * 180
 )
 
 // Client enables access to a channel on a Fabric network.
@@ -173,7 +173,12 @@ func (cc *Client) prepareHandlerContexts(request Request, o opts) (*invoke.Reque
 	}
 
 	if requestContext.Opts.Timeout == 0 {
-		requestContext.Opts.Timeout = defaultHandlerTimeout
+		to := cc.context.Config().Timeout(core.Execute)
+		if to == 0 {
+			requestContext.Opts.Timeout = defaultHandlerTimeout
+		} else {
+			requestContext.Opts.Timeout = to
+		}
 	}
 
 	return requestContext, clientContext, nil
