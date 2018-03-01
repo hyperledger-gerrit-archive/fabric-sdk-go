@@ -172,7 +172,7 @@ func (c *Client) LoadUserFromStateStore(mspID string, name string) (contextApi.U
 	if c.cryptoSuite == nil {
 		return nil, errors.New("cryptoSuite required")
 	}
-	user, err := c.stateStore.Load(contextApi.UserKey{MspID: mspID, Name: name})
+	user, err := c.stateStore.Load(contextApi.UserIdentifier{MspID: mspID, Name: name})
 	if err != nil {
 		return nil, err
 	}
