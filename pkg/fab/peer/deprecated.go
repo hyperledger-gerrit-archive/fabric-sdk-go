@@ -67,7 +67,7 @@ func NewPeerFromConfig(peerCfg *core.NetworkPeer, config core.Config) (*Peer, er
 
 	allowInsecure := false
 	if boolVal, ok := peerCfg.GRPCOptions["allow-insecure"].(bool); ok {
-		allowInsecure = !urlutil.HasProtocol(peerCfg.URL) && boolVal
+		allowInsecure = boolVal
 	}
 
 	var certificate *x509.Certificate
