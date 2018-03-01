@@ -509,7 +509,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	timeout := rc.provider.Config().TimeoutOrDefault(config.Execute)
+	timeout := rc.provider.Config().TimeoutOrDefault(config.Commit)
 	if opts.Timeout != 0 {
 		timeout = opts.Timeout
 	}
