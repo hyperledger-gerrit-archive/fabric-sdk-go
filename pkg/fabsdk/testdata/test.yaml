@@ -23,7 +23,8 @@ client:
     timeout:
       connection: 3s
       queryResponse: 20s
-      executeTxResponse: 30s
+      commit: 30s
+      transaction: 90s
       discovery:
         greylistExpiry: 5s
   eventService:
