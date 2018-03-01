@@ -13,7 +13,7 @@ import (
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
+	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	delivermocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
@@ -215,7 +215,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expectedOutcome clientmocks.Outcome, connAttemptResult clientmocks.ConnectAttemptResults) {
 	cp := clientmocks.NewProviderFactory()
 
-	connectch := make(chan *fab.ConnectionEvent)
+	connectch := make(chan *clientdisp.ConnectionEvent)
 	ledger := servicemocks.NewMockLedger(delivermocks.BlockEventFactory)
 
 	eventClient, err := New(
@@ -251,7 +251,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 	go listenConnection(connectch, outcomech)
 
 	// Test automatic reconnect handling
-	cp.Connection().ProduceEvent(dispatcher.NewDisconnectedEvent(errors.New("testing reconnect handling")))
+	cp.Connection().ProduceEvent(clientdisp.NewDisconnectedEvent(errors.New("testing reconnect handling")))
 
 	var outcome clientmocks.Outcome
 
@@ -349,7 +349,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 	time.Sleep(1 * time.Second)
 
 	// Simulate a connection error
-	cp.Connection().ProduceEvent(dispatcher.NewDisconnectedEvent(errors.New("testing reconnect handling")))
+	cp.Connection().ProduceEvent(clientdisp.NewDisconnectedEvent(errors.New("testing reconnect handling")))
 
 	time.Sleep(1 * time.Second)
 
@@ -382,7 +382,7 @@ func testReconnectRegistration(t *testing.T, connectResults clientmocks.ConnectA
 	}
 }
 
-func listenConnection(eventch chan *fab.ConnectionEvent, outcome chan clientmocks.Outcome) {
+func listenConnection(eventch chan *clientdisp.ConnectionEvent, outcome chan clientmocks.Outcome) {
 	state := initialState
 
 	for {

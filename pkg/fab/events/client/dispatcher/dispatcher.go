@@ -170,7 +170,7 @@ func (ed *Dispatcher) HandleConnectedEvent(e esdispatcher.Event) {
 
 	if ed.connectionRegistration != nil && ed.connectionRegistration.Eventch != nil {
 		select {
-		case ed.connectionRegistration.Eventch <- &fab.ConnectionEvent{Connected: true}:
+		case ed.connectionRegistration.Eventch <- NewConnectionEvent(true, nil):
 		default:
 			logger.Warnf("Unable to send to connection event channel.")
 		}
@@ -191,7 +191,7 @@ func (ed *Dispatcher) HandleDisconnectedEvent(e esdispatcher.Event) {
 	if ed.connectionRegistration != nil {
 		logger.Debugf("Disconnected from event server: %s", evt.Err)
 		select {
-		case ed.connectionRegistration.Eventch <- &fab.ConnectionEvent{Connected: false, Err: evt.Err}:
+		case ed.connectionRegistration.Eventch <- NewConnectionEvent(false, evt.Err):
 		default:
 			logger.Warnf("Unable to send to connection event channel.")
 		}

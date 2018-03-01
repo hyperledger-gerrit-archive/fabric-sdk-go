@@ -116,7 +116,7 @@ func TestUnauthorized(t *testing.T) {
 	// Register connection event
 	errch := make(chan error)
 	regch := make(chan fab.Registration)
-	conneventch := make(chan *fab.ConnectionEvent, 5)
+	conneventch := make(chan *clientdisp.ConnectionEvent, 5)
 	dispatcherEventch <- clientdisp.NewRegisterConnectionEvent(conneventch, regch, errch)
 
 	select {

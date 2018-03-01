@@ -116,10 +116,6 @@ func TestCallsOnClosedClient(t *testing.T) {
 		t.Fatalf("expecting error connecting to closed channel event client but got none")
 	}
 
-	if _, _, err := eventClient.RegisterConnectionEvent(); err == nil {
-		t.Fatalf("expecting error registering for connection events on closed channel event client but got none")
-	}
-
 	if _, _, err := eventClient.RegisterFilteredBlockEvent(); err == nil {
 		t.Fatalf("expecting error registering for block events on closed channel event client but got none")
 	}
@@ -928,7 +924,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome mockconn
 func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expectedOutcome mockconn.Outcome, connAttemptResult mockconn.ConnectAttemptResults) {
 	cp := mockconn.NewProviderFactory()
 
-	connectch := make(chan *fab.ConnectionEvent)
+	connectch := make(chan *dispatcher.ConnectionEvent)
 
 	ledger := servicemocks.NewMockLedger(servicemocks.BlockEventFactory)
 
@@ -1080,7 +1076,7 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents mockconn.NumBlo
 	}
 }
 
-func listenConnection(eventch chan *fab.ConnectionEvent, outcome chan mockconn.Outcome) {
+func listenConnection(eventch chan *dispatcher.ConnectionEvent, outcome chan mockconn.Outcome) {
 	state := InitialState
 
 	for {

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	evclient "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
+	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
 	ehclient "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient"
 
@@ -122,7 +123,7 @@ func TestDeliverClientForbidden(t *testing.T) {
 		},
 	}
 
-	conneventch := make(chan *fab.ConnectionEvent)
+	conneventch := make(chan *clientdisp.ConnectionEvent)
 	var client fab.EventClient
 	client, err = deliverclient.New(ctx, channelID, discoveryService,
 		deliverclient.WithBlockEvents(),

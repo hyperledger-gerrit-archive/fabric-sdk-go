@@ -168,7 +168,7 @@ func TestConnectionEvent(t *testing.T) {
 	expectedDisconnectErr := "simulated disconnect error"
 
 	// Register connection event
-	connch := make(chan *fab.ConnectionEvent, 10)
+	connch := make(chan *ConnectionEvent, 10)
 	errch := make(chan error)
 	state := ""
 	go func() {
