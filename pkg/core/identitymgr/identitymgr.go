@@ -16,7 +16,6 @@ import (
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/persistence"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
@@ -87,7 +86,7 @@ func New(orgName string, cryptoSuite core.CryptoSuite, config config.Config) (*I
 	// In the future, shared UserStore from the SDK context will be used
 	var userStore contextApi.UserStore
 	if config.CredentialStorePath() != "" {
-		userStore, err = identity.NewCertFileUserStore(config.CredentialStorePath(), cryptoSuite)
+		userStore, err = persistence.NewCertFileUserStore(config.CredentialStorePath())
 		if err != nil {
 			return nil, errors.Wrapf(err, "creating a user store failed")
 		}
@@ -146,10 +145,12 @@ func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) 
 	if err != nil {
 		return errors.Wrap(err, "enroll failed")
 	}
-	user := identity.NewUser(im.orgMspID, enrollmentID)
-	user.SetEnrollmentCertificate(caresp.Identity.GetECert().Cert())
-	user.SetPrivateKey(caresp.Identity.GetECert().Key())
-	err = im.userStore.Store(user)
+	userData := contextApi.UserData{
+		MspID: im.orgMspID,
+		Name:  enrollmentID,
+		EnrollmentCertificate: caresp.Identity.GetECert().Cert(),
+	}
+	err = im.userStore.Store(userData)
 	if err != nil {
 		return errors.Wrap(err, "enroll failed")
 	}
@@ -182,10 +183,12 @@ func (im *IdentityManager) Reenroll(user contextApi.User) error {
 	if err != nil {
 		return errors.Wrap(err, "reenroll failed")
 	}
-	newUser := identity.NewUser(im.orgMspID, user.Name())
-	newUser.SetEnrollmentCertificate(caresp.Identity.GetECert().Cert())
-	newUser.SetPrivateKey(caresp.Identity.GetECert().Key())
-	err = im.userStore.Store(newUser)
+	userData := contextApi.UserData{
+		MspID: im.orgMspID,
+		Name:  user.Name(),
+		EnrollmentCertificate: caresp.Identity.GetECert().Cert(),
+	}
+	err = im.userStore.Store(userData)
 	if err != nil {
 		return errors.Wrap(err, "reenroll failed")
 	}
