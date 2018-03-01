@@ -14,17 +14,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/endpoint"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events"
+	evclient "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/endpoint"
 	ehclient "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient"
-	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/pkg/errors"
+
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
-func TestEventHubClient(t *testing.T) {
+func TestEventHubClientBlockEvents(t *testing.T) {
 	chainCodeID := integration.GenerateRandomID()
 	testSetup := initializeTests(t, chainCodeID)
 
@@ -42,30 +42,41 @@ func TestEventHubClient(t *testing.T) {
 		IdentityContext: testSetup.Identity,
 	}
 
-	t.Run("Filtered Block Events", func(t *testing.T) {
-		client, err := ehclient.New(ctx, channelID, discoveryService)
-		if err != nil {
-			t.Fatalf("Error creating event hub client: %s", err)
-		}
-		defer client.Close()
-		testEventClient(t, testSetup, chainCodeID, false, client)
-	})
+	client, err := ehclient.New(ctx, channelID, discoveryService,
+		ehclient.WithBlockEvents(),
+		evclient.WithResponseTimeout(5*time.Second),
+		evclient.WithMaxReconnectAttempts(1),
+	)
+	if err != nil {
+		t.Fatalf("Error creating event hub client: %s", err)
+	}
+	if err := client.Connect(); err != nil {
+		t.Fatalf("Error connecting event hub client: %s", err)
+	}
+	defer client.Close()
 
-	t.Run("Block Events", func(t *testing.T) {
-		client, err := ehclient.New(ctx, channelID, discoveryService, ehclient.WithBlockEvents())
-		if err != nil {
-			t.Fatalf("Error creating event hub client: %s", err)
-		}
-		defer client.Close()
-		testEventClient(t, testSetup, chainCodeID, true, client)
-	})
+	testEventClient(t, testSetup, chainCodeID, true, client)
 }
 
 func testEventClient(t *testing.T, testSetup integration.BaseSetupImpl, chainCodeID string, blockEvents bool, client fab.EventClient) {
-	err := client.Connect()
+	// Invoke the chaincode before registering for events to ensure that the chaincode has been instantiated;
+	// otherwise we may receive a block/filtered block event from the instantiate (and our test will fail due to too many events)
+	tpResponses, prop, err := integration.CreateAndSendTransactionProposal(
+		testSetup.Transactor,
+		chainCodeID,
+		"invoke",
+		[][]byte{
+			[]byte("invoke"),
+			[]byte("SEVERE"),
+		},
+		testSetup.Targets,
+		nil,
+	)
 	if err != nil {
-		t.Fatalf("Error connecting event client: %s", err)
+		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
 	}
+
+	txID := string(prop.TxnID)
 
 	var wg sync.WaitGroup
 	var numExpected uint32
@@ -98,22 +109,7 @@ func testEventClient(t *testing.T, testSetup integration.BaseSetupImpl, chainCod
 	numExpected++
 	wg.Add(1)
 
-	tpResponses, prop, err := integration.CreateAndSendTransactionProposal(
-		testSetup.Transactor,
-		chainCodeID,
-		"invoke",
-		[][]byte{
-			[]byte("invoke"),
-			[]byte("SEVERE"),
-		},
-		testSetup.Targets,
-		nil,
-	)
-	if err != nil {
-		t.Fatalf("CreateAndSendTransactionProposal return error: %v", err)
-	}
-
-	txReg, txstatusch, err := client.RegisterTxStatusEvent(string(prop.TxnID))
+	txReg, txstatusch, err := client.RegisterTxStatusEvent(txID)
 	if err != nil {
 		t.Fatalf("Error registering for Tx Status event: %s", err)
 	}
@@ -153,12 +149,11 @@ func testEventClient(t *testing.T, testSetup integration.BaseSetupImpl, chainCod
 				t.Fatalf("Expecting one transaction in filtered block but got none")
 			}
 			filteredTx := event.FilteredBlock.FilteredTx[0]
-			if filteredTx.Txid != string(prop.TxnID) {
-				t.Fatalf("Expecting filtered transaction to contain TxID [%s] but got TxID [%s]", prop.TxnID, filteredTx.Txid)
+			if filteredTx.Txid != txID {
+				t.Fatalf("Expecting filtered transaction to contain TxID [%s] but got TxID [%s]", txID, filteredTx.Txid)
 			}
 			atomic.AddUint32(&numReceived, 1)
 		case <-time.After(5 * time.Second):
-			return
 		}
 	}()
 
@@ -187,8 +182,8 @@ func testEventClient(t *testing.T, testSetup integration.BaseSetupImpl, chainCod
 				t.Fatalf("unexpected closed channel while waiting for Tx Status event")
 			}
 			t.Logf("Received Tx Status event: %#v", txStatus)
-			if txStatus.TxID != string(prop.TxnID) {
-				t.Fatalf("Expecting event for TxID [%s] but got event for TxID [%s]", prop.TxnID, txStatus.TxID)
+			if txStatus.TxID != txID {
+				t.Fatalf("Expecting event for TxID [%s] but got event for TxID [%s]", txID, txStatus.TxID)
 			}
 			atomic.AddUint32(&numReceived, 1)
 		case <-time.After(5 * time.Second):
@@ -207,7 +202,6 @@ func testEventClient(t *testing.T, testSetup integration.BaseSetupImpl, chainCod
 	if numReceived != numExpected {
 		t.Fatalf("expecting %d events but received %d", numExpected, numReceived)
 	}
-
 }
 
 type eventHubDiscoveryService struct {
