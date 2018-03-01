@@ -68,12 +68,14 @@ const (
 	EventReg
 	// Query timeout
 	Query
-	// Execute timeout
-	Execute
+	// Commit timeout
+	Commit
 	// OrdererConnection orderer connection timeout
 	OrdererConnection
 	// OrdererResponse orderer response timeout
 	OrdererResponse
 	// DiscoveryGreylistExpiry discovery Greylist expiration period
 	DiscoveryGreylistExpiry
+	// Transaction request timeout
+	Transaction
 )

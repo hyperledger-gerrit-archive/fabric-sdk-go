@@ -27,7 +27,7 @@ import (
 var logger = logging.NewLogger("fabric_sdk_go")
 
 const (
-	defaultHandlerTimeout = time.Second * 10
+	defaultHandlerTimeout = time.Second * 180
 )
 
 // Client enables access to a channel on a Fabric network.
@@ -92,7 +92,7 @@ func (cc *Client) Query(request Request, options ...Option) (Response, error) {
 
 // Execute prepares and executes transaction using request and optional options provided
 func (cc *Client) Execute(request Request, options ...Option) (Response, error) {
-	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, cc.addDefaultTimeout(core.Execute, options...)...)
+	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, cc.addDefaultTimeout(core.Commit, options...)...)
 }
 
 //InvokeHandler invokes handler using request and options provided
@@ -173,7 +173,12 @@ func (cc *Client) prepareHandlerContexts(request Request, o opts) (*invoke.Reque
 	}
 
 	if requestContext.Opts.Timeout == 0 {
-		requestContext.Opts.Timeout = defaultHandlerTimeout
+		to := cc.context.Config().TimeoutOrDefault(core.Transaction)
+		if to == 0 {
+			requestContext.Opts.Timeout = defaultHandlerTimeout
+		} else {
+			requestContext.Opts.Timeout = to
+		}
 	}
 
 	return requestContext, clientContext, nil
