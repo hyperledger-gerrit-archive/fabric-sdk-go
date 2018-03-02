@@ -32,7 +32,7 @@ var (
 // have access to the Peer identity’s private key.
 type User interface {
 	MspID() string
-	Identity() ([]byte, error)
+	SerializedIdentity() ([]byte, error)
 	PrivateKey() core.Key
 	Name() string
 	EnrollmentCertificate() []byte

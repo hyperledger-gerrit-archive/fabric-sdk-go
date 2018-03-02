@@ -36,8 +36,8 @@ const (
 )
 
 type context interface {
-	contextApi.ProviderContext
-	contextApi.IdentityContext
+	contextApi.Provider
+	contextApi.Identity
 }
 
 // New create a transaction with proposal response, following the endorsement policy.

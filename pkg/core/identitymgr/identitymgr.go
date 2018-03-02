@@ -33,8 +33,8 @@ type IdentityManager struct {
 	config          core.Config
 	cryptoSuite     core.CryptoSuite
 	embeddedUsers   map[string]core.TLSKeyPair
-	mspPrivKeyStore contextApi.KVStore
-	mspCertStore    contextApi.KVStore
+	mspPrivKeyStore core.KVStore
+	mspCertStore    core.KVStore
 	userStore       contextApi.UserStore
 
 	// CA Client state
@@ -64,8 +64,8 @@ func New(orgName string, cryptoSuite core.CryptoSuite, config config.Config) (*I
 		return nil, errors.New("Either a cryptopath or an embedded list of users is required")
 	}
 
-	var mspPrivKeyStore contextApi.KVStore
-	var mspCertStore contextApi.KVStore
+	var mspPrivKeyStore core.KVStore
+	var mspCertStore core.KVStore
 
 	orgCryptoPathTemplate := orgConfig.CryptoPath
 	if orgCryptoPathTemplate != "" {

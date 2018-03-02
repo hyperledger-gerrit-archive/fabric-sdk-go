@@ -25,16 +25,16 @@ import (
 
 // FabricProvider represents the default implementation of Fabric objects.
 type FabricProvider struct {
-	providerContext context.ProviderContext
+	providerContext context.Provider
 }
 
 type fabContext struct {
-	context.ProviderContext
-	context.IdentityContext
+	context.Provider
+	context.Identity
 }
 
 // New creates a FabricProvider enabling access to core Fabric objects and functionality.
-func New(ctx context.ProviderContext) *FabricProvider {
+func New(ctx context.Provider) *FabricProvider {
 	f := FabricProvider{
 		providerContext: ctx,
 	}
@@ -42,10 +42,10 @@ func New(ctx context.ProviderContext) *FabricProvider {
 }
 
 // CreateResourceClient returns a new client initialized for the current instance of the SDK.
-func (f *FabricProvider) CreateResourceClient(ic context.IdentityContext) (api.Resource, error) {
+func (f *FabricProvider) CreateResourceClient(ic fab.IdentityContext) (api.Resource, error) {
 	ctx := &fabContext{
-		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Provider: f.providerContext,
+		Identity: ic,
 	}
 	client := clientImpl.New(ctx)
 
@@ -53,10 +53,10 @@ func (f *FabricProvider) CreateResourceClient(ic context.IdentityContext) (api.R
 }
 
 // CreateChannelLedger returns a new client initialized for the current instance of the SDK.
-func (f *FabricProvider) CreateChannelLedger(ic context.IdentityContext, channelName string) (fab.ChannelLedger, error) {
+func (f *FabricProvider) CreateChannelLedger(ic fab.IdentityContext, channelName string) (fab.ChannelLedger, error) {
 	ctx := &fabContext{
-		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Provider: f.providerContext,
+		Identity: ic,
 	}
 	ledger, err := channelImpl.NewLedger(ctx, channelName)
 	if err != nil {
@@ -67,7 +67,7 @@ func (f *FabricProvider) CreateChannelLedger(ic context.IdentityContext, channel
 }
 
 // CreateEventHub initilizes the event hub.
-func (f *FabricProvider) CreateEventHub(ic context.IdentityContext, channelID string) (fab.EventHub, error) {
+func (f *FabricProvider) CreateEventHub(ic fab.IdentityContext, channelID string) (fab.EventHub, error) {
 	peerConfig, err := f.providerContext.Config().ChannelPeers(channelID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "read configuration for channel peers failed")
@@ -87,18 +87,18 @@ func (f *FabricProvider) CreateEventHub(ic context.IdentityContext, channelID st
 
 	// Event source found, create event hub
 	eventCtx := events.Context{
-		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Provider: f.providerContext,
+		Identity: ic,
 	}
 	return events.FromConfig(eventCtx, &eventSource.PeerConfig)
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *FabricProvider) CreateChannelConfig(ic context.IdentityContext, channelID string) (fab.ChannelConfig, error) {
+func (f *FabricProvider) CreateChannelConfig(ic fab.IdentityContext, channelID string) (fab.ChannelConfig, error) {
 
 	ctx := chconfig.Context{
-		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Provider: f.providerContext,
+		Identity: ic,
 	}
 
 	return chconfig.New(ctx, channelID)
@@ -106,15 +106,15 @@ func (f *FabricProvider) CreateChannelConfig(ic context.IdentityContext, channel
 
 // CreateChannelMembership returns a channel member identifier
 func (f *FabricProvider) CreateChannelMembership(cfg fab.ChannelCfg) (fab.ChannelMembership, error) {
-	return membership.New(membership.Context{ProviderContext: f.providerContext}, cfg)
+	return membership.New(membership.Context{Provider: f.providerContext}, cfg)
 }
 
 // CreateChannelTransactor initializes the transactor
-func (f *FabricProvider) CreateChannelTransactor(ic context.IdentityContext, cfg fab.ChannelCfg) (fab.Transactor, error) {
+func (f *FabricProvider) CreateChannelTransactor(ic fab.IdentityContext, cfg fab.ChannelCfg) (fab.Transactor, error) {
 
 	ctx := chconfig.Context{
-		ProviderContext: f.providerContext,
-		IdentityContext: ic,
+		Provider: f.providerContext,
+		Identity: ic,
 	}
 
 	return channelImpl.NewTransactor(ctx, cfg)
@@ -138,9 +138,9 @@ func (f *FabricProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Pe
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.
 func (f *FabricProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error) {
-	orderer, err := orderer.New(f.providerContext.Config(), orderer.FromOrdererConfig(cfg))
+	newOrderer, err := orderer.New(f.providerContext.Config(), orderer.FromOrdererConfig(cfg))
 	if err != nil {
 		return nil, errors.WithMessage(err, "creating orderer failed")
 	}
-	return orderer, nil
+	return newOrderer, nil
 }

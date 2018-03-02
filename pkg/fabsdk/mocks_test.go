@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
@@ -24,11 +25,11 @@ import (
 )
 
 type mockCorePkg struct {
-	stateStore      contextApi.KVStore
+	stateStore      core.KVStore
 	cryptoSuite     core.CryptoSuite
-	signingManager  contextApi.SigningManager
+	signingManager  core.SigningManager
 	identityManager map[string]contextApi.IdentityManager
-	fabricProvider  sdkApi.FabricProvider
+	fabricProvider  fab.FabricProvider
 }
 
 func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
@@ -79,7 +80,7 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	return &c, nil
 }
 
-func (mc *mockCorePkg) CreateStateStoreProvider(config core.Config) (contextApi.KVStore, error) {
+func (mc *mockCorePkg) CreateStateStoreProvider(config core.Config) (core.KVStore, error) {
 	return mc.stateStore, nil
 }
 
@@ -87,7 +88,7 @@ func (mc *mockCorePkg) CreateCryptoSuiteProvider(config core.Config) (core.Crypt
 	return mc.cryptoSuite, nil
 }
 
-func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (contextApi.SigningManager, error) {
+func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error) {
 	return mc.signingManager, nil
 }
 
@@ -99,7 +100,7 @@ func (mc *mockCorePkg) CreateIdentityManager(orgName string, cryptoProvider core
 	return mgr, nil
 }
 
-func (mc *mockCorePkg) CreateFabricProvider(ctx context.ProviderContext) (sdkApi.FabricProvider, error) {
+func (mc *mockCorePkg) CreateFabricProvider(ctx context.Provider) (fab.FabricProvider, error) {
 	return mc.fabricProvider, nil
 }
 

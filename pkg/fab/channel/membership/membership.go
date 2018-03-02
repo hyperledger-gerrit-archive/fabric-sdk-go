@@ -28,7 +28,7 @@ type identityImpl struct {
 
 // Context holds the providers
 type Context struct {
-	context.ProviderContext
+	context.Provider
 }
 
 // New member identity

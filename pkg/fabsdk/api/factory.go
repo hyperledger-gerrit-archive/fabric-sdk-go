@@ -16,11 +16,11 @@ import (
 
 // CoreProviderFactory allows overriding of primitives and the fabric core object provider
 type CoreProviderFactory interface {
-	CreateStateStoreProvider(config core.Config) (api.KVStore, error)
+	CreateStateStoreProvider(config core.Config) (core.KVStore, error)
 	CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
-	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (api.SigningManager, error)
+	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error)
 	CreateIdentityManager(orgName string, cryptoProvider core.CryptoSuite, config core.Config) (api.IdentityManager, error)
-	CreateFabricProvider(context context.ProviderContext) (FabricProvider, error)
+	CreateFabricProvider(context context.Provider) (fab.FabricProvider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)
@@ -32,5 +32,5 @@ type ServiceProviderFactory interface {
 
 // SessionClientFactory allows overriding default clients and providers of a session
 type SessionClientFactory interface {
-	CreateChannelClient(sdk Providers, session context.SessionContext, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error)
+	CreateChannelClient(sdk context.BaseProviders, session context.Session, channelID string, targetFilter fab.TargetFilter) (*channel.Client, error)
 }

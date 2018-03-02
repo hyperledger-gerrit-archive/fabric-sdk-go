@@ -32,14 +32,14 @@ type Client struct {
 	channels        map[string]fab.Channel
 	cryptoSuite     core.CryptoSuite
 	stateStore      contextApi.UserStore
-	signingIdentity context.IdentityContext
+	signingIdentity context.Identity
 	config          config.Config
-	signingManager  contextApi.SigningManager
+	signingManager  core.SigningManager
 }
 
 type fabContext struct {
-	context.ProviderContext
-	context.IdentityContext
+	context.Provider
+	context.Identity
 }
 
 // NewClient returns a Client instance.
@@ -122,14 +122,14 @@ func (c *Client) CryptoSuite() core.CryptoSuite {
 }
 
 // SigningManager returns the signing manager
-func (c *Client) SigningManager() contextApi.SigningManager {
+func (c *Client) SigningManager() core.SigningManager {
 	return c.signingManager
 }
 
 // SetSigningManager is a convenience method to set signing manager
 //
 // Deprecated: see fabsdk package.
-func (c *Client) SetSigningManager(signingMgr contextApi.SigningManager) {
+func (c *Client) SetSigningManager(signingMgr core.SigningManager) {
 	c.signingManager = signingMgr
 }
 
@@ -199,7 +199,7 @@ func (c *Client) ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
  * @param {byte[]} config - The Configuration Update in byte form
  * @return {ConfigSignature} - The signature of the current user on the config bytes
  */
-func (c *Client) SignChannelConfig(config []byte, signer context.IdentityContext) (*common.ConfigSignature, error) {
+func (c *Client) SignChannelConfig(config []byte, signer context.Identity) (*common.ConfigSignature, error) {
 	ctx := fabContext{ProviderContext: c, IdentityContext: c.signingIdentity}
 	return resource.CreateConfigSignature(ctx, config)
 }
@@ -254,11 +254,11 @@ func (c *Client) InstallChaincode(req api.InstallChaincodeRequest) ([]*fab.Trans
 }
 
 // IdentityContext returns the current identity for signing.
-func (c *Client) IdentityContext() context.IdentityContext {
+func (c *Client) IdentityContext() context.Identity {
 	return c.signingIdentity
 }
 
 // SetIdentityContext sets the identity for signing
-func (c *Client) SetIdentityContext(user context.IdentityContext) {
+func (c *Client) SetIdentityContext(user context.Identity) {
 	c.signingIdentity = user
 }

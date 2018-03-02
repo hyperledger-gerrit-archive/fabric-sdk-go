@@ -77,3 +77,11 @@ const (
 	// DiscoveryGreylistExpiry discovery Greylist expiration period
 	DiscoveryGreylistExpiry
 )
+
+// Providers represents the SDK configured core providers context.
+type Providers interface {
+	CryptoSuite() CryptoSuite
+	StateStore() KVStore
+	Config() Config
+	SigningManager() SigningManager
+}

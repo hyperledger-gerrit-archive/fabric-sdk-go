@@ -429,7 +429,7 @@ func newPeerConfig(peerURL string) *core.PeerConfig {
 	}
 }
 
-func newMockContext() context.Context {
+func newMockContext() context.BaseContext {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("user1"))
 }
 
