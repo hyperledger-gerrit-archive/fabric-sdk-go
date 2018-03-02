@@ -12,7 +12,6 @@ import (
 	"hash"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -24,7 +23,7 @@ import (
 type MockProviderContext struct {
 	config         config.Config
 	cryptoSuite    core.CryptoSuite
-	signingManager api.SigningManager
+	signingManager core.SigningManager
 }
 
 // NewMockProviderContext creates a MockProviderContext consisting of defaults
@@ -38,7 +37,7 @@ func NewMockProviderContext() *MockProviderContext {
 }
 
 // NewMockProviderContextCustom creates a MockProviderContext consisting of the arguments
-func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer api.SigningManager) *MockProviderContext {
+func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer core.SigningManager) *MockProviderContext {
 	context := MockProviderContext{
 		config:         config,
 		signingManager: signer,
@@ -63,21 +62,21 @@ func (pc *MockProviderContext) CryptoSuite() core.CryptoSuite {
 }
 
 // SigningManager returns the mock signing manager.
-func (pc *MockProviderContext) SigningManager() api.SigningManager {
+func (pc *MockProviderContext) SigningManager() core.SigningManager {
 	return pc.signingManager
 }
 
 // MockContext holds core providers and identity to enable mocking.
 type MockContext struct {
 	*MockProviderContext
-	context.IdentityContext
+	context.Identity
 }
 
 // NewMockContext creates a MockContext consisting of defaults and an identity
-func NewMockContext(ic context.IdentityContext) *MockContext {
+func NewMockContext(ic context.Identity) *MockContext {
 	ctx := MockContext{
 		MockProviderContext: NewMockProviderContext(),
-		IdentityContext:     ic,
+		Identity:            ic,
 	}
 	return &ctx
 }
@@ -120,7 +119,7 @@ func NewMockTransactionHeader(channelID string) (fab.TransactionHeader, error) {
 		return nil, err
 	}
 
-	creator, err := user.Identity()
+	creator, err := user.SerializedIdentity()
 	if err != nil {
 		return nil, err
 	}

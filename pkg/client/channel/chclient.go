@@ -36,7 +36,7 @@ const (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the channel client for each channel. Channel client supports non-admin functions only.
 type Client struct {
-	context    context.ProviderContext
+	context    context.Provider
 	discovery  fab.DiscoveryService
 	selection  fab.SelectionService
 	membership fab.ChannelMembership
@@ -47,7 +47,7 @@ type Client struct {
 
 // Context holds the providers and services needed to create a Client.
 type Context struct {
-	context.ProviderContext
+	context.Provider
 	DiscoveryService fab.DiscoveryService
 	SelectionService fab.SelectionService
 	ChannelService   fab.ChannelService

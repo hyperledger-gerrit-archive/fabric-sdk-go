@@ -171,7 +171,7 @@ func (mgr *IdentityManager) getCertBytesFromCertStore(userName string) ([]byte, 
 		UserName: userName,
 	})
 	if err != nil {
-		if err == api.ErrNotFound {
+		if err == core.ErrKeyValueNotFound {
 			return nil, api.ErrUserNotFound
 		}
 		return nil, err
@@ -195,7 +195,7 @@ func (mgr *IdentityManager) getPrivateKeyFromCert(userName string, cert []byte) 
 	if err == nil {
 		return privKey, nil
 	}
-	if err != api.ErrNotFound {
+	if err != core.ErrKeyValueNotFound {
 		return nil, errors.WithMessage(err, "fetching private key from key store failed")
 	}
 	return mgr.cryptoSuite.GetKey(pubKey.SKI())
@@ -209,5 +209,5 @@ func (mgr *IdentityManager) getPrivateKeyFromKeyStore(userName string, ski []byt
 	if pemBytes != nil {
 		return fabricCaUtil.ImportBCCSPKeyFromPEMBytes(pemBytes, mgr.cryptoSuite, true)
 	}
-	return nil, api.ErrNotFound
+	return nil, core.ErrKeyValueNotFound
 }

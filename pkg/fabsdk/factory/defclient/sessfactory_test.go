@@ -20,10 +20,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/context/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
-	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/pkg/errors"
 )
@@ -70,10 +68,10 @@ func TestCreateChannelClientBadChannel(t *testing.T) {
 
 type mockProviders struct {
 	CryptoSuite       core.CryptoSuite
-	StateStore        contextApi.KVStore
+	StateStore        core.KVStore
 	Config            core.Config
-	SigningManager    contextApi.SigningManager
-	FabricProvider    api.FabricProvider
+	SigningManager    core.SigningManager
+	FabricProvider    fab.FabricProvider
 	DiscoveryProvider fab.DiscoveryProvider
 	SelectionProvider fab.SelectionProvider
 	ChannelProvider   fab.ChannelProvider
@@ -141,7 +139,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 }
 
 type mockSession struct {
-	context.IdentityContext
+	context.Identity
 	IsChError bool
 	IsEHError bool
 }
@@ -153,7 +151,7 @@ func newMockSession() *mockSession {
 func newMockSessionWithUser(username, mspID string) *mockSession {
 	ic := fabmocks.NewMockUserWithMSPID(username, mspID)
 	session := mockSession{
-		IdentityContext: ic,
+		Identity: ic,
 	}
 	return &session
 }

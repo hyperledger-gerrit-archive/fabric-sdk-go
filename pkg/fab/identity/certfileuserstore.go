@@ -58,7 +58,7 @@ func NewCertFileUserStore(path string, cryptoSuite core.CryptoSuite) (*CertFileU
 func (s *CertFileUserStore) Load(key contextApi.UserKey) (contextApi.User, error) {
 	cert, err := s.store.Load(storeKeyFromUserKey(key))
 	if err != nil {
-		if err == contextApi.ErrNotFound {
+		if err == core.ErrKeyValueNotFound {
 			return nil, contextApi.ErrUserNotFound
 		}
 		return nil, err

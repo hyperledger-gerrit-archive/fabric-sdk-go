@@ -35,8 +35,8 @@ const (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the ledger client for each channel. Ledger client supports specific queries only.
 type Client struct {
-	provider  context.ProviderContext
-	identity  context.IdentityContext
+	provider  context.Provider
+	identity  context.Identity
 	discovery fab.DiscoveryService
 	ledger    *channel.Ledger
 	filter    TargetFilter
@@ -45,15 +45,15 @@ type Client struct {
 
 // Context holds the providers and services needed to create a Client.
 type Context struct {
-	context.ProviderContext
-	context.IdentityContext
+	context.Provider
+	context.Identity
 	DiscoveryService fab.DiscoveryService
 	ChannelService   fab.ChannelService
 }
 
 type fabContext struct {
-	context.ProviderContext
-	context.IdentityContext
+	context.Provider
+	context.Identity
 }
 
 // MSPFilter is default filter
@@ -284,8 +284,8 @@ func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 	}
 
 	ctx := fabContext{
-		ProviderContext: c.provider,
-		IdentityContext: c.identity,
+		Provider: c.provider,
+		Identity: c.identity,
 	}
 
 	channelConfig, err := chconfig.New(ctx, c.chName, chconfig.WithPeers(targets), chconfig.WithMinResponses(opts.MinTargets))

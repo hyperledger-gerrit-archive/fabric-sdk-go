@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
 )
 
@@ -67,7 +68,7 @@ func (sdk *FabricSDK) CreateChannelClient(channelID string, userName string, opt
 }
 
 // NewPreEnrolledUser returns a new pre-enrolled user
-func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (context.IdentityContext, error) {
+func (sdk *FabricSDK) NewPreEnrolledUser(orgID string, userName string) (context.Identity, error) {
 	return sdk.newUser(orgID, userName)
 }
 
@@ -87,6 +88,6 @@ func (sdk *FabricSDK) newSessionFromIdentityName(orgID string, id string) (*sess
 // NewSystemClient returns a new client for the system (operations not on a channel)
 //
 // Deprecated: the system client is being replaced with the interfaces supplied by NewClient()
-func (sdk *FabricSDK) NewSystemClient(s context.SessionContext) (api.Resource, error) {
-	return sdk.fabricProvider.CreateResourceClient(s)
+func (sdk *FabricSDK) NewSystemClient(s context.Session) (api.Resource, error) {
+	return sdk.fabricProvider.(fabpvdr.FabricProvider).CreateResourceClient(s)
 }

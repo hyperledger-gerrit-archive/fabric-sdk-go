@@ -22,7 +22,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -84,7 +83,7 @@ type SaveChannelRequest struct {
 	// Path to channel configuration file
 	ChannelConfig string
 	// User that signs channel configuration
-	SigningIdentity context.IdentityContext
+	SigningIdentity context.Identity
 }
 
 //RequestOption func for each Opts argument
@@ -94,11 +93,11 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // Client enables managing resources in Fabric network.
 type Client struct {
-	provider          context.ProviderContext
-	identity          context.IdentityContext
+	provider          context.Provider
+	identity          context.Identity
 	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
 	channelProvider   fab.ChannelProvider
-	fabricProvider    sdkApi.FabricProvider
+	fabricProvider    fab.FabricProvider
 	discovery         fab.DiscoveryService // global discovery service (detects all peers on the network)
 	resource          api.Resource
 	filter            TargetFilter
@@ -116,16 +115,16 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 
 // Context holds the providers and services needed to create a ChannelClient.
 type Context struct {
-	context.ProviderContext
-	context.IdentityContext
+	context.Provider
+	context.Identity
 	DiscoveryProvider fab.DiscoveryProvider
 	ChannelProvider   fab.ChannelProvider
-	FabricProvider    sdkApi.FabricProvider
+	FabricProvider    fab.FabricProvider
 }
 
 type fabContext struct {
-	context.ProviderContext
-	context.IdentityContext
+	context.Provider
+	context.Identity
 }
 
 // ClientOption describes a functional parameter for the New constructor
@@ -467,8 +466,8 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 	// create a transaction proposal for chaincode deployment
 	deployProposal := chaincodeDeployRequest(req)
 	deployCtx := fabContext{
-		ProviderContext: rc.provider,
-		IdentityContext: rc.identity,
+		Provider: rc.provider,
+		Identity: rc.identity,
 	}
 
 	txid, err := txn.NewHeader(&deployCtx, channelID)
@@ -613,8 +612,8 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	}
 
 	sigCtx := Context{
-		IdentityContext: signer,
-		ProviderContext: rc.provider,
+		Identity: signer,
+		Provider: rc.provider,
 	}
 	configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
 	if err != nil {

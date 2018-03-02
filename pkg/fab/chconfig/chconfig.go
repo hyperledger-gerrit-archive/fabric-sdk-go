@@ -44,14 +44,14 @@ type Option func(opts *Opts) error
 
 // Context holds the providers and identity
 type Context struct {
-	context.ProviderContext
-	context.IdentityContext
+	context.Provider
+	context.Identity
 }
 
 // ChannelConfig implements query channel configuration
 type ChannelConfig struct {
 	channelID string
-	ctx       context.Context
+	ctx       context.BaseContext
 	opts      Opts
 }
 
@@ -96,7 +96,7 @@ func (cfg *ChannelCfg) Versions() *fab.Versions {
 }
 
 // New channel config implementation
-func New(ctx context.Context, channelID string, options ...Option) (*ChannelConfig, error) {
+func New(ctx context.BaseContext, channelID string, options ...Option) (*ChannelConfig, error) {
 	opts, err := prepareOpts(options...)
 	if err != nil {
 		return nil, err

@@ -9,6 +9,7 @@ package defcore
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
@@ -19,7 +20,6 @@ import (
 	"github.com/pkg/errors"
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/context/api"
-	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
@@ -34,7 +34,7 @@ func NewProviderFactory() *ProviderFactory {
 }
 
 // CreateStateStoreProvider creates a KeyValueStore using the SDK's default implementation
-func (f *ProviderFactory) CreateStateStoreProvider(config core.Config) (contextApi.KVStore, error) {
+func (f *ProviderFactory) CreateStateStoreProvider(config core.Config) (core.KVStore, error) {
 
 	clientCofig, err := config.Client()
 	if err != nil {
@@ -56,7 +56,7 @@ func (f *ProviderFactory) CreateCryptoSuiteProvider(config core.Config) (core.Cr
 }
 
 // CreateSigningManager returns a new default implementation of signing manager
-func (f *ProviderFactory) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (contextApi.SigningManager, error) {
+func (f *ProviderFactory) CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error) {
 	return signingMgr.New(cryptoProvider, config)
 }
 
@@ -66,7 +66,7 @@ func (f *ProviderFactory) CreateIdentityManager(org string, cryptoProvider core.
 }
 
 // CreateFabricProvider returns a new default implementation of fabric primitives
-func (f *ProviderFactory) CreateFabricProvider(context context.ProviderContext) (sdkApi.FabricProvider, error) {
+func (f *ProviderFactory) CreateFabricProvider(context context.Provider) (fab.FabricProvider, error) {
 	return fabpvdr.New(context), nil
 }
 

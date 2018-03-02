@@ -31,14 +31,14 @@ type FabricSDK struct {
 	opts options
 
 	config            core.Config
-	stateStore        contextApi.KVStore
+	stateStore        core.KVStore
 	cryptoSuite       core.CryptoSuite
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
-	signingManager    contextApi.SigningManager
+	signingManager    core.SigningManager
 	identityManager   map[string]contextApi.IdentityManager
-	fabricProvider    sdkApi.FabricProvider
-	channelProvider   *chpvdr.ChannelProvider
+	fabricProvider    fab.FabricProvider
+	channelProvider   fab.ChannelProvider
 }
 
 type options struct {
@@ -252,21 +252,27 @@ func (sdk *FabricSDK) Config() core.Config {
 	return sdk.config
 }
 
-func (sdk *FabricSDK) fabContext() *fabContext {
-	c := fabContext{
-		sdk: sdk,
+func (sdk *FabricSDK) fabContext() *context.FabContext {
+	return context.CreateFabContext(context.WithConfig(sdk.config),
+		context.WithCryptoSuite(sdk.cryptoSuite),
+		context.WithSigningManager(sdk.signingManager),
+		context.WithStateStore(sdk.stateStore),
+		context.WithDiscoveryProvider(sdk.discoveryProvider),
+		context.WithSelectionProvider(sdk.selectionProvider),
+		context.WithIdentityManager(sdk.identityManager),
+		context.WithFabricProvider(sdk.fabricProvider),
+		context.WithChannelProvider(sdk.channelProvider))
+}
+
+func (sdk *FabricSDK) context() *context.SDKContext {
+	fabContext := sdk.fabContext()
+	c := context.SDKContext{
+		*fabContext,
 	}
 	return &c
 }
 
-func (sdk *FabricSDK) context() *sdkContext {
-	c := sdkContext{
-		fabContext: fabContext{sdk},
-	}
-	return &c
-}
-
-func (sdk *FabricSDK) newUser(orgName string, userName string) (context.IdentityContext, error) {
+func (sdk *FabricSDK) newUser(orgName string, userName string) (context.Identity, error) {
 
 	identityMgr, ok := sdk.identityManager[strings.ToLower(orgName)]
 	if !ok {

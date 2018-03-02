@@ -28,22 +28,22 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // Resource is a client that provides access to fabric network resource management.
 type Resource struct {
-	clientContext context.Context
+	clientContext context.BaseContext
 }
 
 // New returns a Client instance with the SDK context.
-func New(ctx context.Context) *Resource {
+func New(ctx context.BaseContext) *Resource {
 	c := Resource{clientContext: ctx}
 	return &c
 }
 
 type fabCtx struct {
-	context.ProviderContext
-	context.IdentityContext
+	context.Provider
+	context.Identity
 }
 
 // SignChannelConfig signs a configuration.
-func (c *Resource) SignChannelConfig(config []byte, signer context.IdentityContext) (*common.ConfigSignature, error) {
+func (c *Resource) SignChannelConfig(config []byte, signer context.Identity) (*common.ConfigSignature, error) {
 	logger.Debug("SignChannelConfig - start")
 
 	if config == nil {
@@ -61,8 +61,8 @@ func (c *Resource) SignChannelConfig(config []byte, signer context.IdentityConte
 	}
 
 	ctx := fabCtx{
-		ProviderContext: c.clientContext,
-		IdentityContext: signingUser,
+		Provider: c.clientContext,
+		Identity: signingUser,
 	}
 
 	return CreateConfigSignature(ctx, config)
