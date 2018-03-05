@@ -95,7 +95,7 @@ var logger = logging.NewLogger("fabric_sdk_go")
 
 // Client enables managing resources in Fabric network.
 type Client struct {
-	provider          core.Providers
+	provider          context.Providers
 	identity          context.Identity
 	discoveryProvider fab.DiscoveryProvider // used to get per channel discovery service(s)
 	channelProvider   fab.ChannelProvider
@@ -117,15 +117,7 @@ func (f *MSPFilter) Accept(peer fab.Peer) bool {
 
 // Context holds the providers and services needed to create a ChannelClient.
 type Context struct {
-	core.Providers
-	context.Identity
-	DiscoveryProvider fab.DiscoveryProvider
-	ChannelProvider   fab.ChannelProvider
-	FabricProvider    fab.InfraProvider
-}
-
-type fabContext struct {
-	core.Providers
+	context.Providers
 	context.Identity
 }
 
@@ -148,9 +140,9 @@ func New(ctx Context, opts ...ClientOption) (*Client, error) {
 	resourceClient := &Client{
 		provider:          ctx,
 		identity:          ctx,
-		discoveryProvider: ctx.DiscoveryProvider,
-		channelProvider:   ctx.ChannelProvider,
-		fabricProvider:    ctx.FabricProvider,
+		discoveryProvider: ctx.DiscoveryProvider(),
+		channelProvider:   ctx.ChannelProvider(),
+		fabricProvider:    ctx.FabricProvider(),
 		resource:          resource,
 	}
 
@@ -162,7 +154,7 @@ func New(ctx Context, opts ...ClientOption) (*Client, error) {
 	}
 
 	// setup global discovery service
-	discovery, err := ctx.DiscoveryProvider.NewDiscoveryService("")
+	discovery, err := ctx.DiscoveryProvider().NewDiscoveryService("")
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create global discovery service")
 	}
@@ -423,7 +415,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		return nil, err
 	}
 
-	ctx := &fabContext{
+	ctx := &Context{
 		Providers: rc.provider,
 		Identity:  rc.identity,
 	}
@@ -515,7 +507,7 @@ func (rc *Client) sendCCProposal(ccProposalType chaincodeProposalType, channelID
 
 	// create a transaction proposal for chaincode deployment
 	deployProposal := chaincodeDeployRequest(req)
-	deployCtx := fabContext{
+	deployCtx := Context{
 		Providers: rc.provider,
 		Identity:  rc.identity,
 	}

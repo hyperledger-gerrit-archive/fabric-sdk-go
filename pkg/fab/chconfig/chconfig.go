@@ -9,7 +9,6 @@ package chconfig
 import (
 	"github.com/golang/protobuf/proto"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
@@ -45,7 +44,7 @@ type Option func(opts *Opts) error
 
 // Context holds the providers and identity
 type Context struct {
-	core.Providers
+	context.Providers
 	context.Identity
 }
 
