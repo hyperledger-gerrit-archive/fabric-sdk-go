@@ -11,6 +11,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/pkg/errors"
 )
 
 // Identity supplies the serialized identity and key reference.
@@ -27,7 +28,7 @@ type Session interface {
 
 // Client supplies the configuration and signing identity to client objects.
 type Client interface {
-	core.Providers
+	Providers
 	Identity
 }
 
@@ -37,8 +38,16 @@ type Providers interface {
 	fab.Providers
 }
 
-//FabContext implementation for Providers interface
-type FabContext struct {
+//ChannelClient supplies the configuration for channel context client
+type ChannelClient struct {
+	Context        core.Providers
+	Discovery      fab.DiscoveryService
+	Selection      fab.SelectionService
+	ChannelService fab.ChannelService
+}
+
+//sdkClient implementation for Providers interface
+type sdkClient struct {
 	config            core.Config
 	stateStore        core.KVStore
 	cryptoSuite       core.CryptoSuite
@@ -48,130 +57,176 @@ type FabContext struct {
 	identityManager   map[string]core.IdentityManager
 	fabricProvider    fab.InfraProvider
 	channelProvider   fab.ChannelProvider
-}
-
-//SDKContext implementation for Providers interface.
-type SDKContext struct {
-	FabContext
+	identity          Identity
 }
 
 // Config returns the Config provider of sdk.
-func (c *FabContext) Config() core.Config {
+func (c *sdkClient) Config() core.Config {
 	return c.config
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
-func (c *FabContext) CryptoSuite() core.CryptoSuite {
+func (c *sdkClient) CryptoSuite() core.CryptoSuite {
 	return c.cryptoSuite
 }
 
 // IdentityManager returns identity manager for organization
-func (c *FabContext) IdentityManager(orgName string) (core.IdentityManager, bool) {
+func (c *sdkClient) IdentityManager(orgName string) (core.IdentityManager, bool) {
 	mgr, ok := c.identityManager[strings.ToLower(orgName)]
 	return mgr, ok
 }
 
 // SigningManager returns signing manager
-func (c *FabContext) SigningManager() core.SigningManager {
+func (c *sdkClient) SigningManager() core.SigningManager {
 	return c.signingManager
 }
 
 // StateStore returns state store
-func (c *FabContext) StateStore() core.KVStore {
+func (c *sdkClient) StateStore() core.KVStore {
 	return c.stateStore
 }
 
 // DiscoveryProvider returns discovery provider
-func (c *SDKContext) DiscoveryProvider() fab.DiscoveryProvider {
+func (c *sdkClient) DiscoveryProvider() fab.DiscoveryProvider {
 	return c.discoveryProvider
 }
 
 // SelectionProvider returns selection provider
-func (c *SDKContext) SelectionProvider() fab.SelectionProvider {
+func (c *sdkClient) SelectionProvider() fab.SelectionProvider {
 	return c.selectionProvider
 }
 
 // ChannelProvider provides channel services.
-func (c *SDKContext) ChannelProvider() fab.ChannelProvider {
+func (c *sdkClient) ChannelProvider() fab.ChannelProvider {
 	return c.channelProvider
 }
 
 // FabricProvider provides fabric objects such as peer and user
-func (c *SDKContext) FabricProvider() fab.InfraProvider {
+func (c *sdkClient) FabricProvider() fab.InfraProvider {
 	return c.fabricProvider
 }
 
-//FabContextParams parameter for creating FabContext
-type FabContextParams func(opts *FabContext)
+//MspID returns MSPID
+func (c *sdkClient) MspID() string {
+	if c.identity == nil {
+		return ""
+	}
+	return c.identity.MspID()
+}
+
+//SerializedIdentity returns serialized identity
+func (c *sdkClient) SerializedIdentity() ([]byte, error) {
+	if c.identity == nil {
+		return nil, errors.New("identity not yet initialized")
+	}
+	return c.identity.SerializedIdentity()
+}
+
+//PrivateKey returns private key
+func (c *sdkClient) PrivateKey() core.Key {
+	if c.identity == nil {
+		return nil
+	}
+	return c.identity.PrivateKey()
+}
+
+//SDKContextParams parameter for creating FabContext
+type SDKContextParams func(opts *sdkClient)
 
 //WithConfig sets config to FabContext
-func WithConfig(config core.Config) FabContextParams {
-	return func(ctx *FabContext) {
+func WithConfig(config core.Config) SDKContextParams {
+	return func(ctx *sdkClient) {
 		ctx.config = config
 	}
 }
 
 //WithStateStore sets state store to FabContext
-func WithStateStore(stateStore core.KVStore) FabContextParams {
-	return func(ctx *FabContext) {
+func WithStateStore(stateStore core.KVStore) SDKContextParams {
+	return func(ctx *sdkClient) {
 		ctx.stateStore = stateStore
 	}
 }
 
 //WithCryptoSuite sets cryptosuite parameter to FabContext
-func WithCryptoSuite(cryptoSuite core.CryptoSuite) FabContextParams {
-	return func(ctx *FabContext) {
+func WithCryptoSuite(cryptoSuite core.CryptoSuite) SDKContextParams {
+	return func(ctx *sdkClient) {
 		ctx.cryptoSuite = cryptoSuite
 	}
 }
 
 //WithDiscoveryProvider sets discoveryProvider to FabContext
-func WithDiscoveryProvider(discoveryProvider fab.DiscoveryProvider) FabContextParams {
-	return func(ctx *FabContext) {
+func WithDiscoveryProvider(discoveryProvider fab.DiscoveryProvider) SDKContextParams {
+	return func(ctx *sdkClient) {
 		ctx.discoveryProvider = discoveryProvider
 	}
 }
 
 //WithSelectionProvider sets selectionProvider to FabContext
-func WithSelectionProvider(selectionProvider fab.SelectionProvider) FabContextParams {
-	return func(ctx *FabContext) {
+func WithSelectionProvider(selectionProvider fab.SelectionProvider) SDKContextParams {
+	return func(ctx *sdkClient) {
 		ctx.selectionProvider = selectionProvider
 	}
 }
 
 //WithSigningManager sets signingManager to FabContext
-func WithSigningManager(signingManager core.SigningManager) FabContextParams {
-	return func(ctx *FabContext) {
+func WithSigningManager(signingManager core.SigningManager) SDKContextParams {
+	return func(ctx *sdkClient) {
 		ctx.signingManager = signingManager
 	}
 }
 
 //WithIdentityManager sets identityManagers maps to FabContext
-func WithIdentityManager(identityManagers map[string]core.IdentityManager) FabContextParams {
-	return func(ctx *FabContext) {
+func WithIdentityManager(identityManagers map[string]core.IdentityManager) SDKContextParams {
+	return func(ctx *sdkClient) {
 		ctx.identityManager = identityManagers
 	}
 }
 
 //WithFabricProvider sets fabricProvider maps to FabContext
-func WithFabricProvider(fabricProvider fab.InfraProvider) FabContextParams {
-	return func(ctx *FabContext) {
+func WithFabricProvider(fabricProvider fab.InfraProvider) SDKContextParams {
+	return func(ctx *sdkClient) {
 		ctx.fabricProvider = fabricProvider
 	}
 }
 
 //WithChannelProvider sets channelProvider to FabContext
-func WithChannelProvider(channelProvider fab.ChannelProvider) FabContextParams {
-	return func(ctx *FabContext) {
+func WithChannelProvider(channelProvider fab.ChannelProvider) SDKContextParams {
+	return func(ctx *sdkClient) {
 		ctx.channelProvider = channelProvider
 	}
 }
 
-//CreateFabContext creates FabContext using parameters passed
-func CreateFabContext(params ...FabContextParams) *FabContext {
-	fabCtx := FabContext{}
+//New creates new context client
+func New(ic Identity, params ...SDKContextParams) Client {
+	fabCtx := sdkClient{identity: ic}
 	for _, param := range params {
 		param(&fabCtx)
 	}
 	return &fabCtx
+}
+
+//NewChannelClient creates new channel context client
+func NewChannelClient(client Client, channelID string) *ChannelClient {
+
+	channelService, err := client.ChannelProvider().ChannelService(client, channelID)
+	if err != nil {
+		return &ChannelClient{Context: client}
+	}
+
+	discoveryService, err := client.DiscoveryProvider().NewDiscoveryService(channelID)
+	if err != nil {
+		return &ChannelClient{Context: client}
+	}
+
+	selectionService, err := client.SelectionProvider().NewSelectionService(channelID)
+	if err != nil {
+		return &ChannelClient{Context: client}
+	}
+
+	return &ChannelClient{
+		Context:        client,
+		Selection:      selectionService,
+		Discovery:      discoveryService,
+		ChannelService: channelService,
+	}
 }

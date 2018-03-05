@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -39,7 +38,7 @@ func New(ctx context.Client) *Resource {
 }
 
 type fabCtx struct {
-	core.Providers
+	context.Providers
 	context.Identity
 }
 

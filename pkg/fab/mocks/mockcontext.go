@@ -23,11 +23,15 @@ import (
 
 // MockProviderContext holds core providers to enable mocking.
 type MockProviderContext struct {
-	config          config.Config
-	cryptoSuite     core.CryptoSuite
-	signingManager  core.SigningManager
-	stateStore      core.KVStore
-	identityManager map[string]core.IdentityManager
+	config            config.Config
+	cryptoSuite       core.CryptoSuite
+	signingManager    core.SigningManager
+	stateStore        core.KVStore
+	identityManager   map[string]core.IdentityManager
+	discoveryProvider fab.DiscoveryProvider
+	selectionProvider fab.SelectionProvider
+	fabricProvider    fab.InfraProvider
+	channelProvider   fab.ChannelProvider
 }
 
 // NewMockProviderContext creates a MockProviderContext consisting of defaults
@@ -42,6 +46,11 @@ func NewMockProviderContext() *MockProviderContext {
 		cryptoSuite:     &MockCryptoSuite{},
 		stateStore:      &MockStateStore{},
 		identityManager: im,
+		//TODO: need mock impl
+		discoveryProvider: &MockStaticDiscoveryProvider{},
+		selectionProvider: &MockSelectionProvider{},
+		fabricProvider:    &MockFabricProvider{},
+		channelProvider:   &MockChannelProvider{},
 	}
 	return &context
 }
@@ -89,6 +98,26 @@ func (pc *MockProviderContext) IdentityManager(orgName string) (core.IdentityMan
 	return mgr, ok
 }
 
+//DiscoveryProvider returns discovery provider
+func (pc *MockProviderContext) DiscoveryProvider() fab.DiscoveryProvider {
+	return pc.discoveryProvider
+}
+
+//SelectionProvider returns selection provider
+func (pc *MockProviderContext) SelectionProvider() fab.SelectionProvider {
+	return pc.selectionProvider
+}
+
+//ChannelProvider returns channel provider
+func (pc *MockProviderContext) ChannelProvider() fab.ChannelProvider {
+	return pc.channelProvider
+}
+
+//FabricProvider returns fabric provider
+func (pc *MockProviderContext) FabricProvider() fab.InfraProvider {
+	return pc.fabricProvider
+}
+
 // MockContext holds core providers and identity to enable mocking.
 type MockContext struct {
 	*MockProviderContext
@@ -99,6 +128,17 @@ type MockContext struct {
 func NewMockContext(ic context.Identity) *MockContext {
 	ctx := MockContext{
 		MockProviderContext: NewMockProviderContext(),
+		Identity:            ic,
+	}
+	return &ctx
+}
+
+// NewMockContextWithCustomDiscovery creates a MockContext consisting of defaults and an identity
+func NewMockContextWithCustomDiscovery(ic context.Identity, discPvdr fab.DiscoveryProvider) *MockContext {
+	mockCtx := NewMockProviderContext()
+	mockCtx.discoveryProvider = discPvdr
+	ctx := MockContext{
+		MockProviderContext: mockCtx,
 		Identity:            ic,
 	}
 	return &ctx

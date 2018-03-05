@@ -24,17 +24,17 @@ import (
 
 // FabricProvider represents the default implementation of Fabric objects.
 type FabricProvider struct {
-	providerContext core.Providers
+	providerContext context.Providers
 	connector       *comm.CachingConnector
 }
 
 type fabContext struct {
-	core.Providers
+	context.Providers
 	context.Identity
 }
 
 // New creates a FabricProvider enabling access to core Fabric objects and functionality.
-func New(ctx core.Providers) *FabricProvider {
+func New(ctx context.Providers) *FabricProvider {
 	idleTime := ctx.Config().TimeoutOrDefault(core.ConnectionIdle)
 	sweepTime := ctx.Config().TimeoutOrDefault(core.CacheSweepInterval)
 
