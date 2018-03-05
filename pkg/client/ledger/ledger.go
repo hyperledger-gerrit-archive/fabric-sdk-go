@@ -12,8 +12,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
@@ -36,7 +35,7 @@ const (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the ledger client for each channel. Ledger client supports specific queries only.
 type Client struct {
-	provider  core.Providers
+	provider  context.Providers
 	identity  context.Identity
 	discovery fab.DiscoveryService
 	ledger    *channel.Ledger
@@ -46,14 +45,7 @@ type Client struct {
 
 // Context holds the providers and services needed to create a Client.
 type Context struct {
-	core.Providers
-	context.Identity
-	DiscoveryService fab.DiscoveryService
-	ChannelService   fab.ChannelService
-}
-
-type fabContext struct {
-	core.Providers
+	context.Providers
 	context.Identity
 }
 
@@ -75,10 +67,15 @@ func New(c Context, chName string, opts ...ClientOption) (*Client, error) {
 		return nil, err
 	}
 
+	discoveryService, err := c.DiscoveryProvider().NewDiscoveryService(chName)
+	if err != nil {
+		return nil, err
+	}
+
 	ledgerClient := Client{
 		provider:  c,
 		identity:  c,
-		discovery: c.DiscoveryService,
+		discovery: discoveryService,
 		ledger:    l,
 		chName:    chName,
 	}
@@ -284,7 +281,7 @@ func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 		return nil, errors.WithMessage(err, "failed to determine target peers for QueryConfig")
 	}
 
-	ctx := fabContext{
+	ctx := Context{
 		Providers: c.provider,
 		Identity:  c.identity,
 	}
