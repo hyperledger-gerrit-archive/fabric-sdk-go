@@ -12,7 +12,7 @@ import (
 
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/loglevel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging/decorator"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/testdata"
 	utils "github.com/hyperledger/fabric-sdk-go/pkg/logging/testutils"
 )
@@ -21,12 +21,12 @@ import (
 var buf bytes.Buffer
 
 func TestDefaultLoggingWithoutCallerInfo(t *testing.T) {
-	HideCallerInfo(moduleName, loglevel.WARNING)
+	HideCallerInfo(moduleName, decorator.WARNING)
 	testDefaultLogging(t)
 }
 
 func TestDefaultLoggingWithCallerInfo(t *testing.T) {
-	ShowCallerInfo(moduleName, loglevel.WARNING)
+	ShowCallerInfo(moduleName, decorator.WARNING)
 	testDefaultLogging(t)
 }
 
@@ -38,7 +38,7 @@ func testDefaultLogging(t *testing.T) {
 	logger.(*Log).ChangeOutput(&buf)
 
 	//No level set for this module so log level should be info
-	utils.VerifyTrue(t, loglevel.INFO == GetLevel(moduleName), " default log level is INFO")
+	utils.VerifyTrue(t, decorator.INFO == GetLevel(moduleName), " default log level is INFO")
 
 	//Test logger.print outputs
 	VerifyBasicLogging(t, -1, logger.Print, nil, &buf, false, moduleName)
@@ -46,19 +46,19 @@ func testDefaultLogging(t *testing.T) {
 	VerifyBasicLogging(t, -1, nil, logger.Printf, &buf, false, moduleName)
 
 	//Test logger.info outputs
-	VerifyBasicLogging(t, loglevel.INFO, logger.Info, nil, &buf, false, moduleName)
-	VerifyBasicLogging(t, loglevel.INFO, logger.Infoln, nil, &buf, false, moduleName)
-	VerifyBasicLogging(t, loglevel.INFO, nil, logger.Infof, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.INFO, logger.Info, nil, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.INFO, logger.Infoln, nil, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.INFO, nil, logger.Infof, &buf, false, moduleName)
 
 	//Test logger.warn outputs
-	VerifyBasicLogging(t, loglevel.WARNING, logger.Warn, nil, &buf, false, moduleName)
-	VerifyBasicLogging(t, loglevel.WARNING, logger.Warnln, nil, &buf, false, moduleName)
-	VerifyBasicLogging(t, loglevel.WARNING, nil, logger.Warnf, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.WARNING, logger.Warn, nil, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.WARNING, logger.Warnln, nil, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.WARNING, nil, logger.Warnf, &buf, false, moduleName)
 
 	//Test logger.error outputs
-	VerifyBasicLogging(t, loglevel.ERROR, logger.Error, nil, &buf, false, moduleName)
-	VerifyBasicLogging(t, loglevel.ERROR, logger.Errorln, nil, &buf, false, moduleName)
-	VerifyBasicLogging(t, loglevel.ERROR, nil, logger.Errorf, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.ERROR, logger.Error, nil, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.ERROR, logger.Errorln, nil, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.ERROR, nil, logger.Errorf, &buf, false, moduleName)
 
 	/*
 		SINCE DEBUG LOG IS NOT YET ENABLED, LOG OUTPUT SHOULD BE EMPTY
@@ -71,21 +71,21 @@ func testDefaultLogging(t *testing.T) {
 	utils.VerifyEmpty(t, buf.String(), "debug log isn't supposed to show up for info level")
 
 	//Should be false
-	utils.VerifyFalse(t, IsEnabledFor(moduleName, loglevel.DEBUG), "apiapilogging.IsEnabled for is not working as expected, expected false but got true")
+	utils.VerifyFalse(t, IsEnabledFor(moduleName, decorator.DEBUG), "apiapilogging.IsEnabled for is not working as expected, expected false but got true")
 
 	//Now change the log level to apilogging.DEBUG
-	SetLevel(moduleName, loglevel.DEBUG)
+	SetLevel(moduleName, decorator.DEBUG)
 
 	//Should be false
-	utils.VerifyTrue(t, IsEnabledFor(moduleName, loglevel.DEBUG), "apiapilogging.IsEnabled for is not working as expected, expected true but got false")
+	utils.VerifyTrue(t, IsEnabledFor(moduleName, decorator.DEBUG), "apiapilogging.IsEnabled for is not working as expected, expected true but got false")
 
 	//Test logger.debug outputs
-	VerifyBasicLogging(t, loglevel.DEBUG, logger.Debug, nil, &buf, false, moduleName)
-	VerifyBasicLogging(t, loglevel.DEBUG, logger.Debugln, nil, &buf, false, moduleName)
-	VerifyBasicLogging(t, loglevel.DEBUG, nil, logger.Debugf, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.DEBUG, logger.Debug, nil, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.DEBUG, logger.Debugln, nil, &buf, false, moduleName)
+	VerifyBasicLogging(t, decorator.DEBUG, nil, logger.Debugf, &buf, false, moduleName)
 
 	//Reset module levels for next test
-	moduleLevels = &loglevel.ModuleLevels{}
+	moduleLevels = &decorator.ModuleLevels{}
 }
 
 func TestDefaultLoggingPanic(t *testing.T) {
@@ -96,9 +96,9 @@ func TestDefaultLoggingPanic(t *testing.T) {
 	var buf bytes.Buffer
 	logger.(*Log).ChangeOutput(&buf)
 
-	VerifyCriticalLoggings(t, loglevel.CRITICAL, logger.Panic, nil, &buf)
-	VerifyCriticalLoggings(t, loglevel.CRITICAL, logger.Panicln, nil, &buf)
-	VerifyCriticalLoggings(t, loglevel.CRITICAL, nil, logger.Panicf, &buf)
+	VerifyCriticalLoggings(t, decorator.CRITICAL, logger.Panic, nil, &buf)
+	VerifyCriticalLoggings(t, decorator.CRITICAL, logger.Panicln, nil, &buf)
+	VerifyCriticalLoggings(t, decorator.CRITICAL, nil, logger.Panicf, &buf)
 
 }
 
@@ -117,41 +117,41 @@ func TestDefaultCustomModulledLogging(t *testing.T) {
 	dlogger := LoggerProvider().GetLogger(moduleName2)
 
 	//No level set for this module so log level should be info
-	utils.VerifyTrue(t, loglevel.INFO == GetLevel(moduleName2), " default log level is INFO")
+	utils.VerifyTrue(t, decorator.INFO == GetLevel(moduleName2), " default log level is INFO")
 
 	//Test logger.print outputs
-	VerifyBasicLogging(t, loglevel.INFO, dlogger.Print, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.INFO, dlogger.Println, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.INFO, nil, dlogger.Printf, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.INFO, dlogger.Print, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.INFO, dlogger.Println, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.INFO, nil, dlogger.Printf, &buf, true, moduleName2)
 
 	//Test logger.info outputs
-	VerifyBasicLogging(t, loglevel.INFO, dlogger.Info, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.INFO, dlogger.Infoln, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.INFO, nil, dlogger.Infof, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.INFO, dlogger.Info, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.INFO, dlogger.Infoln, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.INFO, nil, dlogger.Infof, &buf, true, moduleName2)
 
 	//Test logger.warn outputs
-	VerifyBasicLogging(t, loglevel.WARNING, dlogger.Warn, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.WARNING, dlogger.Warnln, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.WARNING, nil, dlogger.Warnf, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.WARNING, dlogger.Warn, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.WARNING, dlogger.Warnln, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.WARNING, nil, dlogger.Warnf, &buf, true, moduleName2)
 
 	//Test logger.error outputs
-	VerifyBasicLogging(t, loglevel.ERROR, dlogger.Error, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.ERROR, dlogger.Errorln, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.ERROR, nil, dlogger.Errorf, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.ERROR, dlogger.Error, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.ERROR, dlogger.Errorln, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.ERROR, nil, dlogger.Errorf, &buf, true, moduleName2)
 
 	//Should be false
-	utils.VerifyFalse(t, IsEnabledFor(moduleName2, loglevel.DEBUG), "logging.IsEnabled for is not working as expected, expected false but got true")
+	utils.VerifyFalse(t, IsEnabledFor(moduleName2, decorator.DEBUG), "logging.IsEnabled for is not working as expected, expected false but got true")
 
 	//Now change the log level to DEBUG
-	SetLevel(moduleName2, loglevel.DEBUG)
+	SetLevel(moduleName2, decorator.DEBUG)
 
 	//Should be false
-	utils.VerifyTrue(t, IsEnabledFor(moduleName2, loglevel.DEBUG), "logging.IsEnabled for is not working as expected, expected true but got false")
+	utils.VerifyTrue(t, IsEnabledFor(moduleName2, decorator.DEBUG), "logging.IsEnabled for is not working as expected, expected true but got false")
 
 	//Test logger.debug outputs
-	VerifyBasicLogging(t, loglevel.DEBUG, dlogger.Debug, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.DEBUG, dlogger.Debugln, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.DEBUG, nil, dlogger.Debugf, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.DEBUG, dlogger.Debug, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.DEBUG, dlogger.Debugln, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.DEBUG, nil, dlogger.Debugf, &buf, true, moduleName2)
 
 }
 
@@ -164,8 +164,8 @@ func TestCustomDefaultLoggingPanic(t *testing.T) {
 	//Get new logger
 	logger := LoggerProvider().GetLogger(moduleName2)
 
-	VerifyBasicLogging(t, loglevel.CRITICAL, logger.Fatal, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.CRITICAL, logger.Fatalln, nil, &buf, true, moduleName2)
-	VerifyBasicLogging(t, loglevel.CRITICAL, nil, logger.Fatalf, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.CRITICAL, logger.Fatal, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.CRITICAL, logger.Fatalln, nil, &buf, true, moduleName2)
+	VerifyBasicLogging(t, decorator.CRITICAL, nil, logger.Fatalf, &buf, true, moduleName2)
 
 }

@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package loglevel
+package decorator
 
 // TODO: Leveler allows log levels to be enabled or disabled
 //type Leveler interface {
