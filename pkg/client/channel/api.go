@@ -62,8 +62,8 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-//WithProposalProcessor encapsulates ProposalProcessors to Option
-func WithProposalProcessor(proposalProcessors ...fab.ProposalProcessor) Option {
+//WithTargets encapsulates ProposalProcessors to Option
+func WithTargets(proposalProcessors ...fab.ProposalProcessor) Option {
 	return func(o *opts) error {
 		o.ProposalProcessors = proposalProcessors
 		return nil
