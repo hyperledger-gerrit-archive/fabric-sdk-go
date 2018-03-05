@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
@@ -46,36 +47,49 @@ type Client struct {
 
 // Context holds the providers and services needed to create a Client.
 type Context struct {
-	core.Providers
-	DiscoveryService fab.DiscoveryService
-	SelectionService fab.SelectionService
-	ChannelService   fab.ChannelService
+	context.Client
+	ChannelID string
 }
 
 // New returns a Client instance.
 func New(c Context) (*Client, error) {
 	greylistProvider := greylist.New(c.Config().TimeoutOrDefault(core.DiscoveryGreylistExpiry))
 
-	eventHub, err := c.ChannelService.EventHub()
+	channelService, err := c.ChannelProvider().ChannelService(c.Client, c.ChannelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "channel service creation failed")
+	}
+
+	eventHub, err := channelService.EventHub()
 	if err != nil {
 		return nil, errors.WithMessage(err, "event hub creation failed")
 	}
 
-	transactor, err := c.ChannelService.Transactor()
+	transactor, err := channelService.Transactor()
 	if err != nil {
 		return nil, errors.WithMessage(err, "transactor creation failed")
 	}
 
-	membership, err := c.ChannelService.Membership()
+	membership, err := channelService.Membership()
 	if err != nil {
 		return nil, errors.WithMessage(err, "membership creation failed")
+	}
+
+	discoveryService, err := c.DiscoveryProvider().NewDiscoveryService(c.ChannelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "discovery service creation failed")
+	}
+
+	selectionService, err := c.SelectionProvider().NewSelectionService(c.ChannelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "discovery service creation failed")
 	}
 
 	channelClient := Client{
 		greylist:   greylistProvider,
 		context:    c,
-		discovery:  discovery.NewDiscoveryFilterService(c.DiscoveryService, greylistProvider),
-		selection:  c.SelectionService,
+		discovery:  discovery.NewDiscoveryFilterService(discoveryService, greylistProvider),
+		selection:  selectionService,
 		membership: membership,
 		transactor: transactor,
 		eventHub:   eventHub,

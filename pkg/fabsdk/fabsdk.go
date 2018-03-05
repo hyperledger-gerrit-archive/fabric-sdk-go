@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
@@ -41,7 +42,6 @@ type FabricSDK struct {
 type options struct {
 	Core    sdkApi.CoreProviderFactory
 	Service sdkApi.ServiceProviderFactory
-	Session sdkApi.SessionClientFactory
 	Logger  api.LoggerProvider
 }
 
@@ -81,11 +81,6 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 		return nil, errors.WithMessage(err, "Unable to initialize service pkg")
 	}
 
-	sess, err := pkgSuite.Session()
-	if err != nil {
-		return nil, errors.WithMessage(err, "Unable to initialize session pkg")
-	}
-
 	lg, err := pkgSuite.Logger()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize logger pkg")
@@ -95,7 +90,6 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 		opts: options{
 			Core:    core,
 			Service: svc,
-			Session: sess,
 			Logger:  lg,
 		},
 		config: config,
@@ -121,14 +115,6 @@ func WithCorePkg(core sdkApi.CoreProviderFactory) Option {
 func WithServicePkg(service sdkApi.ServiceProviderFactory) Option {
 	return func(opts *options) error {
 		opts.Service = service
-		return nil
-	}
-}
-
-// WithSessionPkg injects the session implementation into the SDK.
-func WithSessionPkg(session sdkApi.SessionClientFactory) Option {
-	return func(opts *options) error {
-		opts.Session = session
 		return nil
 	}
 }
@@ -204,7 +190,7 @@ func initSDK(sdk *FabricSDK, opts []Option) error {
 	}
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.fabContext())
+	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.Context())
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
@@ -249,8 +235,16 @@ func (sdk *FabricSDK) Config() core.Config {
 	return sdk.config
 }
 
-func (sdk *FabricSDK) fabContext() core.Providers {
-	return context.CreateFabContext(context.WithConfig(sdk.config),
+//Context creates and returns context client which has all the necessary providers
+func (sdk *FabricSDK) Context(options ...IdentityOption) context.Client {
+	var identity context.Identity
+
+	if len(options) > 0 {
+		//ignore error, set nil identity in case of error
+		identity, _ = sdk.newIdentity(sdk.identityManager, options...)
+	}
+
+	return context.Create(identity, context.WithConfig(sdk.config),
 		context.WithCryptoSuite(sdk.cryptoSuite),
 		context.WithSigningManager(sdk.signingManager),
 		context.WithStateStore(sdk.stateStore),
@@ -261,18 +255,7 @@ func (sdk *FabricSDK) fabContext() core.Providers {
 		context.WithChannelProvider(sdk.channelProvider))
 }
 
-func (sdk *FabricSDK) context() context.Providers {
-	fabContext := context.CreateFabContext(context.WithConfig(sdk.config),
-		context.WithCryptoSuite(sdk.cryptoSuite),
-		context.WithSigningManager(sdk.signingManager),
-		context.WithStateStore(sdk.stateStore),
-		context.WithDiscoveryProvider(sdk.discoveryProvider),
-		context.WithSelectionProvider(sdk.selectionProvider),
-		context.WithIdentityManager(sdk.identityManager),
-		context.WithFabricProvider(sdk.fabricProvider),
-		context.WithChannelProvider(sdk.channelProvider))
-	c := context.SDKContext{
-		*fabContext,
-	}
-	return &c
+//NewChannelContext creates and returns channel context
+func NewChannelContext(client context.Client, channelID string) *channel.Context {
+	return &channel.Context{Client: client, ChannelID: channelID}
 }
