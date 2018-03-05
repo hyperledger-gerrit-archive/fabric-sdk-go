@@ -11,8 +11,8 @@ import (
 
 	"sync/atomic"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/testutils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/testutils"
 )
 
 const (
