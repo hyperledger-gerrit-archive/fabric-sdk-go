@@ -3,12 +3,12 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
-package loglevel
+package decorator
 
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/testutils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/testutils"
 )
 
 func TestLogLevels(t *testing.T) {

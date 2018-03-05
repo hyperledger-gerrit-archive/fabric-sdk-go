@@ -15,9 +15,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/testutils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/testutils"
 )
 
 const (

@@ -17,10 +17,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	pkcsFactory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/testutils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	api "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/testutils"
 )
 
 var configImpl api.Config
