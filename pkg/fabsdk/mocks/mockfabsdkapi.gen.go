@@ -51,7 +51,7 @@ func (mr *MockCoreProviderFactoryMockRecorder) CreateCryptoSuiteProvider(arg0 in
 }
 
 // CreateFabricProvider mocks base method
-func (m *MockCoreProviderFactory) CreateFabricProvider(arg0 core.Providers) (fab.InfraProvider, error) {
+func (m *MockCoreProviderFactory) CreateFabricProvider(arg0 context.Providers) (fab.InfraProvider, error) {
 	ret := m.ctrl.Call(m, "CreateFabricProvider", arg0)
 	ret0, _ := ret[0].(fab.InfraProvider)
 	ret1, _ := ret[1].(error)
@@ -175,14 +175,14 @@ func (m *MockSessionClientFactory) EXPECT() *MockSessionClientFactoryMockRecorde
 }
 
 // CreateChannelClient mocks base method
-func (m *MockSessionClientFactory) CreateChannelClient(arg0 context.Providers, arg1 context.Session, arg2 string, arg3 fab.TargetFilter) (*channel.Client, error) {
-	ret := m.ctrl.Call(m, "CreateChannelClient", arg0, arg1, arg2, arg3)
+func (m *MockSessionClientFactory) CreateChannelClient(arg0 context.Client, arg1 string, arg2 fab.TargetFilter) (*channel.Client, error) {
+	ret := m.ctrl.Call(m, "CreateChannelClient", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*channel.Client)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateChannelClient indicates an expected call of CreateChannelClient
-func (mr *MockSessionClientFactoryMockRecorder) CreateChannelClient(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChannelClient", reflect.TypeOf((*MockSessionClientFactory)(nil).CreateChannelClient), arg0, arg1, arg2, arg3)
+func (mr *MockSessionClientFactoryMockRecorder) CreateChannelClient(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChannelClient", reflect.TypeOf((*MockSessionClientFactory)(nil).CreateChannelClient), arg0, arg1, arg2)
 }

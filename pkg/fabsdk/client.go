@@ -13,7 +13,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/pkg/errors"
 )
 
@@ -40,10 +39,9 @@ type clientOptions struct {
 type clientProvider func() (*clientContext, error)
 
 type clientContext struct {
-	opts          *contextOptions
-	identity      context.Identity
-	providers     providers
-	clientFactory api.SessionClientFactory
+	opts      *contextOptions
+	identity  context.Identity
+	providers providers
 }
 
 type providers interface {
@@ -85,16 +83,15 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOptio
 			return nil, errors.WithMessage(err, "unable to retrieve configuration from SDK")
 		}
 
-		identity, err := sdk.newIdentity(o.orgID, identityOpt)
+		identity, err := sdk.newIdentity(sdk.identityManager, identityOpt, WithOrgName(o.orgID))
 		if err != nil {
 			return nil, errors.WithMessage(err, "unable to create client context")
 		}
 
 		cc := clientContext{
-			opts:          o,
-			identity:      identity,
-			providers:     sdk.context(),
-			clientFactory: sdk.opts.Session,
+			opts:      o,
+			identity:  identity,
+			providers: sdk.Context(),
 		}
 		return &cc, nil
 	}
@@ -157,17 +154,9 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, err
 
 	session := newSession(p.identity, p.providers.ChannelProvider())
 
-	fabProvider := p.providers.FabricProvider()
-
-	discovery := p.providers.DiscoveryProvider()
-	chProvider := p.providers.ChannelProvider()
-
 	ctx := resmgmt.Context{
-		Providers:         p.providers,
-		Identity:          session,
-		DiscoveryProvider: discovery,
-		ChannelProvider:   chProvider,
-		FabricProvider:    fabProvider,
+		Providers: p.providers,
+		Identity:  session,
 	}
 
 	return resmgmt.New(ctx, resmgmt.WithDefaultTargetFilter(o.targetFilter))
@@ -186,16 +175,9 @@ func (c *ClientContext) Ledger(id string, opts ...ClientOption) (*ledger.Client,
 	}
 	session := newSession(p.identity, p.providers.ChannelProvider())
 
-	discovery := p.providers.DiscoveryProvider()
-	discService, err := discovery.NewDiscoveryService(id)
-	if err != nil {
-		return nil, err
-	}
-
 	ctx := ledger.Context{
-		Providers:        p.providers,
-		Identity:         session,
-		DiscoveryService: discService,
+		Providers: p.providers,
+		Identity:  session,
 	}
 
 	return ledger.New(ctx, id, ledger.WithDefaultTargetFilter(o.targetFilter))
@@ -208,12 +190,17 @@ func (c *ClientContext) Channel(id string, opts ...ClientOption) (*channel.Clien
 	if err != nil {
 		return &channel.Client{}, errors.WithMessage(err, "unable to get client provider context")
 	}
-	o, err := newClientOptions(opts)
-	if err != nil {
-		return &channel.Client{}, errors.WithMessage(err, "unable to retrieve client options")
-	}
+
 	session := newSession(p.identity, p.providers.ChannelProvider())
-	client, err := p.clientFactory.CreateChannelClient(p.providers, session, id, o.targetFilter)
+
+	clientCtx := &clientCtx{identity: session, providers: p.providers}
+
+	ctx := channel.Context{
+		Client:    clientCtx,
+		ChannelID: id,
+	}
+
+	client, err := channel.New(ctx)
 	if err != nil {
 		return &channel.Client{}, errors.WithMessage(err, "failed to created new channel client")
 	}
@@ -242,4 +229,69 @@ func (c *ClientContext) Session() (context.Session, error) {
 	}
 
 	return newSession(p.identity, p.providers.ChannelProvider()), nil
+}
+
+type clientCtx struct {
+	identity  context.Identity
+	providers context.Providers
+}
+
+// Config returns the Config provider of sdk.
+func (c *clientCtx) Config() core.Config {
+	return c.providers.Config()
+}
+
+// CryptoSuite returns the BCCSP provider of sdk.
+func (c *clientCtx) CryptoSuite() core.CryptoSuite {
+	return c.providers.CryptoSuite()
+}
+
+// IdentityManager returns identity manager for organization
+func (c *clientCtx) IdentityManager(orgName string) (core.IdentityManager, bool) {
+	return c.providers.IdentityManager(orgName)
+}
+
+// SigningManager returns signing manager
+func (c *clientCtx) SigningManager() core.SigningManager {
+	return c.providers.SigningManager()
+}
+
+// StateStore returns state store
+func (c *clientCtx) StateStore() core.KVStore {
+	return c.providers.StateStore()
+}
+
+// DiscoveryProvider returns discovery provider
+func (c *clientCtx) DiscoveryProvider() fab.DiscoveryProvider {
+	return c.providers.DiscoveryProvider()
+}
+
+// SelectionProvider returns selection provider
+func (c *clientCtx) SelectionProvider() fab.SelectionProvider {
+	return c.providers.SelectionProvider()
+}
+
+// ChannelProvider provides channel services.
+func (c *clientCtx) ChannelProvider() fab.ChannelProvider {
+	return c.providers.ChannelProvider()
+}
+
+// FabricProvider provides fabric objects such as peer and user
+func (c *clientCtx) FabricProvider() fab.InfraProvider {
+	return c.providers.FabricProvider()
+}
+
+//MspID returns MSPID
+func (c *clientCtx) MspID() string {
+	return c.identity.MspID()
+}
+
+//SerializedIdentity returns serialized identity
+func (c *clientCtx) SerializedIdentity() ([]byte, error) {
+	return c.identity.SerializedIdentity()
+}
+
+//PrivateKey returns private key
+func (c *clientCtx) PrivateKey() core.Key {
+	return c.identity.PrivateKey()
 }
