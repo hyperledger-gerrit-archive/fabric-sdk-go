@@ -9,7 +9,10 @@ package fabsdk
 import (
 	"testing"
 
+	"strings"
+
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/identity/manager"
 )
 
 const (
@@ -19,39 +22,25 @@ const (
 )
 
 func TestWithUserValid(t *testing.T) {
-	sdk, err := New(configImpl.FromFile(identityOptConfigFile))
-	if err != nil {
-		t.Fatalf("Expected no error from New, but got %v", err)
-	}
-	defer sdk.Close()
 
 	opts := identityOptions{}
 	opt := WithUser(identityValidOptUser)
-	err = opt(&opts)
+	err := opt(&opts)
 	if err != nil {
 		t.Fatalf("Expected no error from opt, but got %v", err)
 	}
 }
 
 func TestWithIdentity(t *testing.T) {
-	sdk, err := New(configImpl.FromFile(identityOptConfigFile))
-	if err != nil {
-		t.Fatalf("Expected no error from New, but got %v", err)
-	}
-	defer sdk.Close()
 
-	identityManager, ok := sdk.provider.IdentityManager(identityValidOptOrg)
-	if !ok {
-		t.Fatalf("Invalid organization: %s", identityValidOptOrg)
-	}
-	identity, err := identityManager.GetUser(identityValidOptUser)
-	if err != nil {
-		t.Fatalf("Unexpected error loading identity: %v", err)
+	identity := &manager.User{
+		MspID_: "mspid",
+		Name_:  "name",
 	}
 
 	opts := identityOptions{}
 	opt := WithIdentity(identity)
-	err = opt(&opts)
+	err := opt(&opts)
 	if err != nil {
 		t.Fatalf("Expected no error from opt, but got %v", err)
 	}
@@ -88,7 +77,7 @@ func TestFabricSDKContext(t *testing.T) {
 
 	ctx, err = ctxProvider()
 
-	if err == nil || err.Error() != "invalid options to create identity, invalid org name" {
+	if err == nil || !strings.Contains(err.Error(), "mspid is not configured for org") {
 		t.Fatalf("getting context client supposed to fail with idenity error, err: %v", err)
 	}
 

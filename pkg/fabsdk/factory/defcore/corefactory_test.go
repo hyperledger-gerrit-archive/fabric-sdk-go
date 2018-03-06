@@ -15,11 +15,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/identity/manager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
@@ -154,12 +154,12 @@ func TestCreateIdentityManager(t *testing.T) {
 		t.Fatalf("creating a user store failed: %v", err)
 	}
 
-	mgr, err := factory.CreateIdentityManager("Org1", stateStore, cryptosuite, config)
+	mgr, err := factory.CreateIdentityManager(stateStore, cryptosuite, config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating signing manager %v", err)
 	}
 
-	_, ok := mgr.(*identitymgr.IdentityManager)
+	_, ok := mgr.(*manager.IdentityManager)
 	if !ok {
 		t.Fatalf("Unexpected signing manager created")
 	}

@@ -7,15 +7,17 @@ SPDX-License-Identifier: Apache-2.0
 package defcore
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/capvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/identity/manager"
 	"github.com/pkg/errors"
 
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -60,13 +62,18 @@ func (f *ProviderFactory) CreateSigningManager(cryptoProvider core.CryptoSuite, 
 }
 
 // CreateIdentityManager returns a new default implementation of identity manager
-func (f *ProviderFactory) CreateIdentityManager(org string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error) {
-	return identitymgr.New(org, stateStore, cryptoProvider, config)
+func (f *ProviderFactory) CreateIdentityManager(stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error) {
+	return manager.New(stateStore, cryptoProvider, config)
 }
 
 // CreateInfraProvider returns a new default implementation of fabric primitives
 func (f *ProviderFactory) CreateInfraProvider(context sdkApi.Providers) (fab.InfraProvider, error) {
 	return fabpvdr.New(context), nil
+}
+
+// CreateCAProvider returns a new default implementation of fabric primitives
+func (f *ProviderFactory) CreateCAProvider(context sdkApi.Providers) (ca.Provider, error) {
+	return capvdr.New(context), nil
 }
 
 // NewLoggerProvider returns a new default implementation of a logger backend

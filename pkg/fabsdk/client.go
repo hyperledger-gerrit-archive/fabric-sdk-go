@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
@@ -176,14 +177,19 @@ func (c *clientCtx) CryptoSuite() core.CryptoSuite {
 	return c.providers.CryptoSuite()
 }
 
-// IdentityManager returns identity manager for organization
-func (c *clientCtx) IdentityManager(orgName string) (core.IdentityManager, bool) {
-	return c.providers.IdentityManager(orgName)
+// CAProvider returns CA provider
+func (c *clientCtx) CAProvider() ca.Provider {
+	return c.providers.CAProvider()
 }
 
 // SigningManager returns signing manager
 func (c *clientCtx) SigningManager() core.SigningManager {
 	return c.providers.SigningManager()
+}
+
+// IdentityManager returns identity manager
+func (c *clientCtx) IdentityManager() core.IdentityManager {
+	return c.providers.IdentityManager()
 }
 
 // StateStore returns state store

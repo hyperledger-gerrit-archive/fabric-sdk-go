@@ -54,13 +54,14 @@ func newCCPolicyProvider(providers api.Providers, channelID string, userName str
 		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
 	}
 
-	//Get identity
-	mgr, ok := providers.IdentityManager(orgName)
-	if !ok {
-		return nil, errors.New("invalid options to create identity, invalid org name")
+	mspID, err := providers.Config().MspID(orgName)
+	if err != nil {
+		return nil, err
 	}
 
-	identity, err := mgr.GetUser(userName)
+	//Get identity
+	mgr := providers.IdentityManager()
+	identity, err := mgr.GetUser(mspID, userName)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to create identity for ccl policy provider")
 	}

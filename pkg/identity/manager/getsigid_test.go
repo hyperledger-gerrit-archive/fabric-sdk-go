@@ -4,12 +4,11 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package manager
 
 import (
 	"math/rand"
 	"strconv"
-	"strings"
 	"testing"
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
@@ -17,7 +16,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/pkg/errors"
 )
 
@@ -43,7 +41,7 @@ AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
 XdsmTcdRvJ3TS/6HCA==
 -----END CERTIFICATE-----`
 
-	msp = "Org1"
+	orgName = "org1"
 )
 
 func TestGetSigningIdentity(t *testing.T) {
@@ -52,15 +50,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	netConfig, err := config.NetworkConfig()
-	if err != nil {
-		t.Fatalf("Failed to setup netConfig: %s", err)
-	}
-	orgConfig, ok := netConfig.Organizations[strings.ToLower(msp)]
-	if !ok {
-		t.Fatalf("Failed to setup orgConfig: %s", err)
-	}
-	mspID := orgConfig.MspID
+	mspID := mspIDFromConfig(t, orgName, config)
 
 	clientCofig, err := config.Client()
 	if err != nil {
@@ -84,17 +74,12 @@ func TestGetSigningIdentity(t *testing.T) {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	mgr, err := New(msp, stateStore, cryptoSuite, config)
+	mgr, err := New(stateStore, cryptoSuite, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
 
-	_, err = mgr.GetSigningIdentity("")
-	if err == nil {
-		t.Fatalf("Should have failed to retrieve signing identity for empty user name")
-	}
-
-	_, err = mgr.GetSigningIdentity("Non-Existent")
+	_, err = mgr.GetSigningIdentity(mspID, "Non-Existent")
 	if err == nil {
 		t.Fatalf("Should have failed to retrieve signing identity for non-existent user")
 	}
@@ -102,7 +87,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	testUserName := createRandomName()
 
 	// Should not find the user
-	if err := checkSigningIdentity(mgr, testUserName); err != core.ErrUserNotFound {
+	if err := checkSigningIdentity(mgr, mspID, testUserName); err != core.ErrUserNotFound {
 		t.Fatalf("expected ErrUserNotFound, got: %s", err)
 	}
 
@@ -122,13 +107,24 @@ func TestGetSigningIdentity(t *testing.T) {
 	}
 
 	// Should succeed after enrollment
-	if err := checkSigningIdentity(mgr, testUserName); err != nil {
+	if err := checkSigningIdentity(mgr, mspID, testUserName); err != nil {
 		t.Fatalf("checkSigningIdentity failed: %s", err)
 	}
+
+	_, err = mgr.GetSigningIdentity("", testUserName)
+	if err == nil {
+		t.Fatalf("Should have failed to retrieve signing identity for empty MspID")
+	}
+
+	_, err = mgr.GetSigningIdentity(mspID, "")
+	if err == nil {
+		t.Fatalf("Should have failed to retrieve signing identity for empty user Name")
+	}
+
 }
 
-func checkSigningIdentity(mgr core.IdentityManager, user string) error {
-	id, err := mgr.GetSigningIdentity(user)
+func checkSigningIdentity(mgr core.IdentityManager, mspID string, user string) error {
+	id, err := mgr.GetSigningIdentity(mspID, user)
 	if err == core.ErrUserNotFound {
 		return err
 	}
@@ -151,62 +147,65 @@ func checkSigningIdentity(mgr core.IdentityManager, user string) error {
 	return nil
 }
 
-func TestGetSigningIdentityInvalidOrg(t *testing.T) {
-
-	config, err := config.FromFile("../../../test/fixtures/config/config_test.yaml")()
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-	stateStore := stateStoreFromConfig(t, config)
-
-	// Invalid Org
-	_, err = New("invalidOrg", stateStore, &fcmocks.MockCryptoSuite{}, config)
-	if err == nil {
-		t.Fatalf("Should have failed to setup manager for invalid org")
-	}
-
-}
-
 func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test_embedded_pems.yaml")()
+	config, err := config.FromFile("../../../test/fixtures/config/config_test_embedded_pems2.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+	mspID := mspIDFromConfig(t, orgName, config)
 	stateStore := stateStoreFromConfig(t, config)
 
-	mgr, err := New(msp, stateStore, cryptosuite.GetDefault(), config)
+	mgr, err := New(stateStore, cryptosuite.GetDefault(), config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
 
-	_, err = mgr.GetSigningIdentity("")
-	if err == nil {
-		t.Fatalf("Should get error for empty user name")
+	if err := checkSigningIdentity(mgr, mspID, "EmbeddedUser"); err != nil {
+		t.Fatalf("checkSigningIdentity failed: %s", err)
 	}
 
-	_, err = mgr.GetSigningIdentity("Non-Existent")
+	if err := checkSigningIdentity(mgr, mspID, "EmbeddedUserWithPaths"); err != nil {
+		t.Fatalf("checkSigningIdentity failed: %s", err)
+	}
+
+	if err := checkSigningIdentity(mgr, mspID, "EmbeddedUserMixed"); err != nil {
+		t.Fatalf("checkSigningIdentity failed: %s", err)
+	}
+
+	if err := checkSigningIdentity(mgr, mspID, "EmbeddedUserMixed2"); err != nil {
+		t.Fatalf("checkSigningIdentity failed: %s", err)
+	}
+
+	_, err = mgr.GetSigningIdentity("", "EmbeddedUser")
+	if err == nil {
+		t.Fatalf("Should get error for empty MspID")
+	}
+
+	_, err = mgr.GetSigningIdentity(mspID, "")
+	if err == nil {
+		t.Fatalf("Should get error for empty user Name")
+	}
+
+	_, err = mgr.GetSigningIdentity(mspID, "Non-Existent")
 	if err != core.ErrUserNotFound {
 		t.Fatalf("Should get ErrUserNotFound for non-existent user, got %v", err)
 	}
 
-	if err := checkSigningIdentity(mgr, "EmbeddedUser"); err != nil {
-		t.Fatalf("checkSigningIdentity failes: %s", err)
-	}
-
-	if err := checkSigningIdentity(mgr, "EmbeddedUserWithPaths"); err != nil {
-		t.Fatalf("checkSigningIdentity failes: %s", err)
-	}
-
-	if err := checkSigningIdentity(mgr, "EmbeddedUserMixed"); err != nil {
-		t.Fatalf("checkSigningIdentity failes: %s", err)
-	}
-
-	if err := checkSigningIdentity(mgr, "EmbeddedUserMixed2"); err != nil {
-		t.Fatalf("checkSigningIdentity failes: %s", err)
-	}
 }
 
 func createRandomName() string {
 	return "user" + strconv.Itoa(rand.Intn(500000))
+}
+
+func mspIDFromConfig(t *testing.T, orgName string, config core.Config) string {
+	netConfig, err := config.NetworkConfig()
+	if err != nil {
+		t.Fatalf("Failed to setup netConfig: %s", err)
+	}
+	orgConfig, ok := netConfig.Organizations[orgName]
+	if !ok {
+		t.Fatalf("Failed to setup orgConfig: %s", err)
+	}
+	return orgConfig.MspID
 }

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package context
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
@@ -27,6 +28,7 @@ type Client interface {
 // Providers represents the SDK configured providers context.
 type Providers interface {
 	core.Providers
+	ca.Providers
 	fab.Providers
 }
 

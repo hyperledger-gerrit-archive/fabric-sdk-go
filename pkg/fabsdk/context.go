@@ -7,8 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"fmt"
 
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
 )
@@ -71,12 +72,17 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (contextApi.Identity
 		return nil, errors.New("invalid options to create identity")
 	}
 
-	mgr, ok := sdk.provider.IdentityManager(opts.orgName)
-	if !ok {
-		return nil, errors.New("invalid options to create identity, invalid org name")
+	p := sdk.provider
+	mspID, err := p.Config().MspID(opts.orgName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error getting org's mspID: %s", opts.orgName)
+	}
+	if mspID == "" {
+		return nil, fmt.Errorf("invalid org name: '%s'", opts.orgName)
 	}
 
-	user, err := mgr.GetUser(opts.userName)
+	identityManager := p.IdentityManager()
+	user, err := identityManager.GetUser(mspID, opts.userName)
 	if err != nil {
 		return nil, err
 	}

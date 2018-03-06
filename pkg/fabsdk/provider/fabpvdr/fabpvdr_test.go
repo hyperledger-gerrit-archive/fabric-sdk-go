@@ -89,9 +89,7 @@ func newMockInfraProvider(t *testing.T) *InfraProvider {
 	if err != nil {
 		panic(fmt.Sprintf("cryptosuiteimpl.GetSuiteByConfig: %v", err))
 	}
-	im := make(map[string]core.IdentityManager)
-	im[""] = &mocks.MockIdentityManager{}
 
-	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, mocks.NewMockSigningManager(), mocks.NewMockStateStore(), im)
+	ctx := mocks.NewMockProviderContextCustom(cfg, cryptoSuite, mocks.NewMockSigningManager(), mocks.NewMockStateStore())
 	return New(ctx)
 }

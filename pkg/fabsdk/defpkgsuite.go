@@ -8,6 +8,7 @@ package fabsdk
 
 import (
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
@@ -18,6 +19,10 @@ type defPkgSuite struct{}
 
 func (ps *defPkgSuite) Core() (sdkApi.CoreProviderFactory, error) {
 	return defcore.NewProviderFactory(), nil
+}
+
+func (ps *defPkgSuite) CA() (sdkApi.CAProviderFactory, error) {
+	return defca.NewProviderFactory(), nil
 }
 
 func (ps *defPkgSuite) Service() (sdkApi.ServiceProviderFactory, error) {

@@ -4,24 +4,29 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package caclient
 
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/pkg/errors"
-
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	bccspwrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
+	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/identity/manager"
+	"github.com/hyperledger/fabric-sdk-go/pkg/identity/manager/mocks"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -37,26 +42,28 @@ var (
 	embeddedRegistrarConfig core.Config
 	cryptoSuite             core.CryptoSuite
 	wrongURLConfig          core.Config
-	userStore               UserStore
+	stateStore              core.KVStore
+	userStore               manager.UserStore
+	identityManager         *manager.IdentityManager
 )
 
 // TestMain Load testing config
 func TestMain(m *testing.M) {
 
 	var err error
-	fullConfig, err = config.FromFile("testdata/config_test.yaml")()
+	fullConfig, err = config.FromFile("../manager/testdata/config_test.yaml")()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read full config: %v", err))
 	}
 
-	noRegistrarConfig, err = config.FromFile("testdata/config_no_registrar.yaml")()
+	noRegistrarConfig, err = config.FromFile("../manager/testdata/config_no_registrar.yaml")()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read full config: %v", err))
+		panic(fmt.Sprintf("Failed to read no-registrar config: %v", err))
 	}
 
-	embeddedRegistrarConfig, err = config.FromFile("testdata/config_embedded_registrar.yaml")()
+	embeddedRegistrarConfig, err = config.FromFile("../manager/testdata/config_embedded_registrar.yaml")()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read full config: %v", err))
+		panic(fmt.Sprintf("Failed to read embedded-registrar config: %v", err))
 	}
 
 	// Delete all private keys from the crypto suite store
@@ -66,18 +73,24 @@ func TestMain(m *testing.M) {
 	cleanup(fullConfig.CredentialStorePath())
 	defer cleanup(fullConfig.CredentialStorePath())
 
-	cryptoSuite, err = cryptosuiteimpl.GetSuiteByConfig(fullConfig)
+	cryptoSuite, err = sw.GetSuiteByConfig(fullConfig)
 	if cryptoSuite == nil {
 		panic(fmt.Sprintf("Failed initialize cryptoSuite: %v", err))
 	}
 	if fullConfig.CredentialStorePath() != "" {
-		userStore, err = NewCertFileUserStore(fullConfig.CredentialStorePath())
+		userStore, err = manager.NewCertFileUserStore(fullConfig.CredentialStorePath())
 		if err != nil {
 			panic(fmt.Sprintf("creating a user store failed: %v", err))
 		}
 	}
+	stateStore = stateStoreFromConfig(nil, fullConfig)
 
-	wrongURLConfig, err = config.FromFile("testdata/config_test_wrong_url.yaml")()
+	identityManager, err = manager.New(stateStore, cryptoSuite, fullConfig)
+	if err != nil {
+		panic(fmt.Sprintf("manager.New returned error: %v", err))
+	}
+
+	wrongURLConfig, err = config.FromFile("../manager/testdata/config_test_wrong_url.yaml")()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to read full config: %v", err))
 	}
@@ -93,75 +106,64 @@ func TestMain(m *testing.M) {
 // TestEnrollAndReenroll tests enrol/reenroll scenarios
 func TestEnrollAndReenroll(t *testing.T) {
 
-	stateStore := stateStoreFromConfig(t, fullConfig)
-	identityManager, err := New(org1, stateStore, cryptoSuite, fullConfig)
+	caManager, err := New(org1, identityManager, stateStore, cryptoSuite, fullConfig)
 	if err != nil {
-		t.Fatalf("NewidentityManagerClient return error: %v", err)
+		t.Fatalf("New returned error: %v", err)
 	}
 	orgMspID := mspIDByOrgName(t, fullConfig, org1)
 
 	// Empty enrollment ID
-	err = identityManager.Enroll("", "user1")
+	err = caManager.Enroll("", "user1")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
 
 	// Empty enrollment secret
-	err = identityManager.Enroll("enrolledUserName", "")
+	err = caManager.Enroll("enrolledUserName", "")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
 
 	// Successful enrollment
 	enrollUserName := createRandomName()
-	enrolledUserData, err := userStore.Load(UserIdentifier{MspID: orgMspID, Name: enrollUserName})
+	enrolledUserData, err := userStore.Load(manager.UserIdentifier{MspID: orgMspID, Name: enrollUserName})
 	if err != core.ErrUserNotFound {
 		t.Fatalf("Expected to not find user in user store")
 	}
-	err = identityManager.Enroll(enrollUserName, "enrollmentSecret")
+	err = caManager.Enroll(enrollUserName, "enrollmentSecret")
 	if err != nil {
 		t.Fatalf("identityManager Enroll return error %v", err)
 	}
-	enrolledUserData, err = userStore.Load(UserIdentifier{MspID: orgMspID, Name: enrollUserName})
+	enrolledUserData, err = userStore.Load(manager.UserIdentifier{MspID: orgMspID, Name: enrollUserName})
 	if err != nil {
 		t.Fatalf("Expected to load user from user store")
 	}
 
-	// Reenroll with nil user
-	err = identityManager.Reenroll(nil)
+	// Reenroll with empty user
+	err = caManager.Reenroll("")
 	if err == nil {
-		t.Fatalf("Expected error with nil user")
+		t.Fatalf("Expected error with enpty user")
 	}
-	if err.Error() != "user required" {
+	if err.Error() != "user name missing" {
 		t.Fatalf("Expected error user required. Got: %s", err.Error())
 	}
 
-	// Reenroll with user.Name is empty
-	user := mocks.NewMockUser("")
-	err = identityManager.Reenroll(user)
-	if err == nil {
-		t.Fatalf("Expected error with user.Name is empty")
-	}
-	if err.Error() != "user name missing" {
-		t.Fatalf("Expected error user name missing. Got: %s", err.Error())
-	}
-
 	// Reenroll with appropriate user
-	enrolledUser, err := identityManager.newUser(enrolledUserData)
+	enrolledUser, err := identityManager.NewUser(enrolledUserData)
 	if err != nil {
 		t.Fatalf("newUser return error %v", err)
 	}
-	err = identityManager.Reenroll(enrolledUser)
+	err = caManager.Reenroll(enrolledUser.Name())
 	if err != nil {
 		t.Fatalf("Reenroll return error %v", err)
 	}
 
 	// Try going against wrong CA URL
-	identityManager, err = New(org1, stateStore, cryptoSuite, wrongURLConfig)
+	caManager, err = New(org1, identityManager, stateStore, cryptoSuite, wrongURLConfig)
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient return error: %v", err)
 	}
-	err = identityManager.Enroll("enrollmentID", "enrollmentSecret")
+	err = caManager.Enroll("enrollmentID", "enrollmentSecret")
 	if err == nil {
 		t.Fatalf("Enroll didn't return error")
 	}
@@ -172,28 +174,34 @@ func TestEnrollAndReenroll(t *testing.T) {
 func TestRegister(t *testing.T) {
 
 	stateStore := stateStoreFromConfig(t, fullConfig)
-	identityManager, err := New(org1, stateStore, cryptoSuite, fullConfig)
+
+	identityManager, err := manager.New(stateStore, cryptoSuite, fullConfig)
+	if err != nil {
+		t.Fatalf("manager.New returned error: %v", err)
+	}
+
+	caManager, err := New(org1, identityManager, stateStore, cryptoSuite, fullConfig)
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient returned error: %v", err)
 	}
 
 	// Register with nil request
-	_, err = identityManager.Register(nil)
+	_, err = caManager.Register(nil)
 	if err == nil {
 		t.Fatalf("Expected error with nil request")
 	}
 
 	// Register without registration name parameter
-	_, err = identityManager.Register(&core.RegistrationRequest{})
+	_, err = caManager.Register(&ca.RegistrationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error without registration name parameter")
 	}
 
 	// Register with valid request
-	var attributes []core.Attribute
-	attributes = append(attributes, core.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, core.Attribute{Key: "test2", Value: "test3"})
-	secret, err := identityManager.Register(&core.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
+	var attributes []ca.Attribute
+	attributes = append(attributes, ca.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, ca.Attribute{Key: "test2", Value: "test3"})
+	secret, err := caManager.Register(&ca.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
 	}
@@ -202,20 +210,26 @@ func TestRegister(t *testing.T) {
 	}
 }
 
-// TestEmbeddedRegister tests registration with embedded registrar idenityt
-func TestEmbeddedRegister(t *testing.T) {
+// TestEmbeddedRegistar tests registration with embedded registrar idenityt
+func TestEmbeddedRegistar(t *testing.T) {
 
 	stateStore := stateStoreFromConfig(t, embeddedRegistrarConfig)
-	identityManager, err := New(org1, stateStore, cryptoSuite, embeddedRegistrarConfig)
+
+	identityManager, err := manager.New(stateStore, cryptoSuite, embeddedRegistrarConfig)
+	if err != nil {
+		t.Fatalf("manager.New returned error: %v", err)
+	}
+
+	caManager, err := New(org1, identityManager, stateStore, cryptoSuite, embeddedRegistrarConfig)
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient returned error: %v", err)
 	}
 
 	// Register with valid request
-	var attributes []core.Attribute
-	attributes = append(attributes, core.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, core.Attribute{Key: "test2", Value: "test3"})
-	secret, err := identityManager.Register(&core.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
+	var attributes []ca.Attribute
+	attributes = append(attributes, ca.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, ca.Attribute{Key: "test2", Value: "test3"})
+	secret, err := caManager.Register(&ca.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
 	}
@@ -228,29 +242,35 @@ func TestEmbeddedRegister(t *testing.T) {
 func TestRegisterNoRegistrar(t *testing.T) {
 
 	stateStore := stateStoreFromConfig(t, noRegistrarConfig)
-	identityManager, err := New(org1, stateStore, cryptoSuite, noRegistrarConfig)
+
+	identityManager, err := manager.New(stateStore, cryptoSuite, noRegistrarConfig)
+	if err != nil {
+		t.Fatalf("manager.New returned error: %v", err)
+	}
+
+	caManager, err := New(org1, identityManager, stateStore, cryptoSuite, noRegistrarConfig)
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient returned error: %v", err)
 	}
 
 	// Register with nil request
-	_, err = identityManager.Register(nil)
-	if err != core.ErrCARegistrarNotFound {
+	_, err = caManager.Register(nil)
+	if err != ca.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 
 	// Register without registration name parameter
-	_, err = identityManager.Register(&core.RegistrationRequest{})
-	if err != core.ErrCARegistrarNotFound {
+	_, err = caManager.Register(&ca.RegistrationRequest{})
+	if err != ca.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 
 	// Register with valid request
-	var attributes []core.Attribute
-	attributes = append(attributes, core.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, core.Attribute{Key: "test2", Value: "test3"})
-	_, err = identityManager.Register(&core.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
-	if err != core.ErrCARegistrarNotFound {
+	var attributes []ca.Attribute
+	attributes = append(attributes, ca.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, ca.Attribute{Key: "test2", Value: "test3"})
+	_, err = caManager.Register(&ca.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
+	if err != ca.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 }
@@ -259,24 +279,30 @@ func TestRegisterNoRegistrar(t *testing.T) {
 // TODO - improve Revoke test coverage
 func TestRevoke(t *testing.T) {
 
-	cryptoSuite, err := cryptosuiteimpl.GetSuiteByConfig(fullConfig)
+	stateStore := stateStoreFromConfig(t, fullConfig)
+
+	identityManager, err := manager.New(stateStore, cryptoSuite, fullConfig)
 	if err != nil {
-		t.Fatalf("cryptosuite.GetSuiteByConfig returned error: %v", err)
+		t.Fatalf("manager.New returned error: %v", err)
 	}
 
-	stateStore := stateStoreFromConfig(t, fullConfig)
-	identityManager, err := New(org1, stateStore, cryptoSuite, fullConfig)
+	caManager, err := New(org1, identityManager, stateStore, cryptoSuite, fullConfig)
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient returned error: %v", err)
 	}
 
 	// Revoke with nil request
-	_, err = identityManager.Revoke(nil)
+	_, err = caManager.Revoke(nil)
 	if err == nil {
 		t.Fatalf("Expected error with nil request")
 	}
 
-	_, err = identityManager.Revoke(&core.RevocationRequest{})
+	mockKey := bccspwrapper.GetKey(&mocks.MockKey{})
+	user := mocks.NewMockUser("test")
+	user.SetEnrollmentCertificate(readCert(t))
+	user.SetPrivateKey(mockKey)
+
+	_, err = caManager.Revoke(&ca.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected decoding error with test cert")
 	}
@@ -286,7 +312,13 @@ func TestRevoke(t *testing.T) {
 func TestGetCAName(t *testing.T) {
 
 	stateStore := stateStoreFromConfig(t, fullConfig)
-	identityManager, err := New(org1, stateStore, cryptoSuite, fullConfig)
+
+	identityManager, err := manager.New(stateStore, cryptoSuite, fullConfig)
+	if err != nil {
+		t.Fatalf("manager.New returned error: %v", err)
+	}
+
+	caManager, err := New(org1, identityManager, stateStore, cryptoSuite, fullConfig)
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient returned error: %v", err)
 	}
@@ -299,8 +331,8 @@ func TestGetCAName(t *testing.T) {
 		t.Fatalf("org config retrieval failed: %v", err)
 	}
 
-	if identityManager.CAName() != orgConfig.CertificateAuthorities[0] {
-		t.Fatalf("CAName returned wrong value: %s", identityManager.CAName())
+	if caManager.CAName() != orgConfig.CertificateAuthorities[0] {
+		t.Fatalf("CAName returned wrong value: %s", caManager.CAName())
 	}
 }
 
@@ -317,15 +349,10 @@ func TestCreateNewidentityManagerClientCAConfigMissingFailure(t *testing.T) {
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
 
 	stateStore := stateStoreFromConfig(t, mockConfig)
-	mgr, err := New(org1, stateStore, cryptoSuite, mockConfig)
-	if err != nil {
-		t.Fatalf("failed to create IdentityManager: %v", err)
-	}
-	err = mgr.Enroll("a", "b")
+	_, err := New(org1, identityManager, stateStore, cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAConfig error") {
 		t.Fatalf("Expected error from CAConfig. Got: %v", err)
 	}
-
 }
 
 // TestCreateNewidentityManagerClientCertFilesMissingFailure will test newidentityManager Client creation with missing CA Cert files
@@ -336,16 +363,11 @@ func TestCreateNewidentityManagerClientCertFilesMissingFailure(t *testing.T) {
 	mockConfig := mock_core.NewMockConfig(mockCtrl)
 	mockConfig.EXPECT().NetworkConfig().Return(fullConfig.NetworkConfig()).AnyTimes()
 	mockConfig.EXPECT().CryptoConfigPath().Return(fullConfig.CryptoConfigPath()).AnyTimes()
-	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()
+	mockConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAServerCertPaths error"))
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
-	mockConfig.EXPECT().CAServerCertPaths(org1).Return(nil, errors.New("CAServerCertPaths error"))
 
 	stateStore := stateStoreFromConfig(t, mockConfig)
-	mgr, err := New(org1, stateStore, cryptoSuite, mockConfig)
-	if err != nil {
-		t.Fatalf("failed to create IdentityManager: %v", err)
-	}
-	err = mgr.Enroll("a", "b")
+	_, err := New(org1, identityManager, stateStore, cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAServerCertPaths error") {
 		t.Fatalf("Expected error from CAServerCertPaths. Got: %v", err)
 	}
@@ -365,11 +387,7 @@ func TestCreateNewidentityManagerClientCertFileErrorFailure(t *testing.T) {
 	mockConfig.EXPECT().CAClientCertPath(org1).Return("", errors.New("CAClientCertPath error"))
 
 	stateStore := stateStoreFromConfig(t, mockConfig)
-	mgr, err := New(org1, stateStore, cryptoSuite, mockConfig)
-	if err != nil {
-		t.Fatalf("failed to create IdentityManager: %v", err)
-	}
-	err = mgr.Enroll("a", "b")
+	_, err := New(org1, identityManager, stateStore, cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAClientCertPath error") {
 		t.Fatalf("Expected error from CAClientCertPath. Got: %v", err)
 	}
@@ -390,11 +408,7 @@ func TestCreateNewidentityManagerClientKeyFileErrorFailure(t *testing.T) {
 	mockConfig.EXPECT().CAClientKeyPath(org1).Return("", errors.New("CAClientKeyPath error"))
 
 	stateStore := stateStoreFromConfig(t, mockConfig)
-	mgr, err := New(org1, stateStore, cryptoSuite, mockConfig)
-	if err != nil {
-		t.Fatalf("failed to create IdentityManager: %v", err)
-	}
-	err = mgr.Enroll("a", "b")
+	_, err := New(org1, identityManager, stateStore, cryptoSuite, mockConfig)
 	if err == nil || !strings.Contains(err.Error(), "CAClientKeyPath error") {
 		t.Fatalf("Expected error from CAClientKeyPath. Got: %v", err)
 	}
@@ -403,13 +417,13 @@ func TestCreateNewidentityManagerClientKeyFileErrorFailure(t *testing.T) {
 // TestCreateValidBCCSPOptsForNewFabricClient test newidentityManager Client creation with valid inputs, successful scenario
 func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 
-	newCryptosuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(fullConfig)
+	newCryptosuiteProvider, err := sw.GetSuiteByConfig(fullConfig)
 	if err != nil {
 		t.Fatalf("Expected fabric client ryptosuite to be created with SW BCCS provider, but got %v", err.Error())
 	}
 
 	stateStore := stateStoreFromConfig(t, fullConfig)
-	_, err = New(org1, stateStore, newCryptosuiteProvider, fullConfig)
+	_, err = New(org1, identityManager, stateStore, newCryptosuiteProvider, fullConfig)
 	if err != nil {
 		t.Fatalf("Expected fabric client to be created with SW BCCS provider, but got %v", err.Error())
 	}
@@ -417,7 +431,7 @@ func TestCreateValidBCCSPOptsForNewFabricClient(t *testing.T) {
 
 // readCert Reads a random cert for testing
 func readCert(t *testing.T) []byte {
-	cert, err := ioutil.ReadFile("testdata/root.pem")
+	cert, err := ioutil.ReadFile("../manager/testdata/root.pem")
 	if err != nil {
 		t.Fatalf("Error reading cert: %s", err.Error())
 	}
@@ -426,11 +440,11 @@ func readCert(t *testing.T) []byte {
 
 // TestInterfaces will test if the interface instantiation happens properly, ie no nil returned
 func TestInterfaces(t *testing.T) {
-	var apiIM core.IdentityManager
-	var im IdentityManager
+	var apiEnrollment ca.Client
+	var im CAManager
 
-	apiIM = &im
-	if apiIM == nil {
+	apiEnrollment = &im
+	if apiEnrollment == nil {
 		t.Fatalf("this shouldn't happen.")
 	}
 }
@@ -461,4 +475,16 @@ func mspIDByOrgName(t *testing.T, c core.Config, orgName string) string {
 		t.Fatalf("org config retrieval failed: %v", err)
 	}
 	return orgConfig.MspID
+}
+
+func stateStoreFromConfig(t *testing.T, config core.Config) core.KVStore {
+	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: config.CredentialStorePath()})
+	if err != nil {
+		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
+	}
+	return stateStore
+}
+
+func createRandomName() string {
+	return "user" + strconv.Itoa(rand.Intn(500000))
 }

@@ -31,6 +31,7 @@ type FabricSDK struct {
 
 type options struct {
 	Core    sdkApi.CoreProviderFactory
+	CA      sdkApi.CAProviderFactory
 	Service sdkApi.ServiceProviderFactory
 	Logger  api.LoggerProvider
 }
@@ -66,6 +67,11 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 		return nil, errors.WithMessage(err, "Unable to initialize core pkg")
 	}
 
+	ca, err := pkgSuite.CA()
+	if err != nil {
+		return nil, errors.WithMessage(err, "Unable to initialize identity pkg")
+	}
+
 	svc, err := pkgSuite.Service()
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to initialize service pkg")
@@ -79,6 +85,7 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 	sdk := FabricSDK{
 		opts: options{
 			Core:    core,
+			CA:      ca,
 			Service: svc,
 			Logger:  lg,
 		},
@@ -96,6 +103,14 @@ func fromPkgSuite(config core.Config, pkgSuite PkgSuite, opts ...Option) (*Fabri
 func WithCorePkg(core sdkApi.CoreProviderFactory) Option {
 	return func(opts *options) error {
 		opts.Core = core
+		return nil
+	}
+}
+
+// WithCAPkg injects the CA implementation into the SDK.
+func WithCAPkg(ca sdkApi.CAProviderFactory) Option {
+	return func(opts *options) error {
+		opts.CA = ca
 		return nil
 	}
 }
@@ -154,24 +169,22 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		return errors.WithMessage(err, "failed to initialize state store")
 	}
 
+	// Initialize identity manager
+	identityManager, err := sdk.opts.Core.CreateIdentityManager(stateStore, cryptoSuite, config)
+	if err != nil {
+		return errors.WithMessage(err, "failed to initialize identity manager")
+	}
+
 	// Initialize Signing Manager
 	signingManager, err := sdk.opts.Core.CreateSigningManager(cryptoSuite, config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize signing manager")
 	}
 
-	// Initialize Identity Managers
-	identityManager := make(map[string]core.IdentityManager)
-	netConfig, err := config.NetworkConfig()
+	// Initialize CA Provider
+	caProvider, err := sdk.opts.CA.CreateCAProvider(sdk.provider)
 	if err != nil {
-		return errors.Wrapf(err, "failed to retrieve network config")
-	}
-	for orgName := range netConfig.Organizations {
-		mgr, err := sdk.opts.Core.CreateIdentityManager(orgName, stateStore, cryptoSuite, config)
-		if err != nil {
-			return errors.Wrapf(err, "failed to initialize identity manager for organization: %s", orgName)
-		}
-		identityManager[orgName] = mgr
+		return errors.WithMessage(err, "failed to initialize identity provider")
 	}
 
 	//prepare basic providers needed for initialzing rest of the providers
@@ -208,10 +221,11 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		context.WithCryptoSuite(cryptoSuite),
 		context.WithSigningManager(signingManager),
 		context.WithStateStore(stateStore),
+		context.WithIdentitygManager(identityManager),
 		context.WithDiscoveryProvider(discoveryProvider),
 		context.WithSelectionProvider(selectionProvider),
-		context.WithIdentityManager(identityManager),
 		context.WithInfraProvider(infraProvider),
+		context.WithCAProvider(caProvider),
 		context.WithChannelProvider(channelProvider))
 
 	//initialize
@@ -234,6 +248,11 @@ func (sdk *FabricSDK) Close() {
 // Config returns the SDK's configuration.
 func (sdk *FabricSDK) Config() core.Config {
 	return sdk.provider.Config()
+}
+
+// AnonymousContext returns anonymous context
+func (sdk *FabricSDK) AnonymousContext() core.Providers {
+	return sdk.provider
 }
 
 //Context creates and returns context client which has all the necessary providers

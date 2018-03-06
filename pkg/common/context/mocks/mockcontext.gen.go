@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	ca "github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
@@ -33,6 +34,18 @@ func NewMockProviders(ctrl *gomock.Controller) *MockProviders {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockProviders) EXPECT() *MockProvidersMockRecorder {
 	return m.recorder
+}
+
+// CAProvider mocks base method
+func (m *MockProviders) CAProvider() ca.Provider {
+	ret := m.ctrl.Call(m, "CAProvider")
+	ret0, _ := ret[0].(ca.Provider)
+	return ret0
+}
+
+// CAProvider indicates an expected call of CAProvider
+func (mr *MockProvidersMockRecorder) CAProvider() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAProvider", reflect.TypeOf((*MockProviders)(nil).CAProvider))
 }
 
 // ChannelProvider mocks base method
@@ -84,16 +97,15 @@ func (mr *MockProvidersMockRecorder) DiscoveryProvider() *gomock.Call {
 }
 
 // IdentityManager mocks base method
-func (m *MockProviders) IdentityManager(arg0 string) (core.IdentityManager, bool) {
-	ret := m.ctrl.Call(m, "IdentityManager", arg0)
+func (m *MockProviders) IdentityManager() core.IdentityManager {
+	ret := m.ctrl.Call(m, "IdentityManager")
 	ret0, _ := ret[0].(core.IdentityManager)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	return ret0
 }
 
 // IdentityManager indicates an expected call of IdentityManager
-func (mr *MockProvidersMockRecorder) IdentityManager(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityManager", reflect.TypeOf((*MockProviders)(nil).IdentityManager), arg0)
+func (mr *MockProvidersMockRecorder) IdentityManager() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityManager", reflect.TypeOf((*MockProviders)(nil).IdentityManager))
 }
 
 // InfraProvider mocks base method
@@ -167,6 +179,18 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
+// CAProvider mocks base method
+func (m *MockClient) CAProvider() ca.Provider {
+	ret := m.ctrl.Call(m, "CAProvider")
+	ret0, _ := ret[0].(ca.Provider)
+	return ret0
+}
+
+// CAProvider indicates an expected call of CAProvider
+func (mr *MockClientMockRecorder) CAProvider() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAProvider", reflect.TypeOf((*MockClient)(nil).CAProvider))
+}
+
 // ChannelProvider mocks base method
 func (m *MockClient) ChannelProvider() fab.ChannelProvider {
 	ret := m.ctrl.Call(m, "ChannelProvider")
@@ -216,16 +240,15 @@ func (mr *MockClientMockRecorder) DiscoveryProvider() *gomock.Call {
 }
 
 // IdentityManager mocks base method
-func (m *MockClient) IdentityManager(arg0 string) (core.IdentityManager, bool) {
-	ret := m.ctrl.Call(m, "IdentityManager", arg0)
+func (m *MockClient) IdentityManager() core.IdentityManager {
+	ret := m.ctrl.Call(m, "IdentityManager")
 	ret0, _ := ret[0].(core.IdentityManager)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	return ret0
 }
 
 // IdentityManager indicates an expected call of IdentityManager
-func (mr *MockClientMockRecorder) IdentityManager(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityManager", reflect.TypeOf((*MockClient)(nil).IdentityManager), arg0)
+func (mr *MockClientMockRecorder) IdentityManager() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityManager", reflect.TypeOf((*MockClient)(nil).IdentityManager))
 }
 
 // InfraProvider mocks base method

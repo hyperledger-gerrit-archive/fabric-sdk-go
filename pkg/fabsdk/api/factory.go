@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package api
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 )
@@ -14,6 +15,7 @@ import (
 // Providers represents the SDK configured providers context.
 type Providers interface {
 	core.Providers
+	ca.Providers
 	fab.Providers
 }
 
@@ -22,8 +24,13 @@ type CoreProviderFactory interface {
 	CreateStateStoreProvider(config core.Config) (core.KVStore, error)
 	CreateCryptoSuiteProvider(config core.Config) (core.CryptoSuite, error)
 	CreateSigningManager(cryptoProvider core.CryptoSuite, config core.Config) (core.SigningManager, error)
-	CreateIdentityManager(orgName string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error)
+	CreateIdentityManager(StateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error)
 	CreateInfraProvider(context Providers) (fab.InfraProvider, error)
+}
+
+// CAProviderFactory allows overriding default identity providers
+type CAProviderFactory interface {
+	CreateCAProvider(context core.Providers) (ca.Provider, error)
 }
 
 // ServiceProviderFactory allows overriding default service providers (such as peer discovery)

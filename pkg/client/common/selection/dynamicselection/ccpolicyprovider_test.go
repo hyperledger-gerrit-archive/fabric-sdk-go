@@ -121,7 +121,7 @@ func TestBadClient(t *testing.T) {
 
 	// Invalid org
 	_, err = newCCPolicyProvider(context, "mychannel", "User1", "Invalid")
-	if !strings.Contains(err.Error(), "invalid org name") {
+	if !strings.Contains(err.Error(), "mspid is not configured for org") {
 		t.Fatalf("Should have failed for invalid org name")
 	}
 }

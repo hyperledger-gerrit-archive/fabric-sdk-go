@@ -7,9 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package context
 
 import (
-	"strings"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
@@ -54,10 +53,11 @@ type Provider struct {
 	config            core.Config
 	stateStore        core.KVStore
 	cryptoSuite       core.CryptoSuite
+	signingManager    core.SigningManager
+	identityManager   core.IdentityManager
+	caProvider        ca.Provider
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
-	signingManager    core.SigningManager
-	identityManager   map[string]core.IdentityManager
 	infraProvider     fab.InfraProvider
 	channelProvider   fab.ChannelProvider
 }
@@ -72,15 +72,19 @@ func (c *Provider) CryptoSuite() core.CryptoSuite {
 	return c.cryptoSuite
 }
 
-// IdentityManager returns identity manager for organization
-func (c *Provider) IdentityManager(orgName string) (core.IdentityManager, bool) {
-	mgr, ok := c.identityManager[strings.ToLower(orgName)]
-	return mgr, ok
+// CAProvider returns identity provider
+func (c *Provider) CAProvider() ca.Provider {
+	return c.caProvider
 }
 
 // SigningManager returns signing manager
 func (c *Provider) SigningManager() core.SigningManager {
 	return c.signingManager
+}
+
+// IdentityManager returns identity manager
+func (c *Provider) IdentityManager() core.IdentityManager {
+	return c.identityManager
 }
 
 // StateStore returns state store
@@ -153,10 +157,17 @@ func WithSigningManager(signingManager core.SigningManager) SDKContextParams {
 	}
 }
 
-//WithIdentityManager sets identityManagers maps to FabContext
-func WithIdentityManager(identityManagers map[string]core.IdentityManager) SDKContextParams {
+//WithIdentitygManager sets identityManager to FabContext
+func WithIdentitygManager(identityManager core.IdentityManager) SDKContextParams {
 	return func(ctx *Provider) {
-		ctx.identityManager = identityManagers
+		ctx.identityManager = identityManager
+	}
+}
+
+//WithCAProvider sets caProvider maps to FabContext
+func WithCAProvider(caProvider ca.Provider) SDKContextParams {
+	return func(ctx *Provider) {
+		ctx.caProvider = caProvider
 	}
 }
 

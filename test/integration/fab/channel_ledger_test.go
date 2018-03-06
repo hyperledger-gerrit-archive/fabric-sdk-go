@@ -24,6 +24,9 @@ import (
 )
 
 const (
+	org1Name = "Org1"
+	org2Name = "Org2"
+
 	channelConfigFile = "mychannel.tx"
 	channelID         = "mychannel"
 	orgName           = org1Name

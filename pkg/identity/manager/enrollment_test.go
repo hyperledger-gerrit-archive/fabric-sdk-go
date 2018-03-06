@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package manager
 
 import (
 	"strings"
@@ -12,8 +12,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
@@ -81,22 +81,22 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 	cs, err := sw.GetSuiteByConfig(config)
 	stateStore := stateStoreFromConfig(t, config)
 
-	identityMgr, err := New(orgName, stateStore, cs, config)
+	identityMgr, err := New(stateStore, cs, config)
 	if err != nil {
 		t.Fatalf("Failed to setup credential manager: %s", err)
 	}
 
-	if err := checkSigningIdentity(identityMgr, "User1"); err != nil {
+	if err := checkSigningIdentity(identityMgr, userToEnrollMspID, "User1"); err != nil {
 		t.Fatalf("checkSigningIdentity failed: %s", err)
 	}
 
-	// Refers to the same location used by the IdentityManager
+	// Refers to the same location used by the identity Manager
 	enrollmentTestUserStore, err = NewCertFileUserStore(clientCofig.CredentialStore.Path)
 	if err != nil {
 		t.Fatalf("Failed to setup userStore: %s", err)
 	}
 
-	if err := checkSigningIdentity(identityMgr, userToEnroll); err == nil {
+	if err := checkSigningIdentity(identityMgr, userToEnrollMspID, userToEnroll); err == nil {
 		t.Fatalf("checkSigningIdentity should fail for user who hasn't been enrolled")
 	}
 
@@ -104,21 +104,21 @@ func TestGetSigningIdentityWithEnrollment(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	caClient := apimocks.NewMockIdentityManager(ctrl)
-	prepareForEnroll(t, caClient, cs)
+	esvc := apimocks.NewMockClient(ctrl)
+	prepareForEnroll(t, esvc, cs)
 
-	err = caClient.Enroll(userToEnroll, "enrollmentSecret")
+	err = esvc.Enroll(userToEnroll, "enrollmentSecret")
 	if err != nil {
 		t.Fatalf("fabricCAClient Enroll failed: %v", err)
 	}
 
-	if err := checkSigningIdentity(identityMgr, userToEnroll); err != nil {
+	if err := checkSigningIdentity(identityMgr, userToEnrollMspID, userToEnroll); err != nil {
 		t.Fatalf("checkSigningIdentity shouldn't fail for user who hasn been just enrolled: %s", err)
 	}
 }
 
 // Simulate caClient.Enroll()
-func prepareForEnroll(t *testing.T, mc *apimocks.MockIdentityManager, cs core.CryptoSuite) {
+func prepareForEnroll(t *testing.T, mc *apimocks.MockClient, cs core.CryptoSuite) {
 	// A real caClient.Enroll() generates a CSR. In the process, a crypto suite generates
 	// a new key pair, and the private key is stored into crypto suite private key storage.
 

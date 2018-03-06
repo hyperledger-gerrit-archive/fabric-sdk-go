@@ -7,14 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"fmt"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
@@ -25,8 +24,8 @@ type mockCorePkg struct {
 	stateStore      core.KVStore
 	cryptoSuite     core.CryptoSuite
 	signingManager  core.SigningManager
-	identityManager map[string]core.IdentityManager
 	infraProvider   fab.InfraProvider
+	identityManager core.IdentityManager
 }
 
 func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
@@ -47,20 +46,13 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	if err != nil {
 		return nil, err
 	}
-	netConfig, err := config.NetworkConfig()
+
+	im, err := sdkcore.CreateIdentityManager(stateStore, cs, config)
 	if err != nil {
 		return nil, err
 	}
-	im := make(map[string]core.IdentityManager)
-	for orgName := range netConfig.Organizations {
-		mgr, err := sdkcore.CreateIdentityManager(orgName, stateStore, cs, config)
-		if err != nil {
-			return nil, err
-		}
-		im[orgName] = mgr
-	}
 
-	ctx := mocks.NewMockProviderContextCustom(config, cs, sm, stateStore, im)
+	ctx := mocks.NewMockProviderContextCustom(config, cs, sm, stateStore)
 	fp, err := sdkcore.CreateInfraProvider(ctx)
 	if err != nil {
 		return nil, err
@@ -89,12 +81,8 @@ func (mc *mockCorePkg) CreateSigningManager(cryptoProvider core.CryptoSuite, con
 	return mc.signingManager, nil
 }
 
-func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error) {
-	mgr, ok := mc.identityManager[orgName]
-	if !ok {
-		return nil, fmt.Errorf("identity manager not found for organization: %s", orgName)
-	}
-	return mgr, nil
+func (mc *mockCorePkg) CreateIdentityManager(stateStore core.KVStore, cryptoProvider core.CryptoSuite, config core.Config) (core.IdentityManager, error) {
+	return mc.identityManager, nil
 }
 
 func (mc *mockCorePkg) CreateInfraProvider(ctx sdkApi.Providers) (fab.InfraProvider, error) {
@@ -115,11 +103,25 @@ func (ps *mockPkgSuite) Core() (sdkApi.CoreProviderFactory, error) {
 	return defcore.NewProviderFactory(), nil
 }
 
+func (ps *mockPkgSuite) Identity() (sdkApi.CAProviderFactory, error) {
+	if ps.errOnCore {
+		return nil, errors.New("Error")
+	}
+	return defca.NewProviderFactory(), nil
+}
+
 func (ps *mockPkgSuite) Service() (sdkApi.ServiceProviderFactory, error) {
 	if ps.errOnService {
 		return nil, errors.New("Error")
 	}
 	return defsvc.NewProviderFactory(), nil
+}
+
+func (ps *mockPkgSuite) CA() (sdkApi.CAProviderFactory, error) {
+	if ps.errOnService {
+		return nil, errors.New("Error")
+	}
+	return defca.NewProviderFactory(), nil
 }
 
 func (ps *mockPkgSuite) Logger() (api.LoggerProvider, error) {

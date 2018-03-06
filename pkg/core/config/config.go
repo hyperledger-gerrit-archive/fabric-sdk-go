@@ -326,7 +326,7 @@ func (c *Config) CAServerCertPems(org string) ([]string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	certFilesPem := config.CertificateAuthorities[caName].TLSCACerts.Pem
+	certFilesPem := config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Pem
 	certPems := make([]string, len(certFilesPem))
 	for i, v := range certFilesPem {
 		certPems[i] = string(v)
@@ -350,7 +350,7 @@ func (c *Config) CAServerCertPaths(org string) ([]string, error) {
 		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 
-	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
+	certFiles := strings.Split(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Path, ",")
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
@@ -520,7 +520,7 @@ func (c *Config) MspID(org string) (string, error) {
 	// viper lowercases all key maps, org is lower case
 	mspID := config.Organizations[strings.ToLower(org)].MspID
 	if mspID == "" {
-		return "", errors.Errorf("MSP ID is empty for org: %s", org)
+		return "", errors.Errorf("mspid is not configured for org: %s", org)
 	}
 
 	return mspID, nil
