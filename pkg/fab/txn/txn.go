@@ -9,9 +9,8 @@ package txn
 
 import (
 	"bytes"
+	reqContext "context"
 	"math/rand"
-	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -208,73 +207,40 @@ func SendPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (
 		return nil, err
 	}
 
-	return sendEnvelope(ctx, envelope, orderers)
+	// Copy aside the ordering service endpoints
+	randOrderers := []fab.Orderer{}
+	for _, o := range orderers {
+		randOrderers = append(randOrderers, o)
+	}
+
+	// Iterate them in a random order and try broadcasting 1 by 1
+	var errResp error
+	for _, i := range rand.Perm(len(randOrderers)) {
+		resp, err := sendEnvelope(ctx, envelope, randOrderers[i])
+		if err != nil {
+			errResp = err
+		} else {
+			return resp, nil
+		}
+	}
+	return nil, errResp
 }
 
 // sendEnvelope sends the given envelope to each orderer and returns a block response
-func sendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*common.Block, error) {
+func sendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*common.Block, error) {
 
-	var blockResponse *common.Block
-	var errorResponse error
-	var mutex sync.Mutex
-	outstandingRequests := len(orderers)
-	done := make(chan bool)
+	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
+	grpcCtx, cancel := reqContext.WithTimeout(reqContext.Background(), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
+	defer cancel()
+	blocks, errs := orderer.SendDeliver(grpcCtx, envelope)
 
-	// Send the request to all orderers and return as soon as one responds with a block.
-	for _, o := range orderers {
-
-		go func(orderer fab.Orderer) {
-			logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
-
-			blocks, errs, cancel := orderer.SendDeliver(envelope)
-			defer cancel()
-
-			select {
-			case block := <-blocks:
-				mutex.Lock()
-				if blockResponse == nil {
-					blockResponse = block
-					done <- true
-				}
-				mutex.Unlock()
-
-			case err := <-errs:
-				mutex.Lock()
-				if errorResponse == nil {
-					errorResponse = err
-				}
-				outstandingRequests--
-				if outstandingRequests == 0 {
-					done <- true
-				}
-				mutex.Unlock()
-
-			case <-time.After(ctx.Config().TimeoutOrDefault(core.OrdererResponse)):
-				mutex.Lock()
-				if errorResponse == nil {
-					errorResponse = errors.New("timeout waiting for response from orderer")
-				}
-				outstandingRequests--
-				if outstandingRequests == 0 {
-					done <- true
-				}
-				mutex.Unlock()
-			}
-		}(o)
+	select {
+	case block := <-blocks:
+		return block, nil
+	case err := <-errs:
+		return nil, errors.Wrapf(err, "error from orderer")
 	}
 
-	<-done
-
-	if blockResponse != nil {
-		return blockResponse, nil
-	}
-
-	// There must be an error
-	if errorResponse != nil {
-		return nil, errors.Wrap(errorResponse, "error returned from orderer service")
-	}
-
-	return nil, errors.New("unexpected: didn't receive a block from any of the orderer servces and didn't receive any error")
 }
 
 // Status is the transaction status returned from eventhub tx events

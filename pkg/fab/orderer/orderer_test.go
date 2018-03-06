@@ -7,9 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
+	grpcContext "context"
 	"crypto/x509"
 	"fmt"
 	"net"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -48,16 +50,23 @@ EDAKBggqhkjOPQQDAgNHADBEAiAHp5Rbp9Em1G/UmKn8WsCbqDfWecVbZPQj3RK4
 oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
 -----END CERTIFICATE-----`
 
-func TestSendDeliverHappy(t *testing.T) {
+var ordererAddr string
+var ordererMockSrv *mocks.MockBroadcastServer
+
+func TestMain(m *testing.M) {
 	grpcServer := grpc.NewServer()
 	defer grpcServer.Stop()
-	_, addr := startMockServer(t, grpcServer)
-	ordererConfig := getGRPCOpts(addr, true, false)
+	ordererMockSrv, ordererAddr = startMockServer(grpcServer)
+	os.Exit(m.Run())
+}
 
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), FromOrdererConfig(ordererConfig))
-	// Test deliver happy path
-	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+func TestSendDeliverHappy(t *testing.T) {
+	ordererConfig := getGRPCOpts(ordererAddr, true, false)
+
+	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
+	ctx, cancel := grpcContext.WithTimeout(grpcContext.Background(), 15*time.Second)
 	defer cancel()
+	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -72,17 +81,17 @@ func TestSendDeliverHappy(t *testing.T) {
 }
 
 func TestSendDeliverErr(t *testing.T) {
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	mockServer, addr := startMockServer(t, grpcServer)
-	ordererConfig := getGRPCOpts(addr, true, false)
+	ordererConfig := getGRPCOpts(ordererAddr, true, false)
 
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), FromOrdererConfig(ordererConfig))
+	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
 	// Test deliver with deliver error from OS
 	testError := errors.New("test error")
-	mockServer.DeliverError = testError
-	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	ordererMockSrv.DeliverError = testError
+	defer func() { ordererMockSrv.DeliverError = nil }()
+
+	ctx, cancel := grpcContext.WithTimeout(grpcContext.Background(), 5*time.Second)
 	defer cancel()
+	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -100,8 +109,9 @@ func TestSendDeliver(t *testing.T) {
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(testOrdererURL+"invalid-test"))
 
 	// Test deliver happy path
-	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	ctx, cancel := grpcContext.WithTimeout(grpcContext.Background(), 5*time.Second)
 	defer cancel()
+	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -114,17 +124,16 @@ func TestSendDeliver(t *testing.T) {
 
 }
 
-func startMockServer(t *testing.T, grpcServer *grpc.Server) (*mocks.MockBroadcastServer, string) {
+func startMockServer(grpcServer *grpc.Server) (*mocks.MockBroadcastServer, string) {
 	lis, err := net.Listen("tcp", testOrdererURL)
 	addr := lis.Addr().String()
 
 	broadcastServer := new(mocks.MockBroadcastServer)
 	ab.RegisterAtomicBroadcastServer(grpcServer, broadcastServer)
 	if err != nil {
-		t.Logf("Error starting test server %s", err)
-		t.FailNow()
+		panic(fmt.Sprintf("Error starting test server %s", err))
 	}
-	t.Logf("Starting test server on %s", addr)
+	fmt.Printf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
 
 	return broadcastServer, addr
@@ -190,21 +199,22 @@ func TestNewOrdererWithMutualTLS(t *testing.T) {
 	}
 }
 
-func TestSendBroadcast(t *testing.T) {
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := startMockServer(t, grpcServer)
-	ordererConfig := getGRPCOpts(addr, true, false)
-	orderer, _ := New(mocks.NewMockConfig(), WithURL(addr), FromOrdererConfig(ordererConfig), WithInsecure())
+func TestSendBroadcastHappy(t *testing.T) {
+
+	ordererConfig := getGRPCOpts(ordererAddr, true, false)
+	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
+
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
+	assert.Nil(t, err)
+}
 
-	if err != nil {
-		t.Fatalf("Test SendBroadcast was not supposed to fail")
-	}
+func TestSendBroadcastTimeout(t *testing.T) {
 
-	orderer, _ = New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"), FromOrdererConfig(ordererConfig))
+	ordererConfig := getGRPCOpts(testOrdererURL+"Test", true, false)
+	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
 	orderer.dialTimeout = 15
-	_, err = orderer.SendBroadcast(&fab.SignedEnvelope{})
+
+	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 	if err == nil {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
 	}
@@ -212,7 +222,6 @@ func TestSendBroadcast(t *testing.T) {
 	assert.True(t, ok, "Expected status error")
 	assert.EqualValues(t, grpccodes.Unknown, status.ToGRPCStatusCode(statusError.Code))
 	assert.Equal(t, status.OrdererClientStatus, statusError.Group)
-
 }
 
 func TestSendDeliverServerBadResponse(t *testing.T) {
@@ -230,8 +239,9 @@ func TestSendDeliverServerBadResponse(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	blocks, errors, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	ctx, cancel := grpcContext.WithTimeout(grpcContext.Background(), 5*time.Second)
 	defer cancel()
+	blocks, errors := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -261,8 +271,9 @@ func TestSendDeliverServerSuccessResponse(t *testing.T) {
 
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	blocks, errors, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	ctx, cancel := grpcContext.WithTimeout(grpcContext.Background(), 5*time.Second)
 	defer cancel()
+	blocks, errors := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -287,8 +298,9 @@ func TestSendDeliverFailure(t *testing.T) {
 	addr := startCustomizedMockServer(t, testOrdererURL, grpcServer, &broadcastServer)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
 
-	blocks, errors, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	ctx, cancel := grpcContext.WithTimeout(grpcContext.Background(), 5*time.Second)
 	defer cancel()
+	blocks, errors := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -425,7 +437,7 @@ func getGRPCOpts(addr string, failFast bool, keepAliveOptions bool) *core.Ordere
 
 	//orderer config with GRPC opts
 	ordererConfig := &core.OrdererConfig{
-		URL:         addr,
+		URL:         "grpc://" + addr,
 		GRPCOptions: grpcOpts,
 	}
 
@@ -436,8 +448,8 @@ func TestForDeadlineExceeded(t *testing.T) {
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"))
 	orderer.dialTimeout = 1 * time.Second
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
-	if err == nil || !strings.HasPrefix(err.Error(), "NewAtomicBroadcastClient") {
-		t.Fatalf("Test SendBroadcast was supposed to fail with 'gRPC Transport Status Code: (4) DeadlineExceeded', instead it failed with [%s] error", err)
+	if err == nil || !strings.HasPrefix(err.Error(), "Orderer Client Status Code") {
+		t.Fatalf("Test SendBroadcast was supposed to fail with 'Orderer Client Status Code ...', instead it failed with [%s] error", err)
 	}
 }
 
@@ -445,9 +457,9 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 	//keep alive option is not set and fail fast is false - invalid URL
 	orderer, _ := New(mocks.NewMockConfig(), WithURL("grpc://"+testOrdererURL+"Test"), WithInsecure())
 	orderer.dialTimeout = 5 * time.Second
-	fmt.Printf("GRPC opts%v \n", orderer.grpcDialOption)
+	t.Logf("GRPC opts%v \n", orderer.grpcDialOption)
 	for i, v := range orderer.grpcDialOption {
-		fmt.Printf("%v %v %v\n", i, &v, reflect.TypeOf(v))
+		t.Logf("%v %v %v\n", i, &v, reflect.TypeOf(v))
 
 	}
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
@@ -455,15 +467,12 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded' %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := startMockServer(t, grpcServer)
-
-	orderer, _ = New(mocks.NewMockConfig(), WithURL("grpc://"+addr), WithInsecure())
+	orderer, _ = New(mocks.NewMockConfig(), WithURL("grpc://"+ordererAddr), WithInsecure())
 	orderer.dialTimeout = 5 * time.Second
 	// Test deliver happy path
-	blocks, errs, cancel := orderer.SendDeliver(&fab.SignedEnvelope{})
+	ctx, cancel := grpcContext.WithTimeout(grpcContext.Background(), 5*time.Second)
 	defer cancel()
+	blocks, errs := orderer.SendDeliver(ctx, &fab.SignedEnvelope{})
 
 	select {
 	case block := <-blocks:
@@ -478,11 +487,12 @@ func TestSendDeliverDefaultOpts(t *testing.T) {
 
 }
 
-func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
+/*
+func TestForGRPCErrorsWithKeepAliveOptsFailFast(t *testing.T) {
 	//keep alive options set and failfast is true
 	ordererConfig := getGRPCOpts("grpc://"+testOrdererURL+"Test", true, true)
 	orderer, _ := New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"), FromOrdererConfig(ordererConfig))
-	orderer.dialTimeout = 5 * time.Second
+	orderer.dialTimeout = 2 * time.Second
 	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 	if err == nil {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
@@ -490,22 +500,26 @@ func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 	//expect here GRPC unavaialble since fail fast is set to true
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error")
-	assert.EqualValues(t, grpccodes.Unavailable, status.ToGRPCStatusCode(statusError.Code))
-	assert.Equal(t, status.GRPCTransportStatus, statusError.Group)
+	assert.EqualValues(t, status.ConnectionFailed, status.ToOrdererStatusCode(statusError.Code))
+	//	assert.EqualValues(t, grpccodes.Unavailable, status.ToGRPCStatusCode(statusError.Code))
+	assert.Equal(t, status.OrdererClientStatus, statusError.Group)
+}
+*/
+
+func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 	//expect here GRPC deadline exceeded since fail fast is set to false
-	ordererConfig = getGRPCOpts(testOrdererURL+"Test", false, true)
-	orderer, _ = New(mocks.NewMockConfig(), WithURL(testOrdererURL+"Test"), FromOrdererConfig(ordererConfig))
-	orderer.dialTimeout = 5 * time.Second
-	_, err = orderer.SendBroadcast(&fab.SignedEnvelope{})
+	ordererConfig := getGRPCOpts(testOrdererURL+"Test", false, true)
+	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig))
+	orderer.dialTimeout = 2 * time.Second
+	_, err := orderer.SendBroadcast(&fab.SignedEnvelope{})
 	if err == nil {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
 	}
-	statusError, ok = status.FromError(err)
-	fmt.Printf("%v %v", err, statusError)
+	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error")
-	assert.EqualValues(t, grpccodes.DeadlineExceeded, status.ToGRPCStatusCode(statusError.Code))
-	assert.Equal(t, status.GRPCTransportStatus, statusError.Group)
-
+	assert.EqualValues(t, status.ConnectionFailed, status.ToOrdererStatusCode(statusError.Code))
+	//assert.EqualValues(t, grpccodes.DeadlineExceeded, status.ToGRPCStatusCode(statusError.Code))
+	assert.Equal(t, status.OrdererClientStatus, statusError.Group)
 }
 
 func TestNewOrdererFromConfig(t *testing.T) {

@@ -17,7 +17,7 @@ import (
 type Orderer interface {
 	URL() string
 	SendBroadcast(envelope *SignedEnvelope) (*common.Status, error)
-	SendDeliver(envelope *SignedEnvelope) (chan *common.Block, chan error, context.CancelFunc)
+	SendDeliver(ctx context.Context, envelope *SignedEnvelope) (chan *common.Block, chan error)
 }
 
 // A SignedEnvelope can can be sent to an orderer for broadcasting
