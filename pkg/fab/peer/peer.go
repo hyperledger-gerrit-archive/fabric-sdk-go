@@ -20,8 +20,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/urlutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")

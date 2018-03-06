@@ -13,9 +13,9 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	eventservice "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
 

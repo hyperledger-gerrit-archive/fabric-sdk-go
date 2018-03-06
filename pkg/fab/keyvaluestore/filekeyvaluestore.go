@@ -12,7 +12,7 @@ import (
 	"path"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging"
 	"github.com/pkg/errors"
 )
 

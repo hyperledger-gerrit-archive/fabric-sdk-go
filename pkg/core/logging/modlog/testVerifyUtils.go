@@ -12,9 +12,10 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/metadata"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/metadata"
 )
 
 const (

@@ -16,11 +16,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/modlog"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	signingMgr "github.com/hyperledger/fabric-sdk-go/pkg/fab/signingmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/modlog"
 )
 
 func TestCreateStateStoreProvider(t *testing.T) {

@@ -8,20 +8,17 @@ package modlog
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-
 	"sync"
-
-	"io"
-
 	"sync/atomic"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging/metadata"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/metadata"
 )
 
 var rwmutex = &sync.RWMutex{}
