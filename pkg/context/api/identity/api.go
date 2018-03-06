@@ -4,40 +4,55 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package core
+package identity
 
-import (
-	"errors"
-)
+import "errors"
 
 var (
 	// ErrCARegistrarNotFound indicates the CA registrar was not found
 	ErrCARegistrarNotFound = errors.New("CA registrar not found")
 )
 
-// SigningIdentity is the identity object that encapsulates the user's private key for signing
-// and the user's enrollment certificate (identity)
-type SigningIdentity struct {
-	MspID          string
-	EnrollmentCert []byte
-	PrivateKey     Key
-}
-
-// IdentityManager provides management of identities in a Fabric network
-type IdentityManager interface {
-	GetSigningIdentity(name string) (*SigningIdentity, error)
-	GetUser(name string) (User, error)
-	Enroll(enrollmentID string, enrollmentSecret string) error
-	Reenroll(user User) error
-	Register(request *RegistrationRequest) (string, error)
-	Revoke(request *RevocationRequest) (*RevocationResponse, error)
-	CAName() string
+// EnrollmentRequest is a request to enroll an identity
+type EnrollmentRequest struct {
+	// The identity name to enroll
+	Name string
+	// The secret returned via Register
+	Secret string
+	// Profile is the name of the signing profile to use in issuing the certificate
+	Profile string
+	// Label is the label to use in HSM operations
+	Label string
+	// CSR is Certificate Signing Request info
+	// CSR *CSRInfo (TODO)
+	// CAName is the name of the CA to connect to
+	CAName string
+	// AttrReqs are requests for attributes to add to the certificate.
+	// Each attribute is added only if the requestor owns the attribute.
+	AttrReqs []*AttributeRequest
 }
 
 // AttributeRequest is a request for an attribute.
+// This implements the certmgr/AttributeRequest interface.
 type AttributeRequest struct {
-	Name     string
-	Optional bool
+	Name     string `json:"name"`
+	Optional bool   `json:"optional,omitempty"`
+}
+
+// ReenrollmentRequest is a request to reenroll an identity.
+// This is useful to renew a certificate before it has expired.
+type ReenrollmentRequest struct {
+	// Profile is the name of the signing profile to use in issuing the certificate
+	Profile string
+	// Label is the label to use in HSM operations
+	Label string
+	// CSR is Certificate Signing Request info
+	// CSR *CSRInfo (TODO)
+	// CAName is the name of the CA to connect to
+	CAName string
+	// AttrReqs are requests for attributes to add to the certificate.
+	// Each attribute is added only if the requestor owns the attribute.
+	AttrReqs []*AttributeRequest
 }
 
 // RegistrationRequest defines the attributes required to register a user with the CA

@@ -16,9 +16,9 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
-	"strings"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/identity"
+	idmocks "github.com/hyperledger/fabric-sdk-go/pkg/identity/manager/mocks"
 )
 
 // MockProviderContext holds core providers to enable mocking.
@@ -27,7 +27,7 @@ type MockProviderContext struct {
 	cryptoSuite       core.CryptoSuite
 	signingManager    core.SigningManager
 	stateStore        core.KVStore
-	identityManager   map[string]core.IdentityManager
+	identityProvider  identity.IdentityProvider
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
 	fabricProvider    fab.InfraProvider
@@ -37,15 +37,12 @@ type MockProviderContext struct {
 // NewMockProviderContext creates a MockProviderContext consisting of defaults
 func NewMockProviderContext() *MockProviderContext {
 
-	im := make(map[string]core.IdentityManager)
-	im[""] = &MockIdentityManager{}
-
 	context := MockProviderContext{
 		config:            NewMockConfig(),
 		signingManager:    NewMockSigningManager(),
 		cryptoSuite:       &MockCryptoSuite{},
 		stateStore:        &MockStateStore{},
-		identityManager:   im,
+		identityProvider:  &idmocks.MockIdentityProvider{},
 		discoveryProvider: &MockStaticDiscoveryProvider{},
 		selectionProvider: &MockSelectionProvider{},
 		fabricProvider:    &MockFabricProvider{},
@@ -55,13 +52,12 @@ func NewMockProviderContext() *MockProviderContext {
 }
 
 // NewMockProviderContextCustom creates a MockProviderContext consisting of the arguments
-func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer core.SigningManager, stateStore core.KVStore, identityManager map[string]core.IdentityManager) *MockProviderContext {
+func NewMockProviderContextCustom(config config.Config, cryptoSuite core.CryptoSuite, signer core.SigningManager, stateStore core.KVStore) *MockProviderContext {
 	context := MockProviderContext{
-		config:          config,
-		signingManager:  signer,
-		cryptoSuite:     cryptoSuite,
-		stateStore:      stateStore,
-		identityManager: identityManager,
+		config:         config,
+		signingManager: signer,
+		cryptoSuite:    cryptoSuite,
+		stateStore:     stateStore,
 	}
 	return &context
 }
@@ -91,10 +87,9 @@ func (pc *MockProviderContext) StateStore() core.KVStore {
 	return pc.stateStore
 }
 
-// IdentityManager returns the identity manager
-func (pc *MockProviderContext) IdentityManager(orgName string) (core.IdentityManager, bool) {
-	mgr, ok := pc.identityManager[strings.ToLower(orgName)]
-	return mgr, ok
+// IdentityProvider returns the identity provider
+func (pc *MockProviderContext) IdentityProvider() identity.IdentityProvider {
+	return pc.identityProvider
 }
 
 //DiscoveryProvider returns discovery provider
