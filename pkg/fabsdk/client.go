@@ -13,6 +13,7 @@ import (
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/identity"
 	"github.com/pkg/errors"
 )
 
@@ -237,9 +238,9 @@ func (c *clientCtx) CryptoSuite() core.CryptoSuite {
 	return c.providers.CryptoSuite()
 }
 
-// IdentityManager returns identity manager for organization
-func (c *clientCtx) IdentityManager(orgName string) (core.IdentityManager, bool) {
-	return c.providers.IdentityManager(orgName)
+// IdentityProvider returns identity provider
+func (c *clientCtx) IdentityProvider() identity.Provider {
+	return c.providers.IdentityProvider()
 }
 
 // SigningManager returns signing manager
