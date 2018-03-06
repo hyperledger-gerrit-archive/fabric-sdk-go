@@ -8,7 +8,6 @@ package fabsdk
 
 import (
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
 )
@@ -64,12 +63,11 @@ func (sdk *FabricSDK) newIdentity(options ...IdentityOption) (contextApi.Identit
 		return nil, errors.New("invalid options to create identity")
 	}
 
-	mgr, ok := sdk.provider.IdentityManager(opts.orgName)
-	if !ok {
-		return nil, errors.New("invalid options to create identity, invalid org name")
+	identityManager, err := sdk.Context().IdentityProvider().CreateIdentityManager(opts.orgName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create identity manager, invalid org name? %s", opts.orgName)
 	}
-
-	user, err := mgr.GetUser(opts.user)
+	user, err := identityManager.GetUser(opts.user)
 	if err != nil {
 		return nil, err
 	}

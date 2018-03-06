@@ -9,9 +9,8 @@ package fab
 import (
 	"testing"
 
-	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
-	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
 const (
@@ -21,22 +20,17 @@ const (
 
 func TestEnrollOrg2(t *testing.T) {
 
-	cryptoSuiteProvider, err := cryptosuite.GetSuiteByConfig(testFabricConfig)
+	sdk, err := fabsdk.New(config.FromFile(sdkConfigFile))
 	if err != nil {
-		t.Fatalf("Failed getting cryptosuite from config : %s", err)
+		t.Fatalf("SDK init failed: %v", err)
 	}
 
-	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: testFabricConfig.CredentialStorePath()})
+	im, err := sdk.NewEnrollmentService(org2Name)
 	if err != nil {
-		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
+		t.Fatalf("NewIdentityManager return error: %v", err)
 	}
 
-	caClient, err := identitymgr.New(org2Name, stateStore, cryptoSuiteProvider, testFabricConfig)
-	if err != nil {
-		t.Fatalf("NewFabricCAClient return error: %v", err)
-	}
-
-	err = caClient.Enroll("admin", "adminpw")
+	err = im.Enroll("admin", "adminpw")
 	if err != nil {
 		t.Fatalf("Enroll returned error: %v", err)
 	}

@@ -9,6 +9,7 @@ package context
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/identity"
 )
 
 // Session primarily represents the session and identity context
@@ -32,6 +33,7 @@ type Client interface {
 // Providers represents the SDK configured providers context.
 type Providers interface {
 	core.Providers
+	identity.Providers
 	fab.Providers
 }
 
