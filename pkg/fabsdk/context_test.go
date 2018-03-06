@@ -40,8 +40,8 @@ func TestWithIdentity(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	identityManager, ok := sdk.Context().IdentityManager(identityValidOptOrg)
-	if !ok {
+	identityManager, err := sdk.Context().IdentityProvider().CreateIdentityManager(identityValidOptOrg)
+	if err != nil {
 		t.Fatalf("Invalid organization: %s", identityValidOptOrg)
 	}
 	identity, err := identityManager.GetUser(identityValidOptUser)

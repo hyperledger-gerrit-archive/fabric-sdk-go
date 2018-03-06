@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package manager
 
 import (
 	"math/rand"
@@ -14,6 +14,7 @@ import (
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	idapi "github.com/hyperledger/fabric-sdk-go/pkg/context/api/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
@@ -127,7 +128,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	}
 }
 
-func checkSigningIdentity(mgr core.IdentityManager, user string) error {
+func checkSigningIdentity(mgr idapi.IdentityManager, user string) error {
 	id, err := mgr.GetSigningIdentity(user)
 	if err == core.ErrUserNotFound {
 		return err
@@ -169,7 +170,7 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
 func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 
-	config, err := config.FromFile("../../../test/fixtures/config/config_test_embedded_pems.yaml")()
+	config, err := config.FromFile("../../../test/fixtures/config/config_test_embedded_pems2.yaml")()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
