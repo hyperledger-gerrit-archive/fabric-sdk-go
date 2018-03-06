@@ -7,11 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package context
 
 import (
-	"strings"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/identity"
 )
 
 // Client supplies the configuration and signing identity to client objects.
@@ -56,7 +55,7 @@ type Provider struct {
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
 	signingManager    core.SigningManager
-	identityManager   map[string]core.IdentityManager
+	identityProvider  identity.IdentityProvider
 	fabricProvider    fab.InfraProvider
 	channelProvider   fab.ChannelProvider
 }
@@ -71,10 +70,9 @@ func (c *Provider) CryptoSuite() core.CryptoSuite {
 	return c.cryptoSuite
 }
 
-// IdentityManager returns identity manager for organization
-func (c *Provider) IdentityManager(orgName string) (core.IdentityManager, bool) {
-	mgr, ok := c.identityManager[strings.ToLower(orgName)]
-	return mgr, ok
+// IdentityProvider returns identity provider
+func (c *Provider) IdentityProvider() identity.IdentityProvider {
+	return c.identityProvider
 }
 
 // SigningManager returns signing manager
@@ -152,10 +150,10 @@ func WithSigningManager(signingManager core.SigningManager) SDKContextParams {
 	}
 }
 
-//WithIdentityManager sets identityManagers maps to FabContext
-func WithIdentityManager(identityManagers map[string]core.IdentityManager) SDKContextParams {
+//WithIdentityProvider sets identityManagers maps to FabContext
+func WithIdentityProvider(identityProvider identity.IdentityProvider) SDKContextParams {
 	return func(ctx *Provider) {
-		ctx.identityManager = identityManagers
+		ctx.identityProvider = identityProvider
 	}
 }
 

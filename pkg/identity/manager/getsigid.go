@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package manager
 
 import (
 	"fmt"
@@ -16,6 +16,7 @@ import (
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	idapi "github.com/hyperledger/fabric-sdk-go/pkg/context/api/identity"
 	"github.com/pkg/errors"
 )
 
@@ -58,12 +59,12 @@ func (mgr *IdentityManager) loadUserFromStore(userName string) (core.User, error
 }
 
 // GetSigningIdentity returns a signing identity for the given user name
-func (mgr *IdentityManager) GetSigningIdentity(userName string) (*core.SigningIdentity, error) {
+func (mgr *IdentityManager) GetSigningIdentity(userName string) (*idapi.SigningIdentity, error) {
 	user, err := mgr.GetUser(userName)
 	if err != nil {
 		return nil, err
 	}
-	signingIdentity := &core.SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
+	signingIdentity := &idapi.SigningIdentity{MspID: user.MspID(), PrivateKey: user.PrivateKey(), EnrollmentCert: user.EnrollmentCertificate()}
 	return signingIdentity, nil
 }
 
