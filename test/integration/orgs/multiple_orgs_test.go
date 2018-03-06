@@ -14,12 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
@@ -37,9 +35,16 @@ import (
 )
 
 const (
-	pollRetries = 5
-	org1        = "Org1"
-	org2        = "Org2"
+	pollRetries      = 5
+	org1             = "Org1"
+	org2             = "Org2"
+	ordererAdminUser = "Admin"
+	ordererOrgName   = "ordererorg"
+	org1AdminUser    = "Admin"
+	org2AdminUser    = "Admin"
+	org1User         = "User1"
+	org2User         = "User1"
+	channelID        = "orgchannel"
 )
 
 // Peers
@@ -64,15 +69,30 @@ func TestOrgsEndToEnd(t *testing.T) {
 
 func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 
+	//prepare contexts
+	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrgName(ordererOrgName))
+	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrgName(org1))
+	org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrgName(org2))
+	org1ClientContext := sdk.Context(fabsdk.WithUser(org1User), fabsdk.WithOrgName(org1))
+	org1ChannelClientContext := fabsdk.ChannelContext(org1ClientContext, channelID)
+	org2ClientContext := sdk.Context(fabsdk.WithUser(org2User), fabsdk.WithOrgName(org2))
+	org2ChannelClientContext := fabsdk.ChannelContext(org2ClientContext, channelID)
+
 	// Channel management client is responsible for managing channels (create/update channel)
-	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ResourceMgmt()
+	chMgmtClient, err := resmgmt.New(ordererClientContext)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create channel (or update if it already exists)
-	org1AdminUser := loadOrgUser(t, sdk, org1, "Admin")
-	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel", ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"), SigningIdentity: org1AdminUser}
+	org1AdminUser, err := org1AdminClientContext()
+	if err != nil {
+		t.Fatalf("failed to get org1AdminUser, err : %v", err)
+	}
+
+	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
+		ChannelConfig:   path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
+		SigningIdentity: org1AdminUser}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +101,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	time.Sleep(time.Second * 5)
 
 	// Org1 resource management client (Org1 is default org)
-	org1ResMgmt, err := sdk.NewClient(fabsdk.WithUser("Admin")).ResourceMgmt()
+	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
@@ -92,7 +112,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org2 resource management client
-	org2ResMgmt, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(org2)).ResourceMgmt()
+	org2ResMgmt, err := resmgmt.New(org2AdminClientContext)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,13 +172,13 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org1 user connects to 'orgchannel'
-	chClientOrg1User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org1)).Channel("orgchannel")
+	chClientOrg1User, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
 
 	// Org2 user connects to 'orgchannel'
-	chClientOrg2User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org2)).Channel("orgchannel")
+	chClientOrg2User, err := channel.New(org2ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
@@ -171,7 +191,8 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	initial, _ := strconv.Atoi(string(response.Payload))
 
 	// Ledger client will verify blockchain info
-	ledgerClient, err := sdk.NewClient(fabsdk.WithUser("Admin")).Ledger("orgchannel")
+	ledgerClient, err := ledger.New(org1AdminClientContext, channelID)
+
 	if err != nil {
 		t.Fatalf("Failed to create new ledger client: %s", err)
 	}
@@ -287,6 +308,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 }
 
 func testWithOrg2(t *testing.T, expectedValue int) int {
+
 	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
 	// This user has to have privileges to query lscc for chaincode data
 	mychannelUser := selection.ChannelUser{ChannelID: "orgchannel", UserName: "User1", OrgName: "Org1"}
@@ -299,8 +321,12 @@ func testWithOrg2(t *testing.T, expectedValue int) int {
 	}
 	defer sdk.Close()
 
+	//prepare contexts
+	org2ClientContext := sdk.Context(fabsdk.WithUser(org2User), fabsdk.WithOrgName(org2))
+	org2ChannelClientContext := fabsdk.ChannelContext(org2ClientContext, channelID)
+
 	// Create new client that will use dynamic selection
-	chClientOrg2User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org2)).Channel("orgchannel")
+	chClientOrg2User, err := channel.New(org2ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org2 user: %s", err)
 	}
@@ -316,8 +342,12 @@ func testWithOrg2(t *testing.T, expectedValue int) int {
 }
 
 func verifyWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, expectedValue int) {
+	//prepare contexts
+	org1ClientContext := sdk.Context(fabsdk.WithUser(org1User), fabsdk.WithOrgName(org1))
+	org1ChannelClientContext := fabsdk.ChannelContext(org1ClientContext, channelID)
+
 	// Org1 user connects to 'orgchannel'
-	chClientOrg1User, err := sdk.NewClient(fabsdk.WithUser("User1"), fabsdk.WithOrg(org1)).Channel("orgchannel")
+	chClientOrg1User, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
@@ -349,15 +379,6 @@ func verifyValue(t *testing.T, chClient *channel.Client, expected int) {
 			(expected), valueInt)
 	}
 
-}
-
-func loadOrgUser(t *testing.T, sdk *fabsdk.FabricSDK, orgName string, userName string) context.Identity {
-
-	session, err := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName)).Session()
-	if err != nil {
-		t.Fatal(errors.Wrapf(err, "Session failed, %s, %s", orgName, userName))
-	}
-	return session
 }
 
 func loadOrgPeers(t *testing.T, sdk *fabsdk.FabricSDK) {

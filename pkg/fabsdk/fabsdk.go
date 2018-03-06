@@ -182,7 +182,7 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		context.WithIdentityManager(identityManager))
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.Context())
+	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(&sdk.provider)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
@@ -235,13 +235,26 @@ func (sdk *FabricSDK) Config() core.Config {
 }
 
 //Context creates and returns context client which has all the necessary providers
-func (sdk *FabricSDK) Context(options ...IdentityOption) contextApi.Client {
-	//ignore error, set nil identity in case of error
-	identity, _ := sdk.newIdentity(options...)
-	return &context.Client{Providers: &sdk.provider, Identity: identity}
+func (sdk *FabricSDK) Context(options ...IdentityOption) contextApi.ClientProvider {
+
+	clientProvider := func() (contextApi.Client, error) {
+		identity, err := sdk.newIdentity(options...)
+		return &context.Client{Providers: &sdk.provider, Identity: identity}, err
+	}
+
+	return clientProvider
 }
 
-//NewChannelContext creates and returns channel context
-func NewChannelContext(client contextApi.Client, channelID string) *context.Channel {
-	return context.NewChannel(client, channelID)
+//ChannelContext creates and returns channel context
+func ChannelContext(clientProvider contextApi.ClientProvider, channelID string) contextApi.ChannelProvider {
+
+	channelProvider := func() (contextApi.Channel, error) {
+		client, err := clientProvider()
+		if err != nil {
+			return nil, err
+		}
+		return context.NewChannel(client, channelID)
+	}
+
+	return channelProvider
 }

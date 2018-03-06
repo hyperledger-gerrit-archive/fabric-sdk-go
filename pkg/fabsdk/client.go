@@ -11,6 +11,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
@@ -91,7 +92,7 @@ func (sdk *FabricSDK) NewClient(identityOpt IdentityOption, opts ...ContextOptio
 		cc := clientContext{
 			opts:      o,
 			identity:  identity,
-			providers: sdk.Context(),
+			providers: &context.Client{Providers: &sdk.provider, Identity: identity},
 		}
 		return &cc, nil
 	}
@@ -154,9 +155,9 @@ func (c *ClientContext) ResourceMgmt(opts ...ClientOption) (*resmgmt.Client, err
 
 	session := newSession(p.identity, p.providers.ChannelProvider())
 
-	ctx := &clientCtx{providers: p.providers, identity: session}
+	ctxProvider := c.createClientContext(p.providers, session)
 
-	return resmgmt.New(ctx, resmgmt.WithDefaultTargetFilter(o.targetFilter))
+	return resmgmt.New(ctxProvider, resmgmt.WithDefaultTargetFilter(o.targetFilter))
 
 }
 
@@ -172,9 +173,9 @@ func (c *ClientContext) Ledger(id string, opts ...ClientOption) (*ledger.Client,
 	}
 	session := newSession(p.identity, p.providers.ChannelProvider())
 
-	ctx := &clientCtx{providers: p.providers, identity: session}
+	ctxProvider := c.createClientContext(p.providers, session)
 
-	return ledger.New(ctx, id, ledger.WithDefaultTargetFilter(o.targetFilter))
+	return ledger.New(ctxProvider, id, ledger.WithDefaultTargetFilter(o.targetFilter))
 
 }
 
@@ -187,11 +188,11 @@ func (c *ClientContext) Channel(id string, opts ...ClientOption) (*channel.Clien
 
 	session := newSession(p.identity, p.providers.ChannelProvider())
 
-	clientCtx := &clientCtx{identity: session, providers: p.providers}
+	clientCtx := c.createClientContext(p.providers, session)
 
-	ctx := NewChannelContext(clientCtx, id)
+	chCtxProvider := ChannelContext(clientCtx, id)
 
-	client, err := channel.New(ctx)
+	client, err := channel.New(chCtxProvider)
 	if err != nil {
 		return &channel.Client{}, errors.WithMessage(err, "failed to created new channel client")
 	}
@@ -208,18 +209,6 @@ func (c *ClientContext) ChannelService(id string) (fab.ChannelService, error) {
 
 	channelProvider := p.providers.ChannelProvider()
 	return channelProvider.ChannelService(p.identity, id)
-}
-
-// Session returns the underlying identity of the client.
-//
-// Deprecated: this method is temporary.
-func (c *ClientContext) Session() (contextApi.Session, error) {
-	p, err := c.provider()
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to get client provider context")
-	}
-
-	return newSession(p.identity, p.providers.ChannelProvider()), nil
 }
 
 type clientCtx struct {
@@ -285,4 +274,10 @@ func (c *clientCtx) SerializedIdentity() ([]byte, error) {
 //PrivateKey returns private key
 func (c *clientCtx) PrivateKey() core.Key {
 	return c.identity.PrivateKey()
+}
+
+func (c *ClientContext) createClientContext(providers contextApi.Providers, identity contextApi.Identity) contextApi.ClientProvider {
+	return func() (contextApi.Client, error) {
+		return &clientCtx{providers: providers, identity: identity}, nil
+	}
 }

@@ -42,3 +42,9 @@ type Channel interface {
 	SelectionService() fab.SelectionService
 	ChannelService() fab.ChannelService
 }
+
+//ClientProvider returns client context
+type ClientProvider func() (Client, error)
+
+//ChannelProvider returns channel client context
+type ChannelProvider func() (Channel, error)

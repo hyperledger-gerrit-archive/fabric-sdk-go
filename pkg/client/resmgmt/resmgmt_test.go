@@ -119,11 +119,12 @@ func TestNoSigningUserFailure(t *testing.T) {
 	config := getNetworkConfig(t)
 	fabCtx.SetConfig(config)
 
-	ctx := contextImpl.Client{
+	clientCtx := createClientContext(contextImpl.Client{
 		Providers: fabCtx,
 		Identity:  fabCtx,
-	}
-	_, err := New(ctx)
+	})
+
+	_, err := New(clientCtx)
 	if err == nil {
 		t.Fatal("Should have failed due to missing msp")
 	}
@@ -1139,10 +1140,7 @@ func setupResMgmtClient(fabCtx context.Client, discErr error, t *testing.T, opts
 	}
 	chProvider.SetTransactor(&transactor)
 
-	ctx := contextImpl.Client{
-		Providers: fabCtx,
-		Identity:  fabCtx,
-	}
+	ctx := createClientContext(fabCtx)
 
 	resClient, err := New(ctx, opts...)
 	if err != nil {
@@ -1248,11 +1246,12 @@ func TestSaveChannelFailure(t *testing.T) {
 	resource := fcmocks.NewMockInvalidResource()
 	fabCtx := setupTestContext("user", "Org1Msp1")
 
-	ctx := contextImpl.Client{
+	clientCtx := createClientContext(contextImpl.Client{
 		Providers: fabCtx,
 		Identity:  fabCtx,
-	}
-	cc, err := New(ctx)
+	})
+
+	cc, err := New(clientCtx)
 	if err != nil {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
@@ -1293,5 +1292,11 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	err = cc.SaveChannel(req, opts)
 	if err == nil {
 		t.Fatal("Should have failed for invalid orderer ID")
+	}
+}
+
+func createClientContext(fabCtx context.Client) context.ClientProvider {
+	return func() (context.Client, error) {
+		return fabCtx, nil
 	}
 }

@@ -47,6 +47,7 @@ type BaseSetupImpl struct {
 const (
 	ExampleCCInitB    = "200"
 	ExampleCCUpgradeB = "400"
+	AdminUser         = "Admin"
 )
 
 // ExampleCC query and transaction arguments
@@ -86,13 +87,14 @@ func (setup *BaseSetupImpl) Initialize() error {
 	}
 	setup.SDK = sdk
 
-	client := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg(setup.OrgID))
+	clientContextProvider := sdk.Context(fabsdk.WithUser(AdminUser), fabsdk.WithOrgName(setup.OrgID))
+	clientChannelContextProvider := fabsdk.ChannelContext(clientContextProvider, setup.ChannelID)
 
-	session, err := client.Session()
+	clientContext, err := clientContextProvider()
 	if err != nil {
-		return errors.WithMessage(err, "failed getting admin user session for org")
+		return errors.WithMessage(err, "failed to get client context")
 	}
-	setup.Identity = session
+	setup.Identity = clientContext
 
 	//TODO - Below line needs to be replaced with resmgtmt.New once sdk contexts are available
 	rc, err := sdk.FabricProvider().(*fabpvdr.FabricProvider).CreateResourceClient(setup.Identity)
@@ -108,14 +110,16 @@ func (setup *BaseSetupImpl) Initialize() error {
 	setup.Targets = targets
 
 	// Create channel for tests
-	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: session}
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentity: clientContext}
 	InitializeChannel(sdk, setup.OrgID, req, targets)
 
 	// Create the channel transactor
-	chService, err := client.ChannelService(setup.ChannelID)
+	channelContext, err := clientChannelContextProvider()
 	if err != nil {
 		return errors.WithMessage(err, "channel service creation failed")
 	}
+	chService := channelContext.ChannelService()
+
 	transactor, err := chService.Transactor()
 	if err != nil {
 		return errors.WithMessage(err, "transactor client creation failed")
@@ -197,8 +201,11 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.IdentityOption, 
 		return errors.WithMessage(err, "looking up MSP ID failed")
 	}
 
+	//prepare context
+	clientContext := sdk.Context(user, fabsdk.WithOrgName(orgName))
+
 	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
-	resMgmtClient, err := sdk.NewClient(user, fabsdk.WithOrg(orgName)).ResourceMgmt()
+	resMgmtClient, err := resmgmt.New(clientContext)
 	if err != nil {
 		return errors.WithMessage(err, "Failed to create new resource management client")
 	}

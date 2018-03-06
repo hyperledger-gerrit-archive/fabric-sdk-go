@@ -27,10 +27,11 @@ import (
 )
 
 const (
-	channelID = "mychannel"
-	orgName   = "Org1"
-	orgAdmin  = "Admin"
-	ccID      = "e2eExampleCC"
+	channelID      = "mychannel"
+	orgName        = "Org1"
+	orgAdmin       = "Admin"
+	ordererOrgName = "ordererorg"
+	ccID           = "e2eExampleCC"
 )
 
 func runWithConfigFixture(t *testing.T) {
@@ -46,22 +47,27 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	}
 	defer sdk.Close()
 
+	//clientContext allows creation of transactions using the supplied identity as the credential.
+	clientContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrgName(ordererOrgName))
+
 	// Channel management client is responsible for managing channels (create/update channel)
 	// Supply user that has privileges to create channel (in this case orderer admin)
-	chMgmtClient, err := sdk.NewClient(fabsdk.WithUser("Admin"), fabsdk.WithOrg("ordererorg")).ResourceMgmt()
+	chMgmtClient, err := resmgmt.New(clientContext)
 	if err != nil {
 		t.Fatalf("Failed to create channel management client: %s", err)
 	}
 
 	// Org admin user is signing user for creating channel
-	session, err := sdk.NewClient(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName)).Session()
+	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrgName(orgName))
+	adminSession, err := adminContext()
 	if err != nil {
-		t.Fatalf("Failed to get session for %s, %s: %s", orgName, orgAdmin, err)
+		t.Fatal(err)
 	}
-	orgAdminUser := session
 
 	// Create channel
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"), SigningIdentity: orgAdminUser}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
+		ChannelConfig:   path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		SigningIdentity: adminSession}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +76,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	time.Sleep(time.Second * 5)
 
 	// Org resource management client
-	orgResMgmt, err := sdk.NewClient(fabsdk.WithUser(orgAdmin)).ResourceMgmt()
+	orgResMgmt, err := resmgmt.New(adminContext)
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
@@ -104,8 +110,12 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 
 	// ************ Test setup complete ************** //
 
+	//prepare channel client context using client context
+	clientContextProvider := sdk.Context(fabsdk.WithUser("User1"), fabsdk.WithOrgName(orgName))
+	clientChannelContext := fabsdk.ChannelContext(clientContextProvider, channelID)
+
 	// Channel client is used to query and execute transactions (Org1 is default org)
-	client, err := sdk.NewClient(fabsdk.WithUser("User1")).Channel(channelID)
+	client, err := channel.New(clientChannelContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}

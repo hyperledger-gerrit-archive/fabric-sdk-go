@@ -46,10 +46,16 @@ func TestChannelConfig(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	cs, err := sdk.NewClient(fabsdk.WithUser("User1")).ChannelService(testSetup.ChannelID)
+	//prepare contexts
+	org1ClientContext := sdk.Context(fabsdk.WithUser(org1User), fabsdk.WithOrgName(org1Name))
+	org1ChannelClientContext := fabsdk.ChannelContext(org1ClientContext, testSetup.ChannelID)
+
+	channelCtx, err := org1ChannelClientContext()
 	if err != nil {
-		t.Fatalf("Failed to create new channel service: %s", err)
+		t.Fatalf("Failed to get channel client context: %v", err)
 	}
+
+	cs := channelCtx.ChannelService()
 
 	cfg, err := cs.Config()
 	if err != nil {
@@ -99,10 +105,16 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 	}
 	defer sdk.Close()
 
-	cs, err := sdk.NewClient(fabsdk.WithUser("User1")).ChannelService(testSetup.ChannelID)
+	//prepare contexts
+	org1ClientContext := sdk.Context(fabsdk.WithUser(org1User), fabsdk.WithOrgName(org1Name))
+	org1ChannelClientContext := fabsdk.ChannelContext(org1ClientContext, testSetup.ChannelID)
+
+	channelCtx, err := org1ChannelClientContext()
 	if err != nil {
-		t.Fatalf("Failed to create new channel service: %s", err)
+		t.Fatalf("Failed to get channel client context: %v", err)
 	}
+
+	cs := channelCtx.ChannelService()
 
 	cfg, err := cs.Config()
 	if err != nil {
