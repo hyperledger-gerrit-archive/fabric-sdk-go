@@ -7,8 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
-	"fmt"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/pkg/errors"
@@ -29,9 +27,9 @@ func WithUser(name string) IdentityOption {
 			return errors.New("Identity already determined")
 		}
 
-		identityManager, ok := sdk.context().IdentityManager(orgName)
-		if !ok {
-			return fmt.Errorf("invalid org name: %s", orgName)
+		identityManager, err := sdk.context().IdentityProvider().CreateIdentityManager(orgName)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create identity manager, invalid org name? %s", orgName)
 		}
 		user, err := identityManager.GetUser(name)
 		if err != nil {

@@ -312,7 +312,7 @@ func (c *Config) CAServerCertPems(org string) ([]string, error) {
 	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	certFilesPem := config.CertificateAuthorities[caName].TLSCACerts.Pem
+	certFilesPem := config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Pem
 	certPems := make([]string, len(certFilesPem))
 	for i, v := range certFilesPem {
 		certPems[i] = string(v)
@@ -336,7 +336,7 @@ func (c *Config) CAServerCertPaths(org string) ([]string, error) {
 		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 
-	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
+	certFiles := strings.Split(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Path, ",")
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {

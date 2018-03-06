@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package identitymgr
+package manager
 
 import (
 	"path/filepath"
@@ -12,10 +12,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	caapi "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
-	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
-	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	idapi "github.com/hyperledger/fabric-sdk-go/pkg/context/api/identity"
+	ca "github.com/hyperledger/fabric-sdk-go/pkg/identity/caclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+
+	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 )
@@ -34,7 +35,7 @@ type IdentityManager struct {
 	mspCertStore    core.KVStore
 	userStore       UserStore
 	// CA Client state
-	caClient  *calib.Client
+	caClient  *ca.Client
 	registrar core.EnrollCredentials
 }
 
@@ -43,7 +44,7 @@ type IdentityManager struct {
 // @param {Config} client config for fabric-ca services
 // @returns {IdentityManager} IdentityManager instance
 // @returns {error} error, if any
-func New(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
+func New(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config core.Config) (*IdentityManager, error) {
 
 	netConfig, err := config.NetworkConfig()
 	if err != nil {
@@ -86,8 +87,24 @@ func New(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, 
 	}
 
 	var caName string
-	if len(orgConfig.CertificateAuthorities) > 0 {
+	var caConfig *core.CAConfig
+	var caClient *ca.Client
+	var registrar core.EnrollCredentials
+	if len(orgConfig.CertificateAuthorities) == 0 {
+		logger.Warnln("no CAs configured")
+	} else {
+		// Currently, an organization can be associated with only one CA
 		caName = orgConfig.CertificateAuthorities[0]
+		caConfig, err = config.CAConfig(orgName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error initializing CA [%s]", caName)
+		} else {
+			caClient, err = ca.New(orgName, caName, cryptoSuite, config)
+			if err != nil {
+				return nil, errors.Wrapf(err, "error initializing CA [%s]", caName)
+			}
+			registrar = caConfig.Registrar
+		}
 	}
 
 	mgr := &IdentityManager{
@@ -100,7 +117,8 @@ func New(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, 
 		mspCertStore:    mspCertStore,
 		embeddedUsers:   orgConfig.Users,
 		userStore:       userStore,
-		// CA Client state is created lazily, when (if) needed
+		caClient:        caClient,
+		registrar:       registrar,
 	}
 	return mgr, nil
 }
@@ -119,8 +137,8 @@ func (im *IdentityManager) CAName() string {
 // enrollmentSecret The secret associated with the enrollment ID
 func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) error {
 
-	if err := im.initCAClient(); err != nil {
-		return err
+	if im.caClient == nil {
+		return fmt.Errorf("no CAs configured for organization: %s", im.orgName)
 	}
 	if enrollmentID == "" {
 		return errors.New("enrollmentID is required")
@@ -129,19 +147,19 @@ func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) 
 		return errors.New("enrollmentSecret is required")
 	}
 	// TODO add attributes
-	careq := &caapi.EnrollmentRequest{
-		CAName: im.caClient.Config.CAName,
+	careq := &idapi.EnrollmentRequest{
+		CAName: im.caClient.CAName(),
 		Name:   enrollmentID,
 		Secret: enrollmentSecret,
 	}
-	caresp, err := im.caClient.Enroll(careq)
+	cert, err := im.caClient.Enroll(careq)
 	if err != nil {
 		return errors.Wrap(err, "enroll failed")
 	}
 	userData := UserData{
 		MspID: im.orgMspID,
 		Name:  enrollmentID,
-		EnrollmentCertificate: caresp.Identity.GetECert().Cert(),
+		EnrollmentCertificate: cert,
 	}
 	err = im.userStore.Store(userData)
 	if err != nil {
@@ -154,8 +172,8 @@ func (im *IdentityManager) Enroll(enrollmentID string, enrollmentSecret string) 
 // Returns X509 certificate
 func (im *IdentityManager) Reenroll(user core.User) error {
 
-	if err := im.initCAClient(); err != nil {
-		return err
+	if im.caClient == nil {
+		return fmt.Errorf("no CAs configured for organization: %s", im.orgName)
 	}
 	if user == nil {
 		return errors.New("user required")
@@ -164,22 +182,18 @@ func (im *IdentityManager) Reenroll(user core.User) error {
 		logger.Infof("Invalid re-enroll request, missing argument user")
 		return errors.New("user name missing")
 	}
-	req := &caapi.ReenrollmentRequest{
-		CAName: im.caClient.Config.CAName,
-	}
-	caidentity, err := im.caClient.NewIdentity(user.PrivateKey(), user.EnrollmentCertificate())
-	if err != nil {
-		return errors.Wrap(err, "failed to create CA signing identity")
+	req := &idapi.ReenrollmentRequest{
+		CAName: im.caClient.CAName(),
 	}
 
-	caresp, err := caidentity.Reenroll(req)
+	cert, err := im.caClient.Reenroll(user.PrivateKey(), user.EnrollmentCertificate(), req)
 	if err != nil {
 		return errors.Wrap(err, "reenroll failed")
 	}
 	userData := UserData{
 		MspID: im.orgMspID,
 		Name:  user.Name(),
-		EnrollmentCertificate: caresp.Identity.GetECert().Cert(),
+		EnrollmentCertificate: cert,
 	}
 	err = im.userStore.Store(userData)
 	if err != nil {
@@ -192,12 +206,12 @@ func (im *IdentityManager) Reenroll(user core.User) error {
 // Register a User with the Fabric CA
 // request: Registration Request
 // Returns Enrolment Secret
-func (im *IdentityManager) Register(request *core.RegistrationRequest) (string, error) {
-	if err := im.initCAClient(); err != nil {
-		return "", err
+func (im *IdentityManager) Register(request *idapi.RegistrationRequest) (string, error) {
+	if im.caClient == nil {
+		return "", fmt.Errorf("no CAs configured for organization: %s", im.orgName)
 	}
 	if im.registrar.EnrollID == "" {
-		return "", core.ErrCARegistrarNotFound
+		return "", idapi.ErrCARegistrarNotFound
 	}
 	// Validate registration request
 	if request == nil {
@@ -207,49 +221,50 @@ func (im *IdentityManager) Register(request *core.RegistrationRequest) (string, 
 		return "", errors.New("request.Name is required")
 	}
 	// Contruct request for Fabric CA client
-	var attributes []caapi.Attribute
+	var attributes []idapi.Attribute
 	for i := range request.Attributes {
-		attributes = append(attributes, caapi.Attribute{Name: request.
+		attributes = append(attributes, idapi.Attribute{Name: request.
 			Attributes[i].Key, Value: request.Attributes[i].Value})
 	}
-	var req = caapi.RegistrationRequest{
+	var req = idapi.RegistrationRequest{
 		CAName:         request.CAName,
 		Name:           request.Name,
 		Type:           request.Type,
 		MaxEnrollments: request.MaxEnrollments,
 		Affiliation:    request.Affiliation,
 		Secret:         request.Secret,
-		Attributes:     attributes}
+		Attributes:     attributes,
+	}
 
-	registrar, err := im.getRegistrarSI(im.registrar.EnrollID, im.registrar.EnrollSecret)
+	registrar, err := im.getRegistrar(im.registrar.EnrollID, im.registrar.EnrollSecret)
 	if err != nil {
 		return "", err
 	}
 
-	response, err := registrar.Register(&req)
+	secret, err := im.caClient.Register(registrar.PrivateKey, registrar.EnrollmentCert, &req)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to register user")
 	}
 
-	return response.Secret, nil
+	return secret, nil
 }
 
 // Revoke a User with the Fabric CA
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
-func (im *IdentityManager) Revoke(request *core.RevocationRequest) (*core.RevocationResponse, error) {
-	if err := im.initCAClient(); err != nil {
-		return nil, err
+func (im *IdentityManager) Revoke(request *idapi.RevocationRequest) (*idapi.RevocationResponse, error) {
+	if im.caClient == nil {
+		return nil, fmt.Errorf("no CAs configured for organization: %s", im.orgName)
 	}
 	if im.registrar.EnrollID == "" {
-		return nil, core.ErrCARegistrarNotFound
+		return nil, idapi.ErrCARegistrarNotFound
 	}
 	// Validate revocation request
 	if request == nil {
 		return nil, errors.New("revocation request is required")
 	}
 	// Create revocation request
-	var req = caapi.RevocationRequest{
+	var req = idapi.RevocationRequest{
 		CAName: request.CAName,
 		Name:   request.Name,
 		Serial: request.Serial,
@@ -257,28 +272,56 @@ func (im *IdentityManager) Revoke(request *core.RevocationRequest) (*core.Revoca
 		Reason: request.Reason,
 	}
 
-	registrar, err := im.getRegistrarSI(im.registrar.EnrollID, im.registrar.EnrollSecret)
+	registrar, err := im.getRegistrar(im.registrar.EnrollID, im.registrar.EnrollSecret)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := registrar.Revoke(&req)
+	resp, err := im.caClient.Revoke(registrar.PrivateKey, registrar.EnrollmentCert, &req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to revoke")
 	}
-	var revokedCerts []core.RevokedCert
+	var revokedCerts []idapi.RevokedCert
 	for i := range resp.RevokedCerts {
 		revokedCerts = append(
 			revokedCerts,
-			core.RevokedCert{
+			idapi.RevokedCert{
 				Serial: resp.RevokedCerts[i].Serial,
 				AKI:    resp.RevokedCerts[i].AKI,
 			})
 	}
 
 	// TODO complete the response mapping
-	return &core.RevocationResponse{
+	return &idapi.RevocationResponse{
 		RevokedCerts: revokedCerts,
 		CRL:          resp.CRL,
 	}, nil
+}
+
+func (im *IdentityManager) getRegistrar(enrollID string, enrollSecret string) (*idapi.SigningIdentity, error) {
+
+	if enrollID == "" {
+		return nil, idapi.ErrCARegistrarNotFound
+	}
+
+	registrar, err := im.GetSigningIdentity(enrollID)
+	if err != nil {
+		if err != core.ErrUserNotFound {
+			return nil, err
+		}
+		if enrollSecret == "" {
+			return nil, idapi.ErrCARegistrarNotFound
+		}
+
+		// Attempt to enroll the registrar
+		err = im.Enroll(enrollID, enrollSecret)
+		if err != nil {
+			return nil, err
+		}
+		registrar, err = im.GetSigningIdentity(enrollID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return registrar, nil
 }

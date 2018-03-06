@@ -10,6 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	identity "github.com/hyperledger/fabric-sdk-go/pkg/context/api/identity"
 )
 
 // MockProviders is a mock of Providers interface
@@ -95,17 +96,16 @@ func (mr *MockProvidersMockRecorder) FabricProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FabricProvider", reflect.TypeOf((*MockProviders)(nil).FabricProvider))
 }
 
-// IdentityManager mocks base method
-func (m *MockProviders) IdentityManager(arg0 string) (core.IdentityManager, bool) {
-	ret := m.ctrl.Call(m, "IdentityManager", arg0)
-	ret0, _ := ret[0].(core.IdentityManager)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+// IdentityProvider mocks base method
+func (m *MockProviders) IdentityProvider() identity.IdentityProvider {
+	ret := m.ctrl.Call(m, "IdentityProvider")
+	ret0, _ := ret[0].(identity.IdentityProvider)
+	return ret0
 }
 
-// IdentityManager indicates an expected call of IdentityManager
-func (mr *MockProvidersMockRecorder) IdentityManager(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityManager", reflect.TypeOf((*MockProviders)(nil).IdentityManager), arg0)
+// IdentityProvider indicates an expected call of IdentityProvider
+func (mr *MockProvidersMockRecorder) IdentityProvider() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityProvider", reflect.TypeOf((*MockProviders)(nil).IdentityProvider))
 }
 
 // SelectionProvider mocks base method

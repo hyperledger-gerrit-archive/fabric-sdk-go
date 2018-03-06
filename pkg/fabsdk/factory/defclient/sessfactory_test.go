@@ -100,9 +100,7 @@ func newMockProviders(t *testing.T) *mockProviders {
 		t.Fatalf("Unexpected error creating signing manager %v", err)
 	}
 
-	im := make(map[string]core.IdentityManager)
-
-	ctx := fabmocks.NewMockProviderContextCustom(config, cryptosuite, signer, stateStore, im)
+	ctx := fabmocks.NewMockProviderContextCustom(config, cryptosuite, signer, stateStore)
 	fabricProvider, err := coreFactory.CreateFabricProvider(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
