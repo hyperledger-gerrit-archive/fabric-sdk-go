@@ -7,11 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package txn
 
 import (
+	reqContext "context"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -102,7 +104,9 @@ func SendProposal(ctx context, proposal *fab.TransactionProposal, targets []fab.
 		go func(processor fab.ProposalProcessor) {
 			defer wg.Done()
 
-			resp, err := processor.ProcessTransactionProposal(request)
+			reqCtx, cancel := reqContext.WithTimeout(reqContext.Background(), ctx.Config().TimeoutOrDefault(core.EndorserResponse))
+			defer cancel()
+			resp, err := processor.ProcessTransactionProposal(reqCtx, request)
 			if err != nil {
 				logger.Debugf("Received error response from txn proposal processing: %v", err)
 				responseMtx.Lock()

@@ -465,8 +465,14 @@ func (c *Config) Timeout(conn core.TimeoutType) time.Duration {
 func (c *Config) getTimeout(conn core.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch conn {
-	case core.Endorser:
+	case core.EndorserConnection:
 		timeout = c.configViper.GetDuration("client.peer.timeout.connection")
+	case core.EndorserResponse:
+		// EXPERIMENTAL: Should the low level endorser response have its own timeout or use query?
+		timeout = c.configViper.GetDuration("client.peer.timeout.response")
+		if timeout == 0 {
+			timeout = c.configViper.GetDuration("client.peer.timeout.queryResponse")
+		}
 	case core.Query:
 		timeout = c.configViper.GetDuration("client.peer.timeout.queryResponse")
 	case core.Execute:
