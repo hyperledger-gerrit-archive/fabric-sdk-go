@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -50,7 +51,7 @@ func newCCPolicyProvider(sdk *fabsdk.FabricSDK, channelID string, userName strin
 		return nil, errors.New("Must provide sdk")
 	}
 
-	client := sdk.NewClient(fabsdk.WithUser(userName), fabsdk.WithOrg(orgName))
+	chCtxProvider := sdk.ChannelContext(channelID, fabsdk.WithChannelUser(userName), fabsdk.WithChannelOrgName(orgName))
 
 	// TODO: Add option to use anchor peers instead of config
 	targetPeers, err := sdk.Config().ChannelPeers(channelID)
@@ -60,7 +61,7 @@ func newCCPolicyProvider(sdk *fabsdk.FabricSDK, channelID string, userName strin
 
 	cpp := ccPolicyProvider{
 		config:      sdk.Config(),
-		client:      client,
+		channelCtx:  chCtxProvider,
 		channelID:   channelID,
 		targetPeers: targetPeers,
 		ccDataMap:   make(map[string]*ccprovider.ChaincodeData),
@@ -71,7 +72,7 @@ func newCCPolicyProvider(sdk *fabsdk.FabricSDK, channelID string, userName strin
 
 type ccPolicyProvider struct {
 	config      core.Config
-	client      *fabsdk.ClientContext
+	channelCtx  context.ChannelProvider
 	channelID   string
 	targetPeers []core.ChannelPeer
 	ccDataMap   map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
@@ -129,7 +130,7 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 	var queryErrors []string
 	var response []byte
 
-	client, err := dp.client.Channel(dp.channelID)
+	client, err := channel.New(dp.channelCtx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Unable to create channel client")
 	}

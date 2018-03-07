@@ -84,12 +84,12 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Get signing identity that is used to sign create channel request
-	org1AdminUser, err := org1AdminClientContext()
+	org1AdminUser, err := integration.GetSigningIdentity(sdk, org1AdminUser, org1)
 	if err != nil {
 		t.Fatalf("failed to get org1AdminUser, err : %v", err)
 	}
 
-	org2AdminUser, err := org2AdminClientContext()
+	org2AdminUser, err := integration.GetSigningIdentity(sdk, org2AdminUser, org2)
 	if err != nil {
 		t.Fatalf("failed to get org2AdminUser, err : %v", err)
 	}

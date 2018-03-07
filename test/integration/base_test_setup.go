@@ -89,11 +89,11 @@ func (setup *BaseSetupImpl) Initialize() error {
 
 	clientChannelContextProvider := sdk.ChannelContext(setup.ChannelID, fabsdk.WithChannelUser(AdminUser), fabsdk.WithChannelOrgName(setup.OrgID))
 
-	clientContext, err := clientChannelContextProvider()
+	adminIdentity, err := GetSigningIdentity(sdk, AdminUser, setup.OrgID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get client context")
 	}
-	setup.Identity = clientContext
+	setup.Identity = adminIdentity
 
 	//TODO - Below line needs to be replaced with resmgtmt.New once sdk contexts are available
 	rc, err := sdk.FabricProvider().(*fabpvdr.FabricProvider).CreateResourceClient(setup.Identity)
@@ -109,7 +109,7 @@ func (setup *BaseSetupImpl) Initialize() error {
 	setup.Targets = targets
 
 	// Create channel for tests
-	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentities: []context.Identity{clientContext}}
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: setup.ChannelConfig, SigningIdentities: []context.Identity{adminIdentity}}
 	if err = InitializeChannel(sdk, setup.OrgID, req, targets); err != nil {
 		return errors.Wrapf(err, "failed to initialize channel")
 	}
@@ -285,4 +285,11 @@ func RegisterTxEvent(t *testing.T, txID fab.TransactionID, eventHub fab.EventHub
 	})
 
 	return done, fail
+}
+
+// GetSigningIdentity returns signing identity
+//TODO : not a recommended way to get idenity, will be replaced
+func GetSigningIdentity(sdk *fabsdk.FabricSDK, user, orgID string) (context.Identity, error) {
+	idenityContext := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrgName(orgID))
+	return idenityContext()
 }

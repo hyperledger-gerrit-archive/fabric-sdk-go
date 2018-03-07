@@ -61,21 +61,23 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	// Create channel
 
 	// Org admin user is signing user for creating channel
-	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrgName(orgName))
-	adminSession, err := adminContext()
+	adminIdentity, err := integration.GetSigningIdentity(sdk, orgAdmin, orgName)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfig:     path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-		SigningIdentities: []context.Identity{adminSession}}
+		SigningIdentities: []context.Identity{adminIdentity}}
 	if err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
 
 	// Allow orderer to process channel creation
 	time.Sleep(time.Second * 5)
+
+	//prepare context
+	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrgName(orgName))
 
 	// Org resource management client
 	orgResMgmt, err := resmgmt.New(adminContext)
