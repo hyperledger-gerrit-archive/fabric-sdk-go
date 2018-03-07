@@ -468,9 +468,9 @@ func (c *Config) getTimeout(conn core.TimeoutType) time.Duration {
 	case core.EndorserConnection:
 		timeout = c.configViper.GetDuration("client.peer.timeout.connection")
 	case core.Query:
-		timeout = c.configViper.GetDuration("client.peer.timeout.queryResponse")
+		timeout = c.configViper.GetDuration("client.global.timeout.queryResponse")
 	case core.Execute:
-		timeout = c.configViper.GetDuration("client.peer.timeout.executeTxResponse")
+		timeout = c.configViper.GetDuration("client.global.timeout.executeTxResponse")
 	case core.DiscoveryGreylistExpiry:
 		timeout = c.configViper.GetDuration("client.peer.timeout.discovery.greylistExpiry")
 	case core.EventHubConnection:
@@ -487,7 +487,7 @@ func (c *Config) getTimeout(conn core.TimeoutType) time.Duration {
 			timeout = defaultCacheSweepInterval
 		}
 	case core.ConnectionIdle:
-		timeout = c.configViper.GetDuration("client.cache.timeout.connectionIdle")
+		timeout = c.configViper.GetDuration("client.global.timeout.cache.connectionIdle")
 		if timeout == 0 {
 			timeout = defaultConnIdleTimeout
 		}
