@@ -11,6 +11,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
@@ -19,9 +20,15 @@ func TestChannelQueries(t *testing.T) {
 	testSetup := initializeTests(t, chaincodeID)
 	defer testSetup.SDK.Close()
 
-	testQueryChannels(t, testSetup.Client, testSetup.Targets[0])
+	// Low level resource
+	client, err := testSetup.SDK.FabricProvider().(*fabpvdr.FabricProvider).CreateResourceClient(testSetup.Identity)
+	if err != nil {
+		t.Fatalf("CreateResourceClient failed: %s", err)
+	}
 
-	testInstalledChaincodes(t, chaincodeID, testSetup.Client, testSetup.Targets[0])
+	testQueryChannels(t, client, testSetup.Targets[0])
+
+	testInstalledChaincodes(t, chaincodeID, client, testSetup.Targets[0])
 
 }
 
