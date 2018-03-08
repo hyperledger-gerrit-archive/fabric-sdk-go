@@ -72,7 +72,11 @@ func (f *MockInfraProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fa
 	return &mockOrderer{}, nil
 }
 
+//CommManager returns comm provider
+func (f *MockInfraProvider) CommManager() fab.CommManager {
+	return nil
+}
+
 //Close mock close function
 func (f *MockInfraProvider) Close() {
-	return
 }
