@@ -19,6 +19,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -29,11 +30,6 @@ import (
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
-
-type connProvider interface {
-	DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error)
-	ReleaseConn(conn *grpc.ClientConn)
-}
 
 // Orderer allows a client to broadcast a transaction.
 type Orderer struct {
@@ -48,7 +44,7 @@ type Orderer struct {
 	transportCredentials credentials.TransportCredentials
 	secured              bool
 	allowInsecure        bool
-	connector            connProvider
+	commManager          fab.CommManager
 }
 
 // Option describes a functional parameter for the New constructor
@@ -57,8 +53,8 @@ type Option func(*Orderer) error
 // New Returns a Orderer instance
 func New(config core.Config, opts ...Option) (*Orderer, error) {
 	orderer := &Orderer{
-		config:    config,
-		connector: &defConnector{},
+		config:      config,
+		commManager: &defCommManager{},
 	}
 
 	for _, opt := range opts {
@@ -127,10 +123,10 @@ func WithInsecure() Option {
 	}
 }
 
-// WithConnProvider allows a custom GRPC connection provider to be used.
-func WithConnProvider(provider connProvider) Option {
+// withCommManager allows a custom GRPC connection manager to be used.
+func withCommManager(commManager fab.CommManager) Option {
 	return func(p *Orderer) error {
-		p.connector = provider
+		p.commManager = commManager
 
 		return nil
 	}
@@ -228,10 +224,24 @@ func (o *Orderer) conn(ctx reqContext.Context, secured bool) (*grpc.ClientConn, 
 		grpcOpts = append(o.grpcDialOption, grpc.WithInsecure())
 	}
 
+	commManager, ok := context.RequestCommManager(ctx)
+	if !ok {
+		commManager = o.commManager
+	}
+
 	ctx, cancel := reqContext.WithTimeout(ctx, o.dialTimeout)
 	defer cancel()
 
-	return o.connector.DialContext(ctx, o.url, grpcOpts...)
+	return commManager.DialContext(ctx, o.url, grpcOpts...)
+}
+
+func (o *Orderer) releaseConn(ctx reqContext.Context, conn *grpc.ClientConn) {
+	commManager, ok := context.RequestCommManager(ctx)
+	if !ok {
+		commManager = o.commManager
+	}
+
+	commManager.ReleaseConn(conn)
 }
 
 // URL Get the Orderer url. Required property for the instance objects.
@@ -263,7 +273,7 @@ func (o *Orderer) sendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 
 		return nil, status.New(status.OrdererClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), nil)
 	}
-	defer o.connector.ReleaseConn(conn)
+	defer o.releaseConn(ctx, conn)
 
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Broadcast(ctx)
 	if err != nil {
@@ -349,7 +359,7 @@ func (o *Orderer) sendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Deliver(ctx)
 	if err != nil {
 		logger.Errorf("deliver failed [%s]", err)
-		o.connector.ReleaseConn(conn)
+		o.commManager.ReleaseConn(conn)
 
 		errs <- errors.Wrap(err, "deliver failed")
 		return responses, errs
@@ -360,7 +370,7 @@ func (o *Orderer) sendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 		Payload:   envelope.Payload,
 		Signature: envelope.Signature,
 	}); err != nil {
-		o.connector.ReleaseConn(conn)
+		o.commManager.ReleaseConn(conn)
 
 		errs <- errors.Wrap(err, "failed to send block request to orderer")
 		return responses, errs
@@ -368,7 +378,7 @@ func (o *Orderer) sendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 
 	// Receive blocks from the GRPC stream and put them on the channel
 	go func() {
-		defer o.connector.ReleaseConn(conn)
+		defer o.commManager.ReleaseConn(conn)
 		blockStream(broadcastStream, responses, errs)
 
 	}()
@@ -407,13 +417,13 @@ func blockStream(broadcastStream ab.AtomicBroadcast_DeliverClient, responses cha
 	}
 }
 
-type defConnector struct{}
+type defCommManager struct{}
 
-func (*defConnector) DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+func (*defCommManager) DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
 	opts = append(opts, grpc.WithBlock())
 	return grpc.DialContext(ctx, target, opts...)
 }
 
-func (*defConnector) ReleaseConn(conn *grpc.ClientConn) {
+func (*defCommManager) ReleaseConn(conn *grpc.ClientConn) {
 	conn.Close()
 }
