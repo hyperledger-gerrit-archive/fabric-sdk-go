@@ -1295,6 +1295,32 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	}
 }
 
+func TestJoinChannelWithOpts(t *testing.T) {
+
+	cc := setupDefaultResMgmtClient(t)
+
+	// Test empty option (default order is random orderer from config)
+	opts := WithOrdererID("")
+	err := cc.JoinChannel("mychannel", opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test valid orderer ID
+	opts = WithOrdererID("orderer.example.com")
+	err = cc.JoinChannel("mychannel", opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test invalid orderer ID
+	opts = WithOrdererID("Invalid")
+	err = cc.JoinChannel("mychannel", opts)
+	if err == nil {
+		t.Fatal("Should have failed for invalid orderer ID")
+	}
+}
+
 func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	cc := setupDefaultResMgmtClient(t)
 
