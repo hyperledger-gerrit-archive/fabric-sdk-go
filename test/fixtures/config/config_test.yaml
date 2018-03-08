@@ -41,7 +41,7 @@ client:
   organization: Org1
 
   logging:
-    level: info
+    level: debug
 
 # Global configuration for peer, event service and orderer timeouts
   peer:
@@ -56,11 +56,11 @@ client:
   eventService:
     timeout:
       connection: 3s
-      registrationResponse: 3s
+      registrationResponse: 10s
   orderer:
     timeout:
       connection: 3s
-      response: 5s
+      response: 10s
   global:
     timeout:
       query: 45s
