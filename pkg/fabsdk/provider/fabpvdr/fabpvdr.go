@@ -25,7 +25,7 @@ import (
 // FabricProvider represents the default implementation of Fabric objects.
 type FabricProvider struct {
 	providerContext context.Providers
-	connector       *comm.CachingConnector
+	commManager     *comm.CachingConnector
 }
 
 type fabContext struct {
@@ -42,14 +42,19 @@ func New(ctx context.Providers) *FabricProvider {
 
 	f := FabricProvider{
 		providerContext: ctx,
-		connector:       cc,
+		commManager:     cc,
 	}
 	return &f
 }
 
 // Close frees resources and caches.
 func (f *FabricProvider) Close() {
-	f.connector.Close()
+	f.commManager.Close()
+}
+
+// CommManager provides comm support such as GRPC onnections
+func (f *FabricProvider) CommManager() fab.CommManager {
+	return f.commManager
 }
 
 // CreateResourceClient returns a new client initialized for the current instance of the SDK.
@@ -133,7 +138,7 @@ func (f *FabricProvider) CreateChannelTransactor(ic fab.IdentityContext, cfg fab
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
 func (f *FabricProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
-	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg), peerImpl.WithConnProvider(f.connector))
+	return peerImpl.New(f.providerContext.Config(), peerImpl.FromPeerConfig(peerCfg))
 }
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.

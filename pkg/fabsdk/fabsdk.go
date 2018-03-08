@@ -23,6 +23,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var logger = logging.NewLogger("fabsdk/core")
+
 // FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
 	opts     options

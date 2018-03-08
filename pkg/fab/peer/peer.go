@@ -205,8 +205,8 @@ func WithPeerProcessor(processor fab.ProposalProcessor) Option {
 	}
 }
 
-// WithConnProvider allows a custom GRPC connection provider to be used.
-func WithConnProvider(provider connProvider) Option {
+// withConnProvider allows a custom GRPC connection provider to be used.
+func withConnProvider(provider connProvider) Option {
 	return func(p *Peer) error {
 		p.connector = provider
 

@@ -591,7 +591,7 @@ func TestNewOrdererCustomConnector(t *testing.T) {
 	mc := &mockConnector{}
 
 	ordererConfig := getGRPCOpts(ordererAddr, true, false)
-	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig), WithConnProvider(mc))
+	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig), withConnProvider(mc))
 
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
 	assert.Nil(t, err)

@@ -19,6 +19,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -127,8 +128,8 @@ func WithInsecure() Option {
 	}
 }
 
-// WithConnProvider allows a custom GRPC connection provider to be used.
-func WithConnProvider(provider connProvider) Option {
+// withConnProvider allows a custom GRPC connection provider to be used.
+func withConnProvider(provider connProvider) Option {
 	return func(p *Orderer) error {
 		p.connector = provider
 
@@ -228,10 +229,24 @@ func (o *Orderer) conn(ctx reqContext.Context, secured bool) (*grpc.ClientConn, 
 		grpcOpts = append(o.grpcDialOption, grpc.WithInsecure())
 	}
 
+	connector, ok := context.RequestCommManager(ctx)
+	if !ok {
+		connector = o.connector
+	}
+
 	ctx, cancel := reqContext.WithTimeout(ctx, o.dialTimeout)
 	defer cancel()
 
-	return o.connector.DialContext(ctx, o.url, grpcOpts...)
+	return connector.DialContext(ctx, o.url, grpcOpts...)
+}
+
+func (o *Orderer) releaseConn(ctx reqContext.Context, conn *grpc.ClientConn) {
+	connector, ok := context.RequestCommManager(ctx)
+	if !ok {
+		connector = o.connector
+	}
+
+	connector.ReleaseConn(conn)
 }
 
 // URL Get the Orderer url. Required property for the instance objects.
@@ -263,7 +278,7 @@ func (o *Orderer) sendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 
 		return nil, status.New(status.OrdererClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), nil)
 	}
-	defer o.connector.ReleaseConn(conn)
+	defer o.releaseConn(ctx, conn)
 
 	broadcastStream, err := ab.NewAtomicBroadcastClient(conn).Broadcast(ctx)
 	if err != nil {
