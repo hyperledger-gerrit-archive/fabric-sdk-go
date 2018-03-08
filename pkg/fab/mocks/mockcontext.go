@@ -117,6 +117,11 @@ func (pc *MockProviderContext) FabricProvider() fab.InfraProvider {
 	return pc.fabricProvider
 }
 
+//CommManager returns comm provider
+func (pc *MockProviderContext) CommManager() fab.CommManager {
+	return nil
+}
+
 //SetCustomFabricProvider sets custom fabric provider for unit-test purposes
 func (pc *MockProviderContext) SetCustomFabricProvider(customFabricProvider fab.InfraProvider) {
 	pc.fabricProvider = customFabricProvider

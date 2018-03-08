@@ -13,6 +13,7 @@ import (
 
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
@@ -22,6 +23,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
+
+var logger = logging.NewLogger("fabsdk/core")
 
 // FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
@@ -210,6 +213,12 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		return errors.WithMessage(err, "failed to initialize channel provider")
 	}
 
+	idleTime := config.TimeoutOrDefault(core.ConnectionIdle)
+	sweepTime := config.TimeoutOrDefault(core.CacheSweepInterval)
+
+	commProvider := comm.NewCachingConnector(sweepTime, idleTime)
+	logger.Errorf("commProvider: %v", commProvider)
+
 	//update sdk providers list since all required providers are initialized
 	sdk.provider = *context.NewProvider(context.WithConfig(config),
 		context.WithCryptoSuite(cryptoSuite),
@@ -219,6 +228,7 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		context.WithSelectionProvider(selectionProvider),
 		context.WithIdentityManager(identityManager),
 		context.WithFabricProvider(fabricProvider),
+		context.WithCommManager(commProvider),
 		context.WithChannelProvider(channelProvider))
 
 	return nil

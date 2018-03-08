@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	reqContext "context"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"google.golang.org/grpc"
 )
 
-// InfraProvider enables access to fabric objects such as peer and user based on config or
+// InfraProvider enables access to fabric objects such as peer based on config
 type InfraProvider interface {
 	CreateChannelLedger(ic IdentityContext, name string) (ChannelLedger, error)
 	CreateChannelConfig(user IdentityContext, name string) (ChannelConfig, error)
@@ -19,6 +22,7 @@ type InfraProvider interface {
 	CreateEventHub(ic IdentityContext, name string) (EventHub, error)
 	CreatePeerFromConfig(peerCfg *core.NetworkPeer) (Peer, error)
 	CreateOrdererFromConfig(cfg *core.OrdererConfig) (Orderer, error)
+	//	CommManager() CommManager
 	Close()
 }
 
@@ -50,10 +54,17 @@ type TargetFilter interface {
 	Accept(peer Peer) bool
 }
 
+// CommManager ... TODO
+type CommManager interface {
+	DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
+	ReleaseConn(conn *grpc.ClientConn)
+}
+
 // Providers represents the SDK configured service providers context.
 type Providers interface {
 	DiscoveryProvider() DiscoveryProvider
 	SelectionProvider() SelectionProvider
 	ChannelProvider() ChannelProvider
 	FabricProvider() InfraProvider
+	CommManager() CommManager
 }

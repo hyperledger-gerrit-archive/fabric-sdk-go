@@ -7,13 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 package context
 
 import (
+	reqContext "context"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 )
+
+var logger = logging.NewLogger("fabsdk/core")
 
 // Client supplies the configuration and signing identity to client objects.
 type Client struct {
@@ -60,6 +65,7 @@ type Provider struct {
 	identityManager   map[string]core.IdentityManager
 	fabricProvider    fab.InfraProvider
 	channelProvider   fab.ChannelProvider
+	commProvider      fab.CommManager
 }
 
 // Config returns the Config provider of sdk.
@@ -106,6 +112,11 @@ func (c *Provider) ChannelProvider() fab.ChannelProvider {
 // FabricProvider provides fabric objects such as peer and user
 func (c *Provider) FabricProvider() fab.InfraProvider {
 	return c.fabricProvider
+}
+
+// CommManager provides comm support such as GRPC onnections
+func (c *Provider) CommManager() fab.CommManager {
+	return c.commProvider
 }
 
 //SDKContextParams parameter for creating FabContext
@@ -167,6 +178,15 @@ func WithFabricProvider(fabricProvider fab.InfraProvider) SDKContextParams {
 	}
 }
 
+// WithCommManager sets commProvider
+func WithCommManager(commProvider fab.CommManager) SDKContextParams {
+	return func(ctx *Provider) {
+		logger.Errorf("WithCommManager: %v", commProvider)
+		ctx.commProvider = commProvider
+		logger.Errorf("WithCommManager: %v", ctx.commProvider)
+	}
+}
+
 //WithChannelProvider sets channelProvider to FabContext
 func WithChannelProvider(channelProvider fab.ChannelProvider) SDKContextParams {
 	return func(ctx *Provider) {
@@ -214,4 +234,20 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		discovery:      discoveryService,
 		channelService: channelService,
 	}, nil
+}
+
+type reqContextKey string
+
+var reqContextCommManager = reqContextKey("commManager")
+
+// NewRequest creates a request-scoped context.
+func NewRequest(client context.Client) reqContext.Context {
+	ctx := reqContext.WithValue(reqContext.Background(), reqContextCommManager, client.CommManager)
+	return ctx
+}
+
+// RequestCommManager extracts the CommManager from the request-scoped context.
+func RequestCommManager(ctx reqContext.Context) (fab.CommManager, bool) {
+	commManager, ok := ctx.Value(reqContextCommManager).(fab.CommManager)
+	return commManager, ok
 }

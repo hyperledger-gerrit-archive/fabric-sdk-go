@@ -263,6 +263,11 @@ func (c *clientCtx) FabricProvider() fab.InfraProvider {
 	return c.providers.FabricProvider()
 }
 
+// CommManager provides communication support such as GRPC connections.
+func (c *clientCtx) CommManager() fab.CommManager {
+	return c.providers.CommManager()
+}
+
 //MspID returns MSPID
 func (c *clientCtx) MspID() string {
 	return c.identity.MspID()
