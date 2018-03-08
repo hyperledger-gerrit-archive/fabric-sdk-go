@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -101,10 +102,24 @@ func (p *peerEndorser) conn(ctx reqContext.Context, secured bool) (*grpc.ClientC
 		grpcOpts = append(p.grpcDialOption, grpc.WithInsecure())
 	}
 
+	connector, ok := context.RequestCommManager(ctx)
+	if !ok {
+		connector = p.connector
+	}
+
 	ctx, cancel := reqContext.WithTimeout(ctx, p.dialTimeout)
 	defer cancel()
 
-	return p.connector.DialContext(ctx, p.target, grpcOpts...)
+	return connector.DialContext(ctx, p.target, grpcOpts...)
+}
+
+func (p *peerEndorser) releaseConn(ctx reqContext.Context, conn *grpc.ClientConn) {
+	connector, ok := context.RequestCommManager(ctx)
+	if !ok {
+		connector = p.connector
+	}
+
+	connector.ReleaseConn(conn)
 }
 
 func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.ProcessProposalRequest, secured bool) (*pb.ProposalResponse, error) {
@@ -121,7 +136,7 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 		}
 		return nil, status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), []interface{}{p.target})
 	}
-	defer p.connector.ReleaseConn(conn)
+	defer p.releaseConn(ctx, conn)
 
 	endorserClient := pb.NewEndorserClient(conn)
 	resp, err := endorserClient.ProcessProposal(ctx, proposal.SignedProposal)

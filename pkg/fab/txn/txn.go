@@ -34,11 +34,6 @@ const (
 	Upgrade
 )
 
-type context interface {
-	core.Providers
-	contextApi.Identity
-}
-
 // New create a transaction with proposal response, following the endorsement policy.
 func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 	if len(request.ProposalResponses) == 0 {
@@ -109,7 +104,7 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 }
 
 // Send send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
-func Send(ctx context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func Send(ctx contextApi.Client, tx *fab.Transaction, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	if orderers == nil || len(orderers) == 0 {
 		return nil, errors.New("orderers is nil")
 	}
@@ -144,7 +139,7 @@ func Send(ctx context, tx *fab.Transaction, orderers []fab.Orderer) (*fab.Transa
 
 // BroadcastPayload will send the given payload to some orderer, picking random endpoints
 // until all are exhausted
-func BroadcastPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func BroadcastPayload(ctx contextApi.Client, payload *common.Payload, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
@@ -160,7 +155,7 @@ func BroadcastPayload(ctx context, payload *common.Payload, orderers []fab.Order
 
 // broadcastEnvelope will send the given envelope to some orderer, picking random endpoints
 // until all are exhausted
-func broadcastEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
+func broadcastEnvelope(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderers []fab.Orderer) (*fab.TransactionResponse, error) {
 	// Check if orderers are defined
 	if len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
@@ -185,7 +180,7 @@ func broadcastEnvelope(ctx context, envelope *fab.SignedEnvelope, orderers []fab
 	return nil, errResp
 }
 
-func sendBroadcast(ctx context, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*fab.TransactionResponse, error) {
+func sendBroadcast(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*fab.TransactionResponse, error) {
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 	reqCtx, cancel := reqContext.WithTimeout(reqContext.Background(), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
 	defer cancel()
@@ -199,7 +194,7 @@ func sendBroadcast(ctx context, envelope *fab.SignedEnvelope, orderer fab.Ordere
 }
 
 // SendPayload sends the given payload to each orderer and returns a block response
-func SendPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (*common.Block, error) {
+func SendPayload(ctx contextApi.Client, payload *common.Payload, orderers []fab.Orderer) (*common.Block, error) {
 	if orderers == nil || len(orderers) == 0 {
 		return nil, errors.New("orderers not set")
 	}
@@ -229,7 +224,7 @@ func SendPayload(ctx context, payload *common.Payload, orderers []fab.Orderer) (
 }
 
 // sendEnvelope sends the given envelope to each orderer and returns a block response
-func sendEnvelope(ctx context, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*common.Block, error) {
+func sendEnvelope(ctx contextApi.Client, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*common.Block, error) {
 
 	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
 	reqCtx, cancel := reqContext.WithTimeout(reqContext.Background(), ctx.Config().TimeoutOrDefault(core.OrdererResponse))
