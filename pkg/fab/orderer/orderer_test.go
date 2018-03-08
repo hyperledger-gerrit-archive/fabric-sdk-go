@@ -588,10 +588,10 @@ func TestNewOrdererSecured(t *testing.T) {
 }
 
 func TestNewOrdererCustomConnector(t *testing.T) {
-	mc := &mockConnector{}
+	mc := &mockCommManager{}
 
 	ordererConfig := getGRPCOpts(ordererAddr, true, false)
-	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig), WithConnProvider(mc))
+	orderer, _ := New(mocks.NewMockConfig(), FromOrdererConfig(ordererConfig), withCommManager(mc))
 
 	_, err := orderer.SendBroadcast(reqContext.Background(), &fab.SignedEnvelope{})
 	assert.Nil(t, err)
@@ -599,17 +599,17 @@ func TestNewOrdererCustomConnector(t *testing.T) {
 	assert.True(t, mc.releaseConnCalled)
 }
 
-type mockConnector struct {
+type mockCommManager struct {
 	dialCalled        bool
 	releaseConnCalled bool
 }
 
-func (mc *mockConnector) DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+func (mc *mockCommManager) DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
 	mc.dialCalled = true
 	opts = append(opts, grpc.WithBlock())
 	return grpc.DialContext(ctx, target, opts...)
 }
 
-func (mc *mockConnector) ReleaseConn(conn *grpc.ClientConn) {
+func (mc *mockCommManager) ReleaseConn(conn *grpc.ClientConn) {
 	mc.releaseConnCalled = true
 }
