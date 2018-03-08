@@ -72,7 +72,11 @@ func (f *MockFabricProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (f
 	return &mockOrderer{}, nil
 }
 
+//CommManager returns comm provider
+func (f *MockFabricProvider) CommManager() fab.CommManager {
+	return nil
+}
+
 //Close mock close function
 func (f *MockFabricProvider) Close() {
-	return
 }
