@@ -53,8 +53,8 @@ func TestFromConfigGoodClientOpt(t *testing.T) {
 	}
 }
 
-func goodClientOpt() ContextOption {
-	return func(opts *contextOptions) error {
+func goodClientOpt() IdentityOption {
+	return func(opts *identityOptions) error {
 		return nil
 	}
 }
@@ -72,8 +72,8 @@ func TestNewBadClientOpt(t *testing.T) {
 	}
 }
 
-func badClientOpt() ContextOption {
-	return func(opts *contextOptions) error {
+func badClientOpt() IdentityOption {
+	return func(opts *identityOptions) error {
 		return errors.New("Bad Opt")
 	}
 }
@@ -121,24 +121,6 @@ func TestWithFilter(t *testing.T) {
 
 	if opts.targetFilter != &tf {
 		t.Fatalf("Expected target filter to be set in opts")
-	}
-}
-
-func TestWithConfig(t *testing.T) {
-	c, err := configImpl.FromFile(clientConfigFile)()
-	if err != nil {
-		t.Fatalf("Unexpected error from config: %v", err)
-	}
-	opt := withConfig(c)
-
-	opts := contextOptions{}
-	err = opt(&opts)
-	if err != nil {
-		t.Fatalf("Expected no error from option, but got %v", err)
-	}
-
-	if opts.config != c {
-		t.Fatalf("Expected config to be set in opts")
 	}
 }
 
