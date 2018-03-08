@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/certutil"
 	"google.golang.org/grpc"
 	grpccodes "google.golang.org/grpc/codes"
 
@@ -155,7 +156,7 @@ func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.
 }
 
 func TestNewOrdererWithTLS(t *testing.T) {
-	tlsConfig := core.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	tlsConfig := certutil.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
 
 	cert, err := tlsConfig.TLSCert()
 
@@ -178,7 +179,7 @@ func TestNewOrdererWithTLS(t *testing.T) {
 
 func TestNewOrdererWithMutualTLS(t *testing.T) {
 	//Positive Test case
-	tlsConfig := core.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
+	tlsConfig := certutil.TLSConfig{Path: "../../../test/fixtures/fabricca/tls/ca/ca_root.pem"}
 
 	cert, err := tlsConfig.TLSCert()
 

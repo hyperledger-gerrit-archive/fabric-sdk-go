@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	mock_fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/certutil"
 	"github.com/pkg/errors"
 )
 
@@ -273,7 +274,7 @@ func TestPeerOptions(t *testing.T) {
 	grpcOpts["allow-insecure"] = true
 	config := mock_core.DefaultMockConfig(mockCtrl)
 
-	tlsConfig := core.TLSConfig{
+	tlsConfig := certutil.TLSConfig{
 		Path: "",
 		Pem:  "",
 	}
