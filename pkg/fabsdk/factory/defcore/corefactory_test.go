@@ -169,7 +169,7 @@ func TestNewFactoryInfraProvider(t *testing.T) {
 	factory := NewProviderFactory()
 	ctx := mocks.NewMockProviderContext()
 
-	fabricProvider, err := factory.CreateInfraProvider(ctx)
+	fabricProvider, err := factory.CreateInfraProvider(ctx.Config())
 	if err != nil {
 		t.Fatalf("Unexpected error creating fabric provider %v", err)
 	}

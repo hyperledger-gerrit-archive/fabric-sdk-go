@@ -150,6 +150,12 @@ type CustomFabricProvider struct {
 	providerContext api.Providers
 }
 
+// Initialize sets the provider context
+func (f *CustomFabricProvider) Initialize(providers api.Providers) error {
+	f.providerContext = providers
+	return nil
+}
+
 // CreateChannelConfig initializes the channel config
 func (f *CustomFabricProvider) CreateChannelConfig(ic fab.IdentityContext, channelID string) (fab.ChannelConfig, error) {
 	ctx := chconfig.Context{
@@ -161,14 +167,13 @@ func (f *CustomFabricProvider) CreateChannelConfig(ic fab.IdentityContext, chann
 }
 
 // CreateInfraProvider returns a new default implementation of fabric primitives
-func (f *ChannelConfigFromOrdererProviderFactory) CreateInfraProvider(context api.Providers) (fab.InfraProvider, error) {
+func (f *ChannelConfigFromOrdererProviderFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
 
-	fabProvider := fabpvdr.New(context)
+	fabProvider := fabpvdr.New(config)
 
 	cfp := CustomFabricProvider{
-		FabricProvider:  fabProvider,
-		providerContext: context,
-		orderer:         f.orderer,
+		FabricProvider: fabProvider,
+		orderer:        f.orderer,
 	}
 	return &cfp, nil
 }

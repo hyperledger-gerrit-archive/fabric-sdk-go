@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
@@ -34,7 +35,7 @@ type peerEndorser struct {
 	transportCredentials credentials.TransportCredentials
 	secured              bool
 	allowInsecure        bool
-	connector            connProvider
+	commManager          fab.CommManager
 }
 
 type peerEndorserRequest struct {
@@ -45,7 +46,7 @@ type peerEndorserRequest struct {
 	kap                keepalive.ClientParameters
 	failFast           bool
 	allowInsecure      bool
-	connector          connProvider
+	commManager        fab.CommManager
 }
 
 func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
@@ -69,7 +70,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 
 	pc := &peerEndorser{grpcDialOption: opts, target: urlutil.ToAddress(endorseReq.target), dialTimeout: timeout,
 		transportCredentials: credentials.NewTLS(tlsConfig), secured: urlutil.AttemptSecured(endorseReq.target),
-		allowInsecure: endorseReq.allowInsecure, connector: endorseReq.connector}
+		allowInsecure: endorseReq.allowInsecure, commManager: endorseReq.commManager}
 
 	return pc, nil
 }
@@ -101,10 +102,24 @@ func (p *peerEndorser) conn(ctx reqContext.Context, secured bool) (*grpc.ClientC
 		grpcOpts = append(p.grpcDialOption, grpc.WithInsecure())
 	}
 
+	commManager, ok := context.RequestCommManager(ctx)
+	if !ok {
+		commManager = p.commManager
+	}
+
 	ctx, cancel := reqContext.WithTimeout(ctx, p.dialTimeout)
 	defer cancel()
 
-	return p.connector.DialContext(ctx, p.target, grpcOpts...)
+	return commManager.DialContext(ctx, p.target, grpcOpts...)
+}
+
+func (p *peerEndorser) releaseConn(ctx reqContext.Context, conn *grpc.ClientConn) {
+	commManager, ok := context.RequestCommManager(ctx)
+	if !ok {
+		commManager = p.commManager
+	}
+
+	commManager.ReleaseConn(conn)
 }
 
 func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.ProcessProposalRequest, secured bool) (*pb.ProposalResponse, error) {
@@ -121,7 +136,7 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 		}
 		return nil, status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), []interface{}{p.target})
 	}
-	defer p.connector.ReleaseConn(conn)
+	defer p.releaseConn(ctx, conn)
 
 	endorserClient := pb.NewEndorserClient(conn)
 	resp, err := endorserClient.ProcessProposal(ctx, proposal.SignedProposal)
