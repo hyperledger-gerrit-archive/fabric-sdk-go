@@ -263,7 +263,8 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx.SetConfig(invalidOrdererConfig)
-	customFabProvider := fabpvdr.New(ctx)
+	customFabProvider := fabpvdr.New(ctx.Config())
+	customFabProvider.Initialize(ctx)
 	ctx.SetCustomInfraProvider(customFabProvider)
 
 	rc = setupResMgmtClient(ctx, nil, t)

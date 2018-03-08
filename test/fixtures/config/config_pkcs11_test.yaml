@@ -45,7 +45,7 @@ client:
 # Global configuration for peer, event service and orderer timeouts
   peer:
     timeout:
-      connection: 3s
+      connection: 5s
       discovery:
         # Expiry period for discovery service greylist filter
         # The channel client will greylist peers that are found to be offline
@@ -54,12 +54,12 @@ client:
         greylistExpiry: 5s
   eventService:
     timeout:
-      connection: 3s
-      registrationResponse: 3s
+      connection: 5s
+      registrationResponse: 20s
   orderer:
     timeout:
-      connection: 3s
-      response: 5s
+      connection: 5s
+      response: 20s
   global:
     timeout:
       query: 45s
