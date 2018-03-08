@@ -87,7 +87,7 @@ type SaveChannelRequest struct {
 	// Path to channel configuration file
 	ChannelConfig string
 	// Users that sign channel configuration
-	SigningIdentities []context.Identity
+	SigningIdentities []fab.IdentityContext
 }
 
 //RequestOption func for each Opts argument

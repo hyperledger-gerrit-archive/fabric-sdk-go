@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ func TestBasicValidChannel(t *testing.T) {
 
 	user := mocks.NewMockUser("user")
 
-	fp, err := pf.CreateFabricProvider(ctx)
+	fp, err := pf.CreateInfraProvider(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error creating Fabric Provider: %v", err)
 	}
@@ -73,8 +74,8 @@ func (f *MockFabricProvider) CreateChannelConfig(ic fab.IdentityContext, channel
 
 }
 
-// CreateFabricProvider mocks new default implementation of fabric primitives
-func (f *MockProviderFactory) CreateFabricProvider(context context.Providers) (fab.InfraProvider, error) {
+// CreateInfraProvider mocks new default implementation of fabric primitives
+func (f *MockProviderFactory) CreateInfraProvider(context api.Providers) (fab.InfraProvider, error) {
 	fabProvider := fabpvdr.New(context)
 
 	cfp := MockFabricProvider{

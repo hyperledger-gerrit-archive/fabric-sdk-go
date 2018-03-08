@@ -119,7 +119,7 @@ func WithLoggerPkg(logger api.LoggerProvider) Option {
 // providerInit interface allows for initializing providers
 // TODO: minimize interface
 type providerInit interface {
-	Initialize(sdk *FabricSDK) error
+	Initialize(providers *context.Provider) error
 }
 
 func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
@@ -174,15 +174,14 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		identityManager[orgName] = mgr
 	}
 
-	//Initialize sdk provider
-	sdk.provider = context.NewProvider(context.WithConfig(config),
+	//prepare basic providers needed for initialzing rest of the providers
+	basicProviders := context.NewProvider(context.WithConfig(config),
 		context.WithCryptoSuite(cryptoSuite),
 		context.WithSigningManager(signingManager),
-		context.WithStateStore(stateStore),
-		context.WithIdentityManager(identityManager))
+	)
 
 	// Initialize Fabric Provider
-	fabricProvider, err := sdk.opts.Core.CreateFabricProvider(sdk.provider)
+	fabricProvider, err := sdk.opts.Core.CreateInfraProvider(basicProviders)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize core fabric provider")
 	}
@@ -192,17 +191,11 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize discovery provider")
 	}
-	if pi, ok := discoveryProvider.(providerInit); ok {
-		pi.Initialize(sdk)
-	}
 
 	// Initialize selection provider (for selecting endorsing peers)
 	selectionProvider, err := sdk.opts.Service.CreateSelectionProvider(config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize selection provider")
-	}
-	if pi, ok := selectionProvider.(providerInit); ok {
-		pi.Initialize(sdk)
 	}
 
 	channelProvider, err := chpvdr.New(fabricProvider)
@@ -221,12 +214,21 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		context.WithFabricProvider(fabricProvider),
 		context.WithChannelProvider(channelProvider))
 
+	//initialize
+	if pi, ok := discoveryProvider.(providerInit); ok {
+		pi.Initialize(sdk.provider)
+	}
+
+	if pi, ok := selectionProvider.(providerInit); ok {
+		pi.Initialize(sdk.provider)
+	}
+
 	return nil
 }
 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
-	sdk.FabricProvider().Close()
+	sdk.provider.FabricProvider().Close()
 }
 
 // Config returns the SDK's configuration.
