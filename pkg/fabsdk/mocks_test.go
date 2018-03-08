@@ -9,7 +9,6 @@ package fabsdk
 import (
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging/api"
@@ -62,7 +61,7 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	}
 
 	ctx := mocks.NewMockProviderContextCustom(config, cs, sm, stateStore, im)
-	fp, err := sdkcore.CreateFabricProvider(ctx)
+	fp, err := sdkcore.CreateInfraProvider(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +97,7 @@ func (mc *mockCorePkg) CreateIdentityManager(orgName string, stateStore core.KVS
 	return mgr, nil
 }
 
-func (mc *mockCorePkg) CreateFabricProvider(ctx context.Providers) (fab.InfraProvider, error) {
+func (mc *mockCorePkg) CreateInfraProvider(ctx sdkApi.Providers) (fab.InfraProvider, error) {
 	return mc.fabricProvider, nil
 }
 
