@@ -99,7 +99,6 @@ var logger = logging.NewLogger("fabsdk/client")
 type Client struct {
 	context   context.Client
 	discovery fab.DiscoveryService // global discovery service (detects all peers on the network)
-	resource  api.Resource
 	filter    TargetFilter
 }
 
@@ -132,11 +131,8 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 		return nil, errors.WithMessage(err, "failed to create resmgmt client")
 	}
 
-	resource := resource.New(ctx)
-
 	resourceClient := &Client{
-		context:  ctx,
-		resource: resource,
+		context: ctx,
 	}
 
 	for _, opt := range opts {
@@ -200,7 +196,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		return errors.WithMessage(err, "failed to create orderers from config")
 	}
 
-	genesisBlock, err := rc.resource.GenesisBlockFromOrderer(channelID, orderer)
+	genesisBlock, err := resource.GenesisBlockFromOrderer(rc.context, channelID, orderer)
 	if err != nil {
 		return errors.WithMessage(err, "genesis block retrieval failed")
 	}
@@ -210,7 +206,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 		GenesisBlock: genesisBlock,
 	}
 
-	err = rc.resource.JoinChannel(joinChannelRequest)
+	err = resource.JoinChannel(rc.context, joinChannelRequest)
 	if err != nil {
 		return errors.WithMessage(err, "join channel failed")
 	}
@@ -283,7 +279,7 @@ func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.P
 
 // isChaincodeInstalled verify if chaincode is installed on peer
 func (rc *Client) isChaincodeInstalled(req InstallCCRequest, peer fab.Peer) (bool, error) {
-	chaincodeQueryResponse, err := rc.resource.QueryInstalledChaincodes(peer)
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(rc.context, peer)
 	if err != nil {
 		return false, err
 	}
@@ -361,7 +357,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	}
 
 	icr := api.InstallChaincodeRequest{Name: req.Name, Path: req.Path, Version: req.Version, Package: req.Package, Targets: peer.PeersToTxnProcessors(newTargets)}
-	transactionProposalResponse, _, err := rc.resource.InstallChaincode(icr)
+	transactionProposalResponse, _, err := resource.InstallChaincode(rc.context, icr)
 	for _, v := range transactionProposalResponse {
 		logger.Debugf("Install chaincode '%s' endorser '%s' returned ProposalResponse status:%v", req.Name, v.Endorser, v.Status)
 
@@ -396,7 +392,7 @@ func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...R
 // QueryInstalledChaincodes queries the installed chaincodes on a peer.
 // Returns the details of all chaincodes installed on a peer.
 func (rc *Client) QueryInstalledChaincodes(proposalProcessor fab.ProposalProcessor) (*pb.ChaincodeQueryResponse, error) {
-	return rc.resource.QueryInstalledChaincodes(proposalProcessor)
+	return resource.QueryInstalledChaincodes(rc.context, proposalProcessor)
 }
 
 // QueryInstantiatedChaincodes queries the instantiated chaincodes on a peer for specific channel.
@@ -444,7 +440,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 // QueryChannels queries the names of all the channels that a peer has joined.
 // Returns the details of all channels that peer has joined.
 func (rc *Client) QueryChannels(proposalProcessor fab.ProposalProcessor) (*pb.ChannelQueryResponse, error) {
-	return rc.resource.QueryChannels(proposalProcessor)
+	return resource.QueryChannels(rc.context, proposalProcessor)
 }
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
@@ -681,7 +677,7 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		Signatures: configSignatures,
 	}
 
-	_, err = rc.resource.CreateChannel(request)
+	_, err = resource.CreateChannel(rc.context, request)
 	if err != nil {
 		return errors.WithMessage(err, "create channel failed")
 	}
