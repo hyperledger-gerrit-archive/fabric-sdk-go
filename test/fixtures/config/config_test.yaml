@@ -172,6 +172,13 @@ channels:
         chaincodeQuery: true
         ledgerQuery: true
         eventSource: true
+      
+      peer1.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+            
 
 #
 # list of participating organizations in this network
@@ -218,6 +225,7 @@ organizations:
     cryptoPath:  peerOrganizations/org2.example.com/users/{userName}@org2.example.com/msp
 
     peers:
+      - peer1.org2.example.com
       - peer0.org2.example.com
 
     certificateAuthorities:
@@ -310,6 +318,28 @@ peers:
     tlsCACerts:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
+  local.peer1.org2.example.com:
+    url: peer1.org2.example.com:9051
+    eventUrl: peer1.org2.example.com:9053
+    #TODO to be moved to high level, common for all grpc connections
+    grpcOptions:
+      ssl-target-name-override: peer1.org2.example.com
+#     These parameters should be set in coordination with the keepalive policy on the server,
+#     as incompatible settings can result in closing of connection.      
+#     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+    crls:
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp/crl
+
+
 #
 # Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
 # certificate management to be done via REST APIs. Application may choose to use a standard
@@ -374,6 +404,12 @@ certificateAuthorities:
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
 entityMatchers:
   peer:
+    - pattern: peer1.org2.example.com
+      urlSubstitutionExp: peer1.org2.example.com:9051
+      eventUrlSubstitutionExp:
+      sslTargetOverrideUrlSubstitutionExp: 
+      mappedHost: local.peer1.org2.example.com
+
     - pattern: (\w+).org1.example.(\w+)
       urlSubstitutionExp: peer0.org1.example.com:7051
       eventUrlSubstitutionExp: peer0.org1.example.com:7053
@@ -415,6 +451,8 @@ entityMatchers:
       eventUrlSubstitutionExp:
       sslTargetOverrideUrlSubstitutionExp:
       mappedHost: local.peer0.org2.example.com
+
+
 
     - pattern: (\w+).org1.example.(\w+):(\d+)
       urlSubstitutionExp: peer0.org1.example.com:7051
