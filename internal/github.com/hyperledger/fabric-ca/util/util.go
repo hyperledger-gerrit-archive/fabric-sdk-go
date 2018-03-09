@@ -31,15 +31,16 @@ import (
 	"io/ioutil"
 	"math/big"
 	mrand "math/rand"
+
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+
 	"net/http"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
 	"time"
-
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 
 	"github.com/pkg/errors"
 
