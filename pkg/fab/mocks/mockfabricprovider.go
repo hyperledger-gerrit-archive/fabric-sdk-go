@@ -18,6 +18,7 @@ import (
 // MockInfraProvider represents the default implementation of Fabric objects.
 type MockInfraProvider struct {
 	providerContext context.Providers
+	customOrderer   fab.Orderer
 }
 
 // CreateResourceClient returns a new client initialized for the current instance of the SDK.
@@ -69,12 +70,21 @@ func (f *MockInfraProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.
 func (f *MockInfraProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error) {
+	if f.customOrderer != nil {
+		return f.customOrderer, nil
+	}
+
 	return &MockOrderer{}, nil
 }
 
 //CommManager returns comm provider
 func (f *MockInfraProvider) CommManager() fab.CommManager {
 	return nil
+}
+
+// SetCustomOrderer creates a default implementation of Orderer based on configuration.
+func (f *MockInfraProvider) SetCustomOrderer(customOrderer fab.Orderer) {
+	f.customOrderer = customOrderer
 }
 
 //Close mock close function
