@@ -14,6 +14,7 @@ import (
 
 	caapi "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	calib "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 
@@ -192,7 +193,7 @@ func (im *IdentityManager) Reenroll(user core.User) error {
 // Register a User with the Fabric CA
 // request: Registration Request
 // Returns Enrolment Secret
-func (im *IdentityManager) Register(request *core.RegistrationRequest) (string, error) {
+func (im *IdentityManager) Register(request *ca.RegistrationRequest) (string, error) {
 	if err := im.initCAClient(); err != nil {
 		return "", err
 	}
@@ -237,7 +238,7 @@ func (im *IdentityManager) Register(request *core.RegistrationRequest) (string, 
 // Revoke a User with the Fabric CA
 // registrar: The User that is initiating the revocation
 // request: Revocation Request
-func (im *IdentityManager) Revoke(request *core.RevocationRequest) (*core.RevocationResponse, error) {
+func (im *IdentityManager) Revoke(request *ca.RevocationRequest) (*ca.RevocationResponse, error) {
 	if err := im.initCAClient(); err != nil {
 		return nil, err
 	}
@@ -266,18 +267,18 @@ func (im *IdentityManager) Revoke(request *core.RevocationRequest) (*core.Revoca
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to revoke")
 	}
-	var revokedCerts []core.RevokedCert
+	var revokedCerts []ca.RevokedCert
 	for i := range resp.RevokedCerts {
 		revokedCerts = append(
 			revokedCerts,
-			core.RevokedCert{
+			ca.RevokedCert{
 				Serial: resp.RevokedCerts[i].Serial,
 				AKI:    resp.RevokedCerts[i].AKI,
 			})
 	}
 
 	// TODO complete the response mapping
-	return &core.RevocationResponse{
+	return &ca.RevocationResponse{
 		RevokedCerts: revokedCerts,
 		CRL:          resp.CRL,
 	}, nil

@@ -12,6 +12,7 @@ import (
 	"hash"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
@@ -39,6 +40,9 @@ func NewMockProviderContext() *MockProviderContext {
 
 	im := make(map[string]core.IdentityManager)
 	im[""] = &MockIdentityManager{}
+
+	ca := make(map[string]ca.Client)
+	ca[""] = &MockCAClient{}
 
 	context := MockProviderContext{
 		config:            NewMockConfig(),

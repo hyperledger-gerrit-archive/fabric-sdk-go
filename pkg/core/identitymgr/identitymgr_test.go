@@ -17,6 +17,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/ca"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -184,16 +185,16 @@ func TestRegister(t *testing.T) {
 	}
 
 	// Register without registration name parameter
-	_, err = identityManager.Register(&core.RegistrationRequest{})
+	_, err = identityManager.Register(&ca.RegistrationRequest{})
 	if err == nil {
 		t.Fatalf("Expected error without registration name parameter")
 	}
 
 	// Register with valid request
-	var attributes []core.Attribute
-	attributes = append(attributes, core.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, core.Attribute{Key: "test2", Value: "test3"})
-	secret, err := identityManager.Register(&core.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
+	var attributes []ca.Attribute
+	attributes = append(attributes, ca.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, ca.Attribute{Key: "test2", Value: "test3"})
+	secret, err := identityManager.Register(&ca.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
 	}
@@ -212,10 +213,10 @@ func TestEmbeddedRegister(t *testing.T) {
 	}
 
 	// Register with valid request
-	var attributes []core.Attribute
-	attributes = append(attributes, core.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, core.Attribute{Key: "test2", Value: "test3"})
-	secret, err := identityManager.Register(&core.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
+	var attributes []ca.Attribute
+	attributes = append(attributes, ca.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, ca.Attribute{Key: "test2", Value: "test3"})
+	secret, err := identityManager.Register(&ca.RegistrationRequest{Name: "withEmbeddedRegistrar", Affiliation: "test", Attributes: attributes})
 	if err != nil {
 		t.Fatalf("identityManager Register return error %v", err)
 	}
@@ -240,16 +241,16 @@ func TestRegisterNoRegistrar(t *testing.T) {
 	}
 
 	// Register without registration name parameter
-	_, err = identityManager.Register(&core.RegistrationRequest{})
+	_, err = identityManager.Register(&ca.RegistrationRequest{})
 	if err != core.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
 
 	// Register with valid request
-	var attributes []core.Attribute
-	attributes = append(attributes, core.Attribute{Key: "test1", Value: "test2"})
-	attributes = append(attributes, core.Attribute{Key: "test2", Value: "test3"})
-	_, err = identityManager.Register(&core.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
+	var attributes []ca.Attribute
+	attributes = append(attributes, ca.Attribute{Key: "test1", Value: "test2"})
+	attributes = append(attributes, ca.Attribute{Key: "test2", Value: "test3"})
+	_, err = identityManager.Register(&ca.RegistrationRequest{Name: "test", Affiliation: "test", Attributes: attributes})
 	if err != core.ErrCARegistrarNotFound {
 		t.Fatalf("Expected ErrCARegistrarNotFound, got: %v", err)
 	}
@@ -276,7 +277,7 @@ func TestRevoke(t *testing.T) {
 		t.Fatalf("Expected error with nil request")
 	}
 
-	_, err = identityManager.Revoke(&core.RevocationRequest{})
+	_, err = identityManager.Revoke(&ca.RevocationRequest{})
 	if err == nil {
 		t.Fatalf("Expected decoding error with test cert")
 	}
