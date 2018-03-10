@@ -11,15 +11,13 @@ import (
 
 	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 )
 
-var logger = logging.NewLogger("fabsdk/ca")
+var logger = logging.NewLogger("fabsdk/msp")
 
 // CAClient implements api/msp/CAClient
 type CAClient struct {
@@ -34,10 +32,10 @@ type CAClient struct {
 	registrar       core.EnrollCredentials
 }
 
-// New creates a new CA CAClient instance
-func New(orgName string, identityManager msp.IdentityManager, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config core.Config) (*CAClient, error) {
+// NewCAClient creates a new CA CAClient instance
+func NewCAClient(orgName string, identityManager msp.IdentityManager, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config core.Config) (*CAClient, error) {
 
-	userStore, err := identitymgr.NewCertFileUserStore1(stateStore)
+	userStore, err := NewCertFileUserStore1(stateStore)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating a user store failed")
 	}
@@ -125,12 +123,7 @@ func (c *CAClient) Enroll(enrollmentID string, enrollmentSecret string) error {
 		return errors.New("enrollmentSecret is required")
 	}
 	// TODO add attributes
-	careq := &api.EnrollmentRequest{
-		CAName: c.caName,
-		Name:   enrollmentID,
-		Secret: enrollmentSecret,
-	}
-	cert, err := c.adapter.Enroll(careq)
+	cert, err := c.adapter.Enroll(enrollmentID, enrollmentSecret)
 	if err != nil {
 		return errors.Wrap(err, "enroll failed")
 	}
@@ -156,16 +149,13 @@ func (c *CAClient) Reenroll(enrollmentID string) error {
 		logger.Infof("invalid re-enroll request, missing enrollmentID")
 		return errors.New("user name missing")
 	}
-	req := &api.ReenrollmentRequest{
-		CAName: c.adapter.CAName(),
-	}
 
 	user, err := c.identityManager.GetUser(enrollmentID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to retrieve user: %s", enrollmentID)
 	}
 
-	cert, err := c.adapter.Reenroll(user.PrivateKey(), user.EnrollmentCertificate(), req)
+	cert, err := c.adapter.Reenroll(user.PrivateKey(), user.EnrollmentCertificate())
 	if err != nil {
 		return errors.Wrap(err, "reenroll failed")
 	}
