@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	cryptosuite "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/identitymgr"
 	kvs "github.com/hyperledger/fabric-sdk-go/pkg/fab/keyvaluestore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 )
@@ -33,14 +32,14 @@ func TestEnrollOrg2(t *testing.T) {
 		t.Fatalf("CreateNewFileKeyValueStore failed: %v", err)
 	}
 
-	identityManager, err := identitymgr.New(org2Name, stateStore, cryptoSuiteProvider, testFabricConfig)
+	identityManager, err := msp.NewManager(org2Name, stateStore, cryptoSuiteProvider, testFabricConfig)
 	if err != nil {
-		t.Fatalf("identitymgr.New failed: %v", err)
+		t.Fatalf("identitymgr.NewManager failed: %v", err)
 	}
 
-	caClient, err := msp.New(org2Name, identityManager, stateStore, cryptoSuiteProvider, testFabricConfig)
+	caClient, err := msp.NewCAClient(org2Name, identityManager, stateStore, cryptoSuiteProvider, testFabricConfig)
 	if err != nil {
-		t.Fatalf("caclient.New failed: %v", err)
+		t.Fatalf("caclient.NewManager failed: %v", err)
 	}
 
 	err = caClient.Enroll("admin", "adminpw")
