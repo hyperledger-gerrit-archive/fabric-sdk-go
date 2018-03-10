@@ -102,7 +102,7 @@ func TestCreateChannel(t *testing.T) {
 		t.Fatalf("Expected broadcast")
 	}
 }
-
+ 
 func TestJoinChannel(t *testing.T) {
 	var peers []fab.ProposalProcessor
 
@@ -123,16 +123,14 @@ func TestJoinChannel(t *testing.T) {
 	genesisBlock := mocks.NewSimpleMockBlock()
 
 	request := api.JoinChannelRequest{
-		Targets: peers,
 		//GenesisBlock: genesisBlock,
 	}
-	err := JoinChannel(ctx, request)
+	err := JoinChannel(ctx, request, peers)
 	if err == nil {
 		t.Fatalf("Should not have been able to join channel because of missing GenesisBlock parameter")
 	}
 
 	request = api.JoinChannelRequest{
-		Targets:      peers,
 		GenesisBlock: genesisBlock,
 	}
 	if err == nil {
@@ -140,17 +138,15 @@ func TestJoinChannel(t *testing.T) {
 	}
 
 	// Test join channel with valid arguments
-	err = JoinChannel(ctx, request)
+	err = JoinChannel(ctx, request, peers)
 	if err != nil {
 		t.Fatalf("Did not expect error from join channel. Got: %s", err)
 	}
 
 	// Test failed proposal error handling
 	endorserServer.ProposalError = errors.New("Test Error")
-	request = api.JoinChannelRequest{
-		Targets: peers,
-	}
-	err = JoinChannel(ctx, request)
+	request = api.JoinChannelRequest{}
+	err = JoinChannel(ctx, request, peers)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}
