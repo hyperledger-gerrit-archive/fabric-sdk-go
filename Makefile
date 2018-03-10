@@ -80,7 +80,7 @@ INT_TESTS_LOCAL_CONFIG_FILE := config_test_local.yaml
 FABRIC_STABLE_INTTEST        ?= true
 FABRIC_STABLE_PKCS11_INTTEST ?= false
 FABRIC_PREV_INTTEST          ?= false
-FABRIC_PRERELEASE_INTTEST    ?= false
+FABRIC_PRERELEASE_INTTEST    ?= true
 FABRIC_DEVSTABLE_INTTEST     ?= false
 
 # Code levels
@@ -174,7 +174,8 @@ export DOCKER_CMD
 export DOCKER_COMPOSE_CMD
 
 .PHONY: all
-all: checks unit-test integration-test
+all: checks integration-test
+# all: checks unit-test integration-test
 
 .PHONY: depend
 depend:
