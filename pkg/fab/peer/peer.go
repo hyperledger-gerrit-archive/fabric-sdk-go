@@ -120,6 +120,15 @@ func WithInsecure() Option {
 	}
 }
 
+// WithMSPID is a functional option for the peer.New constructor that configures the peer's msp ID
+func WithMSPID(mspID string) Option {
+	return func(p *Peer) error {
+		p.mspID = mspID
+
+		return nil
+	}
+}
+
 // FromPeerConfig is a functional option for the peer.New constructor that configures a new peer
 // from a apiconfig.NetworkPeer struct
 func FromPeerConfig(peerCfg *core.NetworkPeer) Option {
@@ -203,19 +212,9 @@ func (p *Peer) Name() string {
 	return p.name
 }
 
-// SetName sets the Peer name / id.
-func (p *Peer) SetName(name string) {
-	p.name = name
-}
-
 // MSPID gets the Peer mspID.
 func (p *Peer) MSPID() string {
 	return p.mspID
-}
-
-// SetMSPID sets the Peer mspID.
-func (p *Peer) SetMSPID(mspID string) {
-	p.mspID = mspID
 }
 
 // Roles gets the user’s roles the Peer participates in. It’s an array of possible values
@@ -226,22 +225,10 @@ func (p *Peer) Roles() []string {
 	return p.roles
 }
 
-// SetRoles sets the user’s roles the Peer participates in. See getRoles() for legitimate values.
-// roles is the list of roles for the user.
-func (p *Peer) SetRoles(roles []string) {
-	p.roles = roles
-}
-
 // EnrollmentCertificate returns the Peer's enrollment certificate.
 // It returns the certificate in PEM format signed by the trusted CA.
 func (p *Peer) EnrollmentCertificate() *pem.Block {
 	return p.enrollmentCertificate
-}
-
-// SetEnrollmentCertificate set the Peer’s enrollment certificate.
-// pem is the enrollment Certificate in PEM format signed by the trusted CA.
-func (p *Peer) SetEnrollmentCertificate(pem *pem.Block) {
-	p.enrollmentCertificate = pem
 }
 
 // URL gets the Peer URL. Required property for the instance objects.
