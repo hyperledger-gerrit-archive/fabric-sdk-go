@@ -90,5 +90,4 @@ type Providers interface {
 	StateStore() KVStore
 	Config() Config
 	SigningManager() SigningManager
-	IdentityManager(orgName string) (IdentityManager, bool)
 }

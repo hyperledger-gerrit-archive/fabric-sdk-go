@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/pkg/errors"
 )
 
@@ -177,7 +178,7 @@ func (c *clientCtx) CryptoSuite() core.CryptoSuite {
 }
 
 // IdentityManager returns identity manager for organization
-func (c *clientCtx) IdentityManager(orgName string) (core.IdentityManager, bool) {
+func (c *clientCtx) IdentityManager(orgName string) (msp.IdentityManager, bool) {
 	return c.providers.IdentityManager(orgName)
 }
 
