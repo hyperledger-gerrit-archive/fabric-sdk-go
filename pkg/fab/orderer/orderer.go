@@ -322,6 +322,14 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 		errs <- errors.Wrap(err, "deliver failed")
 		return responses, errs
 	}
+
+	// Receive blocks from the GRPC stream and put them on the channel
+	go func() {
+		defer o.commManager.ReleaseConn(conn)
+		blockStream(broadcastStream, responses, errs)
+
+	}()
+
 	// Send block request envelope
 	logger.Debugf("Requesting blocks from ordering service")
 	if err := broadcastStream.Send(&common.Envelope{
@@ -335,12 +343,6 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 	}
 	broadcastStream.CloseSend()
 
-	// Receive blocks from the GRPC stream and put them on the channel
-	go func() {
-		defer o.commManager.ReleaseConn(conn)
-		blockStream(broadcastStream, responses, errs)
-
-	}()
 	return responses, errs
 }
 
@@ -355,12 +357,13 @@ func blockStream(broadcastStream ab.AtomicBroadcast_DeliverClient, responses cha
 		switch t := response.Type.(type) {
 		// Seek operation success, no more resposes
 		case *ab.DeliverResponse_Status:
+			logger.Debug("Received deliver response status from ordering service: %d", t.Status)
 			if t.Status == common.Status_SUCCESS {
 				close(responses)
 				return
 			}
 			if t.Status != common.Status_SUCCESS {
-				errs <- errors.Errorf("error status from ordering service %s", t.Status)
+				errs <- errors.Errorf("error status from ordering service %d", t.Status)
 				return
 			}
 
@@ -370,7 +373,7 @@ func blockStream(broadcastStream ab.AtomicBroadcast_DeliverClient, responses cha
 			responses <- response.GetBlock()
 		// Unknown response
 		default:
-			errs <- errors.Errorf("unknown response from ordering service %s", t)
+			errs <- errors.Errorf("unknown response type from ordering service %T", t)
 			return
 		}
 	}
