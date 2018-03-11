@@ -242,7 +242,6 @@ func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 
 		return nil, status.New(status.OrdererClientStatus, status.ConnectionFailed.ToInt32(), err.Error(), nil)
 	}
-	defer o.releaseConn(ctx, conn)
 
 	broadcastClient, err := ab.NewAtomicBroadcastClient(conn).Broadcast(ctx)
 	if err != nil {
@@ -256,7 +255,13 @@ func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 	responses := make(chan common.Status)
 	errs := make(chan error, 1)
 
-	go broadcastStream(broadcastClient, responses, errs)
+	go func() {
+		broadcastStream(broadcastClient, responses, errs)
+		if err = broadcastClient.CloseSend(); err != nil {
+			logger.Debugf("unable to close broadcast client [%s]", err)
+		}
+		o.releaseConn(ctx, conn)
+	}()
 
 	err = broadcastClient.Send(&common.Envelope{
 		Payload:   envelope.Payload,
@@ -264,9 +269,6 @@ func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to send envelope to orderer")
-	}
-	if err = broadcastClient.CloseSend(); err != nil {
-		logger.Debugf("unable to close broadcast client [%s]", err)
 	}
 
 	select {
@@ -331,6 +333,9 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 	// Receive blocks from the GRPC stream and put them on the channel
 	go func() {
 		blockStream(broadcastClient, responses, errs)
+		if err = broadcastClient.CloseSend(); err != nil {
+			logger.Debugf("unable to close deliver client [%s]", err)
+		}
 		o.releaseConn(ctx, conn)
 	}()
 
@@ -345,10 +350,6 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 
 		errs <- errors.Wrap(err, "failed to send block request to orderer")
 		return responses, errs
-	}
-
-	if err = broadcastClient.CloseSend(); err != nil {
-		logger.Debugf("unable to close deliver client [%s]", err)
 	}
 
 	return responses, errs
