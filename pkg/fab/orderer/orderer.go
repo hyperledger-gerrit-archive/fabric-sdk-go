@@ -322,6 +322,14 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 		errs <- errors.Wrap(err, "deliver failed")
 		return responses, errs
 	}
+
+	// Receive blocks from the GRPC stream and put them on the channel
+	go func() {
+		defer o.commManager.ReleaseConn(conn)
+		blockStream(broadcastStream, responses, errs)
+
+	}()
+
 	// Send block request envelope
 	logger.Debugf("Requesting blocks from ordering service")
 	if err := broadcastStream.Send(&common.Envelope{
@@ -335,12 +343,6 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 	}
 	broadcastStream.CloseSend()
 
-	// Receive blocks from the GRPC stream and put them on the channel
-	go func() {
-		defer o.commManager.ReleaseConn(conn)
-		blockStream(broadcastStream, responses, errs)
-
-	}()
 	return responses, errs
 }
 
