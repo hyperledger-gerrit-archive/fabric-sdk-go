@@ -288,8 +288,9 @@ func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 	}); err != nil {
 		return nil, errors.Wrap(err, "failed to send envelope to orderer")
 	}
-	broadcastStream.CloseSend()
 	<-done
+	broadcastStream.CloseSend()
+
 	return broadcastStatus, broadcastErr
 }
 
@@ -326,6 +327,7 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 	// Receive blocks from the GRPC stream and put them on the channel
 	go func() {
 		blockStream(broadcastStream, responses, errs)
+		broadcastStream.CloseSend()
 		o.releaseConn(ctx, conn)
 	}()
 
@@ -340,7 +342,6 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 		errs <- errors.Wrap(err, "failed to send block request to orderer")
 		return responses, errs
 	}
-	broadcastStream.CloseSend()
 
 	return responses, errs
 }
