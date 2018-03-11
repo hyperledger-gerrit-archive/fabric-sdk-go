@@ -197,7 +197,6 @@ func testDial(t *testing.T, wg *sync.WaitGroup, connector *CachingConnector, add
 	assert.Nil(t, err, "DialContext should have succeeded")
 
 	endorserClient := pb.NewEndorserClient(conn)
-	ctx, cancel = context.WithTimeout(context.Background(), normalTimeout)
 	proposal := pb.SignedProposal{}
 	resp, err := endorserClient.ProcessProposal(context.Background(), &proposal)
 	cancel()
