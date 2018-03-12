@@ -10,8 +10,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
 
-// NetworkConfig provides a static definition of a Hyperledger Fabric network
-type NetworkConfig struct {
+// Network provides a static definition of a Hyperledger Fabric network
+type Network struct {
 	Name                   string
 	Xtype                  string
 	Description            string
@@ -64,7 +64,7 @@ type ChannelConfig struct {
 	// Orderers list of ordering service nodes
 	Orderers []string
 	// Peers a list of peer-channels that are part of this organization
-	// to get the real Peer config object, use the Name field and fetch NetworkConfig.Peers[Name]
+	// to get the real Peer config object, use the Name field and fetch Network.Peers[Name]
 	Peers map[string]PeerChannelConfig
 	// Chaincodes list of services
 	Chaincodes []string

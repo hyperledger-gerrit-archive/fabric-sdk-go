@@ -42,7 +42,7 @@ type Option func(opts *options) error
 
 // New initializes the SDK based on the set of options provided.
 // configProvider provides the application configuration.
-func New(cp core.ConfigProvider, opts ...Option) (*FabricSDK, error) {
+func New(cp core.Provider, opts ...Option) (*FabricSDK, error) {
 	pkgSuite := defPkgSuite{}
 	config, err := cp()
 	if err != nil {
@@ -54,7 +54,7 @@ func New(cp core.ConfigProvider, opts ...Option) (*FabricSDK, error) {
 // WithConfig converts a Config interface to a ConfigProvider.
 // This is a helper function for those who already loaded the config
 // prior to instantiating the SDK.
-func WithConfig(config core.Config) core.ConfigProvider {
+func WithConfig(config core.Config) core.Provider {
 	return func() (core.Config, error) {
 		return config, nil
 	}

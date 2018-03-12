@@ -24,9 +24,9 @@ func runWithNoOrdererConfigFixture(t *testing.T) {
 }
 
 // RunWithNoOrdererConfig enables chclient scenarios using config and sdk options provided
-func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
+func runWithNoOrdererConfig(t *testing.T, configProvider core.Provider, sdkOpts ...fabsdk.Option) {
 
-	sdk, err := fabsdk.New(configOpt, sdkOpts...)
+	sdk, err := fabsdk.New(configProvider, sdkOpts...)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}

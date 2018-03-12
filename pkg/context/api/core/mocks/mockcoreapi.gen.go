@@ -277,17 +277,17 @@ func (mr *MockConfigMockRecorder) MspID(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MspID", reflect.TypeOf((*MockConfig)(nil).MspID), arg0)
 }
 
-// NetworkConfig mocks base method
-func (m *MockConfig) NetworkConfig() (*core.NetworkConfig, error) {
-	ret := m.ctrl.Call(m, "NetworkConfig")
-	ret0, _ := ret[0].(*core.NetworkConfig)
+// Network mocks base method
+func (m *MockConfig) NetworkConfig() (*core.Network, error) {
+	ret := m.ctrl.Call(m, "Network")
+	ret0, _ := ret[0].(*core.Network)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// NetworkConfig indicates an expected call of NetworkConfig
+// Network indicates an expected call of Network
 func (mr *MockConfigMockRecorder) NetworkConfig() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NetworkConfig", reflect.TypeOf((*MockConfig)(nil).NetworkConfig))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Network", reflect.TypeOf((*MockConfig)(nil).NetworkConfig))
 }
 
 // NetworkPeers mocks base method
