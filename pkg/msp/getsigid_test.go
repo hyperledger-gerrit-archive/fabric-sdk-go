@@ -52,7 +52,7 @@ func TestGetSigningIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	netConfig, err := config.NetworkConfig()
+	netConfig, err := config.Network()
 	if err != nil {
 		t.Fatalf("Failed to setup netConfig: %s", err)
 	}

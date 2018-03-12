@@ -115,7 +115,7 @@ func cleanupTestPath(t *testing.T, storePath string) {
 }
 
 func mspIDByOrgName(t *testing.T, c core.Config, orgName string) string {
-	netConfig, err := c.NetworkConfig()
+	netConfig, err := c.Network()
 	if err != nil {
 		t.Fatalf("network config retrieval failed: %v", err)
 	}

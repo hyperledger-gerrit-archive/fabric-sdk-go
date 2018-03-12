@@ -40,7 +40,7 @@ func NewCAClient(orgName string, identityManager msp.IdentityManager, stateStore
 		return nil, errors.Wrapf(err, "creating a user store failed")
 	}
 
-	netConfig, err := config.NetworkConfig()
+	nwk, err := config.Network()
 	if err != nil {
 		return nil, errors.Wrapf(err, "network config retrieval failed")
 	}
@@ -59,7 +59,7 @@ func NewCAClient(orgName string, identityManager msp.IdentityManager, stateStore
 
 	// viper keys are case insensitive
 	//
-	orgConfig, ok := netConfig.Organizations[strings.ToLower(orgName)]
+	orgConfig, ok := nwk.Organizations[strings.ToLower(orgName)]
 	if !ok {
 		return nil, errors.New("org config retrieval failed")
 	}

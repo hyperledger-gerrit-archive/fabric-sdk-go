@@ -37,7 +37,7 @@ type IdentityManager struct {
 // @returns {error} error, if any
 func NewIdentityManager(orgName string, stateStore core.KVStore, cryptoSuite core.CryptoSuite, config config.Config) (*IdentityManager, error) {
 
-	netConfig, err := config.NetworkConfig()
+	netConfig, err := config.Network()
 	if err != nil {
 		return nil, errors.Wrapf(err, "network config retrieval failed")
 	}

@@ -47,13 +47,13 @@ var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/f
 
 // Config represents the configuration for the client
 type Config struct {
-	tlsCertPool         *x509.CertPool
-	networkConfig       *core.NetworkConfig
-	networkConfigCached bool
-	configViper         *viper.Viper
-	peerMatchers        map[int]*regexp.Regexp
-	ordererMatchers     map[int]*regexp.Regexp
-	opts                options
+	tlsCertPool     *x509.CertPool
+	network         *core.Network
+	networkCached   bool
+	configViper     *viper.Viper
+	peerMatchers    map[int]*regexp.Regexp
+	ordererMatchers map[int]*regexp.Regexp
+	opts            options
 }
 
 type options struct {
@@ -67,7 +67,7 @@ type Option func(opts *options) error
 
 // FromReader loads configuration from in.
 // configType can be "json" or "yaml".
-func FromReader(in io.Reader, configType string, opts ...Option) core.ConfigProvider {
+func FromReader(in io.Reader, configType string, opts ...Option) core.Provider {
 	return func() (core.Config, error) {
 		c, err := newConfig(opts...)
 		if err != nil {
@@ -88,7 +88,7 @@ func FromReader(in io.Reader, configType string, opts ...Option) core.ConfigProv
 }
 
 // FromFile reads from named config file
-func FromFile(name string, opts ...Option) core.ConfigProvider {
+func FromFile(name string, opts ...Option) core.Provider {
 	return func() (core.Config, error) {
 		c, err := newConfig(opts...)
 		if err != nil {
@@ -115,7 +115,7 @@ func FromFile(name string, opts ...Option) core.ConfigProvider {
 }
 
 // FromRaw will initialize the configs from a byte array
-func FromRaw(configBytes []byte, configType string, opts ...Option) core.ConfigProvider {
+func FromRaw(configBytes []byte, configType string, opts ...Option) core.Provider {
 	buf := bytes.NewBuffer(configBytes)
 	logger.Debugf("config.FromRaw buf Len is %d, Cap is %d: %s", buf.Len(), buf.Cap(), buf)
 
@@ -284,11 +284,11 @@ func (c *Config) loadTemplateConfig() error {
 
 // Client returns the Client config
 func (c *Config) Client() (*core.ClientConfig, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
-	client := config.Client
+	client := nwk.Client
 
 	client.TLSCerts.Path = SubstPathVars(client.TLSCerts.Path)
 	client.TLSCerts.Client.Key.Path = SubstPathVars(client.TLSCerts.Client.Key.Path)
@@ -299,7 +299,7 @@ func (c *Config) Client() (*core.ClientConfig, error) {
 
 // CAConfig returns the CA configuration.
 func (c *Config) CAConfig(org string) (*core.CAConfig, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ func (c *Config) CAConfig(org string) (*core.CAConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	caConfig := config.CertificateAuthorities[strings.ToLower(caName)]
+	caConfig := nwk.CertificateAuthorities[strings.ToLower(caName)]
 
 	return &caConfig, nil
 }
@@ -316,7 +316,7 @@ func (c *Config) CAConfig(org string) (*core.CAConfig, error) {
 // CAServerCertPems Read configuration option for the server certificates
 // will send a list of cert pem contents directly from the config bytes array
 func (c *Config) CAServerCertPems(org string) ([]string, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
@@ -324,10 +324,10 @@ func (c *Config) CAServerCertPems(org string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
+	if _, ok := nwk.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	certFilesPem := config.CertificateAuthorities[caName].TLSCACerts.Pem
+	certFilesPem := nwk.CertificateAuthorities[caName].TLSCACerts.Pem
 	certPems := make([]string, len(certFilesPem))
 	for i, v := range certFilesPem {
 		certPems[i] = string(v)
@@ -339,7 +339,7 @@ func (c *Config) CAServerCertPems(org string) ([]string, error) {
 // CAServerCertPaths Read configuration option for the server certificates
 // will send a list of cert file paths
 func (c *Config) CAServerCertPaths(org string) ([]string, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
@@ -347,11 +347,11 @@ func (c *Config) CAServerCertPaths(org string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
+	if _, ok := nwk.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return nil, errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 
-	certFiles := strings.Split(config.CertificateAuthorities[caName].TLSCACerts.Path, ",")
+	certFiles := strings.Split(nwk.CertificateAuthorities[caName].TLSCACerts.Path, ",")
 
 	certFileModPath := make([]string, len(certFiles))
 	for i, v := range certFiles {
@@ -362,18 +362,18 @@ func (c *Config) CAServerCertPaths(org string) ([]string, error) {
 }
 
 func (c *Config) getCAName(org string) (string, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return "", err
 	}
 
 	logger.Debug("Getting cert authority for org: %s.", org)
 
-	if len(config.Organizations[strings.ToLower(org)].CertificateAuthorities) == 0 {
+	if len(nwk.Organizations[strings.ToLower(org)].CertificateAuthorities) == 0 {
 		return "", errors.Errorf("organization %s has no Certificate Authorities setup. Make sure each org has at least 1 configured", org)
 	}
 	//for now, we're only loading the first Cert Authority by default. TODO add logic to support passing the Cert Authority ID needed by the client.
-	certAuthorityName := config.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
+	certAuthorityName := nwk.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
 	logger.Debugf("Cert authority for org: %s is %s", org, certAuthorityName)
 
 	if certAuthorityName == "" {
@@ -384,7 +384,7 @@ func (c *Config) getCAName(org string) (string, error) {
 
 // CAClientKeyPath Read configuration option for the fabric CA client key file
 func (c *Config) CAClientKeyPath(org string) (string, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return "", err
 	}
@@ -393,15 +393,15 @@ func (c *Config) CAClientKeyPath(org string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
+	if _, ok := nwk.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return SubstPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Key.Path), nil
+	return SubstPathVars(nwk.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Key.Path), nil
 }
 
 // CAClientKeyPem Read configuration option for the fabric CA client key pem embedded in the client config
 func (c *Config) CAClientKeyPem(org string) (string, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return "", err
 	}
@@ -410,11 +410,11 @@ func (c *Config) CAClientKeyPem(org string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
+	if _, ok := nwk.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 
-	ca := config.CertificateAuthorities[strings.ToLower(caName)]
+	ca := nwk.CertificateAuthorities[strings.ToLower(caName)]
 	if len(ca.TLSCACerts.Client.Key.Pem) == 0 {
 		return "", errors.New("Empty Client Key Pem")
 	}
@@ -424,7 +424,7 @@ func (c *Config) CAClientKeyPem(org string) (string, error) {
 
 // CAClientCertPath Read configuration option for the fabric CA client cert file
 func (c *Config) CAClientCertPath(org string) (string, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return "", err
 	}
@@ -433,15 +433,15 @@ func (c *Config) CAClientCertPath(org string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
+	if _, ok := nwk.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
-	return SubstPathVars(config.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Cert.Path), nil
+	return SubstPathVars(nwk.CertificateAuthorities[strings.ToLower(caName)].TLSCACerts.Client.Cert.Path), nil
 }
 
 // CAClientCertPem Read configuration option for the fabric CA client cert pem embedded in the client config
 func (c *Config) CAClientCertPem(org string) (string, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return "", err
 	}
@@ -451,11 +451,11 @@ func (c *Config) CAClientCertPem(org string) (string, error) {
 		return "", err
 	}
 
-	if _, ok := config.CertificateAuthorities[strings.ToLower(caName)]; !ok {
+	if _, ok := nwk.CertificateAuthorities[strings.ToLower(caName)]; !ok {
 		return "", errors.Errorf("CA Server Name '%s' not found", caName)
 	}
 
-	ca := config.CertificateAuthorities[strings.ToLower(caName)]
+	ca := nwk.CertificateAuthorities[strings.ToLower(caName)]
 	if len(ca.TLSCACerts.Client.Cert.Pem) == 0 {
 		return "", errors.New("Empty Client Cert Pem")
 	}
@@ -530,12 +530,12 @@ func (c *Config) getTimeout(tType core.TimeoutType) time.Duration {
 
 // MspID returns the MSP ID for the requested organization
 func (c *Config) MspID(org string) (string, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return "", err
 	}
 	// viper lowercases all key maps, org is lower case
-	mspID := config.Organizations[strings.ToLower(org)].MspID
+	mspID := nwk.Organizations[strings.ToLower(org)].MspID
 	if mspID == "" {
 		return "", errors.Errorf("MSP ID is empty for org: %s", org)
 	}
@@ -544,63 +544,63 @@ func (c *Config) MspID(org string) (string, error) {
 }
 
 func (c *Config) cacheNetworkConfiguration() error {
-	networkConfig := core.NetworkConfig{}
-	networkConfig.Name = c.configViper.GetString("name")
-	networkConfig.Xtype = c.configViper.GetString("x-type")
-	networkConfig.Description = c.configViper.GetString("description")
-	networkConfig.Version = c.configViper.GetString("version")
+	nwk := core.Network{}
+	nwk.Name = c.configViper.GetString("name")
+	nwk.Xtype = c.configViper.GetString("x-type")
+	nwk.Description = c.configViper.GetString("description")
+	nwk.Version = c.configViper.GetString("version")
 
-	err := c.configViper.UnmarshalKey("client", &networkConfig.Client)
-	logger.Debugf("Client is: %+v", networkConfig.Client)
+	err := c.configViper.UnmarshalKey("client", &nwk.Client)
+	logger.Debugf("Client is: %+v", nwk.Client)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("channels", &networkConfig.Channels)
-	logger.Debugf("channels are: %+v", networkConfig.Channels)
+	err = c.configViper.UnmarshalKey("channels", &nwk.Channels)
+	logger.Debugf("channels are: %+v", nwk.Channels)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("organizations", &networkConfig.Organizations)
-	logger.Debugf("organizations are: %+v", networkConfig.Organizations)
+	err = c.configViper.UnmarshalKey("organizations", &nwk.Organizations)
+	logger.Debugf("organizations are: %+v", nwk.Organizations)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("orderers", &networkConfig.Orderers)
-	logger.Debugf("orderers are: %+v", networkConfig.Orderers)
+	err = c.configViper.UnmarshalKey("orderers", &nwk.Orderers)
+	logger.Debugf("orderers are: %+v", nwk.Orderers)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("peers", &networkConfig.Peers)
-	logger.Debugf("peers are: %+v", networkConfig.Peers)
+	err = c.configViper.UnmarshalKey("peers", &nwk.Peers)
+	logger.Debugf("peers are: %+v", nwk.Peers)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
-	logger.Debugf("certificateAuthorities are: %+v", networkConfig.CertificateAuthorities)
-	if err != nil {
-		return err
-	}
-
-	err = c.configViper.UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers)
-	logger.Debugf("Matchers are: %+v", networkConfig.EntityMatchers)
+	err = c.configViper.UnmarshalKey("certificateAuthorities", &nwk.CertificateAuthorities)
+	logger.Debugf("certificateAuthorities are: %+v", nwk.CertificateAuthorities)
 	if err != nil {
 		return err
 	}
 
-	c.networkConfig = &networkConfig
-	c.networkConfigCached = true
+	err = c.configViper.UnmarshalKey("entityMatchers", &nwk.EntityMatchers)
+	logger.Debugf("Matchers are: %+v", nwk.EntityMatchers)
+	if err != nil {
+		return err
+	}
+
+	c.network = &nwk
+	c.networkCached = true
 	return nil
 }
 
 // OrderersConfig returns a list of defined orderers
 func (c *Config) OrderersConfig() ([]core.OrdererConfig, error) {
 	orderers := []core.OrdererConfig{}
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, orderer := range config.Orderers {
+	for _, orderer := range nwk.Orderers {
 
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = SubstPathVars(orderer.TLSCACerts.Path)
@@ -626,7 +626,6 @@ func (c *Config) RandomOrdererConfig() (*core.OrdererConfig, error) {
 
 // randomOrdererConfig returns a pseudo-random orderer from the list of orderers
 func randomOrdererConfig(orderers []core.OrdererConfig) (*core.OrdererConfig, error) {
-
 	rs := rand.NewSource(time.Now().Unix())
 	r := rand.New(rs)
 	randomNumber := r.Intn(len(orderers))
@@ -636,11 +635,11 @@ func randomOrdererConfig(orderers []core.OrdererConfig) (*core.OrdererConfig, er
 
 // OrdererConfig returns the requested orderer
 func (c *Config) OrdererConfig(name string) (*core.OrdererConfig, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
-	orderer, ok := config.Orderers[strings.ToLower(name)]
+	orderer, ok := nwk.Orderers[strings.ToLower(name)]
 	if !ok {
 		matchingOrdererConfig, matchErr := c.tryMatchingOrdererConfig(strings.ToLower(name))
 		if matchErr != nil {
@@ -659,16 +658,16 @@ func (c *Config) OrdererConfig(name string) (*core.OrdererConfig, error) {
 // PeersConfig Retrieves the fabric peers for the specified org from the
 // config file provided
 func (c *Config) PeersConfig(org string) ([]core.PeerConfig, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
 
-	peersConfig := config.Organizations[strings.ToLower(org)].Peers
+	peersConfig := nwk.Organizations[strings.ToLower(org)].Peers
 	peers := []core.PeerConfig{}
 
 	for _, peerName := range peersConfig {
-		p := config.Peers[strings.ToLower(peerName)]
+		p := nwk.Peers[strings.ToLower(peerName)]
 		if err = c.verifyPeerConfig(p, peerName, endpoint.IsTLSEnabled(p.URL)); err != nil {
 			matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(peerName)
 			if matchErr != nil {
@@ -686,7 +685,7 @@ func (c *Config) PeersConfig(org string) ([]core.PeerConfig, error) {
 }
 
 func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error) {
-	networkConfig, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
@@ -707,9 +706,9 @@ func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error
 		v := c.peerMatchers[k]
 		if v.MatchString(peerName) {
 			// get the matching matchConfig from the index number
-			peerMatchConfig := networkConfig.EntityMatchers["peer"][k]
+			peerMatchConfig := nwk.EntityMatchers["peer"][k]
 			//Get the peerConfig from mapped host
-			peerConfig, ok := networkConfig.Peers[strings.ToLower(peerMatchConfig.MappedHost)]
+			peerConfig, ok := nwk.Peers[strings.ToLower(peerMatchConfig.MappedHost)]
 			if !ok {
 				return nil, errors.WithMessage(err, "failed to load config from matched Peer")
 			}
@@ -778,7 +777,7 @@ func (c *Config) tryMatchingPeerConfig(peerName string) (*core.PeerConfig, error
 }
 
 func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConfig, error) {
-	networkConfig, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
@@ -799,9 +798,9 @@ func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConf
 		v := c.ordererMatchers[k]
 		if v.MatchString(ordererName) {
 			// get the matching matchConfig from the index number
-			ordererMatchConfig := networkConfig.EntityMatchers["orderer"][k]
+			ordererMatchConfig := nwk.EntityMatchers["orderer"][k]
 			//Get the ordererConfig from mapped host
-			ordererConfig, ok := networkConfig.Orderers[strings.ToLower(ordererMatchConfig.MappedHost)]
+			ordererConfig, ok := nwk.Orderers[strings.ToLower(ordererMatchConfig.MappedHost)]
 			if !ok {
 				return nil, errors.WithMessage(err, "failed to load config from matched Orderer")
 			}
@@ -850,7 +849,7 @@ func (c *Config) tryMatchingOrdererConfig(ordererName string) (*core.OrdererConf
 }
 
 func (c *Config) findMatchingPeer(peerName string) (string, error) {
-	networkConfig, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return "", err
 	}
@@ -871,7 +870,7 @@ func (c *Config) findMatchingPeer(peerName string) (string, error) {
 		v := c.peerMatchers[k]
 		if v.MatchString(peerName) {
 			// get the matching matchConfig from the index number
-			peerMatchConfig := networkConfig.EntityMatchers["peer"][k]
+			peerMatchConfig := nwk.EntityMatchers["peer"][k]
 			return peerMatchConfig.MappedHost, nil
 		}
 	}
@@ -879,17 +878,17 @@ func (c *Config) findMatchingPeer(peerName string) (string, error) {
 }
 
 func (c *Config) compileMatchers() error {
-	networkConfig, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return err
 	}
 	//return no error if entityMatchers is not configured
-	if networkConfig.EntityMatchers == nil {
+	if nwk.EntityMatchers == nil {
 		return nil
 	}
 
-	if networkConfig.EntityMatchers["peer"] != nil {
-		peerMatchersConfig := networkConfig.EntityMatchers["peer"]
+	if nwk.EntityMatchers["peer"] != nil {
+		peerMatchersConfig := nwk.EntityMatchers["peer"]
 		for i := 0; i < len(peerMatchersConfig); i++ {
 			if peerMatchersConfig[i].Pattern != "" {
 				c.peerMatchers[i], err = regexp.Compile(peerMatchersConfig[i].Pattern)
@@ -899,8 +898,8 @@ func (c *Config) compileMatchers() error {
 			}
 		}
 	}
-	if networkConfig.EntityMatchers["orderer"] != nil {
-		ordererMatchersConfig := networkConfig.EntityMatchers["orderer"]
+	if nwk.EntityMatchers["orderer"] != nil {
+		ordererMatchersConfig := nwk.EntityMatchers["orderer"]
 		for i := 0; i < len(ordererMatchersConfig); i++ {
 			if ordererMatchersConfig[i].Pattern != "" {
 				c.ordererMatchers[i], err = regexp.Compile(ordererMatchersConfig[i].Pattern)
@@ -915,11 +914,11 @@ func (c *Config) compileMatchers() error {
 
 // PeerConfigByURL retrieves PeerConfig by URL
 func (c *Config) PeerConfigByURL(url string) (*core.PeerConfig, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
-	staticPeers := config.Peers
+	staticPeers := nwk.Peers
 	for _, staticPeerConfig := range staticPeers {
 		if strings.EqualFold(staticPeerConfig.URL, url) {
 			return &staticPeerConfig, nil
@@ -936,12 +935,12 @@ func (c *Config) PeerConfigByURL(url string) (*core.PeerConfig, error) {
 
 // PeerConfig Retrieves a specific peer from the configuration by org and name
 func (c *Config) PeerConfig(org string, name string) (*core.PeerConfig, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
 
-	peersConfig := config.Organizations[strings.ToLower(org)].Peers
+	peersConfig := nwk.Organizations[strings.ToLower(org)].Peers
 	peerInOrg := false
 	for _, p := range peersConfig {
 		if p == name {
@@ -952,7 +951,7 @@ func (c *Config) PeerConfig(org string, name string) (*core.PeerConfig, error) {
 		return nil, errors.Errorf("peer %s is not part of organization %s", name, org)
 	}
 
-	peerConfig, ok := config.Peers[strings.ToLower(name)]
+	peerConfig, ok := nwk.Peers[strings.ToLower(name)]
 	if !ok {
 		matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(strings.ToLower(name))
 		if matchErr != nil {
@@ -969,11 +968,11 @@ func (c *Config) PeerConfig(org string, name string) (*core.PeerConfig, error) {
 
 // PeerConfig Retrieves a specific peer by name
 func (c *Config) peerConfig(name string) (*core.PeerConfig, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
-	peerConfig, ok := config.Peers[strings.ToLower(name)]
+	peerConfig, ok := nwk.Peers[strings.ToLower(name)]
 	if !ok {
 		matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(strings.ToLower(name))
 		if matchErr != nil {
@@ -988,27 +987,27 @@ func (c *Config) peerConfig(name string) (*core.PeerConfig, error) {
 	return &peerConfig, nil
 }
 
-// NetworkConfig returns the network configuration defined in the config file
-func (c *Config) NetworkConfig() (*core.NetworkConfig, error) {
-	if c.networkConfigCached {
-		return c.networkConfig, nil
+// Network returns the network configuration defined in the config file
+func (c *Config) Network() (*core.Network, error) {
+	if c.networkCached {
+		return c.network, nil
 	}
 
 	if err := c.cacheNetworkConfiguration(); err != nil {
 		return nil, errors.WithMessage(err, "network configuration load failed")
 	}
-	return c.networkConfig, nil
+	return c.network, nil
 }
 
 // ChannelConfig returns the channel configuration
 func (c *Config) ChannelConfig(name string) (*core.ChannelConfig, error) {
-	config, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
 
 	// viper lowercases all key maps
-	ch, ok := config.Channels[strings.ToLower(name)]
+	ch, ok := nwk.Channels[strings.ToLower(name)]
 	if !ok {
 		return nil, nil
 	}
@@ -1038,13 +1037,13 @@ func (c *Config) ChannelOrderers(name string) ([]core.OrdererConfig, error) {
 
 // ChannelPeers returns the channel peers configuration
 func (c *Config) ChannelPeers(name string) ([]core.ChannelPeer, error) {
-	netConfig, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
 
 	// viper lowercases all key maps
-	chConfig, ok := netConfig.Channels[strings.ToLower(name)]
+	chConfig, ok := nwk.Channels[strings.ToLower(name)]
 	if !ok {
 		return nil, errors.Errorf("channel config not found for %s", name)
 	}
@@ -1054,7 +1053,7 @@ func (c *Config) ChannelPeers(name string) ([]core.ChannelPeer, error) {
 	for peerName, chPeerConfig := range chConfig.Peers {
 
 		// Get generic peer configuration
-		p, ok := netConfig.Peers[strings.ToLower(peerName)]
+		p, ok := nwk.Peers[strings.ToLower(peerName)]
 		if !ok {
 			matchingPeerConfig, matchErr := c.tryMatchingPeerConfig(strings.ToLower(peerName))
 			if matchErr != nil {
@@ -1089,14 +1088,14 @@ func (c *Config) ChannelPeers(name string) ([]core.ChannelPeer, error) {
 
 // NetworkPeers returns the network peers configuration
 func (c *Config) NetworkPeers() ([]core.NetworkPeer, error) {
-	netConfig, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return nil, err
 	}
 
 	netPeers := []core.NetworkPeer{}
 
-	for name, p := range netConfig.Peers {
+	for name, p := range nwk.Peers {
 
 		if err = c.verifyPeerConfig(p, name, endpoint.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err
@@ -1120,7 +1119,7 @@ func (c *Config) NetworkPeers() ([]core.NetworkPeer, error) {
 
 // PeerMspID returns msp that peer belongs to
 func (c *Config) PeerMspID(name string) (string, error) {
-	netConfig, err := c.NetworkConfig()
+	nwk, err := c.Network()
 	if err != nil {
 		return "", err
 	}
@@ -1128,7 +1127,7 @@ func (c *Config) PeerMspID(name string) (string, error) {
 	var mspID string
 
 	// Find organisation/msp that peer belongs to
-	for _, org := range netConfig.Organizations {
+	for _, org := range nwk.Organizations {
 		for i := 0; i < len(org.Peers); i++ {
 			if strings.EqualFold(org.Peers[i], name) {
 				// peer belongs to this org add org msp

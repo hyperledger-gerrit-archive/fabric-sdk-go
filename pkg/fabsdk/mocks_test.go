@@ -52,7 +52,7 @@ func newMockCorePkg(config core.Config) (*mockCorePkg, error) {
 	if err != nil {
 		return nil, err
 	}
-	netConfig, err := config.NetworkConfig()
+	netConfig, err := config.Network()
 	if err != nil {
 		return nil, err
 	}

@@ -109,7 +109,7 @@ func getOrgTargets(config core.Config, org string) ([]fab.ProposalProcessor, err
 }
 
 // InitConfig ...
-func (setup *BaseSetupImpl) InitConfig() core.ConfigProvider {
+func (setup *BaseSetupImpl) InitConfig() core.Provider {
 	return config.FromFile(setup.ConfigFile)
 }
 

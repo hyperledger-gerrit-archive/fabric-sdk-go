@@ -185,20 +185,20 @@ func TestCAConfig(t *testing.T) {
 func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	//Tamper 'client.network' value and use a new config to avoid conflicting with other tests
-	configProvider, err := FromFile(configTestFilePath)()
+	pvdr, err := FromFile(configTestFilePath)()
 	if err != nil {
 		t.Fatalf("Unexpected error reading config: %v", err)
 	}
-	sampleConfig := configProvider.(*Config)
+	sampleConfig := pvdr.(*Config)
 
-	sampleConfig.networkConfigCached = false
+	sampleConfig.networkCached = false
 	sampleConfig.configViper.Set("client", "INVALID")
 	sampleConfig.configViper.Set("peers", "INVALID")
 	sampleConfig.configViper.Set("organizations", "INVALID")
 	sampleConfig.configViper.Set("orderers", "INVALID")
 	sampleConfig.configViper.Set("channels", "INVALID")
 
-	_, err = sampleConfig.NetworkConfig()
+	_, err = sampleConfig.Network()
 	if err == nil {
 		t.Fatal("Network config load supposed to fail")
 	}
@@ -277,7 +277,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	// test empty network objects
 	sampleConfig.configViper.Set("organizations", nil)
-	_, err = sampleConfig.NetworkConfig()
+	_, err = sampleConfig.Network()
 	if err == nil {
 		t.Fatalf("Organizations were empty, it should return an error")
 	}
@@ -786,12 +786,12 @@ func TestInitConfigWithCmdRoot(t *testing.T) {
 	logger.Infof("fileLoc is %s", fileLoc)
 
 	logger.Infof("fileLoc right before calling InitConfigWithCmdRoot is %s", fileLoc)
-	configProvider, err := FromFile(fileLoc, WithEnvPrefix(cmdRoot))()
+	pvdr, err := FromFile(fileLoc, WithEnvPrefix(cmdRoot))()
 	if err != nil {
 		t.Fatalf("Failed to initialize config with cmd root. Error: %s", err)
 	}
 
-	config := configProvider.(*Config)
+	config := pvdr.(*Config)
 
 	//Test if Viper is initialized after calling init config
 	if config.configViper.GetString("client.BCCSP.security.hashAlgorithm") != configImpl.SecurityAlgorithm() {
@@ -838,12 +838,12 @@ func TestMultipleVipers(t *testing.T) {
 		t.Fatalf("Expected testValue before config initialization got: %s", testValue1)
 	}
 	// initialize go sdk
-	configProvider, err := FromFile(configTestFilePath)()
+	pvdr, err := FromFile(configTestFilePath)()
 	if err != nil {
 		t.Log(err.Error())
 	}
 
-	config := configProvider.(*Config)
+	config := pvdr.(*Config)
 
 	// Make sure initial value is unaffected
 	testValue2 := viper.GetString("test.testkey")
@@ -889,12 +889,12 @@ func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
 		t.Log(err.Error())
 	}
 
-	configProvider, err := FromFile(configTestFilePath, WithEnvPrefix("test_root"))()
+	pvdr, err := FromFile(configTestFilePath, WithEnvPrefix("test_root"))()
 	if err != nil {
 		t.Log(err.Error())
 	}
 
-	config := configProvider.(*Config)
+	config := pvdr.(*Config)
 	testValue = config.configViper.GetString("env.test")
 	if testValue != "456" {
 		t.Fatalf("Expected environment variable value but got: %s", testValue)
@@ -902,18 +902,18 @@ func TestEnvironmentVariablesSpecificCmdRoot(t *testing.T) {
 }
 
 func TestNetworkConfig(t *testing.T) {
-	conf, err := configImpl.NetworkConfig()
+	nwk, err := configImpl.Network()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(conf.Orderers) == 0 {
+	if len(nwk.Orderers) == 0 {
 		t.Fatal("Expected orderers to be set")
 	}
-	if len(conf.Organizations) == 0 {
+	if len(nwk.Organizations) == 0 {
 		t.Fatal("Expected atleast one organisation to be set")
 	}
 	// viper map keys are lowercase
-	if len(conf.Organizations[strings.ToLower(org1)].Peers) == 0 {
+	if len(nwk.Organizations[strings.ToLower(org1)].Peers) == 0 {
 		t.Fatalf("Expected org %s to be present in network configuration and peers to be set", org1)
 	}
 }
@@ -928,11 +928,11 @@ func TestMain(m *testing.M) {
 func setUp(m *testing.M) {
 	// do any test setup here...
 	var err error
-	configProvider, err := FromFile(configTestFilePath)()
+	pvdr, err := FromFile(configTestFilePath)()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	configImpl = configProvider.(*Config)
+	configImpl = pvdr.(*Config)
 }
 
 func teardown() {
@@ -960,12 +960,12 @@ func TestInterfaces(t *testing.T) {
 func TestSystemCertPoolDisabled(t *testing.T) {
 
 	// get a config file with pool disabled
-	configProvider, err := FromFile(configTestFilePath)()
+	pvdr, err := FromFile(configTestFilePath)()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	c := configProvider.(*Config)
+	c := pvdr.(*Config)
 
 	// cert pool should be empty
 	if len(c.tlsCertPool.Subjects()) > 0 {
@@ -976,12 +976,12 @@ func TestSystemCertPoolDisabled(t *testing.T) {
 func TestSystemCertPoolEnabled(t *testing.T) {
 
 	// get a config file with pool enabled
-	configProvider, err := FromFile(configPemTestFilePath)()
+	pvdr, err := FromFile(configPemTestFilePath)()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	c := configProvider.(*Config)
+	c := pvdr.(*Config)
 
 	if len(c.tlsCertPool.Subjects()) == 0 {
 		t.Fatal("System Cert Pool not loaded even though it is enabled")
@@ -1127,7 +1127,7 @@ func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	conf, err := c.NetworkConfig()
+	conf, err := c.Network()
 
 	if err != nil {
 		t.Fatal(err)
@@ -1157,7 +1157,7 @@ func TestLoadConfigWithEmbeddedUsersWithPaths(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	conf, err := c.NetworkConfig()
+	conf, err := c.Network()
 
 	if err != nil {
 		t.Fatal(err)
@@ -1211,10 +1211,10 @@ func TestInitConfigFromRawWrongType(t *testing.T) {
 }
 
 func TestTLSClientCertsFromFiles(t *testing.T) {
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
+	configImpl.network.Client.TLSCerts.Client.Cert.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configImpl.network.Client.TLSCerts.Client.Key.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configImpl.network.Client.TLSCerts.Client.Cert.Pem = ""
+	configImpl.network.Client.TLSCerts.Client.Key.Pem = ""
 
 	certs, err := configImpl.TLSClientCerts()
 	if err != nil {
@@ -1234,10 +1234,10 @@ func TestTLSClientCertsFromFiles(t *testing.T) {
 
 func TestTLSClientCertsFromFilesIncorrectPaths(t *testing.T) {
 	// incorrect paths to files
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
+	configImpl.network.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configImpl.network.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configImpl.network.Client.TLSCerts.Client.Cert.Pem = ""
+	configImpl.network.Client.TLSCerts.Client.Key.Pem = ""
 
 	_, err := configImpl.TLSClientCerts()
 	if err == nil {
@@ -1250,10 +1250,10 @@ func TestTLSClientCertsFromFilesIncorrectPaths(t *testing.T) {
 }
 
 func TestTLSClientCertsFromPem(t *testing.T) {
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = ""
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = ""
+	configImpl.network.Client.TLSCerts.Client.Cert.Path = ""
+	configImpl.network.Client.TLSCerts.Client.Key.Path = ""
 
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
+	configImpl.network.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
 MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw
 gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
 bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
@@ -1272,7 +1272,7 @@ gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
 3YkZ9DhdH1tN4U/h+YulG/CkKOtUATtQxg==
 -----END CERTIFICATE-----`
 
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
+	configImpl.network.Client.TLSCerts.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDByldj7VTpqTQESGgJpR9PFW9b6YTTde2WN6/IiBo2nW+CIDmwQgmAl
 c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
 2PotEEGuO6rMyaOupulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMh
@@ -1296,10 +1296,10 @@ YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 }
 
 func TestTLSClientCertFromPemAndKeyFromFile(t *testing.T) {
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = ""
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configImpl.network.Client.TLSCerts.Client.Cert.Path = ""
+	configImpl.network.Client.TLSCerts.Client.Key.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
 
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
+	configImpl.network.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
 MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw
 gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
 bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
@@ -1318,7 +1318,7 @@ gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
 3YkZ9DhdH1tN4U/h+YulG/CkKOtUATtQxg==
 -----END CERTIFICATE-----`
 
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
+	configImpl.network.Client.TLSCerts.Client.Key.Pem = ""
 
 	certs, err := configImpl.TLSClientCerts()
 	if err != nil {
@@ -1337,12 +1337,12 @@ gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
 }
 
 func TestTLSClientCertFromFileAndKeyFromPem(t *testing.T) {
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = ""
+	configImpl.network.Client.TLSCerts.Client.Cert.Path = "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configImpl.network.Client.TLSCerts.Client.Key.Path = ""
 
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
+	configImpl.network.Client.TLSCerts.Client.Cert.Pem = ""
 
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
+	configImpl.network.Client.TLSCerts.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDByldj7VTpqTQESGgJpR9PFW9b6YTTde2WN6/IiBo2nW+CIDmwQgmAl
 c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
 2PotEEGuO6rMyaOupulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMh
@@ -1367,10 +1367,10 @@ YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 
 func TestTLSClientCertsPemBeforeFiles(t *testing.T) {
 	// files have incorrect paths, but pems are loaded first
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
+	configImpl.network.Client.TLSCerts.Client.Cert.Path = "/test/fixtures/config/mutual_tls/client_sdk_go.pem"
+	configImpl.network.Client.TLSCerts.Client.Key.Path = "/test/fixtures/config/mutual_tls/client_sdk_go-key.pem"
 
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
+	configImpl.network.Client.TLSCerts.Client.Cert.Pem = `-----BEGIN CERTIFICATE-----
 MIIC5TCCAkagAwIBAgIUMYhiY5MS3jEmQ7Fz4X/e1Dx33J0wCgYIKoZIzj0EAwQw
 gYwxCzAJBgNVBAYTAkNBMRAwDgYDVQQIEwdPbnRhcmlvMRAwDgYDVQQHEwdUb3Jv
 bnRvMREwDwYDVQQKEwhsaW51eGN0bDEMMAoGA1UECxMDTGFiMTgwNgYDVQQDEy9s
@@ -1389,7 +1389,7 @@ gw2rrxqbW67ulwmMQzp6EJbm/28T2pIoYWWyIwpzrquypI7BOuf8is5b7Jcgn9oz
 3YkZ9DhdH1tN4U/h+YulG/CkKOtUATtQxg==
 -----END CERTIFICATE-----`
 
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
+	configImpl.network.Client.TLSCerts.Client.Key.Pem = `-----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDByldj7VTpqTQESGgJpR9PFW9b6YTTde2WN6/IiBo2nW+CIDmwQgmAl
 c/EOc9wmgu+gBwYFK4EEACKhZANiAAT6I1CGNrkchIAEmeJGo53XhDsoJwRiohBv
 2PotEEGuO6rMyaOupulj2VOj+YtgWw4ZtU49g4Nv6rq1QlKwRYyMwwRJSAZHIUMh
@@ -1413,10 +1413,10 @@ YZjcDi7YEOZ3Fs1hxKmIxR+TTR2vf9I=
 }
 
 func TestTLSClientCertsNoCerts(t *testing.T) {
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Path = ""
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Path = ""
-	configImpl.networkConfig.Client.TLSCerts.Client.Cert.Pem = ""
-	configImpl.networkConfig.Client.TLSCerts.Client.Key.Pem = ""
+	configImpl.network.Client.TLSCerts.Client.Cert.Path = ""
+	configImpl.network.Client.TLSCerts.Client.Key.Path = ""
+	configImpl.network.Client.TLSCerts.Client.Cert.Pem = ""
+	configImpl.network.Client.TLSCerts.Client.Key.Pem = ""
 
 	certs, err := configImpl.TLSClientCerts()
 	if err != nil {
@@ -1528,7 +1528,7 @@ func TestDefaultConfigFromFile(t *testing.T) {
 		t.Fatalf("Unexpected error from FromFile: %s", err)
 	}
 
-	n, err := c.NetworkConfig()
+	n, err := c.Network()
 	if err != nil {
 		t.Fatalf("Failed to load default network config: %v", err)
 	}
@@ -1550,7 +1550,7 @@ func TestDefaultConfigFromRaw(t *testing.T) {
 		t.Fatalf("Unexpected error from FromFile: %s", err)
 	}
 
-	n, err := c.NetworkConfig()
+	n, err := c.Network()
 	if err != nil {
 		t.Fatalf("Failed to load default network config: %v", err)
 	}

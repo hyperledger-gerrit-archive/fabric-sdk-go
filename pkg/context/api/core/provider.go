@@ -32,7 +32,7 @@ type Config interface {
 	PeersConfig(org string) ([]PeerConfig, error)
 	PeerConfig(org string, name string) (*PeerConfig, error)
 	PeerConfigByURL(url string) (*PeerConfig, error)
-	NetworkConfig() (*NetworkConfig, error)
+	Network() (*Network, error)
 	NetworkPeers() ([]NetworkPeer, error)
 	ChannelConfig(name string) (*ChannelConfig, error)
 	ChannelPeers(name string) ([]ChannelPeer, error)
@@ -56,8 +56,8 @@ type Config interface {
 	EventServiceType() EventServiceType
 }
 
-// ConfigProvider enables creation of a Config instance
-type ConfigProvider func() (Config, error)
+// Provider enables creation of a Config instance
+type Provider func() (Config, error)
 
 // TimeoutType enumerates the different types of outgoing connections
 type TimeoutType int

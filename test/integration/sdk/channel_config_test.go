@@ -185,7 +185,7 @@ func (f *ChannelConfigFromOrdererProviderFactory) CreateInfraProvider(config cor
 	return &cfp, nil
 }
 
-func setupOrderer(t *testing.T, confProvider core.ConfigProvider, address string) fab.Orderer {
+func setupOrderer(t *testing.T, confProvider core.Provider, address string) fab.Orderer {
 	conf, err := confProvider()
 	assert.Nil(t, err)
 

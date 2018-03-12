@@ -235,7 +235,7 @@ func TestGetCAName(t *testing.T) {
 	f := textFixture{}
 	f.setup("")
 
-	netConfig, err := f.config.NetworkConfig()
+	netConfig, err := f.config.Network()
 	if err != nil {
 		t.Fatalf("network config retrieval failed: %v", err)
 	}
@@ -260,7 +260,7 @@ func TestCAConfigError(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockConfig := mock_core.NewMockConfig(mockCtrl)
 
-	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
+	mockConfig.EXPECT().Network().Return(f.config.Network()).AnyTimes()
 	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
 	mockConfig.EXPECT().CAConfig(org1).Return(nil, errors.New("CAConfig error"))
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
@@ -282,7 +282,7 @@ func TestCAServerCertPathsError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_core.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
+	mockConfig.EXPECT().Network().Return(f.config.Network()).AnyTimes()
 	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
 	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
@@ -305,7 +305,7 @@ func TestCAClientCertPathError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_core.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
+	mockConfig.EXPECT().Network().Return(f.config.Network()).AnyTimes()
 	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
 	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
@@ -329,7 +329,7 @@ func TestCAClientKeyPathError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mock_core.NewMockConfig(mockCtrl)
-	mockConfig.EXPECT().NetworkConfig().Return(f.config.NetworkConfig()).AnyTimes()
+	mockConfig.EXPECT().Network().Return(f.config.Network()).AnyTimes()
 	mockConfig.EXPECT().CryptoConfigPath().Return(f.config.CryptoConfigPath()).AnyTimes()
 	mockConfig.EXPECT().CAConfig(org1).Return(&core.CAConfig{}, nil).AnyTimes()
 	mockConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
