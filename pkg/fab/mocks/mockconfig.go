@@ -228,8 +228,8 @@ func (c *MockConfig) CryptoConfigPath() string {
 	return ""
 }
 
-// NetworkConfig not implemented
-func (c *MockConfig) NetworkConfig() (*config.NetworkConfig, error) {
+// Network not implemented
+func (c *MockConfig) NetworkConfig() (*config.Network, error) {
 	return nil, nil
 }
 
