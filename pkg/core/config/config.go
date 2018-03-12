@@ -47,13 +47,13 @@ var logModules = [...]string{"fabsdk", "fabsdk/client", "fabsdk/core", "fabsdk/f
 
 // Config represents the configuration for the client
 type Config struct {
-	tlsCertPool         *x509.CertPool
-	networkConfig       *core.NetworkConfig
-	networkConfigCached bool
-	configViper         *viper.Viper
-	peerMatchers        map[int]*regexp.Regexp
-	ordererMatchers     map[int]*regexp.Regexp
-	opts                options
+	tlsCertPool     *x509.CertPool
+	network         *core.Network
+	networkCached   bool
+	configViper     *viper.Viper
+	peerMatchers    map[int]*regexp.Regexp
+	ordererMatchers map[int]*regexp.Regexp
+	opts            options
 }
 
 type options struct {
@@ -67,7 +67,7 @@ type Option func(opts *options) error
 
 // FromReader loads configuration from in.
 // configType can be "json" or "yaml".
-func FromReader(in io.Reader, configType string, opts ...Option) core.ConfigProvider {
+func FromReader(in io.Reader, configType string, opts ...Option) core.Provider {
 	return func() (core.Config, error) {
 		c, err := newConfig(opts...)
 		if err != nil {
@@ -88,7 +88,7 @@ func FromReader(in io.Reader, configType string, opts ...Option) core.ConfigProv
 }
 
 // FromFile reads from named config file
-func FromFile(name string, opts ...Option) core.ConfigProvider {
+func FromFile(name string, opts ...Option) core.Provider {
 	return func() (core.Config, error) {
 		c, err := newConfig(opts...)
 		if err != nil {
@@ -115,7 +115,7 @@ func FromFile(name string, opts ...Option) core.ConfigProvider {
 }
 
 // FromRaw will initialize the configs from a byte array
-func FromRaw(configBytes []byte, configType string, opts ...Option) core.ConfigProvider {
+func FromRaw(configBytes []byte, configType string, opts ...Option) core.Provider {
 	buf := bytes.NewBuffer(configBytes)
 	logger.Debugf("config.FromRaw buf Len is %d, Cap is %d: %s", buf.Len(), buf.Cap(), buf)
 
@@ -544,51 +544,51 @@ func (c *Config) MspID(org string) (string, error) {
 }
 
 func (c *Config) cacheNetworkConfiguration() error {
-	networkConfig := core.NetworkConfig{}
-	networkConfig.Name = c.configViper.GetString("name")
-	networkConfig.Xtype = c.configViper.GetString("x-type")
-	networkConfig.Description = c.configViper.GetString("description")
-	networkConfig.Version = c.configViper.GetString("version")
+	nwk := core.Network{}
+	nwk.Name = c.configViper.GetString("name")
+	nwk.Xtype = c.configViper.GetString("x-type")
+	nwk.Description = c.configViper.GetString("description")
+	nwk.Version = c.configViper.GetString("version")
 
-	err := c.configViper.UnmarshalKey("client", &networkConfig.Client)
-	logger.Debugf("Client is: %+v", networkConfig.Client)
+	err := c.configViper.UnmarshalKey("client", &nwk.Client)
+	logger.Debugf("Client is: %+v", nwk.Client)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("channels", &networkConfig.Channels)
-	logger.Debugf("channels are: %+v", networkConfig.Channels)
+	err = c.configViper.UnmarshalKey("channels", &nwk.Channels)
+	logger.Debugf("channels are: %+v", nwk.Channels)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("organizations", &networkConfig.Organizations)
-	logger.Debugf("organizations are: %+v", networkConfig.Organizations)
+	err = c.configViper.UnmarshalKey("organizations", &nwk.Organizations)
+	logger.Debugf("organizations are: %+v", nwk.Organizations)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("orderers", &networkConfig.Orderers)
-	logger.Debugf("orderers are: %+v", networkConfig.Orderers)
+	err = c.configViper.UnmarshalKey("orderers", &nwk.Orderers)
+	logger.Debugf("orderers are: %+v", nwk.Orderers)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("peers", &networkConfig.Peers)
-	logger.Debugf("peers are: %+v", networkConfig.Peers)
+	err = c.configViper.UnmarshalKey("peers", &nwk.Peers)
+	logger.Debugf("peers are: %+v", nwk.Peers)
 	if err != nil {
 		return err
 	}
-	err = c.configViper.UnmarshalKey("certificateAuthorities", &networkConfig.CertificateAuthorities)
-	logger.Debugf("certificateAuthorities are: %+v", networkConfig.CertificateAuthorities)
-	if err != nil {
-		return err
-	}
-
-	err = c.configViper.UnmarshalKey("entityMatchers", &networkConfig.EntityMatchers)
-	logger.Debugf("Matchers are: %+v", networkConfig.EntityMatchers)
+	err = c.configViper.UnmarshalKey("certificateAuthorities", &nwk.CertificateAuthorities)
+	logger.Debugf("certificateAuthorities are: %+v", nwk.CertificateAuthorities)
 	if err != nil {
 		return err
 	}
 
-	c.networkConfig = &networkConfig
-	c.networkConfigCached = true
+	err = c.configViper.UnmarshalKey("entityMatchers", &nwk.EntityMatchers)
+	logger.Debugf("Matchers are: %+v", nwk.EntityMatchers)
+	if err != nil {
+		return err
+	}
+
+	c.network = &nwk
+	c.networkCached = true
 	return nil
 }
 
@@ -988,16 +988,16 @@ func (c *Config) peerConfig(name string) (*core.PeerConfig, error) {
 	return &peerConfig, nil
 }
 
-// NetworkConfig returns the network configuration defined in the config file
-func (c *Config) NetworkConfig() (*core.NetworkConfig, error) {
-	if c.networkConfigCached {
-		return c.networkConfig, nil
+// Network returns the network configuration defined in the config file
+func (c *Config) NetworkConfig() (*core.Network, error) {
+	if c.networkCached {
+		return c.network, nil
 	}
 
 	if err := c.cacheNetworkConfiguration(); err != nil {
 		return nil, errors.WithMessage(err, "network configuration load failed")
 	}
-	return c.networkConfig, nil
+	return c.network, nil
 }
 
 // ChannelConfig returns the channel configuration
