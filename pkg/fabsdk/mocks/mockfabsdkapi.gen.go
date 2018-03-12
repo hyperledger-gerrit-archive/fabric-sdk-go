@@ -111,17 +111,17 @@ func (m *MockMspProviderFactory) EXPECT() *MockMspProviderFactoryMockRecorder {
 	return m.recorder
 }
 
-// CreateIdentityManager mocks base method
-func (m *MockMspProviderFactory) CreateIdentityManager(arg0 string, arg1 core.KVStore, arg2 core.CryptoSuite, arg3 core.Config) (msp.IdentityManager, error) {
-	ret := m.ctrl.Call(m, "CreateIdentityManager", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(msp.IdentityManager)
+// CreateIdentityManagerProvider mocks base method
+func (m *MockMspProviderFactory) CreateIdentityManagerProvider(arg0 core.Config, arg1 core.CryptoSuite, arg2 core.KVStore) (msp.IdentityManagerProvider, error) {
+	ret := m.ctrl.Call(m, "CreateIdentityManagerProvider", arg0, arg1, arg2)
+	ret0, _ := ret[0].(msp.IdentityManagerProvider)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateIdentityManager indicates an expected call of CreateIdentityManager
-func (mr *MockMspProviderFactoryMockRecorder) CreateIdentityManager(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityManager", reflect.TypeOf((*MockMspProviderFactory)(nil).CreateIdentityManager), arg0, arg1, arg2, arg3)
+// CreateIdentityManagerProvider indicates an expected call of CreateIdentityManagerProvider
+func (mr *MockMspProviderFactoryMockRecorder) CreateIdentityManagerProvider(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityManagerProvider", reflect.TypeOf((*MockMspProviderFactory)(nil).CreateIdentityManagerProvider), arg0, arg1, arg2)
 }
 
 // MockServiceProviderFactory is a mock of ServiceProviderFactory interface
