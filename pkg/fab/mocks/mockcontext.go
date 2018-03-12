@@ -16,6 +16,7 @@ import (
 	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 
 	"strings"
 )
@@ -44,7 +45,7 @@ func NewMockProviderContext() *MockProviderContext {
 
 	context := MockProviderContext{
 		config:            NewMockConfig(),
-		signingManager:    NewMockSigningManager(),
+		signingManager:    mocks.NewMockSigningManager(),
 		cryptoSuite:       &MockCryptoSuite{},
 		stateStore:        &MockStateStore{},
 		identityManager:   im,

@@ -8,7 +8,6 @@ package context
 
 import (
 	reqContext "context"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -17,6 +16,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
+
+// MSPContext provides context for MSP services
+type MSPContext struct {
+	context.Providers
+}
 
 // Client supplies the configuration and signing identity to client objects.
 type Client struct {
@@ -60,15 +64,15 @@ func (c *Channel) ChannelID() string {
 
 //Provider implementation for Providers interface
 type Provider struct {
-	config            core.Config
-	stateStore        core.KVStore
-	cryptoSuite       core.CryptoSuite
-	discoveryProvider fab.DiscoveryProvider
-	selectionProvider fab.SelectionProvider
-	signingManager    core.SigningManager
-	identityManager   map[string]msp.IdentityManager
-	infraProvider     fab.InfraProvider
-	channelProvider   fab.ChannelProvider
+	config                  core.Config
+	stateStore              core.KVStore
+	cryptoSuite             core.CryptoSuite
+	discoveryProvider       fab.DiscoveryProvider
+	selectionProvider       fab.SelectionProvider
+	signingManager          core.SigningManager
+	identityManagerProvider msp.IdentityManagerProvider
+	infraProvider           fab.InfraProvider
+	channelProvider         fab.ChannelProvider
 }
 
 // Config returns the Config provider of sdk.
@@ -83,8 +87,7 @@ func (c *Provider) CryptoSuite() core.CryptoSuite {
 
 // IdentityManager returns identity manager for organization
 func (c *Provider) IdentityManager(orgName string) (msp.IdentityManager, bool) {
-	mgr, ok := c.identityManager[strings.ToLower(orgName)]
-	return mgr, ok
+	return c.identityManagerProvider.IdentityManager(orgName)
 }
 
 // SigningManager returns signing manager
@@ -162,10 +165,10 @@ func WithSigningManager(signingManager core.SigningManager) SDKContextParams {
 	}
 }
 
-//WithIdentityManager sets identityManagers maps to context
-func WithIdentityManager(identityManagers map[string]msp.IdentityManager) SDKContextParams {
+//WithIdentityManagerProvider sets IdentityManagerProvider maps to context
+func WithIdentityManagerProvider(provider msp.IdentityManagerProvider) SDKContextParams {
 	return func(ctx *Provider) {
-		ctx.identityManager = identityManagers
+		ctx.identityManagerProvider = provider
 	}
 }
 
