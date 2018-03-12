@@ -283,8 +283,7 @@ func TestOrdererConfigFail(t *testing.T) {
 	ctx.SetConfig(noOrdererConfig)
 	rc := setupResMgmtClient(ctx, nil, t)
 
-	opts := Opts{}
-	orderer, err := rc.ordererConfig(&opts, "mychannel")
+	orderer, err := rc.ordererConfig("mychannel")
 	assert.Nil(t, orderer)
 	assert.NotNil(t, err, "should fail since no orderer has been configured")
 }
