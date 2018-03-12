@@ -188,6 +188,9 @@ func (c *MockConfig) SetCustomRandomOrdererCfg(customRandomOrdererCfg *config.Or
 
 // OrdererConfig not implemented
 func (c *MockConfig) OrdererConfig(name string) (*config.OrdererConfig, error) {
+	if name == "Invalid" {
+		return nil, errors.New("no orderer!")
+	}
 	if c.customOrdererCfg != nil {
 		return c.customOrdererCfg, nil
 	}
