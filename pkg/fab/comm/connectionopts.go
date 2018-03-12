@@ -77,10 +77,10 @@ func WithConnectTimeout(value time.Duration) options.Opt {
 
 // WithInsecure indicates to fall back to an insecure connection if the
 // connection URL does not specify a protocol
-func WithInsecure() options.Opt {
+func WithInsecure(value bool) options.Opt {
 	return func(p options.Params) {
 		if setter, ok := p.(insecureSetter); ok {
-			setter.SetInsecure(true)
+			setter.SetInsecure(value)
 		}
 	}
 }
