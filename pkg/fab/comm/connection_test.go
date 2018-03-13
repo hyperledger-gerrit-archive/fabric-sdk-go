@@ -13,7 +13,7 @@ import (
 
 	"google.golang.org/grpc/keepalive"
 
-	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	eventmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 
@@ -34,6 +34,7 @@ func TestConnection(t *testing.T) {
 	channelID := "testchannel"
 
 	context := newMockContext()
+	context.SetCustomInfraProvider(&mockInfraProvider{})
 	chConfig := fabmocks.NewMockChannelCfg(channelID)
 
 	_, err := NewConnection(context, chConfig, testStream, "")
@@ -43,6 +44,7 @@ func TestConnection(t *testing.T) {
 	_, err = NewConnection(context, chConfig, testStream, "invalidhost:0000",
 		WithFailFast(true),
 		WithCertificate(nil),
+		WithInsecure(),
 		WithHostOverride(""),
 		WithKeepAliveParams(keepalive.ClientParameters{}),
 		WithConnectTimeout(3*time.Second),
@@ -80,10 +82,31 @@ func TestConnection(t *testing.T) {
 	conn.Close()
 }
 
-// Use the Deliver server for testing
+// Use the Event Hub server for testing
 var testServer *eventmocks.MockEventhubServer
 var endorserAddr []string
 
-func newMockContext() fabcontext.Client {
+type mockCommManager struct {
+}
+
+func (m *mockCommManager) DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	return grpc.DialContext(ctx, target, opts...)
+}
+
+func (m *mockCommManager) ReleaseConn(conn *grpc.ClientConn) {
+	if err := conn.Close(); err != nil {
+		logger.Warnf("Error closing connection: %s", err)
+	}
+}
+
+type mockInfraProvider struct {
+	fabmocks.MockInfraProvider
+}
+
+func (f *mockInfraProvider) CommManager() fab.CommManager {
+	return &mockCommManager{}
+}
+
+func newMockContext() *fabmocks.MockContext {
 	return fabmocks.NewMockContext(fabmocks.NewMockUser("test"))
 }
