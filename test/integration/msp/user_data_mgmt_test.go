@@ -27,7 +27,7 @@ import (
 // TestWithCustomStores demonstrates the usage of custom key and cert stores
 // to manage user private keys and certificates.
 func TestWithCustomStores(t *testing.T) {
-	config, err := configImpl.FromFile(sdkConfigFile)()
+	config, err := configImpl.FromFile("../" + integration.ConfigTestFile)()
 	if err != nil {
 		t.Fatalf("Unexpected error from config: %v", err)
 	}

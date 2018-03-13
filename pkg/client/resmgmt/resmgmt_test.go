@@ -369,8 +369,10 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	// Chaincode found request
 	req := InstallCCRequest{Name: "test-name", Path: "test-path", Version: "test-version"}
 
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
 	// Test chaincode installed (valid peer)
-	installed, err := rc.isChaincodeInstalled(req, peer1)
+	installed, err := rc.isChaincodeInstalled(reqCtx, req, peer1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,7 +384,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	req = InstallCCRequest{Name: "ID", Version: "v0", Path: "path"}
 
 	// Test chaincode installed
-	installed, err = rc.isChaincodeInstalled(req, peer1)
+	installed, err = rc.isChaincodeInstalled(reqCtx, req, peer1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -391,7 +393,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 	}
 
 	// Test error retrieving installed cc info (peer is nil)
-	_, err = rc.isChaincodeInstalled(req, nil)
+	_, err = rc.isChaincodeInstalled(reqCtx, req, nil)
 	if err == nil {
 		t.Fatalf("Should have failed with error in get installed chaincodes")
 	}
@@ -1207,7 +1209,10 @@ func TestCCProposal(t *testing.T) {
 	}
 
 	// Test invalid function (only 'instatiate' and 'upgrade' are supported)
-	err = rc.sendCCProposal(3, "mychannel", instantiateReq, WithTargets(peers...))
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(10*time.Second))
+	defer cancel()
+	opts := requestOptions{Targets: peers}
+	err = rc.sendCCProposal(reqCtx, 3, "mychannel", instantiateReq, opts)
 	if err == nil {
 		t.Fatalf("Should have failed for invalid function name")
 	}

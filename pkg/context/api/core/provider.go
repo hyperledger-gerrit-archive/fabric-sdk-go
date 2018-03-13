@@ -85,6 +85,8 @@ const (
 	CacheSweepInterval
 	// EventServiceIdle is the timeout for closing the event service connection
 	EventServiceIdle
+	// PeerResponse peer response timeout
+	PeerResponse
 )
 
 // EventServiceType specifies the type of event service to use
