@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"os"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
@@ -58,6 +59,14 @@ func TestRegisterEnroll(t *testing.T) {
 	// (state store). The CAClient will lookup the
 	// registrar's identity information in these stores.
 
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	netConfig := sdk.Config()
+	keyStorePath := netConfig.KeyStorePath()
+	credentialStorePath := netConfig.CredentialStorePath()
+	defer cleanupTestPath(t, keyStorePath)
+	defer cleanupTestPath(t, credentialStorePath)
+
 	// Generate a random user name
 	userName := integration.GenerateRandomID()
 
@@ -108,4 +117,11 @@ func getRegistrarEnrollmentCredentials(t *testing.T, config core.Config) (string
 	}
 
 	return caConfig.Registrar.EnrollID, caConfig.Registrar.EnrollSecret
+}
+
+func cleanupTestPath(t *testing.T, storePath string) {
+	err := os.RemoveAll(storePath)
+	if err != nil {
+		t.Fatalf("Cleaning up directory '%s' failed: %v", storePath, err)
+	}
 }
