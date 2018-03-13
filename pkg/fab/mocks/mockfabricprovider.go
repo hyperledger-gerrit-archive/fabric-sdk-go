@@ -12,7 +12,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 )
 
 // MockInfraProvider represents the default implementation of Fabric objects.
@@ -27,26 +26,13 @@ func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, chConfig fa
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *MockInfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
-	if ic == nil {
-		return &MockChannelConfig{channelID: channelID}, nil
-	}
-	return &MockChannelConfig{channelID: channelID, ctx: NewMockContext(ic)}, nil
+func (f *MockInfraProvider) CreateChannelConfig(channelID string) (fab.ChannelConfig, error) {
+	return &MockChannelConfig{channelID: channelID}, nil
 }
 
 // CreateChannelMembership returns a channel member identifier
 func (f *MockInfraProvider) CreateChannelMembership(cfg fab.ChannelCfg) (fab.ChannelMembership, error) {
 	return nil, fmt.Errorf("Not implemented")
-}
-
-// CreateChannelTransactor initializes the transactor
-func (f *MockInfraProvider) CreateChannelTransactor(ic msp.Identity, cfg fab.ChannelCfg) (fab.Transactor, error) {
-	if cfg == nil {
-		return &MockTransactor{}, nil
-	} else if ic == nil {
-		return &MockTransactor{ChannelID: cfg.ID()}, nil
-	}
-	return &MockTransactor{ChannelID: cfg.ID(), Ctx: NewMockContext(ic)}, nil
 }
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration

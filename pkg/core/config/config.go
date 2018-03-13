@@ -568,6 +568,8 @@ func (c *Config) getTimeout(tType core.TimeoutType) time.Duration {
 		timeout = c.configViper.GetDuration("client.global.timeout.execute")
 	case core.DiscoveryGreylistExpiry:
 		timeout = c.configViper.GetDuration("client.peer.timeout.discovery.greylistExpiry")
+	case core.PeerResponse:
+		timeout = c.configViper.GetDuration("client.peer.timeout.response")
 	case core.EventHubConnection:
 		timeout = c.configViper.GetDuration("client.eventService.timeout.connection")
 	case core.EventReg:
