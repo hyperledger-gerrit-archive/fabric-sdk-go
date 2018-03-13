@@ -19,6 +19,7 @@ import (
 
 const (
 	IdentityTypeUser = "User"
+	sdkConfigFile    = "../../fixtures/config/config_test.yaml"
 )
 
 func TestRegisterEnroll(t *testing.T) {
