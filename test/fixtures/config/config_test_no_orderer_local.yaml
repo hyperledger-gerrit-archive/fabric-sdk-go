@@ -47,6 +47,7 @@ client:
   peer:
     timeout:
       connection: 3s
+      response: 20s
       queryResponse: 45s
       executeTxResponse: 60s
       discovery:

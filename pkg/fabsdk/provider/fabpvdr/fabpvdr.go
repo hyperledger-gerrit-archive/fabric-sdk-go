@@ -13,7 +13,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
-	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
@@ -111,30 +110,14 @@ func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, chConfig fab.C
 }
 
 // CreateChannelConfig initializes the channel config
-func (f *InfraProvider) CreateChannelConfig(ic msp.Identity, channelID string) (fab.ChannelConfig, error) {
+func (f *InfraProvider) CreateChannelConfig(channelID string) (fab.ChannelConfig, error) {
 
-	ctx := chconfig.Context{
-		Providers: f.providerContext,
-		Identity:  ic,
-	}
-
-	return chconfig.New(ctx, channelID)
+	return chconfig.New(channelID)
 }
 
 // CreateChannelMembership returns a channel member identifier
 func (f *InfraProvider) CreateChannelMembership(cfg fab.ChannelCfg) (fab.ChannelMembership, error) {
 	return membership.New(membership.Context{Providers: f.providerContext}, cfg)
-}
-
-// CreateChannelTransactor initializes the transactor
-func (f *InfraProvider) CreateChannelTransactor(ic msp.Identity, cfg fab.ChannelCfg) (fab.Transactor, error) {
-
-	ctx := chconfig.Context{
-		Providers: f.providerContext,
-		Identity:  ic,
-	}
-
-	return channelImpl.NewTransactor(ctx, cfg)
 }
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration

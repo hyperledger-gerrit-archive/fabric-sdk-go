@@ -77,10 +77,11 @@ func TestEventClient(t *testing.T) {
 }
 
 func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *fabsdk.FabricSDK, chainCodeID string, blockEvents bool, eventService fab.EventService) {
-	transactor, err := getTransactor(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)
+	_, cancel, transactor, err := getTransactor(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)
 	if err != nil {
 		t.Fatalf("Failed to get channel transactor: %s", err)
 	}
+	defer cancel()
 
 	tpResponses, prop, err := createAndSendTransactionProposal(
 		transactor,

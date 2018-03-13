@@ -7,12 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	reqContext "context"
 	"math/rand"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
@@ -65,17 +67,17 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 	}
 
 	// Low level resource
-	client, err := getContext(sdk, "Admin", orgName)
-
+	reqCtx, cancel, err := getContext(sdk, "Admin", orgName)
 	if err != nil {
 		t.Fatalf("Failed to get resource: %s", err)
 	}
+	defer cancel()
 
-	if err := installCC(client, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets); err != nil {
+	if err := installCC(reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets); err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
-	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(client, testSetup.Targets[0])
+	chaincodeQueryResponse, err := resource.QueryInstalledChaincodes(reqCtx, testSetup.Targets[0])
 	if err != nil {
 		t.Fatalf("QueryInstalledChaincodes return error: %v", err)
 	}
@@ -91,7 +93,7 @@ func testChaincodeInstallUsingChaincodePath(t *testing.T, sdk *fabsdk.FabricSDK,
 		t.Fatalf("Failed to retrieve installed chaincode.")
 	}
 	//Install same chaincode again, should fail
-	err = installCC(client, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
+	err = installCC(reqCtx, chainCodeName, chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -111,18 +113,20 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 	}
 
 	// Low level resource
-	client, err := getContext(sdk, "Admin", orgName)
+	reqCtx, cancel, err := getContext(sdk, "Admin", orgName)
 	if err != nil {
 		t.Fatalf("Failed to get resource: %s", err)
 	}
 
-	err = installCC(client, "install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, testSetup.Targets)
+	defer cancel()
+
+	err = installCC(reqCtx, "install", "github.com/example_cc_pkg", chainCodeVersion, ccPkg, testSetup.Targets)
 	if err != nil {
 		t.Fatalf("installCC return error: %v", err)
 	}
 
 	//Install same chaincode again, should fail
-	err = installCC(client, "install", chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
+	err = installCC(reqCtx, "install", chainCodePath, chainCodeVersion, ccPkg, testSetup.Targets)
 	if err == nil {
 		t.Fatalf("install same chaincode didn't return error")
 	}
@@ -132,11 +136,11 @@ func testChaincodeInstallUsingChaincodePackage(t *testing.T, sdk *fabsdk.FabricS
 }
 
 // installCC use low level client to install chaincode
-func installCC(client *context.Client, name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
+func installCC(reqCtx reqContext.Context, name string, path string, version string, ccPackage *api.CCPackage, targets []fab.ProposalProcessor) error {
 
 	icr := api.InstallChaincodeRequest{Name: name, Path: path, Version: version, Package: ccPackage}
 
-	_, _, err := resource.InstallChaincode(client, icr, targets)
+	_, _, err := resource.InstallChaincode(reqCtx, icr, targets)
 	if err != nil {
 		return errors.WithMessage(err, "InstallChaincode failed")
 	}
@@ -148,15 +152,15 @@ func getRandomCCVersion() string {
 	return "v0" + strconv.Itoa(rand.Intn(10000000))
 }
 
-func getContext(sdk *fabsdk.FabricSDK, user string, orgName string) (*context.Client, error) {
+func getContext(sdk *fabsdk.FabricSDK, user string, orgName string) (reqContext.Context, reqContext.CancelFunc, error) {
 
 	ctx := sdk.Context(fabsdk.WithUser(user), fabsdk.WithOrg(orgName))
 
 	clientContext, err := ctx()
 	if err != nil {
-		return nil, errors.WithMessage(err, "create context failed")
+		return nil, nil, errors.WithMessage(err, "create context failed")
 	}
 
-	return &context.Client{Providers: clientContext, Identity: clientContext}, nil
-
+	reqCtx, cancel := context.NewRequest(&context.Client{Providers: clientContext, Identity: clientContext}, context.WithTimeoutKey(core.PeerResponse))
+	return reqCtx, cancel, nil
 }

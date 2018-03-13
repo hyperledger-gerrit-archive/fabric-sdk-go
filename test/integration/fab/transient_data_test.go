@@ -7,9 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	reqContext "context"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -51,10 +55,11 @@ func TestTransient(t *testing.T) {
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte(transientData)
 
-	transactor, err := getTransactor(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)
+	_, cancel, transactor, err := getTransactor(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)
 	if err != nil {
 		t.Fatalf("Failed to get channel transactor: %s", err)
 	}
+	defer cancel()
 
 	transactionProposalResponse, _, err := createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), testSetup.Targets[:1], transientDataMap)
 	if err != nil {
@@ -109,15 +114,20 @@ func createAndSendTransactionProposal(transactor fab.ProposalSender, chainCodeID
 	return tpr, tp, err
 }
 
-func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName string) (fab.Transactor, error) {
+func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName string) (reqContext.Context, reqContext.CancelFunc, fab.Transactor, error) {
 
 	clientChannelContextProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(user), fabsdk.WithOrg(orgName))
 
 	channelContext, err := clientChannelContextProvider()
 	if err != nil {
-		return nil, errors.WithMessage(err, "channel service creation failed")
+		return nil, nil, nil, errors.WithMessage(err, "channel service creation failed")
 	}
 	chService := channelContext.ChannelService()
 
-	return chService.Transactor()
+	chConfig := chService.ChannelConfig()
+
+	reqCtx, cancel := context.NewRequest(channelContext, context.WithTimeoutKey(core.PeerResponse))
+	transactor, err := channel.NewTransactor(reqCtx, chConfig)
+
+	return reqCtx, cancel, transactor, err
 }
