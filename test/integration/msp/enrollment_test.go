@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"os"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
@@ -19,18 +20,26 @@ import (
 
 const (
 	IdentityTypeUser = "User"
-	sdkConfigFile    = "../../fixtures/config/config_test.yaml"
 )
 
 func TestRegisterEnroll(t *testing.T) {
 
-	configProvider := config.FromFile(sdkConfigFile)
+	configProvider := config.FromFile("../" + integration.ConfigTestFile)
 
 	// Instantiate the SDK
 	sdk, err := fabsdk.New(configProvider)
+
 	if err != nil {
 		t.Fatalf("SDK init failed: %v", err)
 	}
+
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	netConfig := sdk.Config()
+	keyStorePath := netConfig.KeyStorePath()
+	credentialStorePath := netConfig.CredentialStorePath()
+	defer cleanupTestPath(t, keyStorePath)
+	defer cleanupTestPath(t, credentialStorePath)
 
 	ctxProvider := sdk.Context()
 
@@ -108,4 +117,11 @@ func getRegistrarEnrollmentCredentials(t *testing.T, config core.Config) (string
 	}
 
 	return caConfig.Registrar.EnrollID, caConfig.Registrar.EnrollSecret
+}
+
+func cleanupTestPath(t *testing.T, storePath string) {
+	err := os.RemoveAll(storePath)
+	if err != nil {
+		t.Fatalf("Cleaning up directory '%s' failed: %v", storePath, err)
+	}
 }
