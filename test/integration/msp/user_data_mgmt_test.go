@@ -61,7 +61,7 @@ func TestWithCustomStores(t *testing.T) {
 	// stores user enrollment certificate in a pem file, in
 	// a directory specified by client.credentialStore.path in
 	// SDK configuration file. File naming convention
-	// (username@mspid-cert.pem) preserves username and MSP ID
+	// (username@mspid-cert.pem) preserves username and Client ID
 	// and enables lookup.
 	//
 	// Here we are replacing default user store with a sinple
@@ -79,11 +79,11 @@ func TestWithCustomStores(t *testing.T) {
 
 	ctxProvider := sdk.Context()
 
-	// Get the MSP.
+	// Get the Client.
 	// Without WithOrg option, uses default client organization.
 	mspClient, err := msp.New(ctxProvider)
 	if err != nil {
-		t.Fatalf("failed to create MSP: %v", err)
+		t.Fatalf("failed to create Client: %v", err)
 	}
 
 	// As this integration test spawns a fresh CA instance,
@@ -155,7 +155,7 @@ func getMyMSPID(t *testing.T, config core.Config) string {
 
 	clientConfig, err := config.Client()
 	if err != nil {
-		t.Fatalf("config.MSP() failed: %v", err)
+		t.Fatalf("config.Client() failed: %v", err)
 	}
 
 	netConfig, err := config.NetworkConfig()

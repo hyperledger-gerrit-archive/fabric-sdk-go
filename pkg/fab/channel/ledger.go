@@ -99,7 +99,7 @@ func (c *Ledger) QueryBlockByHash(reqCtx reqContext.Context, blockHash []byte, t
 // This query will be made to specified targets.
 // blockNumber: The number which is the ID of the Block.
 // It returns the block.
-func (c *Ledger) QueryBlock(reqCtx reqContext.Context, blockNumber int, targets []fab.ProposalProcessor) ([]*common.Block, error) {
+func (c *Ledger) QueryBlock(reqCtx reqContext.Context, blockNumber uint64, targets []fab.ProposalProcessor) ([]*common.Block, error) {
 
 	if blockNumber < 0 {
 		return nil, errors.New("blockNumber must be a positive integer")

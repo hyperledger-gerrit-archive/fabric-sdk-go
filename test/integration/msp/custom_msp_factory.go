@@ -12,7 +12,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defmsp"
 )
 
-// ========== MSP Provider Factory with custom user store ============= //
+// ========== Client Provider Factory with custom user store ============= //
 
 // CustomMSPFactory is a custom factory for tests.
 type CustomMSPFactory struct {
@@ -30,7 +30,7 @@ func (f *CustomMSPFactory) CreateUserStore(config core.Config) (msp.UserStore, e
 	return f.customUserStore, nil
 }
 
-// CreateProvider creates an MSP provider
+// CreateProvider creates an Client provider
 func (f *CustomMSPFactory) CreateProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.Provider, error) {
 	return f.defaultFactory.CreateProvider(config, cryptoProvider, f.customUserStore)
 }
