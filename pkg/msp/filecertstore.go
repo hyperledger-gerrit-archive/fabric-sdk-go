@@ -30,7 +30,12 @@ func NewFileCertStore(cryptoConfogMspPath string) (core.KVStore, error) {
 			if ck == nil || ck.MSPID == "" || ck.Username == "" {
 				return "", errors.New("invalid key")
 			}
-			certDir := path.Join(strings.Replace(cryptoConfogMspPath, "{username}", ck.Username, -1), "signcerts")
+
+			// TODO: refactor to case insensitive or remove eventually.
+			cryptoConfogMspPath = strings.Replace(cryptoConfogMspPath, "{userName}", ck.Username, -1)
+
+			cryptoConfogMspPath = strings.Replace(cryptoConfogMspPath, "{username}", ck.Username, -1)
+			certDir := path.Join(cryptoConfogMspPath, "signcerts")
 			return path.Join(certDir, fmt.Sprintf("%s@%s-cert.pem", ck.Username, orgName)), nil
 		},
 	}

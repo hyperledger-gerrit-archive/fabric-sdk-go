@@ -29,7 +29,13 @@ func NewFileKeyStore(cryptoConfogMspPath string) (core.KVStore, error) {
 			if pkk == nil || pkk.MSPID == "" || pkk.Username == "" || pkk.SKI == nil {
 				return "", errors.New("invalid key")
 			}
-			keyDir := path.Join(strings.Replace(cryptoConfogMspPath, "{username}", pkk.Username, -1), "keystore")
+
+			// TODO: refactor to case insensitive or remove eventually.
+			cryptoConfogMspPath = strings.Replace(cryptoConfogMspPath, "{userName}", pkk.Username, -1)
+
+			cryptoConfogMspPath = strings.Replace(cryptoConfogMspPath, "{username}", pkk.Username, -1)
+			keyDir := path.Join(cryptoConfogMspPath, "keystore")
+
 			return path.Join(keyDir, hex.EncodeToString(pkk.SKI)+"_sk"), nil
 		},
 	}
