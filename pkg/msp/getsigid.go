@@ -195,7 +195,7 @@ func (mgr *IdentityManager) getPrivateKeyPemFromKeyStore(userName string, ski []
 	key, err := mgr.mspPrivKeyStore.Load(
 		&msp.PrivKeyKey{
 			MSPID:    mgr.orgMSPID,
-			UserName: userName,
+			Username: userName,
 			SKI:      ski,
 		})
 	if err != nil {
@@ -214,7 +214,7 @@ func (mgr *IdentityManager) getCertBytesFromCertStore(userName string) ([]byte, 
 	}
 	cert, err := mgr.mspCertStore.Load(&msp.CertKey{
 		MSPID:    mgr.orgMSPID,
-		UserName: userName,
+		Username: userName,
 	})
 	if err != nil {
 		if err == core.ErrKeyValueNotFound {
