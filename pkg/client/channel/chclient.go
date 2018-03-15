@@ -216,6 +216,7 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 		Opts:         invoke.Opts(o),
 		Response:     invoke.Response{},
 		RetryHandler: retry.New(o.Retry),
+		Ctx:          reqCtx,
 	}
 
 	return requestContext, clientContext, nil
