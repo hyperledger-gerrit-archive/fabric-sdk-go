@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package invoke
 
 import (
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 
@@ -28,17 +30,21 @@ type SignatureValidationHandler struct {
 
 //Handle for Filtering proposal response
 func (f *SignatureValidationHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
+	fmt.Printf("SignatureValidationHandler.Handle\n")
 	//Filter tx proposal responses
 	err := f.validate(requestContext.Response.Responses, clientContext)
 	if err != nil {
+		fmt.Printf("SignatureValidationHandler.Handle - err: %s\n", err)
 		requestContext.Error = errors.WithMessage(err, "endorsement validation failed")
 		return
 	}
 
 	// Delegate to next step if any
 	if f.next != nil {
+		fmt.Printf("SignatureValidationHandler.Handle - next\n")
 		f.next.Handle(requestContext, clientContext)
 	}
+	fmt.Printf("SignatureValidationHandler.Handle - Done\n")
 }
 
 func (f *SignatureValidationHandler) validate(txProposalResponse []*fab.TransactionProposalResponse, ctx *ClientContext) error {
