@@ -8,9 +8,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	msp "github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	core "github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
+	fab "github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
+	msp "github.com/hyperledger/fabric-sdk-go/pkg/common/api/msp"
 )
 
 // MockProviders is a mock of Providers interface

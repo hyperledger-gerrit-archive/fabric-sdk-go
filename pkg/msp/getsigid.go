@@ -15,8 +15,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/pkg/errors"
 )

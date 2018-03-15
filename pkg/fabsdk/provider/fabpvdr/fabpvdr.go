@@ -9,12 +9,12 @@ package fabpvdr
 import (
 	reqContext "context"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/lazycache"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"

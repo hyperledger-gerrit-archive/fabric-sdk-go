@@ -12,8 +12,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 
 	"google.golang.org/grpc"
 

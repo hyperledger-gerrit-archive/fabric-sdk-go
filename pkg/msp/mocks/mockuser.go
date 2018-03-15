@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package mocks
 
-import "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+import "github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
 
 // MockUser ...
 type MockUser struct {

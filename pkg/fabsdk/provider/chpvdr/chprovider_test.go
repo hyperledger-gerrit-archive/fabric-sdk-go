@@ -9,10 +9,10 @@ package chpvdr
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"

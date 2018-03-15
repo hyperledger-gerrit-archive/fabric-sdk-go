@@ -10,9 +10,9 @@ import (
 	reqContext "context"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/retry"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"

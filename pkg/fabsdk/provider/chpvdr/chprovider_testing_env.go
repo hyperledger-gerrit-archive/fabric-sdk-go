@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package chpvdr
 
-import "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+import "github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
 
 // SetChannelConfig allows setting channel configuration.
 // This method is intended to enable tests and should not be called.

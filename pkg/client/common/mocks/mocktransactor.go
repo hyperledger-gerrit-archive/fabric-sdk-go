@@ -9,9 +9,9 @@ package mocks
 import (
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	"github.com/pkg/errors"
 )

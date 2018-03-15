@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package invoke
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/status"
 
 	"github.com/pkg/errors"

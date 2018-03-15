@@ -12,10 +12,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	config "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	config "github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/msp"
 )
 
 // IdentityManager implements fab/IdentityManager

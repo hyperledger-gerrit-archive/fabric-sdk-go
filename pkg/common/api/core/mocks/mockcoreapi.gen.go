@@ -11,7 +11,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	core "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	core "github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
 )
 
 // MockConfig is a mock of Config interface
