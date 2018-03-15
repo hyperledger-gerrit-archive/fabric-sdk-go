@@ -10,10 +10,10 @@ import (
 	reqContext "context"
 	"testing"
 
-	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/api/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"

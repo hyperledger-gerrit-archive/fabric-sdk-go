@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package pgresolver
 
-import "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+import "github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
 
 // Item represents any item
 type Item interface {

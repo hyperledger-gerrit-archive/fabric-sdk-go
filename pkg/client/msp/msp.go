@@ -9,8 +9,8 @@ package msp
 import (
 	"fmt"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/context"
+	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/api/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	mspapi "github.com/hyperledger/fabric-sdk-go/pkg/msp/api"

@@ -19,7 +19,7 @@ import (
 
 	"reflect"
 
-	api "github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	api "github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"

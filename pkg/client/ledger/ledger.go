@@ -13,14 +13,14 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/api/core"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
@@ -39,7 +39,7 @@ const (
 // instance of the ledger client for each channel. Ledger client supports specific queries only.
 type Client struct {
 	ctx    context.Channel
-	filter TargetFilter
+	filter fab.TargetFilter
 	ledger *channel.Ledger
 }
 
@@ -385,7 +385,7 @@ func (c *Client) createRequestContext(opts *requestOptions) (reqContext.Context,
 }
 
 // filterTargets is helper method to filter peers
-func filterTargets(peers []fab.Peer, filter TargetFilter) []fab.Peer {
+func filterTargets(peers []fab.Peer, filter fab.TargetFilter) []fab.Peer {
 
 	if filter == nil {
 		return peers
