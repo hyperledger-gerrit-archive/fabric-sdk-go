@@ -310,7 +310,7 @@ func testPeerGroupResolver(t *testing.T, sigPolicyEnv *common.SignaturePolicyEnv
 }
 
 func peer(name string) fab.Peer {
-	mp := mocks.NewMockPeer(name, "localhost:7051")
+	mp := mocks.NewMockPeer(name, "localhost:9999")
 	return mp
 }
 

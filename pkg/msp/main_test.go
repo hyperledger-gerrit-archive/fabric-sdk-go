@@ -24,7 +24,7 @@ import (
 
 const (
 	org1                        = "Org1"
-	caServerURL                 = "http://localhost:8090"
+	caServerURL                 = "http://localhost:8090" // TODO - random port
 	dummyUserStorePath          = "/tmp/userstore"
 	fullConfigPath              = "testdata/config_test.yaml"
 	wrongURLConfigPath          = "testdata/config_wrong_url.yaml"
