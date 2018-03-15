@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package e2e
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -41,13 +42,15 @@ func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts
 	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser("User1"), fabsdk.WithOrg(orgName))
 
 	// Channel client is used to query and execute transactions (Org1 is default org)
-	client, err := channel.New(clientChannelContext, channel.WithTargetFilter(discoveryFilter))
+	client, err := channel.New(clientChannelContext)
 
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()})
+	response, err := client.Query(
+		channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.WithTargetFilter(discoveryFilter))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}
@@ -99,6 +102,7 @@ type mockDiscoveryFilter struct {
 
 // Accept returns true if this peer is to be included in the target list
 func (df *mockDiscoveryFilter) Accept(peer fab.Peer) bool {
+	fmt.Printf("mockDiscoveryFilter - Called\n")
 	df.called = true
 	return true
 }
