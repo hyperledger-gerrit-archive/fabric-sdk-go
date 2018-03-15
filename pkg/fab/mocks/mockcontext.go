@@ -20,6 +20,8 @@ import (
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
 
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // MockProviderContext holds core providers to enable mocking.
@@ -29,6 +31,8 @@ type MockProviderContext struct {
 	signingManager    core.SigningManager
 	userStore         msp.UserStore
 	identityManager   map[string]msp.IdentityManager
+	privateKey        core.Key
+	identity          msp.SigningIdentity
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
 	infraProvider     fab.InfraProvider
@@ -98,6 +102,21 @@ func (pc *MockProviderContext) IdentityManager(orgName string) (msp.IdentityMana
 	return mgr, ok
 }
 
+// PrivateKey returns the crypto suite representation of the private key
+func (pc *MockProviderContext) PrivateKey() core.Key {
+	return pc.privateKey
+}
+
+// PublicVersion returns the public parts of this identity
+func (pc *MockProviderContext) PublicVersion() msp.Identity {
+	return pc.identity
+}
+
+// Sign the message
+func (pc *MockProviderContext) Sign(msg []byte) ([]byte, error) {
+	return nil, nil
+}
+
 //DiscoveryProvider returns discovery provider
 func (pc *MockProviderContext) DiscoveryProvider() fab.DiscoveryProvider {
 	return pc.discoveryProvider
@@ -126,25 +145,78 @@ func (pc *MockProviderContext) SetCustomInfraProvider(customInfraProvider fab.In
 // MockContext holds core providers and identity to enable mocking.
 type MockContext struct {
 	*MockProviderContext
-	msp.Identity
+	SigningIdentity msp.SigningIdentity
 }
 
 // NewMockContext creates a MockContext consisting of defaults and an identity
-func NewMockContext(ic msp.Identity) *MockContext {
+func NewMockContext(si msp.SigningIdentity) *MockContext {
 	ctx := MockContext{
 		MockProviderContext: NewMockProviderContext(),
-		Identity:            ic,
+		SigningIdentity:     si,
 	}
 	return &ctx
 }
 
+// Identifier returns the identifier of that identity
+func (m MockContext) Identifier() *msp.IdentityIdentifier {
+	return &msp.IdentityIdentifier{ID: m.SigningIdentity.Identifier().ID, MSPID: m.SigningIdentity.Identifier().MSPID}
+}
+
+// Verify a signature over some message using this identity as reference
+func (m MockContext) Verify(msg []byte, sig []byte) error {
+	if m.SigningIdentity == nil {
+		return errors.New("anonymous countext")
+	}
+	return m.SigningIdentity.Verify(msg, sig)
+}
+
+// Serialize converts an identity to bytes
+func (m MockContext) Serialize() ([]byte, error) {
+	if m.SigningIdentity == nil {
+		return nil, errors.New("anonymous countext")
+	}
+	return m.SigningIdentity.Serialize()
+}
+
+// EnrollmentCertificate Returns the underlying ECert representing this user’s identity.
+func (m MockContext) EnrollmentCertificate() []byte {
+	if m.SigningIdentity == nil {
+		return nil
+	}
+	return m.SigningIdentity.EnrollmentCertificate()
+}
+
+// Sign the message
+func (m MockContext) Sign(msg []byte) ([]byte, error) {
+	if m.SigningIdentity == nil {
+		return nil, errors.New("anonymous countext")
+	}
+	return m.SigningIdentity.Sign(msg)
+}
+
+// PublicVersion returns the public parts of this identity
+func (m MockContext) PublicVersion() msp.Identity {
+	if m.SigningIdentity == nil {
+		return nil
+	}
+	return m.SigningIdentity.PublicVersion()
+}
+
+// PrivateKey returns the crypto suite representation of the private key
+func (m MockContext) PrivateKey() core.Key {
+	if m.SigningIdentity == nil {
+		return nil
+	}
+	return m.SigningIdentity.PrivateKey()
+}
+
 // NewMockContextWithCustomDiscovery creates a MockContext consisting of defaults and an identity
-func NewMockContextWithCustomDiscovery(ic msp.Identity, discPvdr fab.DiscoveryProvider) *MockContext {
+func NewMockContextWithCustomDiscovery(ic msp.SigningIdentity, discPvdr fab.DiscoveryProvider) *MockContext {
 	mockCtx := NewMockProviderContext()
 	mockCtx.discoveryProvider = discPvdr
 	ctx := MockContext{
 		MockProviderContext: mockCtx,
-		Identity:            ic,
+		SigningIdentity:     ic,
 	}
 	return &ctx
 }
@@ -179,7 +251,7 @@ func (th *MockTransactionHeader) ChannelID() string {
 
 // NewMockTransactionHeader creates mock TxnID based on mock user.
 func NewMockTransactionHeader(channelID string) (fab.TransactionHeader, error) {
-	user := NewMockUser("test")
+	user := mspmocks.NewMockSigningIdentity("test", "test")
 
 	// generate a random nonce
 	nonce, err := crypto.GetRandomNonce()
@@ -187,7 +259,7 @@ func NewMockTransactionHeader(channelID string) (fab.TransactionHeader, error) {
 		return nil, err
 	}
 
-	creator, err := user.SerializedIdentity()
+	creator, err := user.Serialize()
 	if err != nil {
 		return nil, err
 	}
