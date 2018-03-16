@@ -32,6 +32,8 @@ import (
 
 	"regexp"
 
+	"sync"
+
 	cs "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 )
 
@@ -60,6 +62,7 @@ type Config struct {
 	ordererMatchers     map[int]*regexp.Regexp
 	caMatchers          map[int]*regexp.Regexp
 	opts                options
+	certPoolLock        sync.Mutex
 }
 
 type options struct {
@@ -1314,18 +1317,13 @@ func (c *Config) verifyPeerConfig(p core.PeerConfig, peerName string, tlsEnabled
 	return nil
 }
 
-// SetTLSCACertPool allows a user to set a global cert pool with a set of
-// root TLS CAs that will be used for all outgoing connections
-func (c *Config) SetTLSCACertPool(certPool *x509.CertPool) {
-	if certPool == nil {
-		certPool = x509.NewCertPool()
-	}
-	c.tlsCertPool = certPool
-}
-
 // TLSCACertPool returns the configured cert pool. If a certConfig
 // is provided, the certficate is added to the pool
 func (c *Config) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPool, error) {
+
+	c.certPoolLock.Lock()
+	defer c.certPoolLock.Unlock()
+
 	for _, cert := range certs {
 		if cert != nil {
 			c.tlsCertPool.AddCert(cert)
