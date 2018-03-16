@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package resmgmt enables ability to update resources in a Fabric network.
+//Package resmgmt enables ability to update resources in a Fabric network.
 package resmgmt
 
 import (
@@ -228,7 +228,7 @@ func filterTargets(peers []fab.Peer, filter TargetFilter) []fab.Peer {
 	}
 
 	filteredPeers := []fab.Peer{}
-	for _, peer := range peers {
+	for _, peer := range eers {
 		if filter.Accept(peer) {
 			filteredPeers = append(filteredPeers, peer)
 		}
@@ -388,6 +388,9 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 
 	if err != nil {
 		return responses, errors.WithMessage(err, "InstallChaincode failed")
+	}
+	if len(errs) > 0 {
+		return responses, errs
 	}
 
 	return responses, nil
