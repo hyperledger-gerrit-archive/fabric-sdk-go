@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/completion"
 )
 
 func ExampleReference() {
@@ -42,6 +44,7 @@ func ExampleReference_expiring() {
 // The reference is initialized immediately after creation
 // and every 2 seconds thereafter.
 func ExampleReference_refreshing() {
+	completionHandler := completion.New()
 	sequence := 0
 	ref := New(
 		func() (interface{}, error) {
@@ -49,12 +52,16 @@ func ExampleReference_refreshing() {
 			return fmt.Sprintf("Data_%d", sequence), nil
 		},
 		WithRefreshInterval(InitImmediately, 2*time.Second),
+		WithCompletionHandler(completionHandler),
 	)
 
 	for i := 0; i < 5; i++ {
 		fmt.Println(ref.MustGet())
 		time.Sleep(3 * time.Second)
 	}
+
+	completionHandler.Done()
+	fmt.Printf("Done!")
 }
 
 func TestGet(t *testing.T) {
@@ -162,6 +169,7 @@ func TestGetWithFinalizer(t *testing.T) {
 	concurrency := 100
 	expectedValue := "Data1"
 
+	completionHandler := completion.New()
 	ref := New(
 		func() (interface{}, error) {
 			t.Logf("Initializing Reference...\n")
@@ -174,6 +182,7 @@ func TestGetWithFinalizer(t *testing.T) {
 				atomic.AddInt32(&numTimesFinalized, 1)
 			},
 		),
+		WithCompletionHandler(completionHandler),
 	)
 
 	var wg sync.WaitGroup
@@ -198,7 +207,7 @@ func TestGetWithFinalizer(t *testing.T) {
 	}
 
 	wg.Wait()
-	ref.Close()
+	completionHandler.Done()
 
 	if num := atomic.LoadInt32(&numTimesInitialized); num != int32(expectedTimesInitialized) {
 		t.Fatalf("expecting initializer to be called %d time(s) but was called %d time(s)", expectedTimesInitialized, num)
@@ -292,6 +301,8 @@ func TestExpiringWithErr(t *testing.T) {
 	concurrency := 20
 	iterations := 100
 
+	completionHandler := completion.New()
+
 	seq := 0
 	ref := New(
 		func() (interface{}, error) {
@@ -314,6 +325,7 @@ func TestExpiringWithErr(t *testing.T) {
 			NewGraduatingExpirationProvider(500*time.Millisecond, 1*time.Second, 5*time.Second),
 			LastInitialized,
 		),
+		WithCompletionHandler(completionHandler),
 	)
 
 	var wg sync.WaitGroup
@@ -346,7 +358,7 @@ func TestExpiringWithErr(t *testing.T) {
 	}
 
 	wg.Wait()
-	ref.Close()
+	completionHandler.Done()
 
 	if len(errors) > 0 {
 		t.Fatalf(errors[0].Error())
@@ -365,7 +377,9 @@ func TestExpiringOnIdle(t *testing.T) {
 	expectedTimesInitialized := 2
 	expectedTimesFinalized := expectedTimesInitialized
 	expectedTimesValueChanged := 2
-	iterations := 20
+	iterations := 25
+
+	completionHandler := completion.New()
 
 	seq := 0
 	ref := New(
@@ -382,6 +396,7 @@ func TestExpiringOnIdle(t *testing.T) {
 			},
 		),
 		WithIdleExpiration(time.Second),
+		WithCompletionHandler(completionHandler),
 	)
 
 	previousValue := ""
@@ -407,7 +422,7 @@ func TestExpiringOnIdle(t *testing.T) {
 		t.Fatalf("expecting value to have changed %d time(s) but it changed %d time(s)", expectedTimesValueChanged, timesValueChanged)
 	}
 
-	ref.Close()
+	completionHandler.Done()
 
 	if num := atomic.LoadInt32(&numTimesInitialized); num != int32(expectedTimesInitialized) {
 		t.Fatalf("expecting initializer to be called %d time(s) but was called %d time(s)", expectedTimesInitialized, num)
@@ -424,6 +439,8 @@ func TestProactiveRefresh(t *testing.T) {
 
 	concurrency := 20
 	iterations := 100
+
+	completionHandler := completion.New()
 
 	seq := 0
 	ref := New(
@@ -444,6 +461,7 @@ func TestProactiveRefresh(t *testing.T) {
 			},
 		),
 		WithRefreshInterval(InitOnFirstAccess, 500*time.Millisecond),
+		WithCompletionHandler(completionHandler),
 	)
 
 	var wg sync.WaitGroup
@@ -475,8 +493,11 @@ func TestProactiveRefresh(t *testing.T) {
 		}()
 	}
 
+	// Wait for all Go routines
 	wg.Wait()
-	ref.Close()
+
+	// Close the reference via the completion handle
+	completionHandler.Done()
 
 	if len(errors) > 0 {
 		t.Fatalf(errors[0].Error())

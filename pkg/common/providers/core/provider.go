@@ -10,6 +10,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/completion"
 )
 
 // TODO - the Config (and related) interfaces need to be refactored.
@@ -104,9 +106,14 @@ const (
 	EventHubEventServiceType
 )
 
+type CompletionHandler interface {
+	Register() (completion.Handle, error)
+}
+
 // Providers represents the SDK configured core providers context.
 type Providers interface {
 	CryptoSuite() CryptoSuite
 	Config() Config
 	SigningManager() SigningManager
+	CompletionHandler() CompletionHandler
 }

@@ -70,6 +70,7 @@ type Provider struct {
 	mspProvider       msp.Provider
 	infraProvider     fab.InfraProvider
 	channelProvider   fab.ChannelProvider
+	completionHandler core.CompletionHandler
 }
 
 // Config returns the Config provider of sdk.
@@ -115,6 +116,11 @@ func (c *Provider) ChannelProvider() fab.ChannelProvider {
 // InfraProvider provides fabric objects such as peer and user
 func (c *Provider) InfraProvider() fab.InfraProvider {
 	return c.infraProvider
+}
+
+// CompletionHandler allows resources to register for completion events
+func (c *Provider) CompletionHandler() core.CompletionHandler {
+	return c.completionHandler
 }
 
 //SDKContextParams parameter for creating FabContext
@@ -180,6 +186,14 @@ func WithInfraProvider(infraProvider fab.InfraProvider) SDKContextParams {
 func WithChannelProvider(channelProvider fab.ChannelProvider) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.channelProvider = channelProvider
+	}
+}
+
+//WithCompletionHandler sets a completion handler that allows resources
+//to register for completion events
+func WithCompletionHandler(handler core.CompletionHandler) SDKContextParams {
+	return func(ctx *Provider) {
+		ctx.completionHandler = handler
 	}
 }
 

@@ -115,10 +115,10 @@ func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.Select
 		return nil, errors.WithMessage(err, "Failed to create cc policy provider")
 	}
 
-	return newSelectionService(channelID, p.lbp, ccPolicyProvider, p.cacheTimeout)
+	return newSelectionService(channelID, p.lbp, ccPolicyProvider, p.cacheTimeout, p.providers.CompletionHandler()), nil
 }
 
-func newSelectionService(channelID string, lbp pgresolver.LoadBalancePolicy, ccPolicyProvider CCPolicyProvider, cacheTimeout time.Duration) (*selectionService, error) {
+func newSelectionService(channelID string, lbp pgresolver.LoadBalancePolicy, ccPolicyProvider CCPolicyProvider, cacheTimeout time.Duration, completionHandler core.CompletionHandler) *selectionService {
 	service := &selectionService{
 		channelID:        channelID,
 		pgLBP:            lbp,
@@ -132,12 +132,15 @@ func newSelectionService(channelID string, lbp pgresolver.LoadBalancePolicy, ccP
 				func() (interface{}, error) {
 					return service.createPGResolver(key.(*resolverKey))
 				},
-				lazyref.WithAbsoluteExpiration(cacheTimeout),
-			).Get()
+				// FIXME: Temporarily change to refreshing in order to try the completion handler
+				lazyref.WithRefreshInterval(lazyref.InitImmediately, cacheTimeout),
+				// lazyref.WithAbsoluteExpiration(cacheTimeout),
+				lazyref.WithCompletionHandler(completionHandler),
+			), nil
 		},
 	)
 
-	return service, nil
+	return service
 }
 
 func (s *selectionService) Initialize(context contextAPI.Channel) error {
@@ -164,7 +167,12 @@ func (s *selectionService) getPeerGroupResolver(chaincodeIDs []string) (pgresolv
 	if err != nil {
 		return nil, err
 	}
-	return value.(pgresolver.PeerGroupResolver), nil
+	lazyRef := value.(*lazyref.Reference)
+	resolver, err := lazyRef.Get()
+	if err != nil {
+		return nil, err
+	}
+	return resolver.(pgresolver.PeerGroupResolver), nil
 }
 
 func (s *selectionService) createPGResolver(key *resolverKey) (pgresolver.PeerGroupResolver, error) {

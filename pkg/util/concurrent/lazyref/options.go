@@ -49,6 +49,14 @@ func WithFinalizer(finalizer Finalizer) Opt {
 	}
 }
 
+// WithCompletionHandler sets a completion handler that notifies the reference
+// that it should be closed.
+func WithCompletionHandler(handler CompletionHandler) Opt {
+	return func(ref *Reference) {
+		ref.completionHandler = handler
+	}
+}
+
 const (
 	// InitOnFirstAccess specifies that the reference should be initialized the first time it is accessed
 	InitOnFirstAccess time.Duration = time.Duration(-1)

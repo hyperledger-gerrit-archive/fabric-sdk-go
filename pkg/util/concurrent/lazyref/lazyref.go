@@ -14,6 +14,7 @@ import (
 	"unsafe"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/completion"
 )
 
 var logger = logging.NewLogger("fabsdk/util")
@@ -51,6 +52,10 @@ const (
 	LastInitialized
 )
 
+type CompletionHandler interface {
+	Register() (completion.Handle, error)
+}
+
 // Reference holds a value that is initialized on first access using the provided
 // Initializer function. The Reference has an optional expiring feature
 // wherin the value is reset after the provided period of time. A subsequent call
@@ -63,7 +68,7 @@ const (
 // is closed (via a call to Close) or if it expires. (Note: The Finalizer function
 // is not called every time the value is refreshed with the periodic refresh feature.)
 type Reference struct {
-	sync.RWMutex
+	mutex              sync.RWMutex
 	ref                unsafe.Pointer
 	lastTimeAccessed   unsafe.Pointer
 	initializer        Initializer
@@ -72,7 +77,10 @@ type Reference struct {
 	expirationProvider ExpirationProvider
 	initialInit        time.Duration
 	expiryType         ExpirationType
+	completionHandler  CompletionHandler
 	closed             chan bool
+	closeDone          chan bool
+	running            int32
 }
 
 // New creates a new reference
@@ -80,7 +88,6 @@ func New(initializer Initializer, opts ...Opt) *Reference {
 	lazyRef := &Reference{
 		initializer: initializer,
 		initialInit: InitOnFirstAccess,
-		closed:      make(chan bool, 1),
 	}
 
 	for _, opt := range opts {
@@ -98,6 +105,11 @@ func New(initializer Initializer, opts ...Opt) *Reference {
 			}
 			return value, err
 		}
+
+		// Set up the channels that are used to communicate with the timer Go routine
+		lazyRef.closed = make(chan bool)
+		lazyRef.closeDone = make(chan bool)
+
 		if lazyRef.expirationHandler == nil {
 			// Set a default expiration handler
 			lazyRef.expirationHandler = lazyRef.resetValue
@@ -105,6 +117,8 @@ func New(initializer Initializer, opts ...Opt) *Reference {
 		if lazyRef.initialInit >= 0 {
 			lazyRef.startTimer(lazyRef.initialInit)
 		}
+	} else if lazyRef.completionHandler != nil && lazyRef.finalizer != nil {
+		lazyRef.listenForCompletionEvent()
 	}
 
 	return lazyRef
@@ -117,8 +131,8 @@ func (r *Reference) Get() (interface{}, error) {
 		return value, nil
 	}
 
-	r.Lock()
-	defer r.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
 	// Try again inside the lock
 	if value, ok := r.get(); ok {
@@ -151,14 +165,19 @@ func (r *Reference) MustGet() interface{} {
 // Close should be called for expiring references and
 // rerences that specify finalizers.
 func (r *Reference) Close() {
-	r.Lock()
-	defer r.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
 	logger.Debug("Closing reference")
 
-	if r.expirationHandler != nil {
+	if r.timerRunning() {
+		logger.Infof("Sending closed event...")
 		r.closed <- true
+		logger.Infof("... waiting for closeDone event...")
+		<-r.closeDone
+		logger.Infof("... got closeDone event")
 	}
+
 	if r.finalizer != nil {
 		r.finalizer()
 	}
@@ -187,14 +206,52 @@ func (r *Reference) lastAccessed() time.Time {
 	return *(*time.Time)(p)
 }
 
+func (r *Reference) timerRunning() bool {
+	return atomic.LoadInt32(&r.running) == 1
+}
+
+func (r *Reference) setTimerRunning(value bool) {
+	atomic.StoreInt32(&r.running, 1)
+}
+
 func (r *Reference) startTimer(expiration time.Duration) {
 	r.setLastAccessed()
+	r.setTimerRunning(true)
+	logger.Infof("Timer has started running")
 
 	go func() {
+		var handle completion.Handle
+		if r.completionHandler != nil {
+			var err error
+			handle, err = r.completionHandler.Register()
+			if err != nil {
+				logger.Infof("Unable to start timer: %s", err)
+				r.finalize()
+				return
+			}
+			defer func() {
+				logger.Infof("Timer has stopped running")
+				r.setTimerRunning(false)
+			}()
+		} else {
+			handle = completion.NewHandle()
+		}
+
+		defer handle.Done()
+
 		expiry := expiration
 		for {
 			select {
 			case <-r.closed:
+				logger.Infof("Got closed event")
+				r.closeDone <- true
+				return
+
+			case <-handle.Closed():
+				logger.Infof("Completion handle.Closed() invoked")
+				r.finalize()
+				return
+
 			case <-time.After(expiry):
 				if r.expiryType == LastInitialized {
 					r.handleExpiration()
@@ -214,9 +271,36 @@ func (r *Reference) startTimer(expiration time.Duration) {
 	}()
 }
 
+func (r *Reference) listenForCompletionEvent() {
+	go func() {
+		handle, err := r.completionHandler.Register()
+		if err != nil {
+			logger.Infof("Unable to register for completion events: %s", err)
+			r.finalize()
+			return
+		}
+		defer handle.Done()
+
+		select {
+		case <-handle.Closed():
+			logger.Infof("Completion handle.Closed() invoked")
+			r.finalize()
+			return
+		}
+	}()
+}
+
+func (r *Reference) finalize() {
+	if r.finalizer != nil {
+		r.mutex.Lock()
+		r.finalizer()
+		r.mutex.Unlock()
+	}
+}
+
 func (r *Reference) handleExpiration() {
-	r.Lock()
-	defer r.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
 	logger.Debug("Invoking expiration handler")
 	r.expirationHandler()

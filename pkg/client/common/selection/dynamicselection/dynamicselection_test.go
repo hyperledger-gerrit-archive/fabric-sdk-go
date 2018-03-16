@@ -22,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/completion"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
@@ -244,10 +245,8 @@ func peer(name string, mspID string) fab.Peer {
 }
 
 func newMockSelectionService(ccPolicyProvider CCPolicyProvider, lbp pgresolver.LoadBalancePolicy, discoveryService fab.DiscoveryService) (fab.SelectionService, error) {
-	service, err := newSelectionService("", lbp, ccPolicyProvider, 5*time.Second)
-	if err != nil {
-		return nil, err
-	}
+	completionHandler := completion.New()
+	service := newSelectionService("", lbp, ccPolicyProvider, 5*time.Second, completionHandler)
 	service.discoveryService = discoveryService
 	return service, nil
 }
@@ -344,7 +343,6 @@ func toString(peers []fab.Peer) string {
 }
 
 func TestDynamicSelection(t *testing.T) {
-
 	// Create SDK setup for channel client with dynamic selection
 	sdk, err := fabsdk.New(config.FromFile("../../../../../test/fixtures/config/config_test.yaml"))
 	if err != nil {

@@ -11,6 +11,8 @@ import (
 	"encoding/hex"
 	"hash"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/completion"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	config "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -201,6 +203,11 @@ func NewMockContext(si msp.SigningIdentity) *MockContext {
 // Identifier returns the identifier of that identity
 func (m MockContext) Identifier() *msp.IdentityIdentifier {
 	return &msp.IdentityIdentifier{ID: m.SigningIdentity.Identifier().ID, MSPID: m.SigningIdentity.Identifier().MSPID}
+}
+
+// CompletionHandler returns a completion handler
+func (m MockContext) CompletionHandler() core.CompletionHandler {
+	return completion.New()
 }
 
 // Verify a signature over some message using this identity as reference

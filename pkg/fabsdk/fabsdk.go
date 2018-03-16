@@ -11,6 +11,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/completion"
+
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
@@ -25,8 +27,9 @@ import (
 
 // FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
-	opts     options
-	provider *context.Provider
+	opts              options
+	provider          *context.Provider
+	completionHandler *completion.Handler
 }
 
 type options struct {
@@ -89,6 +92,7 @@ func fromPkgSuite(config core.Config, pkgSuite pkgSuite, opts ...Option) (*Fabri
 			Service: svc,
 			Logger:  lg,
 		},
+		completionHandler: completion.New(),
 	}
 
 	err = initSDK(&sdk, config, opts)
@@ -213,7 +217,9 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		context.WithSelectionProvider(selectionProvider),
 		context.WithMSPProvider(mspProvider),
 		context.WithInfraProvider(infraProvider),
-		context.WithChannelProvider(channelProvider))
+		context.WithChannelProvider(channelProvider),
+		context.WithCompletionHandler(sdk.completionHandler),
+	)
 
 	//initialize
 	if pi, ok := infraProvider.(providerInit); ok {
@@ -233,6 +239,8 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
+	sdk.completionHandler.Done()
+	// TODO: Replace with completion handler
 	sdk.provider.InfraProvider().Close()
 }
 
