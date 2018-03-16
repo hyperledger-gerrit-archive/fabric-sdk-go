@@ -50,7 +50,7 @@ Additionally for development purposes integration tests also run against the dev
 When the 'prev' code level is updated, the last tested fabric-sdk-go commit or tag is listed below.
 
 - fabric v1.0.0 & fabric-ca v1.0.0
-  - fabric-sdk-go: master:HEAD
+  - fabric-sdk-go: b2c76cdbd7d22b043b7c850d5c59af45aad19cfb
 
 ### Running the test suite
 
