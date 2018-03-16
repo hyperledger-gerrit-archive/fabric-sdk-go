@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	fab "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	fab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 // MockProposalProcessor is a mock of ProposalProcessor interface

@@ -13,10 +13,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/lazycache"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/lazyref"
 
-	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/context"
 	copts "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
 	"github.com/pkg/errors"
 

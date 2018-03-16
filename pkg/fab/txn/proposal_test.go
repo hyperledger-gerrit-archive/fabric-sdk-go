@@ -16,9 +16,9 @@ import (
 
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	mock_context "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	mock_context "github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/mocks"

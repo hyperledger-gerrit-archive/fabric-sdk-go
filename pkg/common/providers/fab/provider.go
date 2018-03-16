@@ -11,8 +11,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"google.golang.org/grpc"
 )
 

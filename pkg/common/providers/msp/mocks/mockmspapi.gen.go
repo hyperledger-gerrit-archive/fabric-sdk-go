@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	msp "github.com/hyperledger/fabric-sdk-go/pkg/context/api/msp"
+	msp "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 )
 
 // MockIdentityManager is a mock of IdentityManager interface
