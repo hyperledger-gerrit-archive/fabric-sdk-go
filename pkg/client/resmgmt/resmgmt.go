@@ -478,7 +478,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 	reqCtx, cancel := rc.createRequestContext(opts, core.PeerResponse)
 	defer cancel()
 
-	responses, err := l.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{target})
+	responses, err := l.QueryInstantiatedChaincodes(reqCtx, []fab.ProposalProcessor{target}, nil)
 	if err != nil {
 		return nil, err
 	}
