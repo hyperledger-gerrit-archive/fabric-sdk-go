@@ -542,10 +542,10 @@ func (c *Config) Timeout(tType core.TimeoutType) time.Duration {
 func (c *Config) EventServiceType() core.EventServiceType {
 	etype := c.configViper.GetString("client.eventService.type")
 	switch etype {
-	case "deliver":
-		return core.DeliverEventServiceType
-	default:
+	case "eventhub":
 		return core.EventHubEventServiceType
+	default:
+		return core.DeliverEventServiceType
 	}
 }
 
@@ -1299,9 +1299,9 @@ func (c *Config) verifyPeerConfig(p core.PeerConfig, peerName string, tlsEnabled
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
-	if p.EventURL == "" {
-		return errors.Errorf("event URL does not exist or empty for peer %s", peerName)
-	}
+	//if p.EventURL == "" {
+	//	return errors.Errorf("event URL does not exist or empty for peer %s", peerName)
+	//}
 	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && c.configViper.GetBool("client.tlsCerts.systemCertPool") == false {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}

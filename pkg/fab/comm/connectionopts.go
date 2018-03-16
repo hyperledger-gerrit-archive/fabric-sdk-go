@@ -91,7 +91,7 @@ func (p *params) SetHostOverride(value string) {
 }
 
 func (p *params) SetCertificate(value *x509.Certificate) {
-	logger.Debugf("Certificate: %s", value)
+	logger.Debugf("Certificate [Subject: %s, Serial: %s", value.Subject, value.SerialNumber)
 	p.certificate = value
 }
 

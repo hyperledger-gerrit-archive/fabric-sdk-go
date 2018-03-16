@@ -241,6 +241,8 @@ func (o *Orderer) URL() string {
 
 // SendBroadcast Send the created transaction to Orderer.
 func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnvelope) (*common.Status, error) {
+	logger.Debug("Sending broadcast to ordering service")
+
 	conn, err := o.conn(ctx)
 	if err != nil {
 		rpcStatus, ok := grpcstatus.FromError(err)
@@ -288,7 +290,6 @@ func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 func broadcastStream(broadcastClient ab.AtomicBroadcast_BroadcastClient, responses chan common.Status, errs chan error) {
 
 	broadcastResponse, err := broadcastClient.Recv()
-	logger.Debugf("Orderer.broadcastStream - response:%v, error:%v", broadcastResponse, err)
 	if err != nil {
 		rpcStatus, ok := grpcstatus.FromError(err)
 		if ok {
@@ -310,6 +311,8 @@ func broadcastStream(broadcastClient ab.AtomicBroadcast_BroadcastClient, respons
 // blocks requested
 // envelope: contains the seek request for blocks
 func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelope) (chan *common.Block, chan error) {
+
+	logger.Debug("Sending deliver request to ordering service")
 
 	responses := make(chan *common.Block)
 	errs := make(chan error, 1)

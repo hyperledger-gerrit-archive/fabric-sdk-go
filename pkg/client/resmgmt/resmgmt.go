@@ -578,6 +578,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		return errors.WithMessage(err, "creating chaincode deploy transaction proposal failed")
 	}
 
+	logger.Debug("SendTransactionProposal")
 	// Process and send transaction proposal
 	txProposalResponse, err := transactor.SendTransactionProposal(tp, peersToTxnProcessors(targets))
 	if err != nil {
@@ -585,12 +586,14 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 	}
 
 	// Membership is required to verify signature
+	logger.Debug("Membership")
 	membership, err := channelService.Membership()
 	if err != nil {
 		return errors.WithMessage(err, "membership creation failed")
 	}
 
 	// Verify signature(s)
+	logger.Debug("Verify")
 	sv := &verifier.Signature{Membership: membership}
 	for _, r := range txProposalResponse {
 		if err := sv.Verify(r); err != nil {
@@ -598,12 +601,14 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		}
 	}
 
+	logger.Debug("EventService")
 	eventService, err := channelService.EventService()
 	if err != nil {
 		return errors.WithMessage(err, "unable to get event service")
 	}
 
 	// Register for commit event
+	logger.Debug("RegisterTxStatusEvent")
 	reg, statusNotifier, err := eventService.RegisterTxStatusEvent(string(tp.TxnID))
 	if err != nil {
 		return errors.WithMessage(err, "error registering for TxStatus event")
@@ -614,17 +619,15 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		Proposal:          tp,
 		ProposalResponses: txProposalResponse,
 	}
+	logger.Debug("createAndSendTransaction")
 	if _, err = createAndSendTransaction(transactor, transactionRequest); err != nil {
 		return errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
-	var timeout = opts.Timeouts[core.Execute]
-	if timeout == 0 {
-		timeout = rc.ctx.Config().TimeoutOrDefault(core.Execute)
-	}
-
+	logger.Debug("waiting")
 	select {
 	case txStatus := <-statusNotifier:
+		logger.Debug("statusNotifier")
 		if txStatus.TxValidationCode == pb.TxValidationCode_VALID {
 			return nil
 		}

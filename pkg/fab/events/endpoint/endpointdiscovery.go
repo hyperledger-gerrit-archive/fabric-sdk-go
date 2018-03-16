@@ -84,6 +84,10 @@ func (s *discoveryService) GetPeers() ([]fab.Peer, error) {
 		if peerConfig == nil {
 			return nil, errors.Errorf("unable to get peer config from [%s]", peer.URL())
 		}
+		if len(peerConfig.EventURL) == 0 {
+			// this peer is not configured to provide events.
+			continue
+		}
 
 		eventEndpoint, err := FromPeerConfig(s.ctx.Config(), peer, peerConfig)
 		if err != nil {
