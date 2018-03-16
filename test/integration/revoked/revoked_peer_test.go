@@ -114,6 +114,8 @@ func TestRevokedPeer(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Log("Installing chaincode")
+
 	installCCReq := resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Package: ccPkg}
 
 	// Install example cc to Org1 peers
@@ -131,6 +133,7 @@ func TestRevokedPeer(t *testing.T) {
 	// Set up chaincode policy to 'any of two msps'
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
 
+	t.Log("Instantiating chaincode")
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
 	err = org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
 	if err != nil {
