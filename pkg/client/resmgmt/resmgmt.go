@@ -620,6 +620,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 
 	select {
 	case txStatus := <-statusNotifier:
+		logger.Debug("statusNotifier")
 		if txStatus.TxValidationCode == pb.TxValidationCode_VALID {
 			return nil
 		}
