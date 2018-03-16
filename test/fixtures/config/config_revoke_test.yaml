@@ -46,7 +46,7 @@ client:
   eventService:
     # Event service type (deliver|eventhub) - default: eventhub
     # NOTE: This is temporary until the SDK starts making use of channel capabilities
-    type: eventhub
+    type: delivery
     timeout:
       connection: 3s
       registrationResponse: 10s
