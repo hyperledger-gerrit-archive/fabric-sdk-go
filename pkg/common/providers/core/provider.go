@@ -12,6 +12,9 @@ import (
 	"time"
 )
 
+// TODO - the Config (and related) interfaces need to be refactored.
+// E.g., The interface should be minimized and split across providers.
+
 // Config fabric-sdk-go configuration interface
 type Config interface {
 	Client() (*ClientConfig, error)
