@@ -84,7 +84,7 @@ func (ps *mockPkgSuite) MSP() (sdkApi.MSPProviderFactory, error) {
 	if ps.errOnMsp {
 		return nil, errors.New("Error")
 	}
-	return defmsp.NewProviderFactory(), nil
+	return defmsp.NewMSPProviderFactory(), nil
 }
 
 func (ps *mockPkgSuite) Service() (sdkApi.ServiceProviderFactory, error) {

@@ -16,13 +16,13 @@ import (
 
 // CustomMSPFactory is a custom factory for tests.
 type CustomMSPFactory struct {
-	defaultFactory  *defmsp.ProviderFactory
+	defaultFactory  *defmsp.MSPProviderFactory
 	customUserStore msp.UserStore
 }
 
 // NewCustomMSPFactory creates a custom MSPFactory
 func NewCustomMSPFactory(customUserStore msp.UserStore) *CustomMSPFactory {
-	return &CustomMSPFactory{defaultFactory: defmsp.NewProviderFactory(), customUserStore: customUserStore}
+	return &CustomMSPFactory{defaultFactory: defmsp.NewMSPProviderFactory(), customUserStore: customUserStore}
 }
 
 // CreateUserStore creates UserStore
@@ -30,7 +30,7 @@ func (f *CustomMSPFactory) CreateUserStore(config core.Config) (msp.UserStore, e
 	return f.customUserStore, nil
 }
 
-// CreateProvider creates an MSP provider
-func (f *CustomMSPFactory) CreateProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.Provider, error) {
-	return f.defaultFactory.CreateProvider(config, cryptoProvider, f.customUserStore)
+// CreateIdentityManagerProvider creates an IdentityManager provider
+func (f *CustomMSPFactory) CreateIdentityManagerProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
+	return f.defaultFactory.CreateIdentityManagerProvider(config, cryptoProvider, f.customUserStore)
 }

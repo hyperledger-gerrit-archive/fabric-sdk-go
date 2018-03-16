@@ -15,18 +15,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ProviderFactory represents the default MSP provider factory.
-type ProviderFactory struct {
+// MSPProviderFactory represents the default MSP provider factory.
+type MSPProviderFactory struct {
 }
 
-// NewProviderFactory returns the default MSP provider factory.
-func NewProviderFactory() *ProviderFactory {
-	f := ProviderFactory{}
+// NewMSPProviderFactory returns the default MSP provider factory.
+func NewMSPProviderFactory() *MSPProviderFactory {
+	f := MSPProviderFactory{}
 	return &f
 }
 
 // CreateUserStore creates a UserStore using the SDK's default implementation
-func (f *ProviderFactory) CreateUserStore(config core.Config) (msp.UserStore, error) {
+func (f *MSPProviderFactory) CreateUserStore(config core.Config) (msp.UserStore, error) {
 
 	clientCofig, err := config.Client()
 	if err != nil {
@@ -47,7 +47,7 @@ func (f *ProviderFactory) CreateUserStore(config core.Config) (msp.UserStore, er
 	return userStore, nil
 }
 
-// CreateProvider returns a new default implementation of MSP provider
-func (f *ProviderFactory) CreateProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.Provider, error) {
+// CreateIdentityManagerProvider returns a new default implementation of MSP provider
+func (f *MSPProviderFactory) CreateIdentityManagerProvider(config core.Config, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
 	return msppvdr.New(config, cryptoProvider, userStore)
 }
