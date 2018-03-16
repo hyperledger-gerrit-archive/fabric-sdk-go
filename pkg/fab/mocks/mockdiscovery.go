@@ -13,7 +13,7 @@ import (
 )
 
 /**
- * Mock Discovery Provider is used to mock peers on the network
+ * Mock Discovery IdentityManagerProvider is used to mock peers on the network
  */
 
 // MockStaticDiscoveryProvider implements mock discovery provider

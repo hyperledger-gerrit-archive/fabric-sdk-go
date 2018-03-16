@@ -21,7 +21,7 @@ import (
 )
 
 func TestCreateUserStore(t *testing.T) {
-	factory := NewProviderFactory()
+	factory := NewMSPProviderFactory()
 
 	config := mocks.NewMockConfig()
 
@@ -37,7 +37,7 @@ func TestCreateUserStore(t *testing.T) {
 }
 
 func newMockUserStore(t *testing.T) msp.UserStore {
-	factory := NewProviderFactory()
+	factory := NewMSPProviderFactory()
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -66,7 +66,7 @@ func TestCreateUserStoreByConfig(t *testing.T) {
 }
 
 func TestCreateUserStoreEmptyConfig(t *testing.T) {
-	factory := NewProviderFactory()
+	factory := NewMSPProviderFactory()
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -82,7 +82,7 @@ func TestCreateUserStoreEmptyConfig(t *testing.T) {
 }
 
 func TestCreateUserStoreFailConfig(t *testing.T) {
-	factory := NewProviderFactory()
+	factory := NewMSPProviderFactory()
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -110,13 +110,13 @@ func TestCreateIdentityManager(t *testing.T) {
 		t.Fatalf("Unexpected error creating cryptosuite provider %v", err)
 	}
 
-	factory := NewProviderFactory()
+	factory := NewMSPProviderFactory()
 	userStore, err := factory.CreateUserStore(config)
 	if err != nil {
 		t.Fatalf("Unexpected error creating user store %v", err)
 	}
 
-	provider, err := factory.CreateProvider(config, cryptosuite, userStore)
+	provider, err := factory.CreateIdentityManagerProvider(config, cryptosuite, userStore)
 	if err != nil {
 		t.Fatalf("Unexpected error creating provider %v", err)
 	}
