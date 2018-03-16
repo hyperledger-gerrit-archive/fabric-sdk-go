@@ -8,7 +8,8 @@
 # GO_TESTFLAGS: Flags are added to the go test command.
 # GO_LDFLAGS: Flags are added to the go test command (example: -s).
 # FABRIC_SDKGO_CODELEVEL_TAG: Go tag that represents the fabric code target
-# FABRIC_SDKGO_CODELEVEL_VER: Version that represents the fabric code target (primarily for fixture lookup)
+# FABRIC_SDKGO_CODELEVEL_VER: Version that represents the fabric code target
+# FABRIC_FIXTURE_VERSION: Version of fabric fixtures
 # FABRIC_CRYPTOCONFIG_VERSION: Version of cryptoconfig fixture to use
 # CONFIG_FILE: config file to use
 
@@ -17,6 +18,7 @@ set -e
 GO_CMD="${GO_CMD:-go}"
 FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-stable}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
+FABRIC_FIXTURE_VERSION="${FABRIC_FIXTURE_VERSION:-v1.1}"
 CONFIG_FILE="${CONFIG_FILE:-config_test.yaml}"
 # TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
@@ -71,5 +73,5 @@ if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
 
 fi
 
-GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
+GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
 $GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m -count=1 configFile=${CONFIG_FILE}
