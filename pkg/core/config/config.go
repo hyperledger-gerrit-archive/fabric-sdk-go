@@ -24,10 +24,10 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging"
 	"github.com/pkg/errors"
 
 	"regexp"

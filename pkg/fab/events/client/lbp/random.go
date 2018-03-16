@@ -9,8 +9,8 @@ package lbp
 import (
 	"math/rand"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/context/api/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/logging"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
