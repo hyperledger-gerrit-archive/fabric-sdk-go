@@ -59,7 +59,7 @@ func (c *Channel) ChannelID() string {
 	return c.channelID
 }
 
-//Provider implementation for Providers interface
+//Provider implementation of Providers interface
 type Provider struct {
 	config            core.Config
 	userStore         msp.UserStore
@@ -67,7 +67,7 @@ type Provider struct {
 	discoveryProvider fab.DiscoveryProvider
 	selectionProvider fab.SelectionProvider
 	signingManager    core.SigningManager
-	mspProvider       msp.Provider
+	mspProvider       msp.IdentityManagerProvider
 	infraProvider     fab.InfraProvider
 	channelProvider   fab.ChannelProvider
 }
@@ -163,7 +163,7 @@ func WithSigningManager(signingManager core.SigningManager) SDKContextParams {
 }
 
 //WithMSPProvider sets MSPProvider maps to context
-func WithMSPProvider(provider msp.Provider) SDKContextParams {
+func WithMSPProvider(provider msp.IdentityManagerProvider) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.mspProvider = provider
 	}

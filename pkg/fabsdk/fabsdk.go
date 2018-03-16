@@ -175,13 +175,13 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 		return errors.WithMessage(err, "failed to initialize signing manager")
 	}
 
-	// Initialize MSP Provider
-	mspProvider, err := sdk.opts.MSP.CreateProvider(config, cryptoSuite, userStore)
+	// Initialize MSP IdentityManagerProvider
+	mspProvider, err := sdk.opts.MSP.CreateIdentityManagerProvider(config, cryptoSuite, userStore)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize identity manager provider")
 	}
 
-	// Initialize Fabric Provider
+	// Initialize Fabric IdentityManagerProvider
 	infraProvider, err := sdk.opts.Core.CreateInfraProvider(config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to initialize infra provider")

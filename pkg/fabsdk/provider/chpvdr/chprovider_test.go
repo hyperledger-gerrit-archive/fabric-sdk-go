@@ -39,12 +39,12 @@ func TestBasicValidChannel(t *testing.T) {
 
 	fp, err := pf.CreateInfraProvider(ctx.Config())
 	if err != nil {
-		t.Fatalf("Unexpected error creating Fabric Provider: %v", err)
+		t.Fatalf("Unexpected error creating Fabric IdentityManagerProvider: %v", err)
 	}
 
 	cp, err := New(fp)
 	if err != nil {
-		t.Fatalf("Unexpected error creating Channel Provider: %v", err)
+		t.Fatalf("Unexpected error creating Channel IdentityManagerProvider: %v", err)
 	}
 
 	channelService, err := cp.ChannelService(clientCtx, "mychannel")
