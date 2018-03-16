@@ -108,12 +108,8 @@ func (c *MockConfig) ChannelOrderers(name string) ([]core.OrdererConfig, error) 
 }
 
 // TLSCACertPool ...
-func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (*x509.CertPool, error) {
+func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (core.TLSCACerts, error) {
 	return nil, nil
-}
-
-// SetTLSCACertPool ...
-func (c *MockConfig) SetTLSCACertPool(pool *x509.CertPool) {
 }
 
 // TcertBatchSize ...

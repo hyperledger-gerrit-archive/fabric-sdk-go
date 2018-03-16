@@ -24,7 +24,7 @@ func TLSConfig(cert *x509.Certificate, serverName string, config core.Config) (*
 		return nil, err
 	}
 
-	if cert == nil && (certPool == nil || len(certPool.Subjects()) == 0) {
+	if cert == nil && (certPool == nil || certPool.CertPool() == nil || len(certPool.CertPool().Subjects()) == 0) {
 		//Return empty tls config if there is no cert provided or if certpool unavailable
 		return &tls.Config{}, nil
 	}
@@ -40,7 +40,7 @@ func TLSConfig(cert *x509.Certificate, serverName string, config core.Config) (*
 		return nil, errors.Errorf("Error loading cert/key pair for TLS client credentials: %v", err)
 	}
 
-	return &tls.Config{RootCAs: tlsCaCertPool, Certificates: clientCerts, ServerName: serverName}, nil
+	return &tls.Config{RootCAs: tlsCaCertPool.CertPool(), Certificates: clientCerts, ServerName: serverName}, nil
 }
 
 // TLSCertHash is a utility method to calculate the SHA256 hash of the configured certificate (for usage in channel headers)

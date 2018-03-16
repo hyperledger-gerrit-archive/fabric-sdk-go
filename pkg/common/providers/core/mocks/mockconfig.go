@@ -35,9 +35,9 @@ const ErrorMessage = "default error message"
 func DefaultMockConfig(mockCtrl *gomock.Controller) *MockConfig {
 	config := NewMockConfig(mockCtrl)
 
-	config.EXPECT().TLSCACertPool(GoodCert).Return(CertPool, nil).AnyTimes()
-	config.EXPECT().TLSCACertPool(BadCert).Return(CertPool, errors.New(ErrorMessage)).AnyTimes()
-	config.EXPECT().TLSCACertPool().Return(CertPool, nil).AnyTimes()
+	config.EXPECT().TLSCACertPool(GoodCert).Return(&mockCertPool{certPool: CertPool}, nil).AnyTimes()
+	config.EXPECT().TLSCACertPool(BadCert).Return(&mockCertPool{certPool: CertPool}, errors.New(ErrorMessage)).AnyTimes()
+	config.EXPECT().TLSCACertPool().Return(&mockCertPool{certPool: CertPool}, nil).AnyTimes()
 	config.EXPECT().TimeoutOrDefault(core.EndorserConnection).Return(time.Second * 5).AnyTimes()
 	config.EXPECT().TLSClientCerts().Return([]tls.Certificate{TLSCert}, nil).AnyTimes()
 
@@ -48,11 +48,19 @@ func DefaultMockConfig(mockCtrl *gomock.Controller) *MockConfig {
 func BadTLSClientMockConfig(mockCtrl *gomock.Controller) *MockConfig {
 	config := NewMockConfig(mockCtrl)
 
-	config.EXPECT().TLSCACertPool(GoodCert).Return(CertPool, nil).AnyTimes()
-	config.EXPECT().TLSCACertPool(BadCert).Return(CertPool, errors.New(ErrorMessage)).AnyTimes()
-	config.EXPECT().TLSCACertPool().Return(CertPool, nil).AnyTimes()
+	config.EXPECT().TLSCACertPool(GoodCert).Return(&mockCertPool{certPool: CertPool}, nil).AnyTimes()
+	config.EXPECT().TLSCACertPool(BadCert).Return(&mockCertPool{certPool: CertPool}, errors.New(ErrorMessage)).AnyTimes()
+	config.EXPECT().TLSCACertPool().Return(&mockCertPool{certPool: CertPool}, nil).AnyTimes()
 	config.EXPECT().TimeoutOrDefault(core.EndorserConnection).Return(time.Second * 5).AnyTimes()
 	config.EXPECT().TLSClientCerts().Return(nil, errors.Errorf(ErrorMessage)).AnyTimes()
 
 	return config
+}
+
+type mockCertPool struct {
+	certPool *x509.CertPool
+}
+
+func (t *mockCertPool) CertPool() *x509.CertPool {
+	return t.certPool
 }

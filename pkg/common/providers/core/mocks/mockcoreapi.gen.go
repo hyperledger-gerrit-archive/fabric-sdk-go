@@ -466,16 +466,6 @@ func (mr *MockConfigMockRecorder) SecurityProviderPin() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecurityProviderPin", reflect.TypeOf((*MockConfig)(nil).SecurityProviderPin))
 }
 
-// SetTLSCACertPool mocks base method
-func (m *MockConfig) SetTLSCACertPool(arg0 *x509.CertPool) {
-	m.ctrl.Call(m, "SetTLSCACertPool", arg0)
-}
-
-// SetTLSCACertPool indicates an expected call of SetTLSCACertPool
-func (mr *MockConfigMockRecorder) SetTLSCACertPool(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTLSCACertPool", reflect.TypeOf((*MockConfig)(nil).SetTLSCACertPool), arg0)
-}
-
 // SoftVerify mocks base method
 func (m *MockConfig) SoftVerify() bool {
 	ret := m.ctrl.Call(m, "SoftVerify")
@@ -489,13 +479,13 @@ func (mr *MockConfigMockRecorder) SoftVerify() *gomock.Call {
 }
 
 // TLSCACertPool mocks base method
-func (m *MockConfig) TLSCACertPool(arg0 ...*x509.Certificate) (*x509.CertPool, error) {
+func (m *MockConfig) TLSCACertPool(arg0 ...*x509.Certificate) (core.TLSCACerts, error) {
 	varargs := []interface{}{}
 	for _, a := range arg0 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "TLSCACertPool", varargs...)
-	ret0, _ := ret[0].(*x509.CertPool)
+	ret0, _ := ret[0].(core.TLSCACerts)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -1006,11 +1006,6 @@ func TestSystemCertPoolEnabled(t *testing.T) {
 
 }
 
-func TestSetTLSCACertPool(t *testing.T) {
-	configImpl.SetTLSCACertPool(nil)
-	t.Log("TLSCACertRoot must be created. Nothing additional to verify..")
-}
-
 func TestInitConfigFromRawWithPem(t *testing.T) {
 	// get a config byte for testing
 	cBytes, err := loadConfigBytesFromFile(t, configPemTestFilePath)

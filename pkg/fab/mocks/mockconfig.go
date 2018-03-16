@@ -140,15 +140,11 @@ func (c *MockConfig) PeerConfigByURL(url string) (*config.PeerConfig, error) {
 }
 
 // TLSCACertPool ...
-func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (*x509.CertPool, error) {
+func (c *MockConfig) TLSCACertPool(cert ...*x509.Certificate) (config.TLSCACerts, error) {
 	if c.errorCase {
 		return nil, errors.New("just to test error scenario")
 	}
-	return nil, nil
-}
-
-// SetTLSCACertPool ...
-func (c *MockConfig) SetTLSCACertPool(pool *x509.CertPool) {
+	return &MockTLSCACerts{}, nil
 }
 
 // TcertBatchSize ...
@@ -324,4 +320,14 @@ func (c *MockConfig) TLSClientCerts() ([]tls.Certificate, error) {
 // EventServiceType returns the type of event service client to use
 func (c *MockConfig) EventServiceType() config.EventServiceType {
 	return config.DeliverEventServiceType
+}
+
+//MockTLSCACerts mock tls ca certs
+type MockTLSCACerts struct {
+	MockCertPool *x509.CertPool
+}
+
+//CertPool returns mock cert pool
+func (t *MockTLSCACerts) CertPool() *x509.CertPool {
+	return t.MockCertPool
 }
