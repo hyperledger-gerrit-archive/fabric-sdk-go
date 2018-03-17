@@ -97,3 +97,48 @@ func ToFabricCommonStatusCode(c int32) common.Status {
 func ToTransactionValidationCode(c int32) pb.TxValidationCode {
 	return pb.TxValidationCode(c)
 }
+
+func isCode(err error, code Code) bool {
+	s, ok := FromError(err)
+	return ok && s.Group == ClientStatus && s.Code == int32(code)
+}
+
+// IsOK returns true if error code is OK
+func IsOK(err error) bool {
+	return isCode(err, OK)
+}
+
+// IsUnknown returns true if error code is Unknown
+func IsUnknown(err error) bool {
+	return isCode(err, Unknown)
+}
+
+// IsConnectionFailed returns true if error code is ConnectionFailed
+func IsConnectionFailed(err error) bool {
+	return isCode(err, ConnectionFailed)
+}
+
+// IsEndorsementMismatch returns true if error code is EndorsementMismatch
+func IsEndorsementMismatch(err error) bool {
+	return isCode(err, EndorsementMismatch)
+}
+
+// IsEmptyCert returns true if error code is EmptyCert
+func IsEmptyCert(err error) bool {
+	return isCode(err, EmptyCert)
+}
+
+// IsTimeout returns true if error code is Timeout
+func IsTimeout(err error) bool {
+	return isCode(err, Timeout)
+}
+
+// IsNoPeersFound returns true if error code is NoPeersFound
+func IsNoPeersFound(err error) bool {
+	return isCode(err, NoPeersFound)
+}
+
+// IsMultipleErrors returns true if error code is MultipleErrors
+func IsMultipleErrors(err error) bool {
+	return isCode(err, MultipleErrors)
+}

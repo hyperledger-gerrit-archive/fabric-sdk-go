@@ -467,7 +467,7 @@ func TestDiscoveryGreylist(t *testing.T) {
 	assert.NotNil(t, err, "expected error")
 	s, ok := status.FromError(err)
 	assert.True(t, ok, "expected status error")
-	assert.EqualValues(t, status.NoPeersFound.ToInt32(), s.Code, "expected No Peers Found status on greylist")
+	assert.True(t, status.IsNoPeersFound(err), "expected No Peers Found status on greylist")
 	assert.Equal(t, 1, testPeer1.ProcessProposalCalls, "expected peer 1 to be greylisted")
 	// Wait for greylist expiry
 	time.Sleep(chClient.context.Config().TimeoutOrDefault(core.DiscoveryGreylistExpiry))
