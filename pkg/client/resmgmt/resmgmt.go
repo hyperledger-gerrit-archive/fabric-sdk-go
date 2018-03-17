@@ -110,6 +110,14 @@ func (f *mspFilter) Accept(peer fab.Peer) bool {
 	return peer.MSPID() == f.mspID
 }
 
+// ErrTargetsEmpty is returned when no targets are available.
+type ErrTargetsEmpty struct{}
+
+func (*ErrTargetsEmpty) Error() string { return "no targets available" }
+
+// Empty indicates that ErrTargetsEmpty is related to an empty list issue.
+func (*ErrTargetsEmpty) Empty() bool { return true }
+
 // ClientOption describes a functional parameter for the New constructor
 type ClientOption func(*Client) error
 
@@ -184,7 +192,7 @@ func (rc *Client) JoinChannel(channelID string, options ...RequestOption) error 
 	}
 
 	if len(targets) == 0 {
-		return errors.New("No targets available")
+		return &ErrTargetsEmpty{}
 	}
 
 	orderer, err := rc.requestOrderer(&opts, channelID)
@@ -334,7 +342,7 @@ func (rc *Client) InstallCC(req InstallCCRequest, options ...RequestOption) ([]I
 	}
 
 	if len(targets) == 0 {
-		return nil, errors.New("No targets available for install cc")
+		return nil, &ErrTargetsEmpty{}
 	}
 
 	responses := make([]InstallCCResponse, 0)
@@ -537,7 +545,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 	}
 
 	if len(targets) == 0 {
-		return errors.New("No targets available for cc proposal")
+		return &ErrTargetsEmpty{}
 	}
 
 	// Get transactor on the channel to create and send the deploy proposal
