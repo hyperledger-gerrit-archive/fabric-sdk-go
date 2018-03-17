@@ -176,10 +176,8 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 
 	// Test missing default targets
 	err = rc.JoinChannel("mychannel")
-	if err == nil || !strings.Contains(err.Error(), "No targets available") {
-		t.Fatalf("InstallCC should have failed with no default targets error")
-	}
-
+	assert.NotNil(t, err, "error should have been returned")
+	assert.IsType(t, &ErrTargetsEmpty{}, err, "error should have been typed ErrTargetsEmpty")
 }
 
 func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
@@ -226,9 +224,8 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	// Test filter only (filter has no match)
 	err = rc.JoinChannel("mychannel", WithTargetFilter(&mspFilter{mspID: "MSPID"}))
-	if err == nil || !strings.Contains(err.Error(), "No targets available") {
-		t.Fatalf("InstallCC should have failed with no targets error")
-	}
+	assert.NotNil(t, err, "error should have been returned")
+	assert.IsType(t, &ErrTargetsEmpty{}, err, "error should have been typed ErrTargetsEmpty")
 
 	//Some cleanup before further test
 	orderer = fcmocks.NewMockOrderer("", nil)
