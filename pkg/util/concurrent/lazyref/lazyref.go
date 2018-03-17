@@ -97,10 +97,11 @@ func New(initializer Initializer, opts ...Opt) *Reference {
 		// This is an expiring reference. After the initializer is
 		// called, set a timer that will call the expiration handler.
 		initializer := lazyRef.initializer
+		initialExpiration := lazyRef.expirationProvider()
 		lazyRef.initializer = func() (interface{}, error) {
 			value, err := initializer()
 			if err == nil {
-				lazyRef.ensureTimerStarted(lazyRef.expirationProvider())
+				lazyRef.ensureTimerStarted(initialExpiration)
 			}
 			return value, err
 		}
