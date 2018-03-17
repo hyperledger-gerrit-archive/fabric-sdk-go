@@ -63,7 +63,7 @@ const (
 // is closed (via a call to Close) or if it expires. (Note: The Finalizer function
 // is not called every time the value is refreshed with the periodic refresh feature.)
 type Reference struct {
-	sync.RWMutex
+	lock               sync.RWMutex
 	ref                unsafe.Pointer
 	lastTimeAccessed   unsafe.Pointer
 	initializer        Initializer
@@ -117,8 +117,8 @@ func (r *Reference) Get() (interface{}, error) {
 		return value, nil
 	}
 
-	r.Lock()
-	defer r.Unlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
 	// Try again inside the lock
 	if value, ok := r.get(); ok {
@@ -151,8 +151,8 @@ func (r *Reference) MustGet() interface{} {
 // Close should be called for expiring references and
 // rerences that specify finalizers.
 func (r *Reference) Close() {
-	r.Lock()
-	defer r.Unlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
 	logger.Debug("Closing reference")
 
@@ -215,8 +215,8 @@ func (r *Reference) startTimer(expiration time.Duration) {
 }
 
 func (r *Reference) handleExpiration() {
-	r.Lock()
-	defer r.Unlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
 	logger.Debug("Invoking expiration handler")
 	r.expirationHandler()
