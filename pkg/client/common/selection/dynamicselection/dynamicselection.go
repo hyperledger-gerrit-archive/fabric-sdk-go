@@ -8,6 +8,7 @@ package dynamicselection
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
@@ -42,10 +43,16 @@ type SelectionProvider struct {
 	lbp          pgresolver.LoadBalancePolicy
 	providers    api.Providers
 	cacheTimeout time.Duration
+	refs         []fab.SelectionService
+	refLock      sync.RWMutex
 }
 
 // Opt applies a selection provider option
 type Opt func(*SelectionProvider)
+
+type closeable interface {
+	Close()
+}
 
 // WithLoadBalancePolicy sets the load-balance policy
 func WithLoadBalancePolicy(lbp pgresolver.LoadBalancePolicy) Opt {
@@ -114,8 +121,28 @@ func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.Select
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to create cc policy provider")
 	}
+	svc, err := newSelectionService(channelID, p.lbp, ccPolicyProvider, p.cacheTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-	return newSelectionService(channelID, p.lbp, ccPolicyProvider, p.cacheTimeout)
+	p.refLock.Lock()
+	p.refs = append(p.refs, svc)
+	p.refLock.Unlock()
+
+	return svc, nil
+}
+
+// Close the selection services created by this provider
+func (p *SelectionProvider) Close() {
+	p.refLock.Lock()
+	defer p.refLock.Unlock()
+
+	for _, ref := range p.refs {
+		if svc, ok := ref.(closeable); ok {
+			svc.Close()
+		}
+	}
 }
 
 func newSelectionService(channelID string, lbp pgresolver.LoadBalancePolicy, ccPolicyProvider CCPolicyProvider, cacheTimeout time.Duration) (*selectionService, error) {
@@ -157,6 +184,10 @@ func (s *selectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts 
 		return nil, errors.WithMessage(err, fmt.Sprintf("Error getting peer group resolver for chaincodes [%v] on channel [%s]", chaincodeIDs, s.channelID))
 	}
 	return resolver.Resolve(params.PeerFilter).Peers(), nil
+}
+
+func (s *selectionService) Close() {
+	s.pgResolvers.Close()
 }
 
 func (s *selectionService) getPeerGroupResolver(chaincodeIDs []string) (pgresolver.PeerGroupResolver, error) {
