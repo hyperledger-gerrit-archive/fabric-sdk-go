@@ -233,6 +233,8 @@ func initSDK(sdk *FabricSDK, config core.Config, opts []Option) error {
 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
+	sdk.provider.DiscoveryProvider().Close()
+	sdk.provider.SelectionProvider().Close()
 	sdk.provider.InfraProvider().Close()
 }
 

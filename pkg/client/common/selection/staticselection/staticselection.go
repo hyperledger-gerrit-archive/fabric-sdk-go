@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package staticselection
 
 import (
+	"sync"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	copts "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
@@ -21,7 +23,9 @@ var logger = logging.NewLogger(loggerModule)
 
 // SelectionProvider implements selection provider
 type SelectionProvider struct {
-	config core.Config
+	config  core.Config
+	refs    []fab.SelectionService
+	refLock sync.RWMutex
 }
 
 // New returns static selection provider
@@ -36,7 +40,23 @@ type selectionService struct {
 
 // CreateSelectionService creates a static selection service
 func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.SelectionService, error) {
-	return &selectionService{}, nil
+	ss := &selectionService{}
+
+	p.refLock.Lock()
+	p.refs = append(p.refs, ss)
+	p.refLock.Unlock()
+
+	return ss, nil
+}
+
+// Close the selection services created by this provider
+func (p *SelectionProvider) Close() {
+	p.refLock.Lock()
+	defer p.refLock.Unlock()
+
+	for _, svc := range p.refs {
+		svc.Close()
+	}
 }
 
 func (s *selectionService) Initialize(context contextAPI.Channel) error {
@@ -76,4 +96,7 @@ func (s *selectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts 
 	}
 
 	return channelPeers, nil
+}
+
+func (s *selectionService) Close() {
 }

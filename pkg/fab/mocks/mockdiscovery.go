@@ -52,6 +52,9 @@ func (dp *MockStaticDiscoveryProvider) SetCustomDiscoveryService(customDiscovery
 	dp.customDiscoveryService = customDiscoveryService
 }
 
+// Close not implemented
+func (dp *MockStaticDiscoveryProvider) Close() {}
+
 //NewMockDiscoveryService returns a new MockStaticDiscoveryService
 func NewMockDiscoveryService(err error, peers []fab.Peer) *MockStaticDiscoveryService {
 	return &MockStaticDiscoveryService{Error: err, Peers: peers}
@@ -74,3 +77,6 @@ func (ds *MockStaticDiscoveryService) GetPeers() ([]fab.Peer, error) {
 	return ds.Peers, nil
 
 }
+
+// Close not implemented
+func (ds *MockStaticDiscoveryService) Close() {}

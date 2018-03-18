@@ -42,6 +42,9 @@ func (dp *MockStaticDiscoveryProvider) CreateDiscoveryService(channelID string) 
 	return &MockStaticDiscoveryService{Error: dp.Error, Peers: dp.Peers}, nil
 }
 
+// Close not implemented
+func (dp *MockStaticDiscoveryProvider) Close() {}
+
 // GetPeers is used to discover eligible peers for chaincode
 func (ds *MockStaticDiscoveryService) GetPeers() ([]fab.Peer, error) {
 
@@ -59,3 +62,6 @@ func (ds *MockStaticDiscoveryService) GetPeers() ([]fab.Peer, error) {
 	return ds.Peers, nil
 
 }
+
+// Close not implemented
+func (ds *MockStaticDiscoveryService) Close() {}

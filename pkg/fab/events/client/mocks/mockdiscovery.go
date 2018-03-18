@@ -29,6 +29,9 @@ func (p *MockDiscoveryProvider) CreateDiscoveryService(channelID string) (fab.Di
 	}, nil
 }
 
+// Close not implemented
+func (p *MockDiscoveryProvider) Close() {}
+
 // MockDiscoveryService is a mock discovery service used for event endpoint discovery
 type MockDiscoveryService struct {
 	peers []fab.Peer
@@ -38,3 +41,6 @@ type MockDiscoveryService struct {
 func (s *MockDiscoveryService) GetPeers() ([]fab.Peer, error) {
 	return s.peers, nil
 }
+
+// Close not implemented
+func (s *MockDiscoveryService) Close() {}

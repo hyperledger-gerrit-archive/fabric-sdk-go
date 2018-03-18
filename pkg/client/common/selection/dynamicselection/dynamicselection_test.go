@@ -508,3 +508,7 @@ func newMockDiscoveryService(peers ...fab.Peer) fab.DiscoveryService {
 func (s *mockDiscoveryService) GetPeers() ([]fab.Peer, error) {
 	return s.peers, nil
 }
+
+// Close not implemented
+func (s *mockDiscoveryService) Close() {
+}

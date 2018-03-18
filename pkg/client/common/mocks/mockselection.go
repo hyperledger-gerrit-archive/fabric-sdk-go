@@ -37,6 +37,9 @@ func (dp *MockSelectionProvider) CreateSelectionService(channelID string) (*Mock
 	return &MockSelectionService{Error: dp.Error, Peers: dp.Peers}, nil
 }
 
+// Close not implemented
+func (dp *MockSelectionProvider) Close() {}
+
 // GetEndorsersForChaincode mocks retrieving endorsing peers
 func (ds *MockSelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]fab.Peer, error) {
 
@@ -71,3 +74,6 @@ func (ds *MockSelectionService) GetEndorsersForChaincode(chaincodeIDs []string, 
 	return peers, nil
 
 }
+
+// Close not implemented
+func (ds *MockSelectionService) Close() {}

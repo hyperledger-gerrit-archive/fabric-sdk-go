@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package staticdiscovery
 
 import (
+	"sync"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
@@ -25,6 +27,8 @@ type peerCreator interface {
 type DiscoveryProvider struct {
 	config  core.Config
 	fabPvdr peerCreator
+	refs    []fab.DiscoveryService
+	refLock sync.RWMutex
 }
 
 // discoveryService implements discovery service
@@ -77,12 +81,31 @@ func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.Disco
 			peers = append(peers, newPeer)
 		}
 	}
+	ds := &discoveryService{config: dp.config, peers: peers}
 
-	return &discoveryService{config: dp.config, peers: peers}, nil
+	dp.refLock.Lock()
+	dp.refs = append(dp.refs, ds)
+	dp.refLock.Unlock()
+
+	return ds, nil
+}
+
+// Close the discovery services created by this provider
+func (dp *DiscoveryProvider) Close() {
+	dp.refLock.Lock()
+	defer dp.refLock.Unlock()
+
+	for _, svc := range dp.refs {
+		svc.Close()
+	}
 }
 
 // GetPeers is used to get peers
 func (ds *discoveryService) GetPeers() ([]fab.Peer, error) {
 
 	return ds.peers, nil
+}
+
+// Close frees up resources held by this service
+func (ds *discoveryService) Close() {
 }

@@ -8,6 +8,7 @@ package dynamicselection
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
@@ -42,6 +43,8 @@ type SelectionProvider struct {
 	lbp          pgresolver.LoadBalancePolicy
 	providers    api.Providers
 	cacheTimeout time.Duration
+	refs         []fab.SelectionService
+	refLock      sync.RWMutex
 }
 
 // Opt applies a selection provider option
@@ -118,6 +121,16 @@ func (p *SelectionProvider) CreateSelectionService(channelID string) (fab.Select
 	return newSelectionService(channelID, p.lbp, ccPolicyProvider, p.cacheTimeout)
 }
 
+// Close the selection services created by this provider
+func (p *SelectionProvider) Close() {
+	p.refLock.Lock()
+	defer p.refLock.Unlock()
+
+	for _, svc := range p.refs {
+		svc.Close()
+	}
+}
+
 func newSelectionService(channelID string, lbp pgresolver.LoadBalancePolicy, ccPolicyProvider CCPolicyProvider, cacheTimeout time.Duration) (*selectionService, error) {
 	service := &selectionService{
 		channelID:        channelID,
@@ -157,6 +170,10 @@ func (s *selectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts 
 		return nil, errors.WithMessage(err, fmt.Sprintf("Error getting peer group resolver for chaincodes [%v] on channel [%s]", chaincodeIDs, s.channelID))
 	}
 	return resolver.Resolve(params.PeerFilter).Peers(), nil
+}
+
+func (s *selectionService) Close() {
+	s.pgResolvers.Close()
 }
 
 func (s *selectionService) getPeerGroupResolver(chaincodeIDs []string) (pgresolver.PeerGroupResolver, error) {

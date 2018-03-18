@@ -31,6 +31,9 @@ func (fs *filterService) GetPeers() ([]fab.Peer, error) {
 	return targets, nil
 }
 
+func (fs *filterService) Close() {
+}
+
 // filterTargets is helper method to filter peers
 func filterTargets(peers []fab.Peer, filter fab.TargetFilter) []fab.Peer {
 

@@ -42,6 +42,7 @@ type InfraProvider interface {
 // SelectionProvider is used to select peers for endorsement
 type SelectionProvider interface {
 	CreateSelectionService(channelID string) (SelectionService, error)
+	Close()
 }
 
 // SelectionService selects peers for endorsement and commit events
@@ -51,16 +52,19 @@ type SelectionService interface {
 	// A set of options may be provided to the selection service. Note that the type of options
 	// may vary depending on the specific selection service implementation.
 	GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]Peer, error)
+	Close()
 }
 
 // DiscoveryProvider is used to discover peers on the network
 type DiscoveryProvider interface {
 	CreateDiscoveryService(channelID string) (DiscoveryService, error)
+	Close()
 }
 
 // DiscoveryService is used to discover eligible peers on specific channel
 type DiscoveryService interface {
 	GetPeers() ([]Peer, error)
+	Close()
 }
 
 // TargetFilter allows for filtering target peers

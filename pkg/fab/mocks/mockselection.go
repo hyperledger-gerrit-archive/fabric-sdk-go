@@ -42,6 +42,9 @@ func (dp *MockSelectionProvider) SetCustomSelectionService(customSelectionServic
 	dp.customSelectionService = customSelectionService
 }
 
+// Close not implemented
+func (dp *MockSelectionProvider) Close() {}
+
 // GetEndorsersForChaincode mocks retrieving endorsing peers
 func (ds *MockSelectionService) GetEndorsersForChaincode(chaincodeIDs []string, opts ...options.Opt) ([]fab.Peer, error) {
 
@@ -59,3 +62,6 @@ func (ds *MockSelectionService) GetEndorsersForChaincode(chaincodeIDs []string, 
 	return ds.Peers, nil
 
 }
+
+// Close not implemented
+func (ds *MockSelectionService) Close() {}
