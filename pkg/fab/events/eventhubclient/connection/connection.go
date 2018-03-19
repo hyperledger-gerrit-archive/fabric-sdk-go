@@ -124,10 +124,10 @@ func (c *EventHubConnection) Receive(eventch chan<- interface{}) {
 			logger.Errorf("Received error from stream: [%s]. Sending disconnected event.", err)
 			eventch <- clientdisp.NewDisconnectedEvent(err)
 			break
+		} else {
+			logger.Debugf("Got event %#v", in)
+			eventch <- in
 		}
-
-		logger.Debugf("Got event %#v", in)
-		eventch <- in
 	}
 	logger.Debugf("Exiting stream listener")
 }
