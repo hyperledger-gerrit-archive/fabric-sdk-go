@@ -41,18 +41,38 @@ const (
 
 	// MultipleErrors multiple errors occurred
 	MultipleErrors Code = 7
+
+	// SignatureVerificationFailed is when signature fails verification
+	SignatureVerificationFailed Code = 8
+
+	// MissingEndorsement is if an endoresement is missing
+	MissingEndorsement Code = 9
+
+	// NoMatchingCertificateAuthority is if entityMatchers are unable to find any matchingCertificateAuthority
+	NoMatchingCertificateAuthority Code = 21
+
+	// NoMatchingPeerConfig is if entityMatchers are unable to find any matchingPeer
+	NoMatchingPeerConfig Code = 22
+
+	// NoMatchingOrdererConfig is if entityMatchers are unable to find any matchingOrderer
+	NoMatchingOrdererConfig Code = 23
 )
 
 // CodeName maps the codes in this packages to human-readable strings
 var CodeName = map[int32]string{
-	0: "OK",
-	1: "UNKNOWN",
-	2: "CONNECTION_FAILED",
-	3: "ENDORSEMENT_MISMATCH",
-	4: "EMPTY_CERT",
-	5: "TIMEOUT",
-	6: "NO_PEERS_FOUND",
-	7: "MULTIPLE_ERRORS",
+	0:  "OK",
+	1:  "UNKNOWN",
+	2:  "CONNECTION_FAILED",
+	3:  "ENDORSEMENT_MISMATCH",
+	4:  "EMPTY_CERT",
+	5:  "TIMEOUT",
+	6:  "NO_PEERS_FOUND",
+	7:  "MULTIPLE_ERRORS",
+	8:  "SIGNATURE_VERIFICATION_FAILED",
+	9:  "MISSING_ENDORSEMENT",
+	21: "NO_MATCHING_CERTIFICATE_AUTHORITY",
+	22: "NO_MATCHING_PEER",
+	23: "NO_MATCHING_ORDERER",
 }
 
 // ToInt32 cast to int32
