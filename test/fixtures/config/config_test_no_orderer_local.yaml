@@ -63,7 +63,7 @@ client:
       resmgmt: 60s
     cache:
       connectionIdle: 30s
-      eventServiceIdle: 2m
+      eventServiceIdle: 500ms
       channelConfig: 60s
       channelMembership: 30s
 

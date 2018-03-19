@@ -107,6 +107,7 @@ func (c *GRPCConnection) Close() {
 	logger.Debug("Closing stream....")
 	if err := c.stream.CloseSend(); err != nil {
 		logger.Warnf("error closing GRPC stream: %s", err)
+		return
 	}
 
 	logger.Debug("Releasing connection....")
