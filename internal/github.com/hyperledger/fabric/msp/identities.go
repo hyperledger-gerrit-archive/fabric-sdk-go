@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/status"
 
 	"github.com/golang/protobuf/proto"
 	bccsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
@@ -160,7 +161,7 @@ func (id *identity) Verify(msg []byte, sig []byte) error {
 	if err != nil {
 		return errors.WithMessage(err, "could not determine the validity of the signature")
 	} else if !valid {
-		return errors.New("The signature is invalid")
+		return errors.WithStack(status.New(status.EndorserClientStatus, status.SignatureVerificationFailed.ToInt32(), "the signature is invalid", nil))
 	}
 
 	return nil

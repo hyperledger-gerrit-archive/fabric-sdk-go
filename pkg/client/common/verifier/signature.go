@@ -32,7 +32,7 @@ func (v *Signature) Verify(response *fab.TransactionProposalResponse) error {
 	res := response.ProposalResponse
 
 	if res.GetEndorsement() == nil {
-		return errors.Errorf("Missing endorsement in proposal response")
+		return errors.WithStack(status.New(status.EndorserClientStatus, status.MissingEndorsement.ToInt32(), "missing endorsement in proposal response", nil))
 	}
 	creatorID := res.GetEndorsement().Endorser
 
