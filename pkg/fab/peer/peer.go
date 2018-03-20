@@ -8,6 +8,7 @@ package peer
 
 import (
 	reqContext "context"
+	"time"
 
 	"crypto/x509"
 
@@ -55,6 +56,10 @@ func New(config core.Config, opts ...Option) (*Peer, error) {
 			return nil, err
 		}
 	}
+	//TR what shold i do here
+	if isExpired(peer) {
+		logger.Warnf("Certificate for peer '%v' was expired", peer.url)
+	}
 
 	if peer.processor == nil {
 		// TODO: config is declaring TLS but cert & serverHostOverride is being passed-in...
@@ -77,6 +82,14 @@ func New(config core.Config, opts ...Option) (*Peer, error) {
 	}
 
 	return peer, nil
+}
+
+func isExpired(p *Peer) bool {
+	c := p.certificate
+	if time.Now().Before(c.NotBefore) || time.Now().After(c.NotAfter) {
+		return true
+	}
+	return false
 }
 
 // WithURL is a functional option for the peer.New constructor that configures the peer's URL

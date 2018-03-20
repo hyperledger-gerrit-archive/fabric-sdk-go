@@ -97,7 +97,19 @@ func (p *peerEndorser) ProcessTransactionProposal(ctx reqContext.Context, reques
 		tpr := fab.TransactionProposalResponse{Endorser: p.target}
 		return &tpr, errors.Wrapf(err, "Transaction processing for endorser [%s]", p.target)
 	}
+	rcc, ok := context.RequestClientContext(ctx)
+	if !ok {
+		logger.Warnf("cannot obtain client request context")
+	}
 
+	isExpired, err := context.IsCertificateExpired(rcc.EnrollmentCertificate())
+	if err != nil {
+		logger.Warnf("Got error while parsing certificate %v", err)
+	}
+	//TR what should i do here
+	if isExpired {
+		logger.Warnf("Certificate for peer '%v' has expired", p.target)
+	}
 	tpr := fab.TransactionProposalResponse{
 		ProposalResponse: proposalResponse,
 		Endorser:         p.target,

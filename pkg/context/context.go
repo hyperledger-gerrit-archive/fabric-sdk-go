@@ -8,6 +8,8 @@ package context
 
 import (
 	reqContext "context"
+	"crypto/x509"
+	"encoding/pem"
 
 	"github.com/pkg/errors"
 
@@ -334,4 +336,20 @@ func requestTimeoutOverride(ctx reqContext.Context, timeoutType core.TimeoutType
 		return 0
 	}
 	return timeoutOverrides[timeoutType]
+}
+
+//IsCertificateExpired verify if certificate was expired
+func IsCertificateExpired(c []byte) (bool, error) {
+	block, _ := pem.Decode([]byte(c))
+	if block == nil {
+		return false, errors.New("failed to parse certificate PEM")
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false, errors.WithMessage(err, "failed to parse certificate")
+	}
+	if time.Now().Before(cert.NotBefore) || time.Now().After(cert.NotAfter) {
+		return true, nil
+	}
+	return false, nil
 }
