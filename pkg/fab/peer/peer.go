@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -54,6 +55,10 @@ func New(config core.Config, opts ...Option) (*Peer, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+	//TR what shold i do here
+	if verifier.IsCertificateExpired(peer.certificate) {
+		logger.Warnf("Certificate for peer '%v' was expired", peer.url)
 	}
 
 	if peer.processor == nil {

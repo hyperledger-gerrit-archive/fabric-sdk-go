@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -40,11 +41,19 @@ func New(ctx Context, cfg fab.ChannelCfg) (fab.ChannelMembership, error) {
 }
 
 func (i *identityImpl) Validate(serializedID []byte) error {
+	isExpired, err := validateExpired(serializedID)
+	if err != nil {
+		//log error and do other checks
+		logger.Warnf("Error occurred while procesing serialized identity %v", err)
+	}
+	if isExpired {
+		//TR Q return errors.New("Certificate has expired")
+		logger.Warn("Certificate has expired")
+	}
 	id, err := i.mspManager.DeserializeIdentity(serializedID)
 	if err != nil {
 		return err
 	}
-
 	return id.Validate()
 }
 
@@ -55,6 +64,28 @@ func (i *identityImpl) Verify(serializedID []byte, msg []byte, sig []byte) error
 	}
 
 	return id.Verify(msg, sig)
+}
+
+func validateExpired(serializedID []byte) (bool, error) {
+
+	sId := &mb.SerializedIdentity{}
+	err := proto.Unmarshal(serializedID, sId)
+	if err != nil {
+		return false, errors.Wrap(err, "could not deserialize a SerializedIdentity")
+	}
+
+	bl, _ := pem.Decode(sId.IdBytes)
+	if bl == nil {
+		return false, errors.New("could not decode the PEM structure")
+	}
+	cert, err := x509.ParseCertificate(bl.Bytes)
+	if err != nil {
+		return false, err
+	}
+	if verifier.IsCertificateExpired(cert) {
+		return true, nil
+	}
+	return false, nil
 }
 
 func createMSPManager(ctx Context, cfg fab.ChannelCfg) (msp.MSPManager, error) {

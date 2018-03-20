@@ -8,6 +8,9 @@ SPDX-License-Identifier: Apache-2.0
 package verifier
 
 import (
+	"crypto/x509"
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -56,4 +59,15 @@ func (v *Signature) Verify(response *fab.TransactionProposalResponse) error {
 // Match matches transaction proposal responses (empty for signature verifier)
 func (v *Signature) Match(response []*fab.TransactionProposalResponse) error {
 	return nil
+}
+
+//IsCertificateExpired verify if certificate was expired
+func IsCertificateExpired(cert *x509.Certificate) bool {
+	if cert == nil {
+		return false
+	}
+	if time.Now().UTC().Before(cert.NotBefore) || time.Now().UTC().After(cert.NotAfter) {
+		return true
+	}
+	return false
 }
