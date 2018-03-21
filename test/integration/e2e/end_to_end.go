@@ -77,7 +77,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
-	if err = resMgmtClient.SaveChannel(req); err != nil {
+	if _, err = resMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
 
@@ -115,7 +115,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP"})
 
 	// Org resource manager will instantiate 'example_cc' on channel
-	err = orgResMgmt.InstantiateCC(channelID, resmgmt.InstantiateCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
+	_, err = orgResMgmt.InstantiateCC(channelID, resmgmt.InstantiateCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
 	if err != nil {
 		t.Fatal(err)
 	}

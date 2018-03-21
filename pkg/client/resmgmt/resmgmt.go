@@ -399,11 +399,11 @@ func checkRequiredInstallCCParams(req InstallCCRequest) error {
 }
 
 // InstantiateCC instantiates chaincode using default settings
-func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, options ...RequestOption) error {
+func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, options ...RequestOption) (fab.TransactionID, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
-		return errors.WithMessage(err, "failed to get opts for InstantiateCC")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "failed to get opts for InstantiateCC")
 	}
 
 	reqCtx, cancel := rc.createRequestContext(opts, core.ResMgmt)
@@ -413,11 +413,11 @@ func (rc *Client) InstantiateCC(channelID string, req InstantiateCCRequest, opti
 }
 
 // UpgradeCC upgrades chaincode  with optional custom options (specific peers, filtered peers, timeout)
-func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...RequestOption) error {
+func (rc *Client) UpgradeCC(channelID string, req UpgradeCCRequest, options ...RequestOption) (fab.TransactionID, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
-		return errors.WithMessage(err, "failed to get opts for UpgradeCC")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "failed to get opts for UpgradeCC")
 	}
 
 	reqCtx, cancel := rc.createRequestContext(opts, core.ResMgmt)
@@ -522,48 +522,48 @@ func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryRespo
 }
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
-func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chaincodeProposalType, channelID string, req InstantiateCCRequest, opts requestOptions) error {
+func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chaincodeProposalType, channelID string, req InstantiateCCRequest, opts requestOptions) (fab.TransactionID, error) {
 
 	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
-		return err
+		return fab.EmptyTransactionID, err
 	}
 
 	// per channel discovery service
 	discovery, err := rc.ctx.DiscoveryProvider().CreateDiscoveryService(channelID)
 	if err != nil {
-		return errors.WithMessage(err, "failed to create channel discovery service")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "failed to create channel discovery service")
 	}
 
 	//Default targets when targets are not provided in options
 	if len(opts.Targets) == 0 {
 		opts.Targets, err = rc.getDefaultTargets(discovery)
 		if err != nil {
-			return errors.WithMessage(err, "failed to get default targets for cc proposal")
+			return fab.EmptyTransactionID, errors.WithMessage(err, "failed to get default targets for cc proposal")
 		}
 	}
 
 	targets, err := rc.calculateTargets(discovery, opts.Targets, opts.TargetFilter)
 	if err != nil {
-		return errors.WithMessage(err, "failed to determine target peers for cc proposal")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "failed to determine target peers for cc proposal")
 	}
 
 	if len(targets) == 0 {
-		return errors.WithStack(status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "no targets available", nil))
+		return fab.EmptyTransactionID, errors.WithStack(status.New(status.ClientStatus, status.NoPeersFound.ToInt32(), "no targets available", nil))
 	}
 
 	// Get transactor on the channel to create and send the deploy proposal
 	channelService, err := rc.ctx.ChannelProvider().ChannelService(rc.ctx, channelID)
 	if err != nil {
-		return errors.WithMessage(err, "Unable to get channel service")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "Unable to get channel service")
 	}
 
 	chConfig, err := channelService.ChannelConfig()
 	if err != nil {
-		return errors.WithMessage(err, "get channel config failed")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "get channel config failed")
 	}
 	transactor, err := rc.ctx.InfraProvider().CreateChannelTransactor(reqCtx, chConfig)
 	if err != nil {
-		return errors.WithMessage(err, "get channel transactor failed")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "get channel transactor failed")
 	}
 
 	// create a transaction proposal for chaincode deployment
@@ -571,42 +571,43 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 
 	txid, err := txn.NewHeader(rc.ctx, channelID)
 	if err != nil {
-		return errors.WithMessage(err, "create transaction ID failed")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "create transaction ID failed")
 	}
+
 	tp, err := createChaincodeDeployProposal(txid, ccProposalType, channelID, deployProposal)
 	if err != nil {
-		return errors.WithMessage(err, "creating chaincode deploy transaction proposal failed")
+		return txid.TransactionID(), errors.WithMessage(err, "creating chaincode deploy transaction proposal failed")
 	}
 
 	// Process and send transaction proposal
 	txProposalResponse, err := transactor.SendTransactionProposal(tp, peersToTxnProcessors(targets))
 	if err != nil {
-		return errors.WithMessage(err, "sending deploy transaction proposal failed")
+		return tp.TxnID, errors.WithMessage(err, "sending deploy transaction proposal failed")
 	}
 
 	// Membership is required to verify signature
 	membership, err := channelService.Membership()
 	if err != nil {
-		return errors.WithMessage(err, "membership creation failed")
+		return tp.TxnID, errors.WithMessage(err, "membership creation failed")
 	}
 
 	// Verify signature(s)
 	sv := &verifier.Signature{Membership: membership}
 	for _, r := range txProposalResponse {
 		if err := sv.Verify(r); err != nil {
-			return errors.WithMessage(err, "Failed to verify signature")
+			return tp.TxnID, errors.WithMessage(err, "Failed to verify signature")
 		}
 	}
 
 	eventService, err := channelService.EventService()
 	if err != nil {
-		return errors.WithMessage(err, "unable to get event service")
+		return tp.TxnID, errors.WithMessage(err, "unable to get event service")
 	}
 
 	// Register for commit event
 	reg, statusNotifier, err := eventService.RegisterTxStatusEvent(string(tp.TxnID))
 	if err != nil {
-		return errors.WithMessage(err, "error registering for TxStatus event")
+		return tp.TxnID, errors.WithMessage(err, "error registering for TxStatus event")
 	}
 	defer eventService.Unregister(reg)
 
@@ -615,17 +616,17 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		ProposalResponses: txProposalResponse,
 	}
 	if _, err = createAndSendTransaction(transactor, transactionRequest); err != nil {
-		return errors.WithMessage(err, "CreateAndSendTransaction failed")
+		return tp.TxnID, errors.WithMessage(err, "CreateAndSendTransaction failed")
 	}
 
 	select {
 	case txStatus := <-statusNotifier:
 		if txStatus.TxValidationCode == pb.TxValidationCode_VALID {
-			return nil
+			return fab.TransactionID(txStatus.TxID), nil
 		}
-		return status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "instantiateOrUpgradeCC failed", nil)
+		return fab.TransactionID(txStatus.TxID), status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "instantiateOrUpgradeCC failed", nil)
 	case <-reqCtx.Done():
-		return errors.New("instantiateOrUpgradeCC timed out or cancelled")
+		return tp.TxnID, errors.New("instantiateOrUpgradeCC timed out or cancelled")
 	}
 
 }
@@ -669,24 +670,24 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 }
 
 // SaveChannel creates or updates channel
-func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) error {
+func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) (fab.TransactionID, error) {
 
 	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
-		return err
+		return fab.EmptyTransactionID, err
 	}
 
 	if req.ChannelConfigPath != "" {
 		configReader, err := os.Open(req.ChannelConfigPath)
 		if err != nil {
-			return errors.Wrapf(err, "opening channel config file failed")
+			return fab.EmptyTransactionID, errors.Wrapf(err, "opening channel config file failed")
 		}
 		defer loggedClose(configReader)
 		req.ChannelConfig = configReader
 	}
 
 	if req.ChannelID == "" || req.ChannelConfig == nil {
-		return errors.New("must provide channel ID and channel config")
+		return fab.EmptyTransactionID, errors.New("must provide channel ID and channel config")
 	}
 
 	logger.Debugf("saving channel: %s", req.ChannelID)
@@ -704,17 +705,17 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	} else if rc.ctx != nil {
 		signers = append(signers, rc.ctx)
 	} else {
-		return errors.New("must provide signing user")
+		return fab.EmptyTransactionID, errors.New("must provide signing user")
 	}
 
 	configTx, err := ioutil.ReadAll(req.ChannelConfig)
 	if err != nil {
-		return errors.WithMessage(err, "reading channel config file failed")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "reading channel config file failed")
 	}
 
 	chConfig, err := resource.ExtractChannelConfig(configTx)
 	if err != nil {
-		return errors.WithMessage(err, "extracting channel config failed")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "extracting channel config failed")
 	}
 
 	var configSignatures []*common.ConfigSignature
@@ -727,14 +728,14 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 
 		configSignature, err := resource.CreateConfigSignature(&sigCtx, chConfig)
 		if err != nil {
-			return errors.WithMessage(err, "signing configuration failed")
+			return fab.EmptyTransactionID, errors.WithMessage(err, "signing configuration failed")
 		}
 		configSignatures = append(configSignatures, configSignature)
 	}
 
 	orderer, err := rc.requestOrderer(&opts, req.ChannelID)
 	if err != nil {
-		return errors.WithMessage(err, "failed to find orderer for request")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "failed to find orderer for request")
 	}
 
 	request := api.CreateChannelRequest{
@@ -747,12 +748,12 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	reqCtx, cancel := rc.createRequestContext(opts, core.OrdererResponse)
 	defer cancel()
 
-	_, err = resource.CreateChannel(reqCtx, request)
+	txID, err := resource.CreateChannel(reqCtx, request)
 	if err != nil {
-		return errors.WithMessage(err, "create channel failed")
+		return fab.EmptyTransactionID, errors.WithMessage(err, "create channel failed")
 	}
 
-	return nil
+	return txID, nil
 }
 
 func loggedClose(c io.Closer) {

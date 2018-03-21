@@ -49,12 +49,11 @@ func CreateChaincodeInvokeProposal(txh fab.TransactionHeader, request fab.Chainc
 		return nil, errors.Wrap(err, "failed to create chaincode proposal")
 	}
 
-	tp := fab.TransactionProposal{
+	tp := &fab.TransactionProposal{
 		TxnID:    txh.TransactionID(),
 		Proposal: proposal,
 	}
-
-	return &tp, nil
+	return tp, nil
 }
 
 // signProposal creates a SignedProposal based on the current context.

@@ -87,7 +87,7 @@ func TestRevokedPeer(t *testing.T) {
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	if err = chMgmtClient.SaveChannel(req); err != nil {
+	if _, err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
 
@@ -140,7 +140,7 @@ func TestRevokedPeer(t *testing.T) {
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
 
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	err = org1ResMgmt.InstantiateCC("orgchannel",
+	_, err = org1ResMgmt.InstantiateCC("orgchannel",
 		resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
 		resmgmt.WithTargetURLs("peer0.org1.example.com"))
 	if err != nil {

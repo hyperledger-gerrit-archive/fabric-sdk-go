@@ -152,7 +152,8 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 	}
 
 	ccPolicy := cauthdsl.SignedByMspMember(mspID)
-	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
+	_, err = resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy})
+	return err
 }
 
 // GetSigningIdentity returns signing identity

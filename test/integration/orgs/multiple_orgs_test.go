@@ -103,7 +103,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	if err = chMgmtClient.SaveChannel(req); err != nil {
+	if _, err = chMgmtClient.SaveChannel(req); err != nil {
 		t.Fatal(err)
 	}
 
@@ -156,7 +156,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	ccPolicy := cauthdsl.SignedByAnyMember([]string{"Org1MSP", "Org2MSP"})
 
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	err = org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
+	_, err = org1ResMgmt.InstantiateCC("orgchannel", resmgmt.InstantiateCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +292,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 	}
 
 	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
-	err = org1ResMgmt.UpgradeCC("orgchannel", resmgmt.UpgradeCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
+	_, err = org1ResMgmt.UpgradeCC("orgchannel", resmgmt.UpgradeCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "1", Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
 	if err != nil {
 		t.Fatal(err)
 	}
