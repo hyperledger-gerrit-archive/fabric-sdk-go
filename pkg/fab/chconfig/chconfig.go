@@ -26,8 +26,11 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/errors/multi"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -43,6 +46,7 @@ type Opts struct {
 	Targets      []fab.Peer  // if configured, channel config will be retrieved from peers (targets)
 	MinResponses int         // used with targets option; min number of success responses (from targets/peers)
 	MaxTargets   int         //if configured, channel config will be retrieved for these number of random targets
+	RetryHandler retry.Handler
 }
 
 // Option func for each Opts argument
@@ -132,10 +136,12 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 		return nil, errors.WithMessage(err, "ledger client creation failed")
 	}
 
-	targets := []fab.ProposalProcessor{}
-	maxTargets, minResponses := c.getLimitOpts(ctx)
-	if c.opts.Targets == nil {
+	if err = c.resolveOptsFromConfig(ctx); err != nil {
+		return nil, errors.WithMessage(err, "failed to resolve opts from config")
+	}
 
+	targets := []fab.ProposalProcessor{}
+	if c.opts.Targets == nil {
 		// Calculate targets from config
 		chPeers, err := ctx.Config().ChannelPeers(c.channelID)
 		if err != nil {
@@ -151,18 +157,50 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 			targets = append(targets, newPeer)
 		}
 
-		targets = randomMaxTargets(targets, maxTargets)
+		targets = randomMaxTargets(targets, c.opts.MaxTargets)
 
 	} else {
 		targets = peersToTxnProcessors(c.opts.Targets)
 	}
 
-	configEnvelope, err := l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: minResponses})
-	if err != nil {
-		return nil, errors.WithMessage(err, "QueryBlockConfig failed")
-	}
+	configEnvelope := make(chan *common.ConfigEnvelope)
+	failure := make(chan error)
 
-	return extractConfig(c.channelID, configEnvelope)
+	go func() {
+	queryConfigBlock:
+		//Perform QueryConfigBlock
+		response, err := l.QueryConfigBlock(reqCtx, targets, &channel.TransactionProposalResponseVerifier{MinResponses: c.opts.MinResponses})
+		if c.resolveRetry(err) {
+			goto queryConfigBlock
+		}
+		if err != nil {
+			failure <- err
+			return
+		}
+		configEnvelope <- response
+	}()
+
+	select {
+	case response := <-configEnvelope:
+		return extractConfig(c.channelID, response)
+	case responseErr := <-failure:
+		return nil, errors.WithMessage(responseErr, "QueryBlockConfig failed")
+	case <-reqCtx.Done():
+		return nil, errors.New("request timed out or been cancelled")
+	}
+}
+
+func (c *ChannelConfig) resolveRetry(err error) bool {
+	errs, ok := err.(multi.Errors)
+	if !ok {
+		errs = append(errs, err)
+	}
+	for _, e := range errs {
+		if c.opts.RetryHandler.Required(e) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, error) {
@@ -175,35 +213,62 @@ func (c *ChannelConfig) queryOrderer(reqCtx reqContext.Context) (*ChannelCfg, er
 	return extractConfig(c.channelID, configEnvelope)
 }
 
-func (c *ChannelConfig) getLimitOpts(ctx context.Client) (int, int) {
+//resolveOptsFromConfig loads opts from config if not loaded/initialized
+func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 
-	//Opts takes high priority, if provided in opts then it should be taken into account
-	if c.opts.MaxTargets > 0 && c.opts.MinResponses > 0 {
-		return c.opts.MaxTargets, c.opts.MinResponses
+	if c.opts.MaxTargets != 0 && c.opts.MinResponses != 0 && c.opts.RetryHandler != nil {
+		//already loaded
+		return nil
 	}
 
 	//If missing from opts, check config and update opts from config
 	chSdkCfg, err := ctx.Config().ChannelConfig(c.channelID)
 	if err != nil {
 		//ver rare, but return default in case of error
-		return defaultMaxTargets, defaultMinResponses
+		return err
 	}
 
 	if c.opts.MaxTargets == 0 {
-		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannel["maxTargets"]
+		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannel.MaxTargets
 		if c.opts.MaxTargets == 0 {
 			c.opts.MaxTargets = defaultMaxTargets
 		}
 	}
 
 	if c.opts.MinResponses == 0 {
-		c.opts.MinResponses = chSdkCfg.Policies.QueryChannel["minResponses"]
+		c.opts.MinResponses = chSdkCfg.Policies.QueryChannel.MinResponses
 		if c.opts.MinResponses == 0 {
 			c.opts.MinResponses = defaultMinResponses
 		}
 	}
 
-	return c.opts.MaxTargets, c.opts.MinResponses
+	if c.opts.RetryHandler == nil {
+		retryOpts := chSdkCfg.Policies.QueryChannel.RetryOpts
+
+		if retryOpts.Attempts == 0 {
+			retryOpts.Attempts = retry.DefaultAttempts
+		}
+
+		if retryOpts.InitialBackoff == 0 {
+			retryOpts.InitialBackoff = retry.DefaultInitialBackoff
+		}
+
+		if retryOpts.BackoffFactor == 0 {
+			retryOpts.BackoffFactor = retry.DefaultBackoffFactor
+		}
+
+		if retryOpts.MaxBackoff == 0 {
+			retryOpts.MaxBackoff = retry.DefaultMaxBackoff
+		}
+
+		retryOpts.RetryableCodes = map[status.Group][]status.Code{
+			status.EndorserClientStatus: []status.Code{status.EndorsementMismatch},
+		}
+
+		c.opts.RetryHandler = retry.New(retryOpts)
+	}
+
+	return nil
 }
 
 // WithPeers encapsulates peers to Option
