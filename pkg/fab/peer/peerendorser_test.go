@@ -262,6 +262,8 @@ func TestEndorserConnectionError(t *testing.T) {
 	_, err := testProcessProposal(t, "grpc://"+testAddress)
 	assert.NotNil(t, err, "Expected connection error without server running")
 
+	assert.True(t, status.IsConnectionFailed(err), "Expected ConnectionFailed")
+
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error on failed connection")
 	assert.Equal(t, status.EndorserClientStatus, statusError.Group)

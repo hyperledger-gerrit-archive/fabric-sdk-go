@@ -493,6 +493,9 @@ func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error 'Orderer Client Status 2 context deadline exceeded'")
 	}
+
+	assert.True(t, status.IsConnectionFailed(err), "Expected ConnectionFailed")
+
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error")
 	assert.EqualValues(t, status.ConnectionFailed, status.ToOrdererStatusCode(statusError.Code))

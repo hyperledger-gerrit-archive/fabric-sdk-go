@@ -318,6 +318,9 @@ func TestRPCStatusErrorPropagation(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Should have failed for not success status")
 	}
+
+	assert.True(t, status.IsConnectionFailed(err), "Expected ConnectionFailed")
+
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error")
 	assert.EqualValues(t, status.ConnectionFailed, status.ToSDKStatusCode(statusError.Code))
@@ -342,6 +345,9 @@ func TestOrdererStatusError(t *testing.T) {
 
 	_, err := chClient.Execute(Request{ChaincodeID: "test", Fcn: "invoke",
 		Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}})
+
+	assert.True(t, status.IsConnectionFailed(err), "Expected ConnectionFailed")
+
 	statusError, ok := status.FromError(err)
 	assert.True(t, ok, "Expected status error got %+v", err)
 	assert.EqualValues(t, status.ConnectionFailed, status.ToSDKStatusCode(statusError.Code))
