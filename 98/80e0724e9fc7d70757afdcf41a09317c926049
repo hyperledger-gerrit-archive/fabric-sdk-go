@@ -1,0 +1,7 @@
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Code-Review+2: Aleksandar Likic <aleksandar.likic@securekey.com>
+Submitted-by: Aleksandar Likic <aleksandar.likic@securekey.com>
+Submitted-at: Wed, 21 Mar 2018 18:01:11 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/19521
+Project: fabric-sdk-go
+Branch: refs/heads/master
