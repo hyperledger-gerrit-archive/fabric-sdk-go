@@ -19,6 +19,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -144,6 +145,14 @@ func FromOrdererConfig(ordererCfg *core.OrdererConfig) Option {
 			//Ignore empty cert errors,
 			errStatus, ok := err.(*status.Status)
 			if !ok || errStatus.Code != status.EmptyCert.ToInt32() {
+				return err
+			}
+		}
+
+		if ordererCfg.GRPCOptions["allow-insecure"] == false {
+			//verify if certificate was expired or not yet valid
+			err = verifier.ValidateCertificateDates(o.tlsCACert)
+			if err != nil {
 				return err
 			}
 		}
