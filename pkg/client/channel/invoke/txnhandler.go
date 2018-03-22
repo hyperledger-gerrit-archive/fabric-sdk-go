@@ -17,7 +17,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
@@ -107,7 +106,7 @@ func (f *EndorsementValidationHandler) Handle(requestContext *RequestContext, cl
 func (f *EndorsementValidationHandler) validate(txProposalResponse []*fab.TransactionProposalResponse) error {
 	var a1 []byte
 	for n, r := range txProposalResponse {
-		if r.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
+		if !status.IsChaincodeSuccess(r.ProposalResponse.GetResponse().Status) {
 			return status.NewFromProposalResponse(r.ProposalResponse, r.Endorser)
 		}
 		if n == 0 {
@@ -255,5 +254,6 @@ func createAndSendTransactionProposal(transactor fab.ProposalSender, chrequest *
 	}
 
 	transactionProposalResponses, err := transactor.SendTransactionProposal(proposal, targets)
+
 	return transactionProposalResponses, proposal, err
 }

@@ -13,7 +13,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 
@@ -25,7 +24,7 @@ type Signature struct {
 // Verify checks transaction proposal response
 func (v *Signature) Verify(response *fab.TransactionProposalResponse) error {
 
-	if response.ProposalResponse.GetResponse().Status != int32(common.Status_SUCCESS) {
+	if !status.IsChaincodeSuccess(response.ProposalResponse.GetResponse().Status) {
 		return status.NewFromProposalResponse(response.ProposalResponse, response.Endorser)
 	}
 
