@@ -7,10 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
+	"crypto/x509"
 	"sync/atomic"
 
 	"github.com/pkg/errors"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -152,6 +154,10 @@ func newDialOpts(config core.Config, url string, params *params) ([]grpc.DialOpt
 		tlsConfig, err := comm.TLSConfig(params.certificate, params.hostOverride, config)
 		if err != nil {
 			return nil, err
+		}
+		//use this function to verify if certificate was expired or not yet valid
+		tlsConfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			return verifier.ValidateCertificateDates(params.certificate)
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 		logger.Debugf("Creating a secure connection to [%s] with TLS HostOverride [%s]", url, params.hostOverride)
