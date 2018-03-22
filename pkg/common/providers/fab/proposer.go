@@ -61,7 +61,8 @@ type ProcessProposalRequest struct {
 
 // TransactionProposalResponse respresents the result of transaction proposal processing.
 type TransactionProposalResponse struct {
-	Endorser string
-	Status   int32
+	Endorser        string
+	Status          int32
+	ChaincodeStatus int32
 	*pb.ProposalResponse
 }

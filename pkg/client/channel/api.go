@@ -45,6 +45,7 @@ type Response struct {
 	TransactionID    fab.TransactionID
 	TxValidationCode pb.TxValidationCode
 	Proposal         *fab.TransactionProposal
+	ChaincodeStatus  int32
 	Responses        []*fab.TransactionProposalResponse
 }
 
