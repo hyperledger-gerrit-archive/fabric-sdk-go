@@ -176,3 +176,11 @@ func NewFromExtractedChaincodeError(code int, message string) *Status {
 	return &Status{Group: GRPCTransportStatus, Code: ChaincodeError.ToInt32(),
 		Message: message, Details: []interface{}{status}}
 }
+
+// IsChaincodeSuccess returns whether a chaincode call is successful based on the response code
+func IsChaincodeSuccess(status int32) bool {
+	if status >= 200 && status < 400 {
+		return true
+	}
+	return false
+}

@@ -117,3 +117,10 @@ func TestStatusGroupString(t *testing.T) {
 	unknownGroup77377 := Group(73777)
 	assert.Equal(t, UnknownStatus.String(), unknownGroup77377.String())
 }
+
+func TestIsChaincodeSuccess(t *testing.T) {
+	assert.True(t, IsChaincodeSuccess(200), "Chaincode status is a success for this case")
+	assert.True(t, IsChaincodeSuccess(300), "Chaincode status is a success for this case")
+	assert.False(t, IsChaincodeSuccess(400), "Chaincode status is a fail for this case")
+	assert.False(t, IsChaincodeSuccess(199), "Chaincode status is a fail for this case")
+}
