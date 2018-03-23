@@ -405,6 +405,43 @@ func TestExecuteTxWithRetries(t *testing.T) {
 	assert.Equal(t, testResp, resp.Payload, "expected correct response")
 }
 
+func TestTransactionValidationErrorRetry(t *testing.T) {
+	validationCode := pb.TxValidationCode_MVCC_READ_CONFLICT
+	mockEventService := fcmocks.NewMockEventService()
+	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
+	peers := []fab.Peer{testPeer1}
+	attempts := 3
+
+	go func() {
+		for i := 0; i < attempts+1; i++ {
+			select {
+			case txStatusReg := <-mockEventService.TxStatusRegCh:
+				txStatusReg.Eventch <- &fab.TxStatusEvent{TxID: txStatusReg.TxID, TxValidationCode: validationCode}
+			case <-time.After(time.Second * 5):
+				panic("Timed out waiting for execute Tx to register event callback")
+			}
+		}
+	}()
+
+	chClient := setupChannelClient(peers, t)
+	chClient.eventService = mockEventService
+
+	retryOpts := retry.DefaultOpts
+	retryOpts.Attempts = attempts
+	retryOpts.BackoffFactor = 1
+	retryOpts.InitialBackoff = time.Millisecond * 500
+	retryOpts.RetryableCodes = retry.ChannelClientRetryableCodes
+
+	response, err := chClient.Execute(Request{ChaincodeID: "test", Fcn: "invoke",
+		Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}, WithRetry(retryOpts))
+	assert.Equal(t, attempts+1, testPeer1.ProcessProposalCalls, "Expected peer to be called four times")
+	assert.Nil(t, response.Payload, "Expected nil result on failed execute operation")
+	assert.NotNil(t, err, "expected error")
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error got %+v", err)
+	assert.EqualValues(t, validationCode, status.ToTransactionValidationCode(statusError.Code))
+}
+
 func TestMultiErrorPropogation(t *testing.T) {
 	testErr := fmt.Errorf("Test Error")
 
