@@ -33,6 +33,7 @@ const (
 	org0                            = "org0"
 	org1                            = "org1"
 	configTestFilePath              = "testdata/config_test.yaml"
+	configTestTemplateFilePath      = "testdata/config_test_template.yaml"
 	configEmptyTestFilePath         = "testdata/empty.yaml"
 	configPemTestFilePath           = "testdata/config_test_pem.yaml"
 	configEmbeddedUsersTestFilePath = "testdata/config_test_embedded_pems.yaml"
@@ -49,21 +50,6 @@ func TestCAConfig(t *testing.T) {
 
 	if vc == "" {
 		t.Fatalf("Failed to load config file")
-	}
-
-	//Test network name
-	if vConfig.GetString("name") != "global-trade-network" {
-		t.Fatalf("Incorrect Network name")
-	}
-
-	//Test client app specific variable x-type
-	if vConfig.GetString("x-type") != "hlfv1" {
-		t.Fatalf("Incorrect Netwok x-type")
-	}
-
-	//Test network description
-	if vConfig.GetString("description") != "The network to be in if you want to stay in the global trade business" {
-		t.Fatalf("Incorrect Network description")
 	}
 
 	//Test network config version
@@ -1557,6 +1543,50 @@ func badOpt() Option {
 	return func(opts *options) error {
 		return errors.New("Bad Opt")
 	}
+}
+
+func TestConfig_GetByKey(t *testing.T) {
+	configImpl, err := FromFile(configTestTemplateFilePath)()
+	if err != nil {
+		t.Fatalf("Unexpected error reading config: %v", err)
+	}
+
+	value, err := configImpl.GetByKey("name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := value.(string)
+	if name != "global-trade-network" {
+		t.Fatal("Expected Name to be global-trade-network")
+	}
+
+	value, err = configImpl.GetByKey("description")
+	if err != nil {
+		t.Fatal(err)
+	}
+	description := value.(string)
+	if description == "" {
+		t.Fatal("Expected non empty description")
+	}
+
+	value, err = configImpl.GetByKey("x-type")
+	if err != nil {
+		t.Fatal(err)
+	}
+	xType := value.(string)
+	if xType != "h1fv1" {
+		t.Fatal("Expected x-type to be h1fv1")
+	}
+
+	value, err = configImpl.GetByKey("channels.mychannel.chaincodes")
+	if err != nil {
+		t.Fatal(err)
+	}
+	chaincodes := value.([]interface{})
+	if len(chaincodes) != 2 {
+		t.Fatal("Expected only 2 chaincodes")
+	}
+
 }
 
 /*

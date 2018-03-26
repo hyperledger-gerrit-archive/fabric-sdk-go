@@ -56,6 +56,7 @@ type Config interface {
 	TLSClientCerts() ([]tls.Certificate, error)
 	CredentialStorePath() string
 	EventServiceType() EventServiceType
+	GetByKey(key string) (interface{}, error)
 }
 
 // ConfigProvider enables creation of a Config instance
