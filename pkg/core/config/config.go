@@ -621,7 +621,6 @@ func (c *Config) MSPID(org string) (string, error) {
 func (c *Config) cacheNetworkConfiguration() error {
 	networkConfig := core.NetworkConfig{}
 	networkConfig.Name = c.configViper.GetString("name")
-	networkConfig.Xtype = c.configViper.GetString("x-type")
 	networkConfig.Description = c.configViper.GetString("description")
 	networkConfig.Version = c.configViper.GetString("version")
 

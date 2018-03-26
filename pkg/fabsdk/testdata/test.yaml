@@ -155,9 +155,6 @@ certificateAuthorities:
   ca.org2.example.com:
     url: https://ca.org2.example.com:7054
 
-    httpOptions:
-      verify: true
-
     tlsCACerts:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem
       client:

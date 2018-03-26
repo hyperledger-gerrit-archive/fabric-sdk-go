@@ -56,11 +56,6 @@ func TestCAConfig(t *testing.T) {
 		t.Fatalf("Incorrect Network name")
 	}
 
-	//Test client app specific variable x-type
-	if vConfig.GetString("x-type") != "hlfv1" {
-		t.Fatalf("Incorrect Netwok x-type")
-	}
-
 	//Test network description
 	if vConfig.GetString("description") != "The network to be in if you want to stay in the global trade business" {
 		t.Fatalf("Incorrect Network description")
