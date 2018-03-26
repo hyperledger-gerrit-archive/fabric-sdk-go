@@ -44,6 +44,7 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserServerStatus: []status.Code{
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.PrematureChaincodeExecution,
 	},
 	status.OrdererServerStatus: []status.Code{
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
@@ -71,6 +72,7 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserServerStatus: []status.Code{
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.PrematureChaincodeExecution,
 	},
 	status.OrdererClientStatus: []status.Code{
 		status.ConnectionFailed,
