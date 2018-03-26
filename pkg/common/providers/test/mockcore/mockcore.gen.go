@@ -350,6 +350,14 @@ func (m *MockConfig) PeerConfigByURL(arg0 string) (*core.PeerConfig, error) {
 	return ret0, ret1
 }
 
+// Value gets the Value from config file by Key
+func (m *MockConfig) Value(arg0 string) (interface{}, error) {
+	ret := m.ctrl.Call(m, "Value", arg0)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
 // PeerConfigByURL indicates an expected call of PeerConfigByURL
 func (mr *MockConfigMockRecorder) PeerConfigByURL(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerConfigByURL", reflect.TypeOf((*MockConfig)(nil).PeerConfigByURL), arg0)
