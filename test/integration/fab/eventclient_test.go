@@ -18,8 +18,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
@@ -53,7 +51,7 @@ func TestEventClient(t *testing.T) {
 		})
 		t.Run("Deliver Block Events", func(t *testing.T) {
 			// Must create a new SDK that enables block events for the deliver event client
-			sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile), fabsdk.WithCorePkg(&DeliverBlocksProviderFactory{}))
+			sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
 			if err != nil {
 				t.Fatalf("Error creating SDK with block events: %s", err)
 			}
@@ -64,7 +62,7 @@ func TestEventClient(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error getting channel context: %s", err)
 			}
-			eventService, err := chContext.ChannelService().EventService()
+			eventService, err := chContext.ChannelService().EventService(client.WithBlockEvents())
 			if err != nil {
 				t.Fatalf("error getting event service: %s", err)
 			}
@@ -271,13 +269,4 @@ func createAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionPr
 	}
 
 	return transactionResponse, nil
-}
-
-type DeliverBlocksProviderFactory struct {
-	defcore.ProviderFactory
-}
-
-// CreateInfraProvider returns an InfraProvider that uses block events
-func (f *DeliverBlocksProviderFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
-	return fabpvdr.New(config, client.WithBlockEvents()), nil
 }
