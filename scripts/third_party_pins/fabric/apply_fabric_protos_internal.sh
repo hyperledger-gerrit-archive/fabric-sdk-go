@@ -20,10 +20,18 @@ NAMESPACE_PREFIX="sdk."
 declare -a PKGS=(
     "protos/utils"
     "protos/orderer"
+    "protos/discovery"
+    "protos/gossip"
 )
 
 declare -a FILES=(
     "protos/orderer/ab.pb.go"
+
+    "protos/discovery/protocol.pb.go"
+    "protos/discovery/extensions.go"
+
+    "protos/gossip/message.pb.go"
+    "protos/gossip/extensions.go"
 )
 
 declare -a NPBFILES=(
@@ -31,6 +39,8 @@ declare -a NPBFILES=(
 
 declare -a PBFILES=(
     "protos/orderer/ab.pb.go"
+    "protos/discovery/protocol.pb.go"
+    "protos/gossip/message.pb.go"
 )
 
 #echo 'Removing current upstream project from working directory ...'
@@ -48,9 +58,22 @@ gofilter() {
     echo "Filtering: ${FILTER_FILENAME}"
     cp ${TMP_PROJECT_PATH}/${FILTER_FILENAME} ${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak
     $GOFILTER_CMD -filename "${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak" \
-        -filters fn -fn "$FILTER_FN" \
+        -filters "$FILTERS_ENABLED" -fn "$FILTER_FN" -gen "$FILTER_GEN" -type "$FILTER_TYPE" \
         > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 }
+
+FILTERS_ENABLED="fn,gen"
+
+FILTER_FILENAME="protos/gossip/extensions.go"
+FILTER_FN="ToGossipMessage"
+FILTER_GEN="SignedGossipMessage"
+gofilter
+
+FILTERS_ENABLED="fn"
+
+FILTER_FILENAME="protos/discovery/extensions.go"
+FILTER_FN="ConfigAt,MembershipAt,EndorsersAt"
+gofilter
 
 # Apply patching
 echo "Patching import paths on upstream project ..."
