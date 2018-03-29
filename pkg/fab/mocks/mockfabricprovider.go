@@ -12,7 +12,6 @@ import (
 	reqContext "context"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
@@ -55,7 +54,7 @@ func (f *MockInfraProvider) CreateChannelTransactor(reqCtx reqContext.Context, c
 }
 
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
-func (f *MockInfraProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab.Peer, error) {
+func (f *MockInfraProvider) CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error) {
 	if peerCfg != nil {
 		p := NewMockPeer(peerCfg.MSPID, peerCfg.URL)
 		p.SetMSPID(peerCfg.MSPID)
@@ -66,7 +65,7 @@ func (f *MockInfraProvider) CreatePeerFromConfig(peerCfg *core.NetworkPeer) (fab
 }
 
 // CreateOrdererFromConfig creates a default implementation of Orderer based on configuration.
-func (f *MockInfraProvider) CreateOrdererFromConfig(cfg *core.OrdererConfig) (fab.Orderer, error) {
+func (f *MockInfraProvider) CreateOrdererFromConfig(cfg *fab.OrdererConfig) (fab.Orderer, error) {
 	if f.customOrderer != nil {
 		return f.customOrderer, nil
 	}

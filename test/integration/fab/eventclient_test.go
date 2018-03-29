@@ -13,16 +13,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
@@ -46,7 +46,7 @@ func TestEventClient(t *testing.T) {
 		t.Fatalf("error getting event service: %s", err)
 	}
 
-	if chContext.Config().EventServiceType() == core.DeliverEventServiceType {
+	if chContext.EndpointConfig().EventServiceType() == fab.DeliverEventServiceType {
 		t.Run("Deliver Filtered Block Events", func(t *testing.T) {
 			// Filtered block events are the default for the deliver event client
 			testEventService(t, testSetup, sdk, chainCodeID, false, eventService)
@@ -278,6 +278,6 @@ type DeliverBlocksProviderFactory struct {
 }
 
 // CreateInfraProvider returns an InfraProvider that uses block events
-func (f *DeliverBlocksProviderFactory) CreateInfraProvider(config core.Config) (fab.InfraProvider, error) {
+func (f *DeliverBlocksProviderFactory) CreateInfraProvider(config fab.EndpointConfig) (fab.InfraProvider, error) {
 	return fabpvdr.New(config, client.WithBlockEvents()), nil
 }
