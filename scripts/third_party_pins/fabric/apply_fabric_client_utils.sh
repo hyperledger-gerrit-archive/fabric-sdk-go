@@ -45,6 +45,9 @@ declare -a PKGS=(
     "msp"
     "msp/cache"
     "msp/mgmt"
+
+    "discovery/client"
+    "gossip/util"
 )
 
 declare -a FILES=(
@@ -128,6 +131,10 @@ declare -a FILES=(
     "msp/cache/cache.go"
     "msp/mgmt/mgmt.go"
 
+    "discovery/client/api.go"
+    "discovery/client/client.go"
+
+    "gossip/util/misc.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
@@ -292,6 +299,10 @@ gofilter
 
 FILTER_FILENAME="msp/mgmt/mgmt.go"
 FILTER_FN="GetLocalMSP"
+gofilter
+
+FILTER_FILENAME="gossip/util/misc.go"
+FILTER_FN="GetRandomIndices,RandomInt,IndexInSlice,numbericEqual,RandomUInt64"
 gofilter
 
 # Split BCCSP factory into subpackages
