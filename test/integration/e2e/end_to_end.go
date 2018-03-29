@@ -14,7 +14,6 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/stretchr/testify/assert"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -43,7 +43,7 @@ func runWithConfigFixture(t *testing.T) {
 }
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
-func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
+func Run(t *testing.T, configOpt core.ConfigBackendProvider, sdkOpts ...fabsdk.Option) {
 
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {

@@ -24,7 +24,7 @@ func runWithNoOrdererConfigFixture(t *testing.T) {
 }
 
 // RunWithNoOrdererConfig enables chclient scenarios using config and sdk options provided
-func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
+func runWithNoOrdererConfig(t *testing.T, configOpt core.ConfigBackendProvider, sdkOpts ...fabsdk.Option) {
 
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {
