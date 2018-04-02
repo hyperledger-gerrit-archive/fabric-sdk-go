@@ -6,29 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 
 // Package event enables access to a channel events on a Fabric network. Event client receives events such as block, filtered block,
 // chaincode, and transaction status events.
-//
-//	// prepare channel client context
-//	org1ChannelClientContext := sdk.ChannelContext("mychannel", fabsdk.WithUser("User1"), fabsdk.WithOrg("Org1"))
-//
-//	// create default event client (with filtered block events)
-//	eventClient, _ := event.New(org1ChannelClientContext)
-//	if err != nil {
-//		t.Fatalf("Failed to create new events client: %s", err)
-//	}
-//
-//	// Register chaincode event (returns channel which receives event details when the event is complete)
-//	reg, notifier, err := eventClient.RegisterChaincodeEvent("eventcc", "event123")
-//	if err != nil {
-//		t.Fatalf("Failed to register cc event: %s", err)
-//	}
-//	defer eventClient.Unregister(reg)
-//
-//	select {
-//	case ccEvent := <-notifier:
-//		t.Logf("Received cc event: %#v", ccEvent)
-//	case <-time.After(time.Second * 20):
-//		t.Fatalf("Did NOT receive CC event for 'event123'")
-//	}
 package event
 
 import (
