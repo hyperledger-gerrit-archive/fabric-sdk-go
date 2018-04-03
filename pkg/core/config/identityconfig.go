@@ -261,7 +261,7 @@ func (c *IdentityConfig) tryMatchingCAConfig(caName string) (*msp.CAConfig, stri
 		v := c.endpointConfig.caMatchers[k]
 		if v.MatchString(caName) {
 			// get the matching Config from the index number
-			certAuthorityMatchConfig := networkConfig.EntityMatchers["certificateauthorities"][k]
+			certAuthorityMatchConfig := networkConfig.EntityMatchers["certificateAuthority"][k]
 			//Get the certAuthorityMatchConfig from mapped host
 			caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
 			if !ok {
