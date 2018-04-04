@@ -189,6 +189,13 @@ func addCertsToConfig(config fab.EndpointConfig, pemCerts []byte) {
 		if err != nil {
 			continue
 		}
-		config.TLSCACertPool(cert)
+		err = verifier.ValidateCertificateDates(cert)
+		if err == nil {
+			//add only valid certs to the pool
+			config.TLSCACertPool(cert)
+		} else {
+			logger.Warn("Cert was not added to the pool %v\n %v\n", err, cert.Subject)
+		}
+
 	}
 }
