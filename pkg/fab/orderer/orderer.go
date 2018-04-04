@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"google.golang.org/grpc"
@@ -19,6 +20,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -78,6 +80,37 @@ func New(config fab.EndpointConfig, opts ...Option) (*Orderer, error) {
 		if err != nil {
 			return nil, err
 		}
+		//verify if certificate was expired or not yet valid
+		tlsConfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			for _, rawCert := range rawCerts {
+				cert, err := utils.DERToX509Certificate(rawCert)
+				if err != nil {
+					logger.Warn("Got error while verifying cert")
+				}
+				if cert != nil {
+					err = verifier.ValidateCertificateDates(cert)
+					if err != nil {
+						//cert is expired or not valid
+						logger.Warn("%v", err)
+						return err
+					}
+				}
+			}
+
+			for _, certs := range verifiedChains {
+				for _, cert := range certs {
+					err = verifier.ValidateCertificateDates(cert)
+					if err != nil {
+						//cert is expired or not valid
+						logger.Warn("%v", err)
+						return err
+					}
+				}
+			}
+
+			return nil
+		}
+
 		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	} else {
 		grpcOpts = append(grpcOpts, grpc.WithInsecure())
@@ -144,6 +177,15 @@ func FromOrdererConfig(ordererCfg *fab.OrdererConfig) Option {
 			errStatus, ok := err.(*status.Status)
 			if !ok || errStatus.Code != status.EmptyCert.ToInt32() {
 				return err
+			}
+		}
+
+		if ordererCfg.GRPCOptions["allow-insecure"] == false {
+			//verify if certificate was expired or not yet valid
+			err = verifier.ValidateCertificateDates(o.tlsCACert)
+			if err != nil {
+				//log this error
+				logger.Warn(err)
 			}
 		}
 

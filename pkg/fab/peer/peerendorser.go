@@ -20,6 +20,8 @@ import (
 	"google.golang.org/grpc/keepalive"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -70,6 +72,34 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 		tlsConfig, err := comm.TLSConfig(endorseReq.certificate, endorseReq.serverHostOverride, endorseReq.config)
 		if err != nil {
 			return nil, err
+		}
+		//verify if certificate was expired or not yet valid
+		tlsConfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			for _, chaincert := range rawCerts {
+				cert, err := utils.DERToX509Certificate(chaincert)
+				if err != nil {
+					logger.Warn("Got error while verifying cert")
+				}
+				if cert != nil {
+					err = verifier.ValidateCertificateDates(cert)
+					if err != nil {
+						//cert is expired or not valid
+						logger.Warn("%v", err)
+						return err
+					}
+				}
+			}
+			for _, certs := range verifiedChains {
+				for _, cert := range certs {
+					err = verifier.ValidateCertificateDates(cert)
+					if err != nil {
+						//cert is expired or not valid
+						logger.Warn("%v", err)
+						return err
+					}
+				}
+			}
+			return nil
 		}
 		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	} else {
