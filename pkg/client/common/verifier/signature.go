@@ -61,7 +61,7 @@ func (v *Signature) Match(response []*fab.TransactionProposalResponse) error {
 //ValidateCertificateDates used to verify if certificate was expired or not valid until later date
 func ValidateCertificateDates(cert *x509.Certificate) error {
 	if cert == nil {
-		return errors.New("Nil certificate has been passed in")
+		return nil
 	}
 	if time.Now().UTC().Before(cert.NotBefore) {
 		return errors.New("Certificate provided is not valid until later date")

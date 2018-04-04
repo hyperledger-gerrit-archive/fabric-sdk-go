@@ -19,6 +19,7 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -78,6 +79,11 @@ func New(config fab.EndpointConfig, opts ...Option) (*Orderer, error) {
 		if err != nil {
 			return nil, err
 		}
+		//verify if certificate was expired or not yet valid
+		tlsConfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			return verifier.ValidateCertificateDates(orderer.tlsCACert)
+		}
+
 		grpcOpts = append(grpcOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	} else {
 		grpcOpts = append(grpcOpts, grpc.WithInsecure())
@@ -144,6 +150,15 @@ func FromOrdererConfig(ordererCfg *fab.OrdererConfig) Option {
 			errStatus, ok := err.(*status.Status)
 			if !ok || errStatus.Code != status.EmptyCert.ToInt32() {
 				return err
+			}
+		}
+
+		if ordererCfg.GRPCOptions["allow-insecure"] == false {
+			//verify if certificate was expired or not yet valid
+			err = verifier.ValidateCertificateDates(o.tlsCACert)
+			if err != nil {
+				//log this error
+				logger.Warn(err)
 			}
 		}
 
@@ -379,11 +394,11 @@ func blockStream(deliverClient ab.AtomicBroadcast_DeliverClient, responses chan 
 			close(responses)
 			return
 
-		// Response is a requested block
+			// Response is a requested block
 		case *ab.DeliverResponse_Block:
 			logger.Debug("Received block from ordering service")
 			responses <- response.GetBlock()
-		// Unknown response
+			// Unknown response
 		default:
 			errs <- errors.Errorf("unknown response type from ordering service %T", t)
 			return

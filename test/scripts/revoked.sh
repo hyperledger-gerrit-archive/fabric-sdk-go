@@ -30,6 +30,7 @@ PKGS=`$GO_CMD list $REPO/test/integration/... 2> /dev/null | \
       grep -v ^$REPO/test/integration/orgs | \
       grep -v ^$REPO/test/integration/pkcs11 | \
       grep -v ^$REPO/test/integration/sdk | \
+      grep -v ^$REPO/test/integration/expired | \
       grep -v ^$REPO/test/integration\$`
 
 echo "Running integration tests for revoked certificates ..."
