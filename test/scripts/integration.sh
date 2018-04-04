@@ -28,6 +28,7 @@ REPO="github.com/hyperledger/fabric-sdk-go"
 PKGS=`$GO_CMD list $REPO/test/integration/... 2> /dev/null | \
       grep -v ^$REPO/test/integration/pkcs11 | \
       grep -v ^$REPO/test/integration/revoked | \
+      grep -v ^$REPO/test/integration/expired | \
       grep -v ^$REPO/test/integration\$`
 
 echo "Running integration tests ..."
