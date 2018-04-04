@@ -259,15 +259,15 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 
 	//initialize
 	if pi, ok := channelService.(serviceInit); ok {
-		pi.Initialize(channel)
+		_ = pi.Initialize(channel)
 	}
 
 	if pi, ok := discoveryService.(serviceInit); ok {
-		pi.Initialize(channel)
+		_ = pi.Initialize(channel)
 	}
 
 	if pi, ok := selectionService.(serviceInit); ok {
-		pi.Initialize(channel)
+		_ = pi.Initialize(channel)
 	}
 
 	return channel, nil
