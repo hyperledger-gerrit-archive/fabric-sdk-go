@@ -50,12 +50,6 @@ func newCCPolicyProvider(providers api.Providers, channelID string, username str
 		return nil, errors.New("Must provide providers, channel ID, user name and organisation for cc policy provider")
 	}
 
-	// TODO: Add option to use anchor peers instead of config
-	targetPeers, err := providers.EndpointConfig().ChannelPeers(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
-	}
-
 	//Get identity
 	mgr, ok := providers.IdentityManager(orgName)
 	if !ok {
@@ -67,26 +61,31 @@ func newCCPolicyProvider(providers api.Providers, channelID string, username str
 		return nil, errors.WithMessage(err, "unable to create identity for ccl policy provider")
 	}
 
+	discovery, err := providers.DiscoveryProvider().CreateDiscoveryService(channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to create discovery service for ccl policy provider")
+	}
+
 	cpp := ccPolicyProvider{
-		providers:   providers,
-		channelID:   channelID,
-		identity:    identity,
-		targetPeers: targetPeers,
-		ccDataMap:   make(map[string]*ccprovider.ChaincodeData),
-		provider:    providers.InfraProvider(),
+		providers: providers,
+		channelID: channelID,
+		identity:  identity,
+		discovery: discovery,
+		ccDataMap: make(map[string]*ccprovider.ChaincodeData),
+		provider:  providers.InfraProvider(),
 	}
 
 	return &cpp, nil
 }
 
 type ccPolicyProvider struct {
-	providers   context.Providers
-	channelID   string
-	identity    msp.SigningIdentity
-	targetPeers []fab.ChannelPeer
-	ccDataMap   map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
-	mutex       sync.RWMutex
-	provider    peerCreator
+	providers context.Providers
+	channelID string
+	identity  msp.SigningIdentity
+	discovery fab.DiscoveryService
+	ccDataMap map[string]*ccprovider.ChaincodeData // TODO: Add expiry and configurable timeout for map entries
+	mutex     sync.RWMutex
+	provider  peerCreator
 }
 
 func (dp *ccPolicyProvider) GetChaincodePolicy(chaincodeID string) (*common.SignaturePolicyEnvelope, error) {
@@ -148,13 +147,12 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 		return nil, errors.WithMessage(err, "Unable to create channel client")
 	}
 
-	for _, p := range dp.targetPeers {
+	targetPeers, err := dp.discovery.GetPeers()
+	if err != nil {
+		return nil, errors.WithMessage(err, "Unable to get targets")
+	}
 
-		peer, err := dp.provider.CreatePeerFromConfig(&p.NetworkPeer)
-		if err != nil {
-			queryErrors = append(queryErrors, err.Error())
-			continue
-		}
+	for _, peer := range targetPeers {
 
 		// Send query to channel peer
 		request := channel.Request{
@@ -176,7 +174,7 @@ func (dp *ccPolicyProvider) queryChaincode(ccID string, ccFcn string, ccArgs [][
 	logger.Debugf("queryErrors: %v", queryErrors)
 
 	// If all queries failed, return error
-	if len(queryErrors) == len(dp.targetPeers) {
+	if len(queryErrors) == len(targetPeers) {
 		errMsg := fmt.Sprintf("Error querying peers for channel %s: %s", dp.channelID, strings.Join(queryErrors, "\n"))
 		return nil, errors.New(errMsg)
 	}
