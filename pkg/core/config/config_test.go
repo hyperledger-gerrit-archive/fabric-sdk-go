@@ -15,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -32,10 +31,10 @@ const (
 
 func TestFromRawSuccess(t *testing.T) {
 	// get a config byte for testing
-	cBytes, err := loadConfigBytesFromFile(t, configTestFilePath)
+	cBytes, _ := loadConfigBytesFromFile(t, configTestFilePath)
 
 	// test init config from bytes
-	_, err = FromRaw(cBytes, configType)()
+	_, err := FromRaw(cBytes, configType)()
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
@@ -43,11 +42,11 @@ func TestFromRawSuccess(t *testing.T) {
 
 func TestFromReaderSuccess(t *testing.T) {
 	// get a config byte for testing
-	cBytes, err := loadConfigBytesFromFile(t, configTestFilePath)
+	cBytes, _ := loadConfigBytesFromFile(t, configTestFilePath)
 	buf := bytes.NewBuffer(cBytes)
 
 	// test init config from bytes
-	_, err = FromReader(buf, configType)()
+	_, err := FromReader(buf, configType)()
 	if err != nil {
 		t.Fatalf("Failed to initialize config from bytes array. Error: %s", err)
 	}
@@ -65,7 +64,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 		t.Fatalf("Failed to read config file stat. Error: %s", err)
 	}
 	s := fi.Size()
-	cBytes := make([]byte, s, s)
+	cBytes := make([]byte, s)
 	n, err := f.Read(cBytes)
 	if err != nil {
 		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)
@@ -241,13 +240,6 @@ func setUp(m *testing.M) {
 func teardown() {
 	// do any teadown activities here ..
 	configBackend = nil
-}
-
-func crossCheckWithViperConfig(expected string, actual string, message string, t *testing.T) {
-	expected = pathvar.Subst(expected)
-	if actual != expected {
-		t.Fatalf(message)
-	}
 }
 
 func TestNewGoodOpt(t *testing.T) {
