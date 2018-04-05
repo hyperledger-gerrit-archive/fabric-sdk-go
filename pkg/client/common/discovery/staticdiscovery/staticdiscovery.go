@@ -7,14 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package staticdiscovery
 
 import (
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 
 	"github.com/pkg/errors"
 )
-
-type peerCreator interface {
-	CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error)
-}
 
 /**
  * Discovery Provider is used to discover peers on the network
@@ -23,7 +21,7 @@ type peerCreator interface {
 // DiscoveryProvider implements discovery provider
 type DiscoveryProvider struct {
 	config  fab.EndpointConfig
-	fabPvdr peerCreator
+	fabPvdr contextAPI.Providers
 }
 
 // discoveryService implements discovery service
@@ -33,8 +31,14 @@ type discoveryService struct {
 }
 
 // New returns discovery provider
-func New(config fab.EndpointConfig, fabPvdr peerCreator) (*DiscoveryProvider, error) {
-	return &DiscoveryProvider{config: config, fabPvdr: fabPvdr}, nil
+func New(config fab.EndpointConfig) (*DiscoveryProvider, error) {
+	return &DiscoveryProvider{config: config}, nil
+}
+
+// Initialize initializes the DiscoveryProvider
+func (dp *DiscoveryProvider) Initialize(fabPvdr contextAPI.Providers) error {
+	dp.fabPvdr = fabPvdr
+	return nil
 }
 
 // CreateDiscoveryService return discovery service for specific channel
@@ -51,8 +55,7 @@ func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.Disco
 		}
 
 		for _, p := range chPeers {
-
-			newPeer, err := dp.fabPvdr.CreatePeerFromConfig(&p.NetworkPeer)
+			newPeer, err := peerImpl.New(dp.fabPvdr.EndpointConfig(), peerImpl.FromPeerConfig(&p.NetworkPeer))
 			if err != nil || newPeer == nil {
 				return nil, errors.WithMessage(err, "NewPeer failed")
 			}
@@ -68,7 +71,7 @@ func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.Disco
 		}
 
 		for _, p := range netPeers {
-			newPeer, err := dp.fabPvdr.CreatePeerFromConfig(&p)
+			newPeer, err := peerImpl.New(dp.fabPvdr.EndpointConfig(), peerImpl.FromPeerConfig(&p))
 			if err != nil {
 				return nil, errors.WithMessage(err, "NewPeerFromConfig failed")
 			}
