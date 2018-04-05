@@ -69,6 +69,10 @@ declare -a arr1=(
 "./pkg/common"
 "./pkg/context"
 "./pkg/core"
+"./pkg/fab/ccpackager"
+"./pkg/fab/channel"
+"./pkg/fab/chconfig"
+"./pkg/fab/comm"
 )
 
 

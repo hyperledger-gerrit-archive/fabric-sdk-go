@@ -129,7 +129,11 @@ func (c *Client) close(force bool) bool {
 	if !force {
 		// Check if there are any outstanding registrations
 		regInfoCh := make(chan *esdispatcher.RegistrationInfo)
-		c.Submit(esdispatcher.NewRegistrationInfoEvent(regInfoCh))
+		err := c.Submit(esdispatcher.NewRegistrationInfoEvent(regInfoCh))
+		if err != nil {
+			logger.Debugf("Submit failed %v", err)
+			return false
+		}
 		regInfo := <-regInfoCh
 
 		logger.Debugf("Outstanding registrations: %d", regInfo.TotalRegistrations)
@@ -147,8 +151,12 @@ func (c *Client) close(force bool) bool {
 	logger.Debugf("Sending disconnect request...")
 
 	errch := make(chan error)
-	c.Submit(dispatcher.NewDisconnectEvent(errch))
-	err := <-errch
+	err := c.Submit(dispatcher.NewDisconnectEvent(errch))
+	if err != nil {
+		logger.Debugf("Submit failed %v", err)
+		return false
+	}
+	err = <-errch
 
 	if err != nil {
 		logger.Warnf("Received error from disconnect request: %s", err)
@@ -179,9 +187,12 @@ func (c *Client) connect() error {
 	logger.Debugf("Submitting connection request...")
 
 	errch := make(chan error)
-	c.Submit(dispatcher.NewConnectEvent(errch))
+	err := c.Submit(dispatcher.NewConnectEvent(errch))
+	if err != nil {
+		return err
+	}
 
-	err := <-errch
+	err = <-errch
 
 	if err != nil {
 		c.mustSetConnectionState(Disconnected)
@@ -191,9 +202,9 @@ func (c *Client) connect() error {
 
 	c.registerOnce.Do(func() {
 		logger.Debugf("Submitting connection event registration...")
-		_, eventch, err := c.registerConnectionEvent()
-		if err != nil {
-			logger.Errorf("Error registering for connection events: %s", err)
+		_, eventch, err1 := c.registerConnectionEvent()
+		if err1 != nil {
+			logger.Errorf("Error registering for connection events: %s", err1)
 			c.Close()
 		}
 		c.connEvent = eventch
@@ -202,10 +213,13 @@ func (c *Client) connect() error {
 
 	handler := c.afterConnectHandler()
 	if handler != nil {
-		if err := handler(); err != nil {
-			logger.Warnf("Error invoking afterConnect handler: %s. Disconnecting...", err)
+		if err1 := handler(); err1 != nil {
+			logger.Warnf("Error invoking afterConnect handler: %s. Disconnecting...", err1)
 
-			c.Submit(dispatcher.NewDisconnectEvent(errch))
+			err = c.Submit(dispatcher.NewDisconnectEvent(errch))
+			if err != nil {
+				return err
+			}
 
 			select {
 			case disconnErr := <-errch:
@@ -227,8 +241,7 @@ func (c *Client) connect() error {
 	c.setConnectionState(Connecting, Connected)
 
 	logger.Debugf("Submitting connected event")
-	c.Submit(dispatcher.NewConnectedEvent())
-
+	err = c.Submit(dispatcher.NewConnectedEvent())
 	return err
 }
 
@@ -278,8 +291,10 @@ func (c *Client) registerConnectionEvent() (fab.Registration, chan *dispatcher.C
 	eventch := make(chan *dispatcher.ConnectionEvent, c.eventConsumerBufferSize)
 	errch := make(chan error)
 	regch := make(chan fab.Registration)
-	c.Submit(dispatcher.NewRegisterConnectionEvent(eventch, regch, errch))
-
+	err := c.Submit(dispatcher.NewRegisterConnectionEvent(eventch, regch, errch))
+	if err != nil {
+		return nil, nil, err
+	}
 	select {
 	case reg := <-regch:
 		return reg, eventch, nil
@@ -374,12 +389,6 @@ func (c *Client) closeConnectEventChan() {
 	if c.connEventCh != nil {
 		close(c.connEventCh)
 	}
-}
-
-func (c *Client) connectEventChan() chan *dispatcher.ConnectionEvent {
-	c.RLock()
-	defer c.RUnlock()
-	return c.connEventCh
 }
 
 func (c *Client) notifyConnectEventChan(event *dispatcher.ConnectionEvent) {
