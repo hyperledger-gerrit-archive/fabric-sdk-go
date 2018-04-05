@@ -12,7 +12,9 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
 type mockFilter struct {
@@ -37,11 +39,11 @@ func TestDiscoveryFilter(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	peerCreator := defPeerCreator{config: config}
-	discoveryProvider, err := staticdiscovery.New(config, &peerCreator)
+	discoveryProvider, err := staticdiscovery.New(config)
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
+	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
 
 	discoveryService, err := discoveryProvider.CreateDiscoveryService("mychannel")
 	if err != nil {

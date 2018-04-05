@@ -11,7 +11,9 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 )
 
 func TestStaticDiscovery(t *testing.T) {
@@ -26,11 +28,11 @@ func TestStaticDiscovery(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	peerCreator := defPeerCreator{config: config}
-	discoveryProvider, err := New(config, &peerCreator)
+	discoveryProvider, err := New(config)
 	if err != nil {
 		t.Fatalf("Failed to  setup discovery provider: %s", err)
 	}
+	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
 
 	_, err = discoveryProvider.CreateDiscoveryService("invalidChannel")
 	if err == nil {
