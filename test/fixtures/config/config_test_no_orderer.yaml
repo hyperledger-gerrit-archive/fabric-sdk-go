@@ -78,7 +78,7 @@ client:
 #
 channels:
   # name of the channel
-  mychannel:
+  ch1:
 
     # Required. list of peers from participating orgs
     peers:
@@ -180,3 +180,7 @@ entityMatchers:
       eventUrlSubstitutionExp: peer0.org1.example.com:7053
       sslTargetOverrideUrlSubstitutionExp: peer0.org1.example.com
       mappedHost: local.peer0.org1.example.com
+
+  channel:
+    - pattern: ^(my)(\w*)(channel)$
+      mappedName: ch1

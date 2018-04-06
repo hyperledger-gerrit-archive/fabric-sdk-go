@@ -413,3 +413,11 @@ certificateAuthorities:
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
     caName: ca.org2.example.com
+
+entityMatchers:
+  channel:
+    - pattern: ^(my)(\w*)(channel)$
+      mappedName: ch1
+
+    - pattern: ^(org)(\w*)(channel)$
+      mappedName: ch2

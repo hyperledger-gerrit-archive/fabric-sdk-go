@@ -288,7 +288,12 @@ func (c *MockConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, error) {
 	return []fab.OrdererConfig{*oConfig}, err
 }
 
-// NetworkPeers returns the mock network peers configuration
+// MappedChannelName returns the mapped channel name
+func (c *MockConfig) MappedChannelName(channelID string) (string, error) {
+	return channelID, nil
+}
+
+// etworkPeers returns the mock network peers configuration
 func (c *MockConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
 	if c.customNetworkPeerCfg != nil {
 		return c.customNetworkPeerCfg, nil
