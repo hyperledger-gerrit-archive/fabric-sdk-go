@@ -83,12 +83,12 @@ func TestUnmarshal(t *testing.T) {
 	testLookup.UnmarshalKey("channels", &networkConfig.Channels)
 
 	assert.True(t, len(networkConfig.Channels) == 2)
-	assert.True(t, len(networkConfig.Channels["mychannel"].Peers) == 1)
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses == 1)
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets == 1)
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String() == (5*time.Second).String())
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String() == (500*time.Millisecond).String())
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor == 2.0)
+	assert.True(t, len(networkConfig.Channels["ch1"].Peers) == 1)
+	assert.True(t, networkConfig.Channels["ch1"].Policies.QueryChannelConfig.MinResponses == 1)
+	assert.True(t, networkConfig.Channels["ch1"].Policies.QueryChannelConfig.MaxTargets == 1)
+	assert.True(t, networkConfig.Channels["ch1"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String() == (5*time.Second).String())
+	assert.True(t, networkConfig.Channels["ch1"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String() == (500*time.Millisecond).String())
+	assert.True(t, networkConfig.Channels["ch1"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor == 2.0)
 
 }
 

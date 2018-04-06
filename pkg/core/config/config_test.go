@@ -362,13 +362,13 @@ func TestConfigBackend_Lookup(t *testing.T) {
 		t.Fatal("Expected x-type to be h1fv1")
 	}
 
-	value, ok = configBackend.Lookup("channels.mychannel.chaincodes")
+	value, ok = configBackend.Lookup("organizations")
 	if !ok {
 		t.Fatal(err)
 	}
-	chaincodes := value.([]interface{})
-	if len(chaincodes) != 2 {
-		t.Fatal("Expected only 2 chaincodes")
+	orgs := value.(map[string]interface{})
+	if len(orgs) != 3 {
+		t.Fatal("Expected only 3 orgs")
 	}
 
 }

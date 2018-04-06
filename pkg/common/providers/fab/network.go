@@ -102,4 +102,7 @@ type MatchConfig struct {
 	EventURLSubstitutionExp             string
 	SSLTargetOverrideURLSubstitutionExp string
 	MappedHost                          string
+
+	// this is used for Name mapping instead of URL/URLsubstitution host mapping
+	MappedName string
 }
