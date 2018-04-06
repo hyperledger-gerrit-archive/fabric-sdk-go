@@ -235,4 +235,3 @@ entityMatchers:
     - pattern: (\w+).org1.example.(\w+)
       urlSubstitutionExp:
       mappedHost: local.ca.org1.example.com
-
