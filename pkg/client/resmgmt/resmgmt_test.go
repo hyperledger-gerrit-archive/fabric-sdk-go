@@ -1665,7 +1665,10 @@ func getNoEventSourceBackend(backend core.ConfigBackend) *mocks.MockConfigBacken
 	if err != nil {
 		panic(err)
 	}
-	mychannel := networkConfig.Channels["mychannel"]
+	// real config is now called `ch1`, only this place needs to change in this test file
+	// code should usually use endpointConfig's ChannelPeers() or ChannelConfig() to access a channel
+	// not networkConfig.Channels map directly
+	mychannel := networkConfig.Channels["ch1"]
 	chPeer := mychannel.Peers["peer0.org1.example.com"]
 	chPeer.EventSource = false
 	mychannel.Peers["peer0.org1.example.com"] = chPeer

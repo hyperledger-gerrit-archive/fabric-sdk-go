@@ -43,6 +43,9 @@ client:
     # Event service type (deliver|eventhub) - default: deliver
     # NOTE: This is temporary until the SDK starts making use of channel capabilities
     type: deliver
+    # the below timeouts are commented out to use the default values that are found in
+    # "pkg/fab/endpointconfig.go"
+    # the client is free to override the default values by uncomment and resetting the values as they see fit
 #    timeout:
 #      connection: 15s
 #      registrationResponse: 15s
@@ -107,7 +110,7 @@ client:
 #
 channels:
   # name of the channel
-  mychannel:
+  ch1:
     # Required. list of orderers designated by the application to use for transactions on this
     # channel. This list can be a result of access control ("org1" can only access "ordererA"), or
     # operational decisions to share loads from applications among the orderers.  The values must
@@ -158,7 +161,7 @@ channels:
           backoffFactor: 2.0
 
   # multi-org test channel
-  orgchannel:
+  ch2:
 
     orderers:
       - orderer.example.com
@@ -449,3 +452,10 @@ entityMatchers:
     - pattern: (\w+).org2.example.(\w+)
       urlSubstitutionExp:
       mappedHost: local.ca.org2.example.com
+
+  channel:
+    - pattern: ^(my)(\w*)(channel)$
+      mappedName: ch1
+
+    - pattern: ^(org)(\w*)(channel)$
+      mappedName: ch2

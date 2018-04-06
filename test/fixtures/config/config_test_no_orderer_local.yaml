@@ -78,7 +78,7 @@ client:
 #
 channels:
   # name of the channel
-  mychannel:
+  ch1:
 
     # Required. list of peers from participating orgs
     peers:
@@ -189,3 +189,8 @@ orderers:
     tlsCACerts:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
+entityMatchers:
+  channel:
+    - pattern: ^(my)(\w*)(channel)$
+      mappedName: ch1

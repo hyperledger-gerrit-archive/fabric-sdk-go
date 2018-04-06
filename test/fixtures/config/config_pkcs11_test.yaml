@@ -92,7 +92,7 @@ client:
 #
 channels:
   # name of the channel
-  mychannel:
+  ch1:
     # Required. list of orderers designated by the application to use for transactions on this
     # channel. This list can be a result of access control ("org1" can only access "ordererA"), or
     # operational decisions to share loads from applications among the orderers.  The values must
@@ -143,7 +143,7 @@ channels:
           backoffFactor: 2.0
 
   # multi-org test channel
-  orgchannel:
+  ch2:
 
     orderers:
       - orderer.example.com
@@ -413,3 +413,11 @@ certificateAuthorities:
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
     caName: ca.org2.example.com
+
+entityMatchers:
+  channel:
+    - pattern: ^(my)(\w*)(channel)$
+      mappedName: ch1
+
+    - pattern: ^(org)(\w*)(channel)$
+      mappedName: ch2
