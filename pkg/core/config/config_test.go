@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -23,10 +24,9 @@ import (
 var configBackend core.ConfigBackend
 
 const (
-	configTestFilePath         = "testdata/config_test.yaml"
-	configTestTemplateFilePath = "testdata/config_test_template.yaml"
-	configType                 = "yaml"
-	defaultConfigPath          = "testdata/template"
+	configTestFilePath = "testdata/config_test.yaml"
+	configType         = "yaml"
+	defaultConfigPath  = "testdata/template"
 )
 
 func TestFromRawSuccess(t *testing.T) {
@@ -146,7 +146,7 @@ func TestInitConfigInvalidLocation(t *testing.T) {
 // Test case to create a new viper instance to prevent conflict with existing
 // viper instances in applications that use the SDK
 func TestMultipleVipers(t *testing.T) {
-	viper.SetConfigFile("./test.yaml")
+	viper.SetConfigFile("./testdata/viper-test.yaml")
 	err := viper.ReadInConfig()
 	if err != nil {
 		t.Log(err.Error())
@@ -329,46 +329,28 @@ func badOpt() Option {
 }
 
 func TestConfigBackend_Lookup(t *testing.T) {
-	configBackend, err := FromFile(configTestTemplateFilePath)()
+	configBackend, err := FromFile(configTestFilePath)()
 	if err != nil {
 		t.Fatalf("Unexpected error reading config backend: %v", err)
 	}
 
-	value, ok := configBackend.Lookup("name")
+	value, ok := configBackend.Lookup("version")
 	if !ok {
 		t.Fatal(err)
 	}
 
-	name := value.(string)
-	if name != "global-trade-network" {
+	if value.(string) != "1.0.0" {
 		t.Fatal("Expected Name to be global-trade-network")
 	}
 
-	value, ok = configBackend.Lookup("description")
+	value, ok = configBackend.Lookup("channels")
 	if !ok {
 		t.Fatal(err)
-	}
-	description := value.(string)
-	if description == "" {
-		t.Fatal("Expected non empty description")
 	}
 
-	value, ok = configBackend.Lookup("x-type")
-	if !ok {
-		t.Fatal(err)
-	}
-	xType := value.(string)
-	if xType != "h1fv1" {
-		t.Fatal("Expected x-type to be h1fv1")
-	}
-
-	value, ok = configBackend.Lookup("channels.mychannel.chaincodes")
-	if !ok {
-		t.Fatal(err)
-	}
-	chaincodes := value.([]interface{})
-	if len(chaincodes) != 2 {
-		t.Fatal("Expected only 2 chaincodes")
+	channels := value.(map[string]interface{})
+	if len(channels) == 0 {
+		t.Fatal("expected to get valid channels network config map")
 	}
 
 }
