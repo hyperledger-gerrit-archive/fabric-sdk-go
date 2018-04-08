@@ -27,6 +27,11 @@ func (f *ProviderFactory) CreateDiscoveryProvider(config fab.EndpointConfig) (fa
 	return discovery.New(config)
 }
 
+// CreateSystemDiscoveryProvider returns a new default implementation of system discovery provider
+func (f *ProviderFactory) CreateSystemDiscoveryProvider(config fab.EndpointConfig) (fab.DiscoveryProvider, error) {
+	return discovery.New(config)
+}
+
 // CreateSelectionProvider returns a new default implementation of selection service
 func (f *ProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
 	return selection.New(config)

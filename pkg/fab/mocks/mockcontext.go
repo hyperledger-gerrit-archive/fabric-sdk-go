@@ -27,19 +27,20 @@ import (
 
 // MockProviderContext holds core providers to enable mocking.
 type MockProviderContext struct {
-	cryptoSuiteConfig core.CryptoSuiteConfig
-	endpointConfig    fab.EndpointConfig
-	identityConfig    msp.IdentityConfig
-	cryptoSuite       core.CryptoSuite
-	signingManager    core.SigningManager
-	userStore         msp.UserStore
-	identityManager   map[string]msp.IdentityManager
-	privateKey        core.Key
-	identity          msp.SigningIdentity
-	discoveryProvider fab.DiscoveryProvider
-	selectionProvider fab.SelectionProvider
-	infraProvider     fab.InfraProvider
-	channelProvider   fab.ChannelProvider
+	cryptoSuiteConfig      core.CryptoSuiteConfig
+	endpointConfig         fab.EndpointConfig
+	identityConfig         msp.IdentityConfig
+	cryptoSuite            core.CryptoSuite
+	signingManager         core.SigningManager
+	userStore              msp.UserStore
+	identityManager        map[string]msp.IdentityManager
+	privateKey             core.Key
+	identity               msp.SigningIdentity
+	discoveryProvider      fab.DiscoveryProvider
+	systemDiscoveryService fab.DiscoveryService
+	selectionProvider      fab.SelectionProvider
+	infraProvider          fab.InfraProvider
+	channelProvider        fab.ChannelProvider
 }
 
 // ProviderUsersOptions ...
@@ -87,18 +88,19 @@ func NewMockProviderContext(userOpts ...ProviderOption) *MockProviderContext {
 	}
 
 	context := MockProviderContext{
-		cryptoSuiteConfig: NewMockCryptoConfig(),
-		endpointConfig:    NewMockEndpointConfig(),
-		identityConfig:    NewMockIdentityConfig(),
-		signingManager:    mocks.NewMockSigningManager(),
-		cryptoSuite:       &MockCryptoSuite{},
-		userStore:         &mspmocks.MockUserStore{},
-		identityManager:   im,
-		discoveryProvider: &MockStaticDiscoveryProvider{},
-		selectionProvider: &MockSelectionProvider{},
-		infraProvider:     &MockInfraProvider{},
-		channelProvider:   &MockChannelProvider{},
-		identity:          users.identity,
+		cryptoSuiteConfig:      NewMockCryptoConfig(),
+		endpointConfig:         NewMockEndpointConfig(),
+		identityConfig:         NewMockIdentityConfig(),
+		signingManager:         mocks.NewMockSigningManager(),
+		cryptoSuite:            &MockCryptoSuite{},
+		userStore:              &mspmocks.MockUserStore{},
+		identityManager:        im,
+		discoveryProvider:      &MockStaticDiscoveryProvider{},
+		systemDiscoveryService: &MockStaticDiscoveryService{},
+		selectionProvider:      &MockSelectionProvider{},
+		infraProvider:          &MockInfraProvider{},
+		channelProvider:        &MockChannelProvider{},
+		identity:               users.identity,
 	}
 	return &context
 }
@@ -181,6 +183,11 @@ func (pc *MockProviderContext) Sign(msg []byte) ([]byte, error) {
 //DiscoveryProvider returns discovery provider
 func (pc *MockProviderContext) DiscoveryProvider() fab.DiscoveryProvider {
 	return pc.discoveryProvider
+}
+
+//SystemDiscoveryService returns the system (channelless) discovery service
+func (pc *MockProviderContext) SystemDiscoveryService() fab.DiscoveryService {
+	return pc.systemDiscoveryService
 }
 
 //SelectionProvider returns selection provider
@@ -280,6 +287,7 @@ func (m MockContext) PrivateKey() core.Key {
 func NewMockContextWithCustomDiscovery(ic msp.SigningIdentity, discPvdr fab.DiscoveryProvider) *MockContext {
 	mockCtx := NewMockProviderContext(WithProviderUser(ic.Identifier().ID, ic.Identifier().MSPID))
 	mockCtx.discoveryProvider = discPvdr
+	mockCtx.systemDiscoveryService, _ = discPvdr.CreateDiscoveryService("")
 	ctx := MockContext{
 		MockProviderContext: mockCtx,
 		SigningIdentity:     ic,

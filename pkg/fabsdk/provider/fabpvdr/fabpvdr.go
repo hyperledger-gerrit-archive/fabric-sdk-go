@@ -8,6 +8,8 @@ package fabpvdr
 
 import (
 	reqContext "context"
+	"math/rand"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
@@ -17,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discover"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/eventhubclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
@@ -31,6 +34,10 @@ type cacheKey interface {
 	lazycache.Key
 	Context() fab.ClientContext
 	ChannelConfig() fab.ChannelCfg
+}
+
+type eventsCacheKey interface {
+	cacheKey
 	Opts() []options.Opt
 }
 
@@ -41,11 +48,12 @@ type cache interface {
 
 // InfraProvider represents the default implementation of Fabric objects.
 type InfraProvider struct {
-	providerContext   context.Providers
-	commManager       *comm.CachingConnector
-	eventServiceCache cache
-	chCfgCache        cache
-	membershipCache   cache
+	providerContext      context.Providers
+	commManager          *comm.CachingConnector
+	eventServiceCache    cache
+	chCfgCache           cache
+	membershipCache      cache
+	discoverServiceCache cache
 }
 
 // New creates a InfraProvider enabling access to core Fabric objects and functionality.
@@ -55,11 +63,12 @@ func New(config fab.EndpointConfig) *InfraProvider {
 	eventIdleTime := config.Timeout(fab.EventServiceIdle)
 	chConfigRefresh := config.Timeout(fab.ChannelConfigRefresh)
 	membershipRefresh := config.Timeout(fab.ChannelMembershipRefresh)
+	discoverIdleTimeout := config.Timeout(fab.DiscoverServiceIdle)
 
 	eventServiceCache := lazycache.New(
 		"Event_Service_Cache",
 		func(key lazycache.Key) (interface{}, error) {
-			ck := key.(cacheKey)
+			ck := key.(eventsCacheKey)
 			return NewEventClientRef(
 				eventIdleTime,
 				func() (fab.EventClient, error) {
@@ -69,11 +78,20 @@ func New(config fab.EndpointConfig) *InfraProvider {
 		},
 	)
 
+	discoverServiceCache := lazycache.New(
+		"Discover_Service_Cache",
+		func(key lazycache.Key) (interface{}, error) {
+			ck := key.(cacheKey)
+			return getDiscoverClient(ck.Context(), ck.ChannelConfig(), discoverIdleTimeout)
+		},
+	)
+
 	return &InfraProvider{
-		commManager:       comm.NewCachingConnector(sweepTime, idleTime),
-		eventServiceCache: eventServiceCache,
-		chCfgCache:        chconfig.NewRefCache(chConfigRefresh),
-		membershipCache:   membership.NewRefCache(membershipRefresh),
+		commManager:          comm.NewCachingConnector(sweepTime, idleTime),
+		eventServiceCache:    eventServiceCache,
+		chCfgCache:           chconfig.NewRefCache(chConfigRefresh),
+		membershipCache:      membership.NewRefCache(membershipRefresh),
+		discoverServiceCache: discoverServiceCache,
 	}
 }
 
@@ -87,6 +105,9 @@ func (f *InfraProvider) Initialize(providers context.Providers) error {
 func (f *InfraProvider) Close() {
 	logger.Debug("Closing event service cache...")
 	f.eventServiceCache.Close()
+
+	logger.Debug("Closing discover service cache...")
+	f.discoverServiceCache.Close()
 
 	logger.Debug("Closing membership cache...")
 	f.membershipCache.Close()
@@ -111,7 +132,7 @@ func (f *InfraProvider) CreateEventService(ctx fab.ClientContext, channelID stri
 	if err != nil {
 		return nil, err
 	}
-	key, err := NewCacheKey(ctx, chnlCfg, opts...)
+	key, err := NewEventsCacheKey(ctx, chnlCfg, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,6 +191,24 @@ func (f *InfraProvider) CreateChannelTransactor(reqCtx reqContext.Context, cfg f
 	return channelImpl.NewTransactor(reqCtx, cfg)
 }
 
+// CreateDiscoverService creates the Discover service.
+func (f *InfraProvider) CreateDiscoverService(ctx fab.ClientContext, channelID string) (fab.DiscoverService, error) {
+	chnlCfg, err := f.CreateChannelCfg(ctx, channelID)
+	if err != nil {
+		return nil, err
+	}
+	key, err := NewCacheKey(ctx, chnlCfg)
+	if err != nil {
+		return nil, err
+	}
+	discoverService, err := f.discoverServiceCache.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return discoverService.(fab.DiscoverService), nil
+}
+
 // CreatePeerFromConfig returns a new default implementation of Peer based configuration
 func (f *InfraProvider) CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.Peer, error) {
 	return peerImpl.New(f.providerContext.EndpointConfig(), peerImpl.FromPeerConfig(peerCfg))
@@ -209,4 +248,20 @@ func getEventClient(ctx context.Client, chConfig fab.ChannelCfg, opts ...options
 	default:
 		return nil, errors.Errorf("unsupported event service type: %d", ctx.EndpointConfig().EventServiceType())
 	}
+}
+
+func getDiscoverClient(ctx context.Client, chConfig fab.ChannelCfg, idleTimeout time.Duration) (*discover.Client, error) {
+	chpeers, err := ctx.EndpointConfig().ChannelPeers(chConfig.ID())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get peer configs for channel [%s]", chConfig.ID())
+	}
+	if len(chpeers) == 0 {
+		return nil, errors.Errorf("no peer configs found for channel [%s]", chConfig.ID())
+	}
+
+	// Choose a peer at random
+	peerURL := chpeers[rand.Int31n(int32(len(chpeers)))].URL
+
+	logger.Infof("Creating Discover client connected to [%s]", peerURL)
+	return discover.New(ctx, chConfig, peerURL, discover.WithIdleTimeout(idleTimeout))
 }
