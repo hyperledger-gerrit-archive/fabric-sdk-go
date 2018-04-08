@@ -61,17 +61,18 @@ func (c *Channel) ChannelID() string {
 
 //Provider implementation of Providers interface
 type Provider struct {
-	cryptoSuiteConfig core.CryptoSuiteConfig
-	endpointConfig    fab.EndpointConfig
-	identityConfig    msp.IdentityConfig
-	userStore         msp.UserStore
-	cryptoSuite       core.CryptoSuite
-	discoveryProvider fab.DiscoveryProvider
-	selectionProvider fab.SelectionProvider
-	signingManager    core.SigningManager
-	idMgmtProvider    msp.IdentityManagerProvider
-	infraProvider     fab.InfraProvider
-	channelProvider   fab.ChannelProvider
+	cryptoSuiteConfig      core.CryptoSuiteConfig
+	endpointConfig         fab.EndpointConfig
+	identityConfig         msp.IdentityConfig
+	userStore              msp.UserStore
+	cryptoSuite            core.CryptoSuite
+	discoveryProvider      fab.DiscoveryProvider
+	systemDiscoveryService fab.DiscoveryService
+	selectionProvider      fab.SelectionProvider
+	signingManager         core.SigningManager
+	idMgmtProvider         msp.IdentityManagerProvider
+	infraProvider          fab.InfraProvider
+	channelProvider        fab.ChannelProvider
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
@@ -102,6 +103,11 @@ func (c *Provider) IdentityConfig() msp.IdentityConfig {
 // DiscoveryProvider returns discovery provider
 func (c *Provider) DiscoveryProvider() fab.DiscoveryProvider {
 	return c.discoveryProvider
+}
+
+// SystemDiscoveryService returns the system (channelless) discovery service
+func (c *Provider) SystemDiscoveryService() fab.DiscoveryService {
+	return c.systemDiscoveryService
 }
 
 // SelectionProvider returns selection provider
@@ -166,6 +172,13 @@ func WithCryptoSuite(cryptoSuite core.CryptoSuite) SDKContextParams {
 func WithDiscoveryProvider(discoveryProvider fab.DiscoveryProvider) SDKContextParams {
 	return func(ctx *Provider) {
 		ctx.discoveryProvider = discoveryProvider
+	}
+}
+
+//WithSystemDiscoveryService sets the system (channelless) Discovery Service
+func WithSystemDiscoveryService(discoveryService fab.DiscoveryService) SDKContextParams {
+	return func(ctx *Provider) {
+		ctx.systemDiscoveryService = discoveryService
 	}
 }
 
