@@ -8,6 +8,7 @@ package mocks
 
 import (
 	"fmt"
+	"sync"
 
 	reqContext "context"
 
@@ -18,14 +19,21 @@ import (
 
 // MockInfraProvider represents the default implementation of Fabric objects.
 type MockInfraProvider struct {
+	lock             sync.RWMutex
 	providerContext  context.Providers
 	customOrderer    fab.Orderer
 	customTransactor fab.Transactor
+	Endpoints        []*MockDiscoverPeerEndpoint
 }
 
 // CreateEventService creates the event service.
 func (f *MockInfraProvider) CreateEventService(ic fab.ClientContext, channelID string, opts ...options.Opt) (fab.EventService, error) {
 	panic("not implemented")
+}
+
+// CreateDiscoverService creates a Discover service
+func (f *MockInfraProvider) CreateDiscoverService(ctx fab.ClientContext, channelID string) (fab.DiscoverService, error) {
+	return NewMockDiscoverService(WithDiscoverPeers(f.PeerEndpoints()...)), nil
 }
 
 // CreateChannelCfg creates the channel configuration
@@ -87,6 +95,20 @@ func (f *MockInfraProvider) SetCustomOrderer(customOrderer fab.Orderer) {
 // SetCustomTransactor sets custom transactor for unit-test purposes
 func (f *MockInfraProvider) SetCustomTransactor(customTransactor fab.Transactor) {
 	f.customTransactor = customTransactor
+}
+
+// SetPeerEndpoints sets the Discover peer endpoints
+func (f *MockInfraProvider) SetPeerEndpoints(peerEndpoints ...*MockDiscoverPeerEndpoint) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	f.Endpoints = peerEndpoints
+}
+
+// PeerEndpoints returns the Discover peer endpoints
+func (f *MockInfraProvider) PeerEndpoints() []*MockDiscoverPeerEndpoint {
+	f.lock.RLock()
+	defer f.lock.RUnlock()
+	return f.Endpoints
 }
 
 //Close mock close function

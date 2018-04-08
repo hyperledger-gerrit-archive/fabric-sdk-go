@@ -378,3 +378,15 @@ func (m *MockProviders) SelectionProvider() fab.SelectionProvider {
 func (mr *MockProvidersMockRecorder) SelectionProvider() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectionProvider", reflect.TypeOf((*MockProviders)(nil).SelectionProvider))
 }
+
+// SystemDiscoveryService mocks base method
+func (m *MockProviders) SystemDiscoveryService() fab.DiscoveryService {
+	ret := m.ctrl.Call(m, "SystemDiscoveryService")
+	ret0, _ := ret[0].(fab.DiscoveryService)
+	return ret0
+}
+
+// SystemDiscoveryService indicates an expected call of SystemDiscoveryService
+func (mr *MockProvidersMockRecorder) SystemDiscoveryService() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SystemDiscoveryService", reflect.TypeOf((*MockProviders)(nil).SystemDiscoveryService))
+}

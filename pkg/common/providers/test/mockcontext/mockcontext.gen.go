@@ -145,6 +145,18 @@ func (mr *MockProvidersMockRecorder) SigningManager() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SigningManager", reflect.TypeOf((*MockProviders)(nil).SigningManager))
 }
 
+// SystemDiscoveryService mocks base method
+func (m *MockProviders) SystemDiscoveryService() fab.DiscoveryService {
+	ret := m.ctrl.Call(m, "SystemDiscoveryService")
+	ret0, _ := ret[0].(fab.DiscoveryService)
+	return ret0
+}
+
+// SystemDiscoveryService indicates an expected call of SystemDiscoveryService
+func (mr *MockProvidersMockRecorder) SystemDiscoveryService() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SystemDiscoveryService", reflect.TypeOf((*MockProviders)(nil).SystemDiscoveryService))
+}
+
 // UserStore mocks base method
 func (m *MockProviders) UserStore() msp.UserStore {
 	ret := m.ctrl.Call(m, "UserStore")
@@ -361,6 +373,18 @@ func (m *MockClient) SigningManager() core.SigningManager {
 // SigningManager indicates an expected call of SigningManager
 func (mr *MockClientMockRecorder) SigningManager() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SigningManager", reflect.TypeOf((*MockClient)(nil).SigningManager))
+}
+
+// SystemDiscoveryService mocks base method
+func (m *MockClient) SystemDiscoveryService() fab.DiscoveryService {
+	ret := m.ctrl.Call(m, "SystemDiscoveryService")
+	ret0, _ := ret[0].(fab.DiscoveryService)
+	return ret0
+}
+
+// SystemDiscoveryService indicates an expected call of SystemDiscoveryService
+func (mr *MockClientMockRecorder) SystemDiscoveryService() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SystemDiscoveryService", reflect.TypeOf((*MockClient)(nil).SystemDiscoveryService))
 }
 
 // UserStore mocks base method

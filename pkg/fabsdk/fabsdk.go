@@ -11,6 +11,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
+
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
@@ -231,6 +233,16 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		return errors.WithMessage(err, "failed to create discovery provider")
 	}
 
+	// Initialize system discovery provider
+	systemDiscoveryProvider, err := sdk.opts.Service.CreateSystemDiscoveryProvider(sdk.opts.endpointConfig)
+	if err != nil {
+		return errors.WithMessage(err, "failed to create system discovery service")
+	}
+	if systemDiscoveryProvider == nil {
+		systemDiscoveryProvider = discoveryProvider
+	}
+	systemDiscoveryService := newDiscoveryServiceRef(systemDiscoveryProvider)
+
 	// Initialize selection provider (for selecting endorsing peers)
 	selectionProvider, err := sdk.opts.Service.CreateSelectionProvider(sdk.opts.endpointConfig)
 	if err != nil {
@@ -250,6 +262,7 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		context.WithSigningManager(signingManager),
 		context.WithUserStore(userStore),
 		context.WithDiscoveryProvider(discoveryProvider),
+		context.WithSystemDiscoveryService(systemDiscoveryService),
 		context.WithSelectionProvider(selectionProvider),
 		context.WithIdentityManagerProvider(identityManagerProvider),
 		context.WithInfraProvider(infraProvider),
@@ -270,6 +283,15 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		}
 	}
 
+	if systemDiscoveryProvider != discoveryProvider {
+		if pi, ok := systemDiscoveryProvider.(providerInit); ok {
+			err = pi.Initialize(sdk.provider)
+			if err != nil {
+				return errors.WithMessage(err, "failed to initialize system discovery provider")
+			}
+		}
+	}
+
 	if pi, ok := selectionProvider.(providerInit); ok {
 		err = pi.Initialize(sdk.provider)
 		if err != nil {
@@ -282,6 +304,9 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
+	if service, ok := sdk.provider.SystemDiscoveryService().(closeable); ok {
+		service.Close()
+	}
 	if pvdr, ok := sdk.provider.DiscoveryProvider().(closeable); ok {
 		pvdr.Close()
 	}
@@ -357,4 +382,26 @@ func (sdk *FabricSDK) loadConfig(configProvider core.ConfigProvider) error {
 		sdk.opts.ConfigBackend = configBackend
 	}
 	return nil
+}
+
+type discoveryServiceRef struct {
+	ref *lazyref.Reference
+}
+
+func newDiscoveryServiceRef(provider fab.DiscoveryProvider) *discoveryServiceRef {
+	return &discoveryServiceRef{
+		ref: lazyref.New(
+			func() (interface{}, error) {
+				return provider.CreateDiscoveryService("")
+			},
+		),
+	}
+}
+
+func (s *discoveryServiceRef) GetPeers() ([]fab.Peer, error) {
+	service, err := s.ref.Get()
+	if err != nil {
+		return nil, err
+	}
+	return service.(fab.DiscoveryService).GetPeers()
 }

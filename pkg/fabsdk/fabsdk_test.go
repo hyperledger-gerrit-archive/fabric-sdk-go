@@ -123,6 +123,7 @@ func TestWithServicePkg(t *testing.T) {
 	defer mockCtrl.Finish()
 	factory := mockapisdk.NewMockServiceProviderFactory(mockCtrl)
 
+	factory.EXPECT().CreateSystemDiscoveryProvider(gomock.Any()).Return(nil, nil)
 	factory.EXPECT().CreateDiscoveryProvider(gomock.Any()).Return(nil, nil)
 	factory.EXPECT().CreateSelectionProvider(gomock.Any()).Return(nil, nil)
 
