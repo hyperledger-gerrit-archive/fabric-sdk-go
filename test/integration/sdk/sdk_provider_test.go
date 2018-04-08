@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -29,13 +30,6 @@ func TestDynamicSelection(t *testing.T) {
 	// Using shared SDK instance to increase test speed.
 	sdk := mainSDK
 	testSetup := mainTestSetup
-
-	//testSetup := integration.BaseSetupImpl{
-	//	ConfigFile:    "../" + integration.ConfigTestFile,
-	//	ChannelID:     "mychannel",
-	//	OrgID:         org1Name,
-	//	ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	//}
 
 	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
 	// This user has to have privileges to query lscc for chaincode data
@@ -92,7 +86,6 @@ func TestDynamicSelection(t *testing.T) {
 	if valueInt+1 != valueAfterInvokeInt {
 		t.Fatalf("Execute failed. Before: %s, after: %s", value, response.Payload)
 	}
-
 }
 
 // DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
@@ -104,4 +97,9 @@ type DynamicSelectionProviderFactory struct {
 // CreateSelectionProvider returns a new implementation of dynamic selection provider
 func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
 	return selection.New(config, f.ChannelUsers)
+}
+
+// CreateDiscoveryProvider returns a new dynamic discovery provider
+func (f *DynamicSelectionProviderFactory) CreateDiscoveryProvider(config fab.EndpointConfig) (fab.DiscoveryProvider, error) {
+	return dynamicdiscovery.New(), nil
 }
