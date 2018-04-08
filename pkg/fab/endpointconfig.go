@@ -51,6 +51,7 @@ const (
 	defaultEventServiceIdleInterval       = time.Minute * 2
 	defaultChannelConfigRefreshInterval   = time.Minute * 30
 	defaultChannelMemshpRefreshInterval   = time.Second * 30
+	defaultDiscoverServiceIdleInterval    = time.Second * 30
 
 	defaultCacheSweepInterval = time.Second * 15
 )
@@ -589,6 +590,11 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration {
 		timeout = c.backend.GetDuration("client.global.cache.channelMembership")
 		if timeout == 0 {
 			timeout = defaultChannelMemshpRefreshInterval
+		}
+	case fab.DiscoverServiceIdle:
+		timeout = c.backend.GetDuration("client.global.cache.discoverServiceIdle")
+		if timeout == 0 {
+			timeout = defaultDiscoverServiceIdleInterval
 		}
 
 	case fab.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?

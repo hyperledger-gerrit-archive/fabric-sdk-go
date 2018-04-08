@@ -15,6 +15,7 @@ import (
 
 	"time"
 
+	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"google.golang.org/grpc"
@@ -30,6 +31,11 @@ type ClientContext interface {
 	msp.SigningIdentity
 }
 
+// DiscoverService retrieves information about peers, endorsers, and MSP configuration
+type DiscoverService interface {
+	Send(ctx reqContext.Context, req *discclient.Request) (discclient.Response, error)
+}
+
 // InfraProvider enables access to fabric objects such as peer and user based on config or
 type InfraProvider interface {
 	CreateChannelConfig(name string) (ChannelConfig, error)
@@ -40,6 +46,7 @@ type InfraProvider interface {
 	CreatePeerFromConfig(peerCfg *NetworkPeer) (Peer, error)
 	CreateOrdererFromConfig(cfg *OrdererConfig) (Orderer, error)
 	CommManager() CommManager
+	CreateDiscoverService(ctx ClientContext, channelID string, opts ...options.Opt) (DiscoverService, error)
 	Close()
 }
 
@@ -134,6 +141,8 @@ const (
 	ChannelConfigRefresh
 	// ChannelMembershipRefresh channel membership refresh interval
 	ChannelMembershipRefresh
+	// DiscoverServiceIdle is the timeout for releasing the discover service connection
+	DiscoverServiceIdle
 )
 
 // EventServiceType specifies the type of event service to use
@@ -149,6 +158,7 @@ const (
 // Providers represents the SDK configured service providers context.
 type Providers interface {
 	DiscoveryProvider() DiscoveryProvider
+	SystemDiscoveryService() DiscoveryService
 	SelectionProvider() SelectionProvider
 	ChannelProvider() ChannelProvider
 	InfraProvider() InfraProvider
