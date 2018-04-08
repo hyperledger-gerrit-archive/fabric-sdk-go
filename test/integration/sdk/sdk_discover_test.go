@@ -1,3 +1,5 @@
+// +build devstable
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -18,24 +20,21 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestDynamicSelection(t *testing.T) {
+func TestDynamicDiscovery(t *testing.T) {
 
 	// Using shared SDK instance to increase test speed.
 	sdk := mainSDK
 	testSetup := mainTestSetup
 
-	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
-	// This user has to have privileges to query lscc for chaincode data
-	mychannelUser := selection.ChannelUser{ChannelID: testSetup.ChannelID, Username: "User1", OrgName: "Org1"}
-
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(integration.ConfigBackend,
-		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}))
+	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
+		fabsdk.WithServicePkg(&DynamicDiscoveryProviderFactory{}))
 
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
@@ -48,8 +47,8 @@ func TestDynamicSelection(t *testing.T) {
 
 	chainCodeID := integration.GenerateRandomID()
 	resp, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID)
-	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
-	require.NotEmpty(t, resp, "instantiate response should be populated")
+	assert.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	assert.NotEmpty(t, resp, "instantiate response should be populated")
 
 	//prepare contexts
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
@@ -86,13 +85,12 @@ func TestDynamicSelection(t *testing.T) {
 	}
 }
 
-// DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
-type DynamicSelectionProviderFactory struct {
+// DynamicDiscoveryProviderFactory is configured with dynamic (endorser) selection provider
+type DynamicDiscoveryProviderFactory struct {
 	defsvc.ProviderFactory
-	ChannelUsers []selection.ChannelUser
 }
 
-// CreateSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
-	return selection.New(config, f.ChannelUsers)
+// CreateDiscoveryProvider returns a new dynamic discovery provider
+func (f *DynamicDiscoveryProviderFactory) CreateDiscoveryProvider(config fab.EndpointConfig) (fab.DiscoveryProvider, error) {
+	return dynamicdiscovery.New(), nil
 }
