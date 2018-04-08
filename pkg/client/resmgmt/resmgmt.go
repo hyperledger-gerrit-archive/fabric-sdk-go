@@ -280,7 +280,7 @@ func (rc *Client) calculateTargets(discovery fab.DiscoveryService, peers []fab.P
 		// Retrieve targets from discovery
 		targets, err = discovery.GetPeers()
 		if err != nil {
-			return nil, err
+			return nil, errors.WithMessage(err, "failed to get targets from discovery service")
 		}
 
 		if filter == nil {
