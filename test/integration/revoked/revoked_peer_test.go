@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 
@@ -25,6 +26,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,8 +40,8 @@ const (
 	org1AdminUser    = "Admin"
 	org2AdminUser    = "Admin"
 	org1User         = "User1"
-	org2User         = "User1"
 	channelID        = "orgchannel"
+	configPath       = "../../fixtures/config/config_test.yaml"
 )
 
 var logger = logging.NewLogger("fabsdk/test")
@@ -50,7 +53,7 @@ var orgTestPeer1 fab.Peer
 // TestRevokedPeer
 func TestRevokedPeer(t *testing.T) {
 	// Create SDK setup for the integration tests with revoked peer
-	sdk, err := fabsdk.New(config.FromFile("../../fixtures/config/config_revoke_test.yaml"))
+	sdk, err := fabsdk.New(getConfigBackend(t))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -192,4 +195,38 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 		t.Fatal(err)
 	}
 
+}
+
+func getConfigBackend(t *testing.T) core.ConfigProvider {
+
+	return func() (core.ConfigBackend, error) {
+		backend, err := config.FromFile(configPath)()
+		if err != nil {
+			t.Fatalf("failed to read config backend from file, %v", err)
+		}
+		backendMap := make(map[string]interface{})
+
+		networkConfig := fab.NetworkConfig{}
+		//get valid peer config
+		err = lookup.New(backend).UnmarshalKey("peers", &networkConfig.Peers)
+		if err != nil {
+			t.Fatalf("failed to unmarshal peer network config, %v", err)
+		}
+
+		//customize peer0.org2 to peer1.org2
+		peer2 := networkConfig.Peers["local.peer0.org2.example.com"]
+		peer2.URL = "peer1.org2.example.com:9051"
+		peer2.EventURL = ""
+		peer2.GRPCOptions["ssl-target-name-override"] = "peer1.org2.example.com"
+
+		//remove peer0.org2
+		delete(networkConfig.Peers, "local.peer0.org2.example.com")
+
+		//add peer1.org2
+		networkConfig.Peers["local.peer1.org2.example.com"] = peer2
+
+		backendMap["peers"] = networkConfig.Peers
+
+		return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
+	}
 }
