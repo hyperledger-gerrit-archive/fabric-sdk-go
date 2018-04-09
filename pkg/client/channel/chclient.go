@@ -13,6 +13,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/filter"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -84,7 +85,12 @@ func (cc *Client) Query(request Request, options ...RequestOption) (Response, er
 		return Response{}, errors.WithMessage(err, "option failed")
 	}
 
-	return cc.InvokeHandler(invoke.NewQueryHandler(), request, optsWithTimeout...)
+	optsWithDefaultFilter, err := cc.addDefaultEndpointFilter(cc.context, filter.ChaincodeQuery, optsWithTimeout...)
+	if err != nil {
+		return Response{}, errors.WithMessage(err, "option failed")
+	}
+
+	return cc.InvokeHandler(invoke.NewQueryHandler(), request, optsWithDefaultFilter...)
 }
 
 // Execute prepares and executes transaction using request and optional options provided
@@ -94,7 +100,12 @@ func (cc *Client) Execute(request Request, options ...RequestOption) (Response, 
 		return Response{}, errors.WithMessage(err, "option failed")
 	}
 
-	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, optsWithTimeout...)
+	optsWithDefaultFilter, err := cc.addDefaultEndpointFilter(cc.context, filter.EndorsingPeer, optsWithTimeout...)
+	if err != nil {
+		return Response{}, errors.WithMessage(err, "option failed")
+	}
+
+	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, optsWithDefaultFilter...)
 }
 
 //InvokeHandler invokes handler using request and options provided
@@ -237,6 +248,23 @@ func (cc *Client) addDefaultTimeout(ctx context.Client, timeOutType fab.TimeoutT
 	if txnOpts.Timeouts[timeOutType] == 0 {
 		//InvokeHandler relies on Execute timeout
 		return append(options, WithTimeout(fab.Execute, cc.context.EndpointConfig().Timeout(timeOutType))), nil
+	}
+	return options, nil
+}
+
+//addDefaultEndpointFilter adds default endpoint filter if target filter is missing in options
+func (cc *Client) addDefaultEndpointFilter(ctx context.Client, endpointType filter.EndpointType, options ...RequestOption) ([]RequestOption, error) {
+	txnOpts := requestOptions{}
+	for _, option := range options {
+		err := option(ctx, &txnOpts)
+		if err != nil {
+			return nil, errors.WithMessage(err, "option failed")
+		}
+	}
+
+	if len(txnOpts.Targets) == 0 && txnOpts.TargetFilter == nil {
+		//InvokeHandler relies on default filter
+		return append(options, WithTargetFilter(filter.NewEndpointFilter(cc.context, endpointType))), nil
 	}
 	return options, nil
 }
