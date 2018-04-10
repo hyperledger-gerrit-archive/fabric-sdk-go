@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
-	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
@@ -90,7 +89,7 @@ func (c *DeliverConnection) deliverStream() deliverStream {
 }
 
 // Send sends a seek request to the deliver server
-func (c *DeliverConnection) Send(seekInfo *ab.SeekInfo) error {
+func (c *DeliverConnection) Send(seekInfo proto.Message) error {
 	if c.Closed() {
 		return errors.New("connection is closed")
 	}
