@@ -24,7 +24,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
@@ -38,7 +37,7 @@ const (
 )
 
 func runWithConfigFixture(t *testing.T) {
-	Run(t, config.FromFile("../"+integration.ConfigTestFile))
+	Run(t, integration.ConfigBackend)
 }
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
