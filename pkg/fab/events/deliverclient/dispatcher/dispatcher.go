@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package dispatcher
 
 import (
-	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -25,7 +25,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 type dsConnection interface {
 	api.Connection
-	Send(*ab.SeekInfo) error
+	Send(seekInfo proto.Message) error
 }
 
 // Dispatcher is responsible for handling all events, including connection and registration events originating from the client,
