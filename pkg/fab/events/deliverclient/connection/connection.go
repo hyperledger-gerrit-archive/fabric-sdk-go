@@ -13,7 +13,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
-	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -88,7 +87,7 @@ func (c *DeliverConnection) deliverStream() deliverStream {
 }
 
 // Send sends a seek request to the deliver server
-func (c *DeliverConnection) Send(seekInfo *ab.SeekInfo) error {
+func (c *DeliverConnection) Send(seekInfo proto.Message) error {
 	if c.Closed() {
 		return errors.New("connection is closed")
 	}
