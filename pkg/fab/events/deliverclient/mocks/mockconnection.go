@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
+	"github.com/golang/protobuf/proto"
 	ab "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/connection"
@@ -55,10 +56,11 @@ func (c *MockConnection) Receive(eventch chan<- interface{}) {
 }
 
 // Send mockcore sending seek info to the deliver server
-func (c *MockConnection) Send(sinfo *ab.SeekInfo) error {
+func (c *MockConnection) Send(mesg proto.Message) error {
 	if c.Closed() {
 		return errors.New("mock connection is closed")
 	}
+	sinfo := mesg.(*ab.SeekInfo)
 
 	switch seek := sinfo.Start.Type.(type) {
 	case *ab.SeekPosition_Specified:
