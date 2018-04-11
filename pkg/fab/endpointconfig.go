@@ -9,29 +9,25 @@ package fab
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io/ioutil"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
-	"github.com/pkg/errors"
-
-	"regexp"
-
-	"sync"
-
-	"io/ioutil"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/cryptoutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
-	cs "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -154,8 +150,8 @@ func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
-		} else if len(orderer.TLSCACerts.Pem) == 0 && c.backend.GetBool("client.tlsCerts.systemCertPool") == false {
-			errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
+		} else if len(orderer.TLSCACerts.Pem) == 0 && !c.backend.GetBool("client.tlsCerts.systemCertPool") {
+			return nil, errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
 
 		orderers = append(orderers, orderer)
@@ -441,32 +437,16 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 		chPeerKey := "channels." + name + ".peers." + peerName
 
 		// Default value for endorsing peer key is true
-		endorsingPeerKey := strings.ToLower(chPeerKey + ".endorsingPeer")
-		_, ok = c.backend.Lookup(endorsingPeerKey)
-		if !ok {
-			chPeerConfig.EndorsingPeer = true
-		}
+		setEndorsingPeer(chPeerKey, c, chPeerConfig)
 
 		// Default value for chaincode query key is true
-		ccQueryKey := strings.ToLower(chPeerKey + ".chaincodeQuery")
-		_, ok = c.backend.Lookup(ccQueryKey)
-		if !ok {
-			chPeerConfig.ChaincodeQuery = true
-		}
+		setChaincodeQuery(chPeerKey, c, chPeerConfig)
 
 		// Default value for ledger query key is true
-		ledgerQueryKey := strings.ToLower(chPeerKey + ".ledgerQuery")
-		_, ok = c.backend.Lookup(ledgerQueryKey)
-		if !ok {
-			chPeerConfig.LedgerQuery = true
-		}
+		setLedgerQuery(chPeerKey, c, chPeerConfig)
 
 		// Default value for event source key is true
-		eventSourceKey := strings.ToLower(chPeerKey + ".eventSource")
-		_, ok = c.backend.Lookup(eventSourceKey)
-		if !ok {
-			chPeerConfig.EventSource = true
-		}
+		setEventSource(chPeerKey, c, chPeerConfig)
 
 		mspID, err := c.PeerMSPID(peerName)
 		if err != nil {
@@ -482,6 +462,38 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 
 	return peers, nil
 
+}
+
+func setEndorsingPeer(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerChannelConfig) {
+	endorsingPeerKey := strings.ToLower(chPeerKey + ".endorsingPeer")
+	_, ok := c.backend.Lookup(endorsingPeerKey)
+	if !ok {
+		chPeerConfig.EndorsingPeer = true
+	}
+}
+
+func setEventSource(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerChannelConfig) {
+	eventSourceKey := strings.ToLower(chPeerKey + ".eventSource")
+	_, ok := c.backend.Lookup(eventSourceKey)
+	if !ok {
+		chPeerConfig.EventSource = true
+	}
+}
+
+func setLedgerQuery(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerChannelConfig) {
+	ledgerQueryKey := strings.ToLower(chPeerKey + ".ledgerQuery")
+	_, ok := c.backend.Lookup(ledgerQueryKey)
+	if !ok {
+		chPeerConfig.LedgerQuery = true
+	}
+}
+
+func setChaincodeQuery(chPeerKey string, c *EndpointConfig, chPeerConfig fab.PeerChannelConfig) {
+	ccQueryKey := strings.ToLower(chPeerKey + ".chaincodeQuery")
+	_, ok := c.backend.Lookup(ccQueryKey)
+	if !ok {
+		chPeerConfig.ChaincodeQuery = true
+	}
 }
 
 // ChannelOrderers returns a list of channel orderers
@@ -551,7 +563,7 @@ func (c *EndpointConfig) TLSClientCerts() ([]tls.Certificate, error) {
 		return nil, err
 	}
 	var clientCerts tls.Certificate
-	var cb, kb []byte
+	var cb []byte
 	cb, err = clientConfig.TLSCerts.Client.Cert.Bytes()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load tls client cert")
@@ -563,31 +575,13 @@ func (c *EndpointConfig) TLSClientCerts() ([]tls.Certificate, error) {
 	}
 
 	// Load private key from cert using default crypto suite
-	cs := cs.GetDefault()
+	cs := cryptosuite.GetDefault()
 	pk, err := cryptoutil.GetPrivateKeyFromCert(cb, cs)
 
 	// If CryptoSuite fails to load private key from cert then load private key from config
 	if err != nil || pk == nil {
 		logger.Debugf("Reading pk from config, unable to retrieve from cert: %s", err)
-		if clientConfig.TLSCerts.Client.Key.Pem != "" {
-			kb = []byte(clientConfig.TLSCerts.Client.Key.Pem)
-		} else if clientConfig.TLSCerts.Client.Key.Path != "" {
-			kb, err = loadByteKeyOrCertFromFile(clientConfig, true)
-			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Key.Path)
-			}
-		}
-
-		// load the key/cert pair from []byte
-		clientCerts, err = tls.X509KeyPair(cb, kb)
-		if err != nil {
-			return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
-		}
-
-		logger.Debug("pk read from config successfully")
-
-		return []tls.Certificate{clientCerts}, nil
-
+		return c.loadPrivateKeyFromConfig(clientConfig, clientCerts, cb)
 	}
 
 	// private key was retrieved from cert
@@ -595,6 +589,29 @@ func (c *EndpointConfig) TLSClientCerts() ([]tls.Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return []tls.Certificate{clientCerts}, nil
+}
+
+func (c *EndpointConfig) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
+	var kb []byte
+	var err error
+	if clientConfig.TLSCerts.Client.Key.Pem != "" {
+		kb = []byte(clientConfig.TLSCerts.Client.Key.Pem)
+	} else if clientConfig.TLSCerts.Client.Key.Path != "" {
+		kb, err = loadByteKeyOrCertFromFile(clientConfig, true)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Key.Path)
+		}
+	}
+
+	// load the key/cert pair from []byte
+	clientCerts, err = tls.X509KeyPair(cb, kb)
+	if err != nil {
+		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+	}
+
+	logger.Debug("pk read from config successfully")
 
 	return []tls.Certificate{clientCerts}, nil
 }
@@ -608,83 +625,166 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration {
 	var timeout time.Duration
 	switch tType {
 	case fab.EndorserConnection:
-		timeout = c.backend.GetDuration("client.peer.timeout.connection")
-		if timeout == 0 {
-			timeout = defaultEndorserConnectionTimeout
-		}
+		timeout = getPeerTimeoutConnection(c)
 	case fab.PeerResponse:
-		timeout = c.backend.GetDuration("client.peer.timeout.response")
-		if timeout == 0 {
-			timeout = defaultPeerResponseTimeout
-		}
+		timeout = getPeerTimeoutResponse(c)
 	case fab.DiscoveryGreylistExpiry:
-		timeout = c.backend.GetDuration("client.peer.timeout.discovery.greylistExpiry")
-		if timeout == 0 {
-			timeout = defaultDiscoveryGreylistExpiryTimeout
-		}
+		timeout = getPeerTimeoutDiscGreyListExpriy(c)
 	case fab.EventHubConnection:
-		timeout = c.backend.GetDuration("client.eventService.timeout.connection")
-		if timeout == 0 {
-			timeout = defaultEventHubConnectionTimeout
-		}
+		timeout = getEventTimeoutConnection(c)
 	case fab.EventReg:
-		timeout = c.backend.GetDuration("client.eventService.timeout.registrationResponse")
-		if timeout == 0 {
-			timeout = defaultEventRegTimeout
-		}
+		timeout = getEventTimeoutRegResp(c)
 	case fab.OrdererConnection:
-		timeout = c.backend.GetDuration("client.orderer.timeout.connection")
-		if timeout == 0 {
-			timeout = defaultOrdererConnectionTimeout
-		}
+		timeout = getOrdererTimeoutConnection(c)
 	case fab.OrdererResponse:
-		timeout = c.backend.GetDuration("client.orderer.timeout.response")
-		if timeout == 0 {
-			timeout = defaultOrdererResponseTimeout
-		}
-	case fab.Query:
-		timeout = c.backend.GetDuration("client.global.timeout.query")
-		if timeout == 0 {
-			timeout = defaultQueryTimeout
-		}
-	case fab.Execute:
-		timeout = c.backend.GetDuration("client.global.timeout.execute")
-		if timeout == 0 {
-			timeout = defaultExecuteTimeout
-		}
-	case fab.ResMgmt:
-		timeout = c.backend.GetDuration("client.global.timeout.resmgmt")
-		if timeout == 0 {
-			timeout = defaultResMgmtTimeout
-		}
-	case fab.ConnectionIdle:
-		timeout = c.backend.GetDuration("client.global.cache.connectionIdle")
-		if timeout == 0 {
-			timeout = defaultConnIdleInterval
-		}
-	case fab.EventServiceIdle:
-		timeout = c.backend.GetDuration("client.global.cache.eventServiceIdle")
-		if timeout == 0 {
-			timeout = defaultEventServiceIdleInterval
-		}
-	case fab.ChannelConfigRefresh:
-		timeout = c.backend.GetDuration("client.global.cache.channelConfig")
-		if timeout == 0 {
-			timeout = defaultChannelConfigRefreshInterval
-		}
-	case fab.ChannelMembershipRefresh:
-		timeout = c.backend.GetDuration("client.global.cache.channelMembership")
-		if timeout == 0 {
-			timeout = defaultChannelMemshpRefreshInterval
-		}
-
-	case fab.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?
-		timeout = c.backend.GetDuration("client.cache.interval.sweep")
-		if timeout == 0 {
-			timeout = defaultCacheSweepInterval
-		}
+		timeout = getOrdererTimeoutResponse(c)
+	default:
+		timeout = c.getTimeout2(tType)
 	}
 
+	return timeout
+}
+
+func (c *EndpointConfig) getTimeout2(tType fab.TimeoutType) time.Duration {
+	var timeout time.Duration
+	switch tType {
+	case fab.Query:
+		timeout = getTimeoutQuery(c)
+	case fab.Execute:
+		timeout = getTimeoutExecute(c)
+	case fab.ResMgmt:
+		timeout = getTimeoutResMgmt(c)
+	case fab.ConnectionIdle:
+		timeout = getCacheConnectionIdle(c)
+	case fab.EventServiceIdle:
+		timeout = getCacheEventServiceIdle(c)
+	case fab.ChannelConfigRefresh:
+		timeout = getCacheChannelConfig(c)
+	case fab.ChannelMembershipRefresh:
+		timeout = getCacheChannelMembership(c)
+	case fab.CacheSweepInterval: // EXPERIMENTAL - do we need this to be configurable?
+		timeout = getCacheIntercalSweep(c)
+	}
+	return timeout
+}
+
+func getPeerTimeoutResponse(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.peer.timeout.response")
+	if timeout == 0 {
+		timeout = defaultPeerResponseTimeout
+	}
+	return timeout
+}
+
+func getPeerTimeoutDiscGreyListExpriy(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.peer.timeout.discovery.greylistExpiry")
+	if timeout == 0 {
+		timeout = defaultDiscoveryGreylistExpiryTimeout
+	}
+	return timeout
+}
+
+func getEventTimeoutConnection(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.eventService.timeout.connection")
+	if timeout == 0 {
+		timeout = defaultEventHubConnectionTimeout
+	}
+	return timeout
+}
+
+func getEventTimeoutRegResp(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.eventService.timeout.registrationResponse")
+	if timeout == 0 {
+		timeout = defaultEventRegTimeout
+	}
+	return timeout
+}
+
+func getOrdererTimeoutConnection(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.orderer.timeout.connection")
+	if timeout == 0 {
+		timeout = defaultOrdererConnectionTimeout
+	}
+	return timeout
+}
+
+func getOrdererTimeoutResponse(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.orderer.timeout.response")
+	if timeout == 0 {
+		timeout = defaultOrdererResponseTimeout
+	}
+	return timeout
+}
+
+func getTimeoutQuery(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.global.timeout.query")
+	if timeout == 0 {
+		timeout = defaultQueryTimeout
+	}
+	return timeout
+}
+
+func getTimeoutExecute(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.global.timeout.execute")
+	if timeout == 0 {
+		timeout = defaultExecuteTimeout
+	}
+	return timeout
+}
+
+func getTimeoutResMgmt(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.global.timeout.resmgmt")
+	if timeout == 0 {
+		timeout = defaultResMgmtTimeout
+	}
+	return timeout
+}
+
+func getCacheConnectionIdle(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.global.cache.connectionIdle")
+	if timeout == 0 {
+		timeout = defaultConnIdleInterval
+	}
+	return timeout
+}
+
+func getCacheEventServiceIdle(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.global.cache.eventServiceIdle")
+	if timeout == 0 {
+		timeout = defaultEventServiceIdleInterval
+	}
+	return timeout
+}
+
+func getCacheChannelConfig(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.global.cache.channelConfig")
+	if timeout == 0 {
+		timeout = defaultChannelConfigRefreshInterval
+	}
+	return timeout
+}
+
+func getCacheChannelMembership(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.global.cache.channelMembership")
+	if timeout == 0 {
+		timeout = defaultChannelMemshpRefreshInterval
+	}
+	return timeout
+}
+
+func getCacheIntercalSweep(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.cache.interval.sweep")
+	if timeout == 0 {
+		timeout = defaultCacheSweepInterval
+	}
+	return timeout
+}
+
+func getPeerTimeoutConnection(c *EndpointConfig) time.Duration {
+	timeout := c.backend.GetDuration("client.peer.timeout.connection")
+	if timeout == 0 {
+		timeout = defaultEndorserConnectionTimeout
+	}
 	return timeout
 }
 
@@ -772,85 +872,89 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerName string) (*fab.PeerConfig
 	for _, k := range keys {
 		v := c.peerMatchers[k]
 		if v.MatchString(peerName) {
-			// get the matching matchConfig from the index number
-			peerMatchConfig := networkConfig.EntityMatchers["peer"][k]
-			//Get the peerConfig from mapped host
-			peerConfig, ok := networkConfig.Peers[strings.ToLower(peerMatchConfig.MappedHost)]
-			if !ok {
-				return nil, errors.New("failed to load config from matched Peer")
-			}
-
-			// Make a copy of GRPC options (as it is manipulated below)
-			peerConfig.GRPCOptions = copyPropertiesMap(peerConfig.GRPCOptions)
-
-			_, isPortPresentInPeerName := c.getPortIfPresent(peerName)
-			//if substitution url is empty, use the same network peer url
-			if peerMatchConfig.URLSubstitutionExp == "" {
-				port, isPortPresent := c.getPortIfPresent(peerConfig.URL)
-				peerConfig.URL = peerName
-				//append port of matched config
-				if isPortPresent && !isPortPresentInPeerName {
-					peerConfig.URL += ":" + strconv.Itoa(port)
-				}
-			} else {
-				//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(peerMatchConfig.URLSubstitutionExp, "$") < 0 {
-					peerConfig.URL = peerMatchConfig.URLSubstitutionExp
-				} else {
-					//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
-					peerConfig.URL = v.ReplaceAllString(peerName, peerMatchConfig.URLSubstitutionExp)
-				}
-
-			}
-
-			//if eventSubstitution url is empty, use the same network peer url
-			if peerMatchConfig.EventURLSubstitutionExp == "" {
-				port, isPortPresent := c.getPortIfPresent(peerConfig.EventURL)
-				peerConfig.EventURL = peerName
-				//append port of matched config
-				if isPortPresent && !isPortPresentInPeerName {
-					peerConfig.EventURL += ":" + strconv.Itoa(port)
-				}
-			} else {
-				//else, replace url with eventUrlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(peerMatchConfig.EventURLSubstitutionExp, "$") < 0 {
-					peerConfig.EventURL = peerMatchConfig.EventURLSubstitutionExp
-				} else {
-					//if the eventUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
-					peerConfig.EventURL = v.ReplaceAllString(peerName, peerMatchConfig.EventURLSubstitutionExp)
-				}
-
-			}
-
-			//if sslTargetOverrideUrlSubstitutionExp is empty, use the same network peer host
-			if peerMatchConfig.SSLTargetOverrideURLSubstitutionExp == "" {
-				if strings.Index(peerName, ":") < 0 {
-					peerConfig.GRPCOptions["ssl-target-name-override"] = peerName
-				} else {
-					//Remove port and protocol of the peerName
-					s := strings.Split(peerName, ":")
-					if isPortPresentInPeerName {
-						peerConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-2]
-					} else {
-						peerConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-1]
-					}
-				}
-
-			} else {
-				//else, replace url with sslTargetOverrideUrlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(peerMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") < 0 {
-					peerConfig.GRPCOptions["ssl-target-name-override"] = peerMatchConfig.SSLTargetOverrideURLSubstitutionExp
-				} else {
-					//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
-					peerConfig.GRPCOptions["ssl-target-name-override"] = v.ReplaceAllString(peerName, peerMatchConfig.SSLTargetOverrideURLSubstitutionExp)
-				}
-
-			}
-			return &peerConfig, nil
+			return c.matchPeer(networkConfig, peerName, k, v)
 		}
 	}
 
 	return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingPeerEntity.ToInt32(), "no matching peer config found", nil))
+}
+
+func (c *EndpointConfig) matchPeer(networkConfig *fab.NetworkConfig, peerName string, k int, v *regexp.Regexp) (*fab.PeerConfig, error) {
+	// get the matching matchConfig from the index number
+	peerMatchConfig := networkConfig.EntityMatchers["peer"][k]
+	//Get the peerConfig from mapped host
+	peerConfig, ok := networkConfig.Peers[strings.ToLower(peerMatchConfig.MappedHost)]
+	if !ok {
+		return nil, errors.New("failed to load config from matched Peer")
+	}
+
+	// Make a copy of GRPC options (as it is manipulated below)
+	peerConfig.GRPCOptions = copyPropertiesMap(peerConfig.GRPCOptions)
+
+	_, isPortPresentInPeerName := c.getPortIfPresent(peerName)
+	//if substitution url is empty, use the same network peer url
+	if peerMatchConfig.URLSubstitutionExp == "" {
+		peerConfig.URL = getPeerConfigURL(c, peerName, peerConfig.URL, isPortPresentInPeerName)
+	} else {
+		//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
+		if !strings.Contains(peerMatchConfig.URLSubstitutionExp, "$") {
+			peerConfig.URL = peerMatchConfig.URLSubstitutionExp
+		} else {
+			//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
+			peerConfig.URL = v.ReplaceAllString(peerName, peerMatchConfig.URLSubstitutionExp)
+		}
+
+	}
+
+	//if eventSubstitution url is empty, use the same network peer url
+	if peerMatchConfig.EventURLSubstitutionExp == "" {
+		peerConfig.EventURL = getPeerConfigURL(c, peerName, peerConfig.EventURL, isPortPresentInPeerName)
+	} else {
+		//else, replace url with eventUrlSubstitutionExp if it doesnt have any variable declarations like $
+		if !strings.Contains(peerMatchConfig.EventURLSubstitutionExp, "$") {
+			peerConfig.EventURL = peerMatchConfig.EventURLSubstitutionExp
+		} else {
+			//if the eventUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
+			peerConfig.EventURL = v.ReplaceAllString(peerName, peerMatchConfig.EventURLSubstitutionExp)
+		}
+
+	}
+
+	//if sslTargetOverrideUrlSubstitutionExp is empty, use the same network peer host
+	if peerMatchConfig.SSLTargetOverrideURLSubstitutionExp == "" {
+		if !strings.Contains(peerName, ":") {
+			peerConfig.GRPCOptions["ssl-target-name-override"] = peerName
+		} else {
+			//Remove port and protocol of the peerName
+			s := strings.Split(peerName, ":")
+			if isPortPresentInPeerName {
+				peerConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-2]
+			} else {
+				peerConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-1]
+			}
+		}
+
+	} else {
+		//else, replace url with sslTargetOverrideUrlSubstitutionExp if it doesnt have any variable declarations like $
+		if !strings.Contains(peerMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") {
+			peerConfig.GRPCOptions["ssl-target-name-override"] = peerMatchConfig.SSLTargetOverrideURLSubstitutionExp
+		} else {
+			//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
+			peerConfig.GRPCOptions["ssl-target-name-override"] = v.ReplaceAllString(peerName, peerMatchConfig.SSLTargetOverrideURLSubstitutionExp)
+		}
+
+	}
+	return &peerConfig, nil
+}
+
+func getPeerConfigURL(c *EndpointConfig, peerName, peerConfigURL string, isPortPresentInPeerName bool) string {
+	port, isPortPresent := c.getPortIfPresent(peerConfigURL)
+	url := peerName
+	//append port of matched config
+	if isPortPresent && !isPortPresentInPeerName {
+		url += ":" + strconv.Itoa(port)
+	}
+	return url
 }
 
 func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string) (*fab.OrdererConfig, error) {
@@ -874,66 +978,70 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string) (*fab.Orde
 	for _, k := range keys {
 		v := c.ordererMatchers[k]
 		if v.MatchString(ordererName) {
-			// get the matching matchConfig from the index number
-			ordererMatchConfig := networkConfig.EntityMatchers["orderer"][k]
-			//Get the ordererConfig from mapped host
-			ordererConfig, ok := networkConfig.Orderers[strings.ToLower(ordererMatchConfig.MappedHost)]
-			if !ok {
-				return nil, errors.New("failed to load config from matched Orderer")
-			}
-
-			// Make a copy of GRPC options (as it is manipulated below)
-			ordererConfig.GRPCOptions = copyPropertiesMap(ordererConfig.GRPCOptions)
-
-			_, isPortPresentInOrdererName := c.getPortIfPresent(ordererName)
-			//if substitution url is empty, use the same network orderer url
-			if ordererMatchConfig.URLSubstitutionExp == "" {
-				port, isPortPresent := c.getPortIfPresent(ordererConfig.URL)
-				ordererConfig.URL = ordererName
-
-				//append port of matched config
-				if isPortPresent && !isPortPresentInOrdererName {
-					ordererConfig.URL += ":" + strconv.Itoa(port)
-				}
-			} else {
-				//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(ordererMatchConfig.URLSubstitutionExp, "$") < 0 {
-					ordererConfig.URL = ordererMatchConfig.URLSubstitutionExp
-				} else {
-					//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
-					ordererConfig.URL = v.ReplaceAllString(ordererName, ordererMatchConfig.URLSubstitutionExp)
-				}
-			}
-
-			//if sslTargetOverrideUrlSubstitutionExp is empty, use the same network peer host
-			if ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp == "" {
-				if strings.Index(ordererName, ":") < 0 {
-					ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererName
-				} else {
-					//Remove port and protocol of the ordererName
-					s := strings.Split(ordererName, ":")
-					if isPortPresentInOrdererName {
-						ordererConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-2]
-					} else {
-						ordererConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-1]
-					}
-				}
-
-			} else {
-				//else, replace url with sslTargetOverrideUrlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") < 0 {
-					ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp
-				} else {
-					//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
-					ordererConfig.GRPCOptions["ssl-target-name-override"] = v.ReplaceAllString(ordererName, ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp)
-				}
-
-			}
-			return &ordererConfig, nil
+			return c.matchOrderer(networkConfig, ordererName, k, v)
 		}
 	}
 
 	return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
+}
+
+func (c *EndpointConfig) matchOrderer(networkConfig *fab.NetworkConfig, ordererName string, k int, v *regexp.Regexp) (*fab.OrdererConfig, error) {
+	// get the matching matchConfig from the index number
+	ordererMatchConfig := networkConfig.EntityMatchers["orderer"][k]
+	//Get the ordererConfig from mapped host
+	ordererConfig, ok := networkConfig.Orderers[strings.ToLower(ordererMatchConfig.MappedHost)]
+	if !ok {
+		return nil, errors.New("failed to load config from matched Orderer")
+	}
+
+	// Make a copy of GRPC options (as it is manipulated below)
+	ordererConfig.GRPCOptions = copyPropertiesMap(ordererConfig.GRPCOptions)
+
+	_, isPortPresentInOrdererName := c.getPortIfPresent(ordererName)
+	//if substitution url is empty, use the same network orderer url
+	if ordererMatchConfig.URLSubstitutionExp == "" {
+		port, isPortPresent := c.getPortIfPresent(ordererConfig.URL)
+		ordererConfig.URL = ordererName
+
+		//append port of matched config
+		if isPortPresent && !isPortPresentInOrdererName {
+			ordererConfig.URL += ":" + strconv.Itoa(port)
+		}
+	} else {
+		//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
+		if !strings.Contains(ordererMatchConfig.URLSubstitutionExp, "$") {
+			ordererConfig.URL = ordererMatchConfig.URLSubstitutionExp
+		} else {
+			//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
+			ordererConfig.URL = v.ReplaceAllString(ordererName, ordererMatchConfig.URLSubstitutionExp)
+		}
+	}
+
+	//if sslTargetOverrideUrlSubstitutionExp is empty, use the same network peer host
+	if ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp == "" {
+		if !strings.Contains(ordererName, ":") {
+			ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererName
+		} else {
+			//Remove port and protocol of the ordererName
+			s := strings.Split(ordererName, ":")
+			if isPortPresentInOrdererName {
+				ordererConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-2]
+			} else {
+				ordererConfig.GRPCOptions["ssl-target-name-override"] = s[len(s)-1]
+			}
+		}
+
+	} else {
+		//else, replace url with sslTargetOverrideUrlSubstitutionExp if it doesnt have any variable declarations like $
+		if !strings.Contains(ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") {
+			ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp
+		} else {
+			//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
+			ordererConfig.GRPCOptions["ssl-target-name-override"] = v.ReplaceAllString(ordererName, ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp)
+		}
+
+	}
+	return &ordererConfig, nil
 }
 
 func (c *EndpointConfig) tryMatchingChannelConfig(channelName string) (*fab.ChannelNetworkConfig, string, error) {
@@ -1005,28 +1113,42 @@ func (c *EndpointConfig) compileMatchers() error {
 		return nil
 	}
 
-	if networkConfig.EntityMatchers["peer"] != nil {
-		peerMatchersConfig := networkConfig.EntityMatchers["peer"]
-		for i := 0; i < len(peerMatchersConfig); i++ {
-			if peerMatchersConfig[i].Pattern != "" {
-				c.peerMatchers[i], err = regexp.Compile(peerMatchersConfig[i].Pattern)
+	err = c.compilePeerMatcher(networkConfig)
+	if err != nil {
+		return err
+	}
+	err = c.compileOrdererMatcher(networkConfig)
+	if err != nil {
+		return err
+	}
+
+	err = c.compileCertificateAuthorityMatcher(networkConfig)
+	if err != nil {
+		return err
+	}
+
+	err = c.compileChannelMatcher(networkConfig)
+	return err
+}
+
+func (c *EndpointConfig) compileChannelMatcher(networkConfig *fab.NetworkConfig) error {
+	var err error
+	if networkConfig.EntityMatchers["channel"] != nil {
+		channelMatchers := networkConfig.EntityMatchers["channel"]
+		for i, matcher := range channelMatchers {
+			if matcher.Pattern != "" {
+				c.channelMatchers[i], err = regexp.Compile(matcher.Pattern)
 				if err != nil {
 					return err
 				}
 			}
 		}
 	}
-	if networkConfig.EntityMatchers["orderer"] != nil {
-		ordererMatchersConfig := networkConfig.EntityMatchers["orderer"]
-		for i := 0; i < len(ordererMatchersConfig); i++ {
-			if ordererMatchersConfig[i].Pattern != "" {
-				c.ordererMatchers[i], err = regexp.Compile(ordererMatchersConfig[i].Pattern)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
+	return nil
+}
+
+func (c *EndpointConfig) compileCertificateAuthorityMatcher(networkConfig *fab.NetworkConfig) error {
+	var err error
 	if networkConfig.EntityMatchers["certificateauthority"] != nil {
 		certMatchersConfig := networkConfig.EntityMatchers["certificateauthority"]
 		for i := 0; i < len(certMatchersConfig); i++ {
@@ -1038,11 +1160,32 @@ func (c *EndpointConfig) compileMatchers() error {
 			}
 		}
 	}
-	if networkConfig.EntityMatchers["channel"] != nil {
-		channelMatchers := networkConfig.EntityMatchers["channel"]
-		for i, matcher := range channelMatchers {
-			if matcher.Pattern != "" {
-				c.channelMatchers[i], err = regexp.Compile(matcher.Pattern)
+	return nil
+}
+
+func (c *EndpointConfig) compileOrdererMatcher(networkConfig *fab.NetworkConfig) error {
+	var err error
+	if networkConfig.EntityMatchers["orderer"] != nil {
+		ordererMatchersConfig := networkConfig.EntityMatchers["orderer"]
+		for i := 0; i < len(ordererMatchersConfig); i++ {
+			if ordererMatchersConfig[i].Pattern != "" {
+				c.ordererMatchers[i], err = regexp.Compile(ordererMatchersConfig[i].Pattern)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (c *EndpointConfig) compilePeerMatcher(networkConfig *fab.NetworkConfig) error {
+	var err error
+	if networkConfig.EntityMatchers["peer"] != nil {
+		peerMatchersConfig := networkConfig.EntityMatchers["peer"]
+		for i := 0; i < len(peerMatchersConfig); i++ {
+			if peerMatchersConfig[i].Pattern != "" {
+				c.peerMatchers[i], err = regexp.Compile(peerMatchersConfig[i].Pattern)
 				if err != nil {
 					return err
 				}
@@ -1079,7 +1222,7 @@ func (c *EndpointConfig) verifyPeerConfig(p fab.PeerConfig, peerName string, tls
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && c.backend.GetBool("client.tlsCerts.systemCertPool") == false {
+	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && !c.backend.GetBool("client.tlsCerts.systemCertPool") {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
@@ -1097,7 +1240,7 @@ func (c *EndpointConfig) containsCert(newCert *x509.Certificate) bool {
 
 func (c *EndpointConfig) getCertPool() (*x509.CertPool, error) {
 	tlsCertPool := x509.NewCertPool()
-	if c.backend.GetBool("client.tlsCerts.systemCertPool") == true {
+	if c.backend.GetBool("client.tlsCerts.systemCertPool") {
 		var err error
 		if tlsCertPool, err = x509.SystemCertPool(); err != nil {
 			return nil, err

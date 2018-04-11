@@ -28,7 +28,6 @@ import (
 
 const (
 	testChannel = "testchannel"
-	testAddress = "127.0.0.1:0"
 )
 
 func TestNewTransactionProposal(t *testing.T) {
@@ -137,7 +136,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		Fcn: "Hello",
 	}
 
-	tp, err = CreateChaincodeInvokeProposal(txh, request)
+	_, err = CreateChaincodeInvokeProposal(txh, request)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}
@@ -146,7 +145,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		ChaincodeID: "cc",
 	}
 
-	tp, err = CreateChaincodeInvokeProposal(txh, request)
+	_, err = CreateChaincodeInvokeProposal(txh, request)
 	if err == nil {
 		t.Fatalf("Expected error")
 	}
@@ -155,7 +154,7 @@ func TestNewTransactionProposalParams(t *testing.T) {
 		ChaincodeID: "cc",
 		Fcn:         "Hello",
 	}
-	tp, err = CreateChaincodeInvokeProposal(txh, request)
+	_, err = CreateChaincodeInvokeProposal(txh, request)
 	if err != nil {
 		t.Fatalf("new transaction proposal failed: %s", err)
 	}
