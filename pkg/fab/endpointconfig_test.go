@@ -175,6 +175,10 @@ func TestTLSCAConfig(t *testing.T) {
 
 	_, err = endpointConfig.TLSCACertPool(badCert)
 
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
 	keyConfig := endpoint.TLSConfig{Path: keyPath}
 
 	key, err := keyConfig.TLSCert()
@@ -184,6 +188,9 @@ func TestTLSCAConfig(t *testing.T) {
 	}
 
 	_, err = endpointConfig.TLSCACertPool(key)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 }
 
 func TestTimeouts(t *testing.T) {
@@ -419,6 +426,9 @@ func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedCo
 	}
 
 	fetchedConfig, err := endpointConfig.PeerConfigByURL(fetchedConfigURL)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 
 	if fetchedConfig.URL == "" {
 		t.Fatalf("Url value for the host is empty")
@@ -793,7 +803,7 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 		t.Fatalf("Failed to load orderers from config. Error: %s", err)
 	}
 
-	if o == nil || len(o) == 0 {
+	if len(o) == 0 {
 		t.Fatalf("orderer cannot be nil or empty")
 	}
 
@@ -816,11 +826,16 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 		t.Fatalf("Orderer Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", oPem, loadedOPem)
 	}
 
+	testConfigRawWithPem(endpointConfig, t)
+
+}
+
+func testConfigRawWithPem(endpointConfig *EndpointConfig, t *testing.T) {
 	pc, err := endpointConfig.PeersConfig(org1)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	if pc == nil || len(pc) == 0 {
+	if len(pc) == 0 {
 		t.Fatalf("peers list of %s cannot be nil or empty", org1)
 	}
 	peer0 := "peer0.org1.example.com"
@@ -832,26 +847,25 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 		t.Fatalf("%s of %s cannot be nil", peer0, org1)
 	}
 	pPem := `-----BEGIN CERTIFICATE-----
-MIICSTCCAfCgAwIBAgIRAPQIzfkrCZjcpGwVhMSKd0AwCgYIKoZIzj0EAwIwdjEL
-MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
-cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHzAdBgNVBAMTFnRs
-c2NhLm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQy
-NzIwWjB2MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UE
-BxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEfMB0G
-A1UEAxMWdGxzY2Eub3JnMS5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49
-AwEHA0IABMOiG8UplWTs898zZ99+PhDHPbKjZIDHVG+zQXopw8SqNdX3NAmZUKUU
-sJ8JZ3M49Jq4Ms8EHSEwQf0Ifx3ICHujXzBdMA4GA1UdDwEB/wQEAwIBpjAPBgNV
-HSUECDAGBgRVHSUAMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIEID9qJz7xhZko
-V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
-eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
-O94CDp7l2k7hMQI0zQ==
------END CERTIFICATE-----`
-
-	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem) // viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
+	MIICSTCCAfCgAwIBAgIRAPQIzfkrCZjcpGwVhMSKd0AwCgYIKoZIzj0EAwIwdjEL
+	MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+	cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHzAdBgNVBAMTFnRs
+	c2NhLm9yZzEuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQy
+	NzIwWjB2MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UE
+	BxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEfMB0G
+	A1UEAxMWdGxzY2Eub3JnMS5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49
+	AwEHA0IABMOiG8UplWTs898zZ99+PhDHPbKjZIDHVG+zQXopw8SqNdX3NAmZUKUU
+	sJ8JZ3M49Jq4Ms8EHSEwQf0Ifx3ICHujXzBdMA4GA1UdDwEB/wQEAwIBpjAPBgNV
+	HSUECDAGBgRVHSUAMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIEID9qJz7xhZko
+	V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
+	eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
+	O94CDp7l2k7hMQI0zQ==
+	-----END CERTIFICATE-----`
+	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem)
+	// viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
 	if loadedPPem != pPem {
 		t.Fatalf("%s Pem doesn't match. Expected \n'%s'\n, but got \n'%s'\n", peer0, pPem, loadedPPem)
 	}
-
 }
 
 func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
@@ -866,7 +880,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 		t.Fatalf("Failed to read config file stat. Error: %s", err)
 	}
 	s := fi.Size()
-	cBytes := make([]byte, s, s)
+	cBytes := make([]byte, s)
 	n, err := f.Read(cBytes)
 	if err != nil {
 		t.Fatalf("Failed to read test config for bytes array testing. Error: %s", err)

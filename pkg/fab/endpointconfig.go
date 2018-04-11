@@ -154,8 +154,8 @@ func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
-		} else if len(orderer.TLSCACerts.Pem) == 0 && c.backend.GetBool("client.tlsCerts.systemCertPool") == false {
-			errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
+		} else if len(orderer.TLSCACerts.Pem) == 0 && !c.backend.GetBool("client.tlsCerts.systemCertPool") {
+			return nil, errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
 
 		orderers = append(orderers, orderer)
@@ -551,7 +551,7 @@ func (c *EndpointConfig) TLSClientCerts() ([]tls.Certificate, error) {
 		return nil, err
 	}
 	var clientCerts tls.Certificate
-	var cb, kb []byte
+	var cb []byte
 	cb, err = clientConfig.TLSCerts.Client.Cert.Bytes()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load tls client cert")
@@ -569,25 +569,7 @@ func (c *EndpointConfig) TLSClientCerts() ([]tls.Certificate, error) {
 	// If CryptoSuite fails to load private key from cert then load private key from config
 	if err != nil || pk == nil {
 		logger.Debugf("Reading pk from config, unable to retrieve from cert: %s", err)
-		if clientConfig.TLSCerts.Client.Key.Pem != "" {
-			kb = []byte(clientConfig.TLSCerts.Client.Key.Pem)
-		} else if clientConfig.TLSCerts.Client.Key.Path != "" {
-			kb, err = loadByteKeyOrCertFromFile(clientConfig, true)
-			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Key.Path)
-			}
-		}
-
-		// load the key/cert pair from []byte
-		clientCerts, err = tls.X509KeyPair(cb, kb)
-		if err != nil {
-			return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
-		}
-
-		logger.Debug("pk read from config successfully")
-
-		return []tls.Certificate{clientCerts}, nil
-
+		return c.loadPrivateKeyFromConfig(clientConfig, clientCerts, cb)
 	}
 
 	// private key was retrieved from cert
@@ -595,6 +577,29 @@ func (c *EndpointConfig) TLSClientCerts() ([]tls.Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return []tls.Certificate{clientCerts}, nil
+}
+
+func (c *EndpointConfig) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
+	var kb []byte
+	var err error
+	if clientConfig.TLSCerts.Client.Key.Pem != "" {
+		kb = []byte(clientConfig.TLSCerts.Client.Key.Pem)
+	} else if clientConfig.TLSCerts.Client.Key.Path != "" {
+		kb, err = loadByteKeyOrCertFromFile(clientConfig, true)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to load key from file path '%s'", clientConfig.TLSCerts.Client.Key.Path)
+		}
+	}
+
+	// load the key/cert pair from []byte
+	clientCerts, err = tls.X509KeyPair(cb, kb)
+	if err != nil {
+		return nil, errors.Errorf("Error loading cert/key pair as TLS client credentials: %v", err)
+	}
+
+	logger.Debug("pk read from config successfully")
 
 	return []tls.Certificate{clientCerts}, nil
 }
@@ -794,7 +799,7 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerName string) (*fab.PeerConfig
 				}
 			} else {
 				//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(peerMatchConfig.URLSubstitutionExp, "$") < 0 {
+				if !strings.Contains(peerMatchConfig.URLSubstitutionExp, "$") {
 					peerConfig.URL = peerMatchConfig.URLSubstitutionExp
 				} else {
 					//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
@@ -813,7 +818,7 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerName string) (*fab.PeerConfig
 				}
 			} else {
 				//else, replace url with eventUrlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(peerMatchConfig.EventURLSubstitutionExp, "$") < 0 {
+				if !strings.Contains(peerMatchConfig.EventURLSubstitutionExp, "$") {
 					peerConfig.EventURL = peerMatchConfig.EventURLSubstitutionExp
 				} else {
 					//if the eventUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
@@ -824,7 +829,7 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerName string) (*fab.PeerConfig
 
 			//if sslTargetOverrideUrlSubstitutionExp is empty, use the same network peer host
 			if peerMatchConfig.SSLTargetOverrideURLSubstitutionExp == "" {
-				if strings.Index(peerName, ":") < 0 {
+				if !strings.Contains(peerName, ":") {
 					peerConfig.GRPCOptions["ssl-target-name-override"] = peerName
 				} else {
 					//Remove port and protocol of the peerName
@@ -838,7 +843,7 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerName string) (*fab.PeerConfig
 
 			} else {
 				//else, replace url with sslTargetOverrideUrlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(peerMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") < 0 {
+				if !strings.Contains(peerMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") {
 					peerConfig.GRPCOptions["ssl-target-name-override"] = peerMatchConfig.SSLTargetOverrideURLSubstitutionExp
 				} else {
 					//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
@@ -897,7 +902,7 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string) (*fab.Orde
 				}
 			} else {
 				//else, replace url with urlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(ordererMatchConfig.URLSubstitutionExp, "$") < 0 {
+				if !strings.Contains(ordererMatchConfig.URLSubstitutionExp, "$") {
 					ordererConfig.URL = ordererMatchConfig.URLSubstitutionExp
 				} else {
 					//if the urlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with substituionexp pattern
@@ -907,7 +912,7 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string) (*fab.Orde
 
 			//if sslTargetOverrideUrlSubstitutionExp is empty, use the same network peer host
 			if ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp == "" {
-				if strings.Index(ordererName, ":") < 0 {
+				if !strings.Contains(ordererName, ":") {
 					ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererName
 				} else {
 					//Remove port and protocol of the ordererName
@@ -921,7 +926,7 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererName string) (*fab.Orde
 
 			} else {
 				//else, replace url with sslTargetOverrideUrlSubstitutionExp if it doesnt have any variable declarations like $
-				if strings.Index(ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") < 0 {
+				if !strings.Contains(ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp, "$") {
 					ordererConfig.GRPCOptions["ssl-target-name-override"] = ordererMatchConfig.SSLTargetOverrideURLSubstitutionExp
 				} else {
 					//if the sslTargetOverrideUrlSubstitutionExp has $ variable declarations, use regex replaceallstring to replace networkhostname with eventsubstituionexp pattern
@@ -1079,7 +1084,7 @@ func (c *EndpointConfig) verifyPeerConfig(p fab.PeerConfig, peerName string, tls
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)
 	}
-	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && c.backend.GetBool("client.tlsCerts.systemCertPool") == false {
+	if tlsEnabled && len(p.TLSCACerts.Pem) == 0 && p.TLSCACerts.Path == "" && !c.backend.GetBool("client.tlsCerts.systemCertPool") {
 		return errors.Errorf("tls.certificate does not exist or empty for peer %s", peerName)
 	}
 	return nil
@@ -1097,7 +1102,7 @@ func (c *EndpointConfig) containsCert(newCert *x509.Certificate) bool {
 
 func (c *EndpointConfig) getCertPool() (*x509.CertPool, error) {
 	tlsCertPool := x509.NewCertPool()
-	if c.backend.GetBool("client.tlsCerts.systemCertPool") == true {
+	if c.backend.GetBool("client.tlsCerts.systemCertPool") {
 		var err error
 		if tlsCertPool, err = x509.SystemCertPool(); err != nil {
 			return nil, err
