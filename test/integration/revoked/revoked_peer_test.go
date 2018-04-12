@@ -10,7 +10,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -24,12 +23,17 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
+	"os"
+
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/grpclog"
 )
 
 const (
@@ -52,6 +56,12 @@ var orgTestPeer1 fab.Peer
 
 // TestRevokedPeer
 func TestRevokedPeer(t *testing.T) {
+
+	os.Setenv("GRPC_TRACE", "all")
+	os.Setenv("GRPC_VERBOSITY", "DEBUG")
+	os.Setenv("GRPC_GO_LOG_SEVERITY_LEVEL", "INFO")
+	grpclog.SetLogger(logger)
+
 	// Create SDK setup for the integration tests with revoked peer
 	sdk, err := fabsdk.New(getConfigBackend(t))
 	if err != nil {
@@ -82,15 +92,15 @@ func TestRevokedPeer(t *testing.T) {
 		t.Fatalf("failed to get org1AdminUser, err : %v", err)
 	}
 
-	org2AdminUser, err := integration.GetSigningIdentity(sdk, org2AdminUser, org2)
+	_, err = integration.GetSigningIdentity(sdk, org2AdminUser, org2)
 	if err != nil {
 		t.Fatalf("failed to get org2AdminUser, err : %v", err)
 	}
 
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
 		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
-		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+		SigningIdentities: []msp.SigningIdentity{org1AdminUser}}
+	txID, err := chMgmtClient.SaveChannel(req)
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, txID, "transaction ID should be populated")
 
@@ -101,7 +111,7 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Org1 peers join channel
-	if err = org1ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
+	if err = org1ResMgmt.JoinChannel("orgchannel"); err != nil {
 		t.Fatalf("Org1 peers failed to JoinChannel: %s", err)
 	}
 
@@ -112,7 +122,7 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Org2 peers join channel
-	if err = org2ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts)); err != nil {
+	if err = org2ResMgmt.JoinChannel("orgchannel"); err != nil {
 		t.Fatalf("Org2 peers failed to JoinChannel: %s", err)
 	}
 
@@ -131,7 +141,7 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Install example cc to Org2 peers
-	_, err = org2ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	_, err = org2ResMgmt.InstallCC(installCCReq)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,6 +285,12 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		backendMap["organizations"] = networkConfig.Organizations
 		backendMap["channels"] = networkConfig.Channels
 		backendMap["entityMatchers"] = networkConfig.EntityMatchers
+
+		fmt.Println("----------------------------------------")
+		fmt.Println("ORG : ", networkConfig.Organizations)
+		fmt.Println("Channels : ", networkConfig.Channels)
+		fmt.Println("Peers : ", networkConfig.Peers)
+		fmt.Println("----------------------------------------")
 
 		return &mocks.MockConfigBackend{KeyValueMap: backendMap, CustomBackend: backend}, nil
 	}
