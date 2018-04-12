@@ -58,15 +58,8 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity
 		orgName: clientConfig.Organization,
 	}
 
-	for _, option := range options {
-		err := option(&opts)
-		if err != nil {
-			return nil, errors.WithMessage(err, "error in option passed to create identity")
-		}
-	}
-
-	if opts.signingIdentity == nil && opts.username == "" {
-		return nil, ErrAnonymousIdentity
+	if err := sdk.initOpts(opts); err != nil {
+		return nil, err
 	}
 
 	if opts.signingIdentity != nil {
@@ -88,4 +81,18 @@ func (sdk *FabricSDK) newIdentity(options ...ContextOption) (msp.SigningIdentity
 	}
 
 	return user, nil
+}
+
+func (sdk *FabricSDK) initOpts(opts identityOptions, options ...ContextOption) error {
+	for _, option := range options {
+		err := option(&opts)
+		if err != nil {
+			return errors.WithMessage(err, "error in option passed to create identity")
+		}
+	}
+
+	if opts.signingIdentity == nil && opts.username == "" {
+		return ErrAnonymousIdentity
+	}
+	return nil
 }

@@ -70,6 +70,7 @@ declare -a arr1=(
 "./pkg/context"
 "./pkg/core"
 "./pkg/fab"
+"./pkg/fabsdk"
 )
 
 
