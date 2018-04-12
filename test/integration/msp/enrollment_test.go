@@ -9,10 +9,16 @@ package msp
 import (
 	"testing"
 
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/attrmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -62,10 +68,24 @@ func TestRegisterEnroll(t *testing.T) {
 	// Generate a random user name
 	username := integration.GenerateRandomID()
 
+	testAttributes := []msp.Attribute{
+		msp.Attribute{
+			Name:  integration.GenerateRandomID(),
+			Value: fmt.Sprintf("%s:ecert", integration.GenerateRandomID()),
+			ECert: true,
+		},
+		msp.Attribute{
+			Name:  integration.GenerateRandomID(),
+			Value: fmt.Sprintf("%s:ecert", integration.GenerateRandomID()),
+			ECert: true,
+		},
+	}
+
 	// Register the new user
 	enrollmentSecret, err := mspClient.Register(&msp.RegistrationRequest{
-		Name: username,
-		Type: IdentityTypeUser,
+		Name:       username,
+		Type:       IdentityTypeUser,
+		Attributes: testAttributes,
 		// Affiliation is mandatory. "org1" and "org2" are hardcoded as CA defaults
 		// See https://github.com/hyperledger/fabric-ca/blob/release/cmd/fabric-ca-server/config.go
 		Affiliation: "org2",
@@ -81,11 +101,39 @@ func TestRegisterEnroll(t *testing.T) {
 	}
 
 	// Get the new user's signing identity
-	_, err = mspClient.GetSigningIdentity(username)
+	si, err := mspClient.GetSigningIdentity(username)
 	if err != nil {
 		t.Fatalf("GetSigningIdentity failed: %v", err)
 	}
 
+	checkCertAttributes(t, si.EnrollmentCertificate(), testAttributes)
+
+}
+
+func checkCertAttributes(t *testing.T, certBytes []byte, expected []msp.Attribute) {
+	decoded, _ := pem.Decode(certBytes)
+	if decoded == nil {
+		t.Fatalf("Failed cert decoding")
+	}
+	cert, err := x509.ParseCertificate(decoded.Bytes)
+	if err != nil {
+		t.Fatalf("failed to parse certificate: %v", err)
+	}
+	if cert == nil {
+		t.Fatalf("failed to parse certificate: %v", err)
+	}
+	mgr := attrmgr.New()
+	attrs, err := mgr.GetAttributesFromCert(cert)
+	if err != nil {
+		t.Fatalf("Failed to GetAttributesFromCert: %s", err)
+	}
+	for _, a := range expected {
+		v, ok, err := attrs.Value(a.Name)
+		assert.NoError(t, err)
+		assert.True(t, attrs.Contains(a.Name), "does not contain attribute '%s'", a.Name)
+		assert.True(t, ok, "attribute '%s' was not found", a.Name)
+		assert.True(t, v == a.Value, "incorrect value for '%s'; expected '%s' but found '%s'", a.Name, a.Value, v)
+	}
 }
 
 func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientProvider) (string, string) {
