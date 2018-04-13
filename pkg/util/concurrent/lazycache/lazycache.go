@@ -142,8 +142,11 @@ func (c *Cache) close(key string, f future) {
 		logger.Debugf("%s - Reference for [%q] is not set", c.name, key)
 		return
 	}
-
-	if value, _ := f.Get(); value != nil {
+	value, err := f.Get()
+	if err != nil {
+		logger.Warnf("get error in close lazycache %v", err)
+	}
+	if value != nil {
 		if clos, ok := value.(closable); ok && c != nil {
 			logger.Debugf("%s - Invoking Close on value for key [%q].", c.name, key)
 			clos.Close()

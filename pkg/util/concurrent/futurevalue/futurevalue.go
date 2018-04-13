@@ -11,7 +11,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 )
+
+var logger = logging.NewLogger("fabsdk/util")
 
 // Initializer initializes the value
 type Initializer func() (interface{}, error)
@@ -80,7 +84,10 @@ func (f *Value) MustGet() interface{} {
 
 // IsSet returns true if the value has been set, otherwise false is returned
 func (f *Value) IsSet() bool {
-	isSet, _, _ := f.get()
+	isSet, _, err := f.get()
+	if err != nil {
+		logger.Warnf("get error %v", err)
+	}
 	return isSet
 }
 
