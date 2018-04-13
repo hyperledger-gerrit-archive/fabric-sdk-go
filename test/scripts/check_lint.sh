@@ -65,12 +65,7 @@ done
 
 
 declare -a arr1=(
-"./pkg/client"
-"./pkg/common"
-"./pkg/context"
-"./pkg/core"
-"./pkg/fab"
-"./pkg/fabsdk"
+"./pkg"
 )
 
 

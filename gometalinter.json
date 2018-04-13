@@ -1,7 +1,8 @@
 {
   "Deadline": "5m",
   "Exclude": [
-    ".*seekInfo can be .*proto.Message.*"
+    ".*seekInfo can be .*proto.Message.*",
+    ".*Use of unsafe calls should be audited.*"
   ],
   "EnableGC": true,
   "WarnUnmatchedDirective": true,
