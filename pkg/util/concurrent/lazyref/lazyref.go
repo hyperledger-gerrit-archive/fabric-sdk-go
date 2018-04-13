@@ -67,19 +67,19 @@ const (
 // is closed (via a call to Close) or if it expires. (Note: The Finalizer function
 // is not called every time the value is refreshed with the periodic refresh feature.)
 type Reference struct {
-	lock               sync.RWMutex
-	ref                unsafe.Pointer
-	lastTimeAccessed   unsafe.Pointer
+	initialInit        time.Duration
+	wg                 sync.WaitGroup
 	initializer        Initializer
 	finalizer          Finalizer
 	expirationHandler  expirationHandler
 	expirationProvider ExpirationProvider
-	initialInit        time.Duration
+	ref                unsafe.Pointer
+	lastTimeAccessed   unsafe.Pointer
 	expiryType         ExpirationType
 	closed             bool
-	closech            chan bool
 	running            bool
-	wg                 sync.WaitGroup
+	lock               sync.RWMutex
+	closech            chan bool
 }
 
 // New creates a new reference
@@ -223,12 +223,6 @@ func (r *Reference) lastAccessed() time.Time {
 	return *(*time.Time)(p)
 }
 
-func (r *Reference) timerRunning() bool {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-	return r.running
-}
-
 func (r *Reference) setTimerRunning() bool {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -260,54 +254,56 @@ func (r *Reference) ensureTimerStarted(initialExpiration time.Duration) {
 
 	r.setLastAccessed()
 
-	go func() {
-		if !r.setTimerRunning() {
-			logger.Debugf("Timer is already running")
+	go checkTimeStarted(r, initialExpiration)
+}
+
+func checkTimeStarted(r *Reference, initialExpiration time.Duration) {
+	if !r.setTimerRunning() {
+		logger.Debugf("Timer is already running")
+		return
+	}
+	defer r.setTimerStopped()
+
+	logger.Debugf("Starting timer")
+
+	expiry := initialExpiration
+	for {
+		select {
+		case <-r.closech:
+			logger.Debugf("Got closed event. Exiting timer.")
 			return
-		}
-		defer r.setTimerStopped()
 
-		logger.Debugf("Starting timer")
+		case <-time.After(expiry):
+			expiration := r.expirationProvider()
 
-		expiry := initialExpiration
-		for {
-			select {
-			case <-r.closech:
-				logger.Debugf("Got closed event. Exiting timer.")
-				return
+			if !r.isSet() && r.expiryType != Refreshing {
+				expiry = expiration
+				logger.Debugf("Reference is not set. Will expire again in %s", expiry)
+				continue
+			}
 
-			case <-time.After(expiry):
-				expiration := r.expirationProvider()
-
-				if !r.isSet() && r.expiryType != Refreshing {
-					expiry = expiration
-					logger.Debugf("Reference is not set. Will expire again in %s", expiry)
-					continue
-				}
-
-				if r.expiryType == LastInitialized || r.expiryType == Refreshing {
-					logger.Debugf("Handling expiration...")
+			if r.expiryType == LastInitialized || r.expiryType == Refreshing {
+				logger.Debugf("Handling expiration...")
+				r.handleExpiration()
+				expiry = expiration
+				logger.Debugf("... finished handling expiration. Setting expiration to %s", expiry)
+			} else {
+				// Check how long it's been since last access
+				durSinceLastAccess := time.Since(r.lastAccessed())
+				logger.Debugf("Duration since last access is %s", durSinceLastAccess)
+				if durSinceLastAccess > expiration {
+					logger.Debugf("... handling expiration...")
 					r.handleExpiration()
 					expiry = expiration
 					logger.Debugf("... finished handling expiration. Setting expiration to %s", expiry)
 				} else {
-					// Check how long it's been since last access
-					durSinceLastAccess := time.Now().Sub(r.lastAccessed())
-					logger.Debugf("Duration since last access is %s", durSinceLastAccess)
-					if durSinceLastAccess > expiration {
-						logger.Debugf("... handling expiration...")
-						r.handleExpiration()
-						expiry = expiration
-						logger.Debugf("... finished handling expiration. Setting expiration to %s", expiry)
-					} else {
-						// Set another expiry for the remainder of the time
-						expiry = expiration - durSinceLastAccess
-						logger.Debugf("Not expired yet. Will check again in %s", expiry)
-					}
+					// Set another expiry for the remainder of the time
+					expiry = expiration - durSinceLastAccess
+					logger.Debugf("Not expired yet. Will check again in %s", expiry)
 				}
 			}
 		}
-	}()
+	}
 }
 
 func (r *Reference) finalize() {
