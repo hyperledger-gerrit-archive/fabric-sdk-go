@@ -1,3 +1,5 @@
+// +build pkcs11
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
