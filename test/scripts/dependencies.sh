@@ -19,9 +19,6 @@ if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ]; then
     TMP=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
     GOPATH=$TMP $GO_CMD get -u github.com/axw/gocov/...
     GOPATH=$TMP $GO_CMD get -u github.com/AlekSi/gocov-xml
-    GOPATH=$TMP $GO_CMD get -u github.com/client9/misspell/cmd/misspell
-    GOPATH=$TMP $GO_CMD get -u github.com/golang/lint/golint
-    GOPATH=$TMP $GO_CMD get -u golang.org/x/tools/cmd/goimports
     GOPATH=$TMP $GO_CMD get -u github.com/golang/mock/mockgen
     GOPATH=$TMP $GO_CMD get -u github.com/alecthomas/gometalinter
     mkdir -p $GOPATH/bin
