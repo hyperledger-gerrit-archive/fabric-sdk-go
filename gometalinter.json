@@ -1,8 +1,7 @@
 {
   "Deadline": "5m",
   "Exclude": [
-    ".*seekInfo can be .*proto.Message.*",
-    "pkg/core/cryptosuite/bccsp/multisuite/cryptosuiteimpl.go"
+    ".*seekInfo can be .*proto.Message.*"
   ],
   "EnableGC": true,
   "WarnUnmatchedDirective": true,
