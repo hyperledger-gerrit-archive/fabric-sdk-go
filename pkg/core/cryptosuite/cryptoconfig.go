@@ -43,7 +43,7 @@ func (c *Config) SecurityLevel() int {
 
 //SecurityProvider provider SW or PKCS11
 func (c *Config) SecurityProvider() string {
-	return c.backend.GetString("client.BCCSP.security.default.provider")
+	return strings.ToUpper(c.backend.GetString("client.BCCSP.security.default.provider"))
 }
 
 //Ephemeral flag
