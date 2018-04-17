@@ -9,8 +9,6 @@ package msp
 import (
 	"testing"
 
-	"fmt"
-
 	"os"
 	"strings"
 
@@ -41,7 +39,6 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	backendMap := make(map[string]interface{})
 	backendMap["client"], _ = configBackend.Lookup("client")
 	backendMap["certificateAuthorities"], _ = configBackend.Lookup("certificateAuthorities")
-	fmt.Println(configBackend.Lookup("certificateAuthorities"))
 	backendMap["entityMatchers"], _ = configBackend.Lookup("entityMatchers")
 	backendMap["peers"], _ = configBackend.Lookup("peers")
 	backendMap["organizations"], _ = configBackend.Lookup("organizations")
@@ -68,15 +65,14 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	customBackend.KeyValueMap["certificateAuthorities"] = ""
 
 	//Test CA client cert file failure scenario
-	certfile, err := sampleIdentityConfig.CAClientCertPath("peerorg1")
-	fmt.Println(err)
-	if certfile != "" || err == nil {
+	certfile, err := sampleIdentityConfig.CAClientCert("peerorg1")
+	if certfile != nil || err == nil {
 		t.Fatal("CA Cert file location read supposed to fail")
 	}
 
 	//Test CA client cert file failure scenario
-	keyFile, err := sampleIdentityConfig.CAClientKeyPath("peerorg1")
-	if keyFile != "" || err == nil {
+	keyFile, err := sampleIdentityConfig.CAClientKey("peerorg1")
+	if keyFile != nil || err == nil {
 		t.Fatal("CA Key file location read supposed to fail")
 	}
 
@@ -89,7 +85,7 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 }
 
 func testCAServerCertFailureScenario(sampleIdentityConfig *IdentityConfig, t *testing.T) {
-	sCertFiles, err := sampleIdentityConfig.CAServerCertPaths("peerorg1")
+	sCertFiles, err := sampleIdentityConfig.CAServerCerts("peerorg1")
 	if len(sCertFiles) > 0 || err == nil {
 		t.Fatal("Getting CA server cert files supposed to fail")
 	}
@@ -115,8 +111,8 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	}
 
 	identityConfig := config.(*IdentityConfig)
-	certPem, _ := identityConfig.CAClientCertPem(org1)
-	certConfig := endpoint.TLSConfig{Pem: certPem}
+	certPem, _ := identityConfig.CAClientCert(org1)
+	certConfig := endpoint.TLSConfig{Pem: string(certPem)}
 
 	cert, err := certConfig.TLSCert()
 
@@ -144,9 +140,9 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 		t.Fatalf("TLSCACertPool failed %v", err)
 	}
 
-	keyPem, _ := identityConfig.CAClientKeyPem(org1)
+	keyPem, _ := identityConfig.CAClientKey(org1)
 
-	keyConfig := endpoint.TLSConfig{Pem: keyPem}
+	keyConfig := endpoint.TLSConfig{Pem: string(keyPem)}
 
 	_, err = keyConfig.TLSCert()
 	if err == nil {
@@ -214,22 +210,22 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 	checkPeerPem(org1, idConfig, peer0, t)
 
 	// get CA Server cert pems (embedded) for org1
-	checkCAServerCertPems("org1", idConfig, t)
+	checkCAServerCerts("org1", idConfig, t)
 
 	// get the client cert pem (embedded) for org1
-	checkClientCertPem(idConfig, "org1", t)
+	checkClientCert(idConfig, "org1", t)
 
 	// get CA Server certs paths for org1
-	checkCAServerCertsPath("org1", idConfig, t)
+	checkCAServerCerts("org1", idConfig, t)
 
 	// get the client cert path for org1
-	checkClientCertPath(idConfig, "org1", t)
+	checkClientCert(idConfig, "org1", t)
 
 	// get the client key pem (embedded) for org1
-	checkClientKeyPem(idConfig, "org1", t)
+	checkClientKey(idConfig, "org1", t)
 
 	// get the client key file path for org1
-	checkClientKeyFilePath(idConfig, "org1", t)
+	checkClientKey(idConfig, "org1", t)
 }
 
 func checkPeerPem(org string, idConfig *IdentityConfig, peer string, t *testing.T) {
@@ -262,8 +258,8 @@ O94CDp7l2k7hMQI0zQ==
 	}
 }
 
-func checkCAServerCertPems(org string, idConfig *IdentityConfig, t *testing.T) {
-	certs, err := idConfig.CAServerCertPems(org)
+func checkCAServerCerts(org string, idConfig *IdentityConfig, t *testing.T) {
+	certs, err := idConfig.CAServerCerts(org)
 	if err != nil {
 		t.Fatalf("Failed to load CAServerCertPems from config. Error: %s", err)
 	}
@@ -272,42 +268,20 @@ func checkCAServerCertPems(org string, idConfig *IdentityConfig, t *testing.T) {
 	}
 }
 
-func checkClientCertPem(idConfig *IdentityConfig, org string, t *testing.T) {
-	_, err := idConfig.CAClientCertPem(org)
+func checkClientCert(idConfig *IdentityConfig, org string, t *testing.T) {
+	cert, err := idConfig.CAClientCert(org)
 	if err != nil {
 		t.Fatalf("Failed to load CAClientCertPem from config. Error: %s", err)
 	}
+	assert.True(t, len(cert) > 0, "Invalid cert")
 }
 
-func checkCAServerCertsPath(org string, idConfig *IdentityConfig, t *testing.T) {
-	certs, err := idConfig.CAServerCertPaths(org)
-	if err != nil {
-		t.Fatalf("Failed to load CAServerCertPaths from config. Error: %s", err)
-	}
-	if len(certs) == 0 {
-		t.Fatalf("Got empty cert file paths for CAServerCertPaths")
-	}
-}
-
-func checkClientCertPath(idConfig *IdentityConfig, org string, t *testing.T) {
-	_, err := idConfig.CAClientCertPath(org)
-	if err != nil {
-		t.Fatalf("Failed to load CAClientCertPath from config. Error: %s", err)
-	}
-}
-
-func checkClientKeyPem(idConfig *IdentityConfig, org string, t *testing.T) {
-	_, err := idConfig.CAClientKeyPem(org)
+func checkClientKey(idConfig *IdentityConfig, org string, t *testing.T) {
+	key, err := idConfig.CAClientKey(org)
 	if err != nil {
 		t.Fatalf("Failed to load CAClientKeyPem from config. Error: %s", err)
 	}
-}
-
-func checkClientKeyFilePath(idConfig *IdentityConfig, org string, t *testing.T) {
-	_, err := idConfig.CAClientKeyPath(org)
-	if err != nil {
-		t.Fatalf("Failed to load CAClientKeyPath from config. Error: %s", err)
-	}
+	assert.True(t, len(key) > 0, "Invalid key")
 }
 
 func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
@@ -333,7 +307,7 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 	return cBytes, err
 }
 
-func TestCAConfig(t *testing.T) {
+func TestCAConfigFiles(t *testing.T) {
 	//Test config
 	backend, err := config.FromFile(configTestFilePath)()
 	if err != nil {
@@ -355,57 +329,78 @@ func TestCAConfig(t *testing.T) {
 	assert.True(t, pathvar.Subst(val.(string)) == identityConfig.endpointConfig.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing CA Client File Location
-	certfile, err := identityConfig.CAClientCertPath(org1)
+	certfile, err := identityConfig.CAClientCert(org1)
 
-	if certfile == "" || err != nil {
+	if len(certfile) == 0 || err != nil {
 		t.Fatalf("CA Cert file location read failed %s", err)
 	}
 
 	//Testing CA Key File Location
-	keyFile, err := identityConfig.CAClientKeyPath(org1)
+	keyFile, err := identityConfig.CAClientKey(org1)
 
-	if keyFile == "" || err != nil {
+	if len(keyFile) == 0 || err != nil {
 		t.Fatal("CA Key file location read failed")
 	}
 
 	//Testing CA Server Cert Files
-	testCAServerCertFiles(identityConfig, t, org1)
+	sCertFiles, err := identityConfig.CAServerCerts(org1)
+	if len(sCertFiles) == 0 || err != nil {
+		t.Fatal("Getting CA server cert files failed")
+	}
+
+}
+
+func TestCAConfig(t *testing.T) {
+	//Test config
+	backend, err := config.FromFile(configTestFilePath)()
+	if err != nil {
+		t.Fatal("Failed to get config backend")
+	}
+
+	config, err := ConfigFromBackend(backend)
+	if err != nil {
+		t.Fatal("Failed to get identity config")
+	}
+	identityConfig := config.(*IdentityConfig)
+	//Test Crypto config path
+
+	val, ok := backend.Lookup("client.cryptoconfig.path")
+	if !ok || val == nil {
+		t.Fatal("expected valid value")
+	}
+
+	assert.True(t, pathvar.Subst(val.(string)) == identityConfig.endpointConfig.CryptoConfigPath(), "Incorrect crypto config path", t)
 
 	//Testing MSPID
-	testMSPID(identityConfig, t, org1)
+	mspID, err := identityConfig.endpointConfig.MSPID(org1)
+	if mspID != "Org1MSP" || err != nil {
+		t.Fatal("Get MSP ID failed")
+	}
+
+	// testing empty OrgMSP
+	_, err = identityConfig.endpointConfig.MSPID("dummyorg1")
+	if err == nil {
+		t.Fatal("Get MSP ID did not fail for dummyorg1")
+	}
 
 	//Testing CAConfig
-	testCAConfig(identityConfig, t, org1)
+	caConfig, err := identityConfig.CAConfig(org1)
+	if caConfig == nil || err != nil {
+		t.Fatal("Get CA Config failed")
+	}
 
 	// Test CA KeyStore Path
 	testCAKeyStorePath(backend, t, identityConfig)
 
 	// test Client
-	testClient(identityConfig, t)
-
-	// testing empty OrgMSP
-	testEmptyOrgMsp(identityConfig, t)
-}
-
-func testCAServerCertFiles(identityConfig *IdentityConfig, t *testing.T, org string) {
-	sCertFiles, err := identityConfig.CAServerCertPaths(org)
-	if len(sCertFiles) == 0 || err != nil {
-		t.Fatal("Getting CA server cert files failed")
+	c, err := identityConfig.Client()
+	if err != nil {
+		t.Fatalf("Received error when fetching Client info, error is %s", err)
 	}
-}
-
-func testMSPID(identityConfig *IdentityConfig, t *testing.T, org string) {
-	mspID, err := identityConfig.endpointConfig.MSPID(org)
-	if mspID != "Org1MSP" || err != nil {
-		t.Fatal("Get MSP ID failed")
+	if c == nil {
+		t.Fatal("Received empty client when fetching Client info")
 	}
-}
 
-func testCAConfig(identityConfig *IdentityConfig, t *testing.T, org string) {
-	caConfig, err := identityConfig.CAConfig(org)
-	if caConfig == nil || err != nil {
-		t.Fatal("Get CA Config failed")
-	}
 }
 
 func testCAKeyStorePath(backend core.ConfigBackend, t *testing.T, identityConfig *IdentityConfig) {
@@ -426,19 +421,35 @@ func testCAKeyStorePath(backend core.ConfigBackend, t *testing.T, identityConfig
 	}
 }
 
-func testClient(identityConfig *IdentityConfig, t *testing.T) {
-	c, err := identityConfig.Client()
-	if err != nil {
-		t.Fatalf("Received error when fetching Client info, error is %s", err)
-	}
-	if c == nil {
-		t.Fatal("Received empty client when fetching Client info")
-	}
-}
+func TestCACertAndKeys(t *testing.T) {
 
-func testEmptyOrgMsp(identityConfig *IdentityConfig, t *testing.T) {
-	_, err := identityConfig.endpointConfig.MSPID("dummyorg1")
-	if err == nil {
-		t.Fatal("Get MSP ID did not fail for dummyorg1")
+	backend, err := config.FromFile(configEmbeddedUsersTestFilePath)()
+	if err != nil {
+		t.Fatal("Failed to get config backend")
 	}
+	orgIDs := []string{"org1", "org2"}
+
+	config, err := ConfigFromBackend(backend)
+	if err != nil {
+		t.Fatal("Failed to get identity config")
+	}
+	identityConfig := config.(*IdentityConfig)
+
+	for _, orgID := range orgIDs {
+		val, err := identityConfig.CAClientCert(orgID)
+		assert.Nil(t, err, "identityConfig.CAClientCert not supposed to return error")
+		assert.True(t, len(val) > 0, "identityConfig.CAClientCert supposed to return valid cert")
+
+		val, err = identityConfig.CAClientKey(orgID)
+		assert.Nil(t, err, "identityConfig.CAClientKey not supposed to return error")
+		assert.True(t, len(val) > 0, "identityConfig.CAClientKey supposed to return valid key")
+
+		vals, err := identityConfig.CAServerCerts(orgID)
+		assert.Nil(t, err, "identityConfig.CAClientKey not supposed to return error")
+		assert.True(t, len(vals) > 0, "identityConfig.CAClientKey supposed to return server certs")
+		for _, v := range vals {
+			assert.True(t, len(v) > 0, "identityConfig.CAClientKey supposed to return valid server cert")
+		}
+	}
+
 }
