@@ -54,8 +54,8 @@ func TestExpiredPeersCert(t *testing.T) {
 	defer integration.CleanupUserData(t, sdk)
 
 	//prepare contexts
-	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
-	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
+	ordererClientContext := sdk.LocalContext(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
+	org1AdminClientContext := sdk.LocalContext(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 
 	// Channel management client is responsible for managing channels (create/update channel)
 	chMgmtClient, err := resmgmt.New(ordererClientContext)

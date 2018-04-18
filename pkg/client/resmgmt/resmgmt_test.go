@@ -153,24 +153,19 @@ func TestNoSigningUserFailure(t *testing.T) {
 	user := mspmocks.NewMockSigningIdentity("test", "")
 
 	// Setup client without user context
-	fabCtx := fcmocks.NewMockContext(user)
+	client := fcmocks.NewMockContext(user)
 	config := getNetworkConfig(t)
-	fabCtx.SetEndpointConfig(config)
+	client.SetEndpointConfig(config)
 
-	clientCtx := createClientContext(contextImpl.Client{
-		Providers:       fabCtx,
-		SigningIdentity: fabCtx,
-	})
+	localDiscoveryProvider := fcmocks.NewMockDiscoveryProvider(nil, nil)
 
-	_, err := New(clientCtx)
-	if err == nil {
-		t.Fatal("Should have failed due to missing msp")
-	}
+	local := fcmocks.NewMockLocalContext(client, localDiscoveryProvider)
 
+	_, err := New(asLocalContextProvider(local))
+	assert.Error(t, err)
 }
 
 func TestJoinChannelRequiredParameters(t *testing.T) {
-
 	rc := setupDefaultResMgmtClient(t)
 
 	// Test empty channel name
@@ -181,8 +176,6 @@ func TestJoinChannelRequiredParameters(t *testing.T) {
 
 	// Setup test client with different msp (default targets cannot be calculated)
 	ctx := setupTestContext("test", "otherMSP")
-	config := getNetworkConfig(t)
-	ctx.SetEndpointConfig(config)
 
 	// Create new resource management client ("otherMSP")
 	rc = setupResMgmtClient(ctx, nil, t)
@@ -248,16 +241,15 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	//Some cleanup before further test
 	orderer = fcmocks.NewMockOrderer("", nil)
 	defer orderer.Close()
+
+	ctx = setupTestContextWithLocalPeers("test", "Org1MSP", peers...)
+	setupCustomOrderer(ctx, orderer)
 	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
-	setupCustomOrderer(ctx, orderer)
 
 	rc = setupResMgmtClient(ctx, nil, t, getDefaultTargetFilterOption())
-	disProvider, _ := fcmocks.NewMockDiscoveryProvider(nil, peers)
-	rc.discovery, _ = disProvider.CreateDiscoveryService("mychannel")
 
-	// Test filter only (filter has a match)
-	err = rc.JoinChannel("mychannel", WithTargetFilter(&mspFilter{mspID: "Org1MSP"}))
+	err = rc.JoinChannel("mychannel")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -1311,7 +1303,7 @@ func getDefaultTargetFilterOption() ClientOption {
 	return WithDefaultTargetFilter(targetFilter)
 }
 
-func setupTestDiscovery(discErr error, peers []fab.Peer) (fab.DiscoveryProvider, error) {
+func setupTestDiscovery(discErr error, peers []fab.Peer) (*txnmocks.MockStaticDiscoveryProvider, error) {
 
 	mockDiscovery, err := txnmocks.NewMockDiscoveryProvider(discErr, peers)
 	if err != nil {
@@ -1328,11 +1320,9 @@ func setupDefaultResMgmtClient(t *testing.T) *Client {
 	return setupResMgmtClient(ctx, nil, t, getDefaultTargetFilterOption())
 }
 
-func setupResMgmtClient(fabCtx context.Client, discErr error, t *testing.T, opts ...ClientOption) *Client {
+func setupResMgmtClient(fabCtx context.Local, discErr error, t *testing.T, opts ...ClientOption) *Client {
 
-	ctx := createClientContext(fabCtx)
-
-	resClient, err := New(ctx, opts...)
+	resClient, err := New(asLocalContextProvider(fabCtx), opts...)
 	if err != nil {
 		t.Fatalf("Failed to create new client with options: %s %v", err, opts)
 	}
@@ -1341,25 +1331,33 @@ func setupResMgmtClient(fabCtx context.Client, discErr error, t *testing.T, opts
 
 }
 
-func setupTestContext(username string, mspID string) *fcmocks.MockContext {
+func setupTestContext(username string, mspID string) *fcmocks.LocalContext {
 	user := mspmocks.NewMockSigningIdentity(username, mspID)
 	ctx := fcmocks.NewMockContext(user)
-	return ctx
+	localDiscoveryProvider := fcmocks.NewMockDiscoveryProvider(nil, []fab.Peer{})
+	return fcmocks.NewMockLocalContext(ctx, localDiscoveryProvider)
 }
 
-func setupCustomOrderer(ctx *fcmocks.MockContext, mockOrderer fab.Orderer) *fcmocks.MockContext {
+func setupTestContextWithLocalPeers(username string, mspID string, peers ...fab.Peer) *fcmocks.LocalContext {
+	user := mspmocks.NewMockSigningIdentity(username, mspID)
+	ctx := fcmocks.NewMockContext(user)
+	localDiscoveryProvider := fcmocks.NewMockDiscoveryProvider(nil, peers)
+	return fcmocks.NewMockLocalContext(ctx, localDiscoveryProvider)
+}
+
+func setupCustomOrderer(ctx *fcmocks.LocalContext, mockOrderer fab.Orderer) *fcmocks.LocalContext {
 	mockInfraProvider := &fcmocks.MockInfraProvider{}
 	mockInfraProvider.SetCustomOrderer(mockOrderer)
 	ctx.SetCustomInfraProvider(mockInfraProvider)
 	return ctx
 }
 
-func setupTestContextWithDiscoveryError(username string, mspID string, discErr error) *fcmocks.MockContext {
+func setupTestContextWithDiscoveryError(username string, mspID string, discErr error) *fcmocks.LocalContext {
 	user := mspmocks.NewMockSigningIdentity(username, mspID)
 	dscPvdr, _ := setupTestDiscovery(discErr, nil)
 	//ignore err and set whatever you get in dscPvdr
-	ctx := fcmocks.NewMockContextWithCustomDiscovery(user, dscPvdr)
-	return ctx
+	ctx := fcmocks.NewMockContext(user)
+	return fcmocks.NewMockLocalContext(ctx, dscPvdr)
 }
 
 func startEndorserServer(t *testing.T, grpcServer *grpc.Server) (*fcmocks.MockEndorserServer, string) {
@@ -1464,12 +1462,7 @@ func TestSaveChannelFailure(t *testing.T) {
 	errCtx.SetEndpointConfig(network)
 	fabCtx := setupTestContext("user", "Org1Msp1")
 
-	clientCtx := createClientContext(contextImpl.Client{
-		Providers:       fabCtx,
-		SigningIdentity: fabCtx,
-	})
-
-	cc, err := New(clientCtx)
+	cc, err := New(asLocalContextProvider(fabCtx))
 	if err != nil {
 		t.Fatalf("Failed to create new channel management client: %s", err)
 	}
@@ -1600,9 +1593,9 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 }
 
-func createClientContext(fabCtx context.Client) context.ClientProvider {
-	return func() (context.Client, error) {
-		return fabCtx, nil
+func asLocalContextProvider(ctx context.Local) context.LocalProvider {
+	return func() (context.Local, error) {
+		return ctx, nil
 	}
 }
 
