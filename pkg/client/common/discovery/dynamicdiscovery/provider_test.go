@@ -48,6 +48,13 @@ func TestDiscoveryProvider(t *testing.T) {
 
 	err = service.(*Service).Initialize(chCtx)
 	assert.NoError(t, err)
+
+	localService, err := p.CreateLocalDiscoveryService()
+	assert.NoError(t, err)
+
+	localCtx := mocks.NewMockLocalContext(ctx, nil)
+	err = localService.(*LocalService).Initialize(localCtx)
+	assert.NoError(t, err)
 }
 
 type config struct {
