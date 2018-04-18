@@ -45,7 +45,7 @@ func TestResMgmtClientQueries(t *testing.T) {
 	//}
 
 	//prepare contexts
-	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
+	org1AdminClientContext := sdk.LocalContext(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
 
 	// Resource management client
 	client, err := resmgmt.New(org1AdminClientContext)

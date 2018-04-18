@@ -124,6 +124,7 @@ func TestWithServicePkg(t *testing.T) {
 	factory := mockapisdk.NewMockServiceProviderFactory(mockCtrl)
 
 	factory.EXPECT().CreateDiscoveryProvider(gomock.Any()).Return(nil, nil)
+	factory.EXPECT().CreateLocalDiscoveryProvider(gomock.Any()).Return(nil, nil)
 	factory.EXPECT().CreateSelectionProvider(gomock.Any()).Return(nil, nil)
 
 	_, err = New(c, WithServicePkg(factory))
@@ -154,7 +155,8 @@ func TestWithSessionPkg(t *testing.T) {
 	defer sdk.Close()
 
 	// Get resource management
-	ctx := sdk.Context(WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg1))
+	ctx := sdk.LocalContext(WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg1))
+
 	_, err = resmgmt.New(ctx)
 	if err != nil {
 		t.Fatalf("Unexpected error getting channel management client: %s", err)

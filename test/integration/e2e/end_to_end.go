@@ -56,7 +56,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	defer integration.CleanupUserData(t, sdk)
 
 	//clientContext allows creation of transactions using the supplied identity as the credential.
-	clientContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(ordererOrgName))
+	clientContext := sdk.LocalContext(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(ordererOrgName))
 
 	// Resource management client is responsible for managing channels (create/update channel)
 	// Supply user that has privileges to create channel (in this case orderer admin)
@@ -72,7 +72,7 @@ func Run(t *testing.T, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) 
 	createChannel(sdk, t, resMgmtClient)
 
 	//prepare context
-	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName))
+	adminContext := sdk.LocalContext(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName))
 
 	// Org resource management client
 	orgResMgmt, err := resmgmt.New(adminContext)

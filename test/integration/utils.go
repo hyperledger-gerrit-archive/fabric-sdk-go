@@ -73,7 +73,7 @@ func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID s
 	var joinedTargets []string
 
 	//prepare context
-	clientContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(orgID))
+	clientContext := sdk.LocalContext(fabsdk.WithUser(adminUser), fabsdk.WithOrg(orgID))
 
 	rc, err := resmgmt.New(clientContext)
 	if err != nil {
@@ -97,7 +97,7 @@ func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID s
 func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool, error) {
 
 	//prepare context
-	clientContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(ordererOrgName))
+	clientContext := sdk.LocalContext(fabsdk.WithUser(adminUser), fabsdk.WithOrg(ordererOrgName))
 
 	// Channel management client is responsible for managing channels (create/update)
 	resMgmtClient, err := resmgmt.New(clientContext)
@@ -116,7 +116,7 @@ func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool,
 // JoinChannel attempts to save the named channel.
 func JoinChannel(sdk *fabsdk.FabricSDK, name, orgID string) (bool, error) {
 	//prepare context
-	clientContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(orgID))
+	clientContext := sdk.LocalContext(fabsdk.WithUser(adminUser), fabsdk.WithOrg(orgID))
 
 	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
 	resMgmtClient, err := resmgmt.New(clientContext)
