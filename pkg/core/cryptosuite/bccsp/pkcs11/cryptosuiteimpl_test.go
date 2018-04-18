@@ -44,29 +44,43 @@ func TestBadConfig(t *testing.T) {
 }
 func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	//Prepare Config
-	providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
-
-	mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
-	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
-	mockConfig.EXPECT().SecurityLevel().Return(256)
-	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
-	mockConfig.EXPECT().SecurityProviderLibPath().Return(providerLib)
-	mockConfig.EXPECT().SecurityProviderLabel().Return(softHSMTokenLabel)
-	mockConfig.EXPECT().SecurityProviderPin().Return(softHSMPin)
-	mockConfig.EXPECT().SoftVerify().Return(true)
-
-	//Get cryptosuite using config
-	c, err := GetSuiteByConfig(mockConfig)
-	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
+	// test multiple string cases
+	securityProviderTypes := []string{
+		// upper case
+		"PKCS11",
+		// lower case
+		"pkcs11",
+		// mixed case
+		"Pkcs11",
 	}
 
-	verifyHashFn(t, c)
+	for _, securityProviderType := range securityProviderTypes {
+
+		mockCtrl := gomock.NewController(t)
+
+		//Prepare Config
+		providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
+
+		mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
+		mockConfig.EXPECT().SecurityProvider().Return(securityProviderType).AnyTimes()
+		mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+		mockConfig.EXPECT().SecurityLevel().Return(256)
+		mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+		mockConfig.EXPECT().SecurityProviderLibPath().Return(providerLib)
+		mockConfig.EXPECT().SecurityProviderLabel().Return(softHSMTokenLabel)
+		mockConfig.EXPECT().SecurityProviderPin().Return(softHSMPin)
+		mockConfig.EXPECT().SoftVerify().Return(true)
+
+		//Get cryptosuite using config
+		c, err := GetSuiteByConfig(mockConfig)
+		if err != nil {
+			t.Fatalf("Not supposed to get error, but got: %v", err)
+		}
+
+		verifyHashFn(t, c)
+
+		mockCtrl.Finish()
+	}
 }
 
 func TestCryptoSuiteByConfigPKCS11Failure(t *testing.T) {
