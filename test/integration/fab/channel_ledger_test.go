@@ -122,7 +122,7 @@ func TestLedgerQueries(t *testing.T) {
 	testQueryBlockByTxID(t, ledgerClient, txID, targets)
 
 	//prepare context
-	clientCtx := sdk.Context(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
+	clientCtx := sdk.LocalContext(fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
 
 	resmgmtClient, err := resmgmt.New(clientCtx)
 
