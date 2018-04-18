@@ -109,9 +109,9 @@ func WithConfigCryptoSuite(cryptoConfig core.CryptoSuiteConfig) Option {
 }
 
 // WithConfigEndpoint injects a EndpointConfig interface to the SDK
-func WithConfigEndpoint(endpointConfig fab.EndpointConfig) Option {
+func WithConfigEndpoint(endpointConfigs ...interface{}) Option {
 	return func(opts *options) error {
-		opts.endpointConfig = endpointConfig
+		opts.endpointConfig = fabImpl.BuildConfigEndpointFromOptions(endpointConfigs)
 		return nil
 	}
 }
@@ -344,6 +344,11 @@ func (sdk *FabricSDK) loadConfig(configProvider core.ConfigProvider) error {
 			sdk.opts.endpointConfig, err = fabImpl.ConfigFromBackend(configBackend)
 			if err != nil {
 				return errors.WithMessage(err, "failed to initialize endpoint config from config backend")
+			}
+		} else {
+			sdk.opts.endpointConfig, err = fabImpl.ConfigFromBackendWithOptions(sdk.opts.endpointConfig, configBackend)
+			if err != nil {
+				return errors.WithMessage(err, "failed to initialize existing endpoint config with config backend")
 			}
 		}
 

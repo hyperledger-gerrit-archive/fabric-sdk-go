@@ -76,6 +76,38 @@ func ConfigFromBackend(coreBackend core.ConfigBackend) (fab.EndpointConfig, erro
 	return config, nil
 }
 
+//ExistingConfigFromBackend will add the ConfigBackend to a pre-built EndpointConfig (pre-built with options)
+func ConfigFromBackendWithOptions(config fab.EndpointConfig, coreBackend core.ConfigBackend) (fab.EndpointConfig, error) {
+	var ec *EndpointConfigOptions
+	var ok bool
+	if ec, ok = config.(*EndpointConfigOptions); !ok {
+		return nil, errors.New("network configuration was not build by the sdk")
+	}
+	if ec.defaultConfig.backend == nil {
+		ec.defaultConfig.backend = lookup.New(coreBackend)
+	}
+
+	// cache NetworkConfig only if NetWorkConfig() was not overridden
+	// if it's overridden, it's up to the user to cache it behind their NetworkConfig() implementation
+	if ec.networkConfig == nil {
+		if err := ec.defaultConfig.cacheNetworkConfiguration(); err != nil {
+			return nil, errors.WithMessage(err, "network configuration load failed")
+		}
+	}
+
+	//Compile the entityMatchers
+	ec.defaultConfig.peerMatchers = make(map[int]*regexp.Regexp)
+	ec.defaultConfig.ordererMatchers = make(map[int]*regexp.Regexp)
+	ec.defaultConfig.caMatchers = make(map[int]*regexp.Regexp)
+	ec.defaultConfig.channelMatchers = make(map[int]*regexp.Regexp)
+
+	matchError := ec.defaultConfig.compileMatchers()
+	if matchError != nil {
+		return nil, matchError
+	}
+	return ec, nil
+}
+
 // EndpointConfig represents the endpoint configuration for the client
 type EndpointConfig struct {
 	backend             *lookup.ConfigLookup
