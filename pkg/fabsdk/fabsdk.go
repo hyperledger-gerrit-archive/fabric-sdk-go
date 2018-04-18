@@ -109,9 +109,16 @@ func WithConfigCryptoSuite(cryptoConfig core.CryptoSuiteConfig) Option {
 }
 
 // WithConfigEndpoint injects a EndpointConfig interface to the SDK
-func WithConfigEndpoint(endpointConfig fab.EndpointConfig) Option {
+// it accepts either a full interface of EndpointEconfig or a list
+// of sub interfaces each implementing one (or more) function(s) of EndpointConfig
+func WithConfigEndpoint(endpointConfigs ...interface{}) Option {
 	return func(opts *options) error {
-		opts.endpointConfig = endpointConfig
+		c, err := fabImpl.BuildConfigEndpointFromOptions(endpointConfigs)
+		if err != nil {
+			logger.Warnf("error received when building ConfigEndpoint from options: %s", err)
+			return nil
+		}
+		opts.endpointConfig = c
 		return nil
 	}
 }
@@ -340,11 +347,9 @@ func (sdk *FabricSDK) loadConfig(configProvider core.ConfigProvider) error {
 			sdk.opts.CryptoSuiteConfig = cryptosuite.ConfigFromBackend(configBackend)
 		}
 
-		if sdk.opts.endpointConfig == nil {
-			sdk.opts.endpointConfig, err = fabImpl.ConfigFromBackend(configBackend)
-			if err != nil {
-				return errors.WithMessage(err, "failed to initialize endpoint config from config backend")
-			}
+		err = sdk.loadEndpointConfig(configBackend)
+		if err != nil {
+			return errors.WithMessage(err, "unable to load endpoint config")
 		}
 
 		if sdk.opts.IdentityConfig == nil {
@@ -355,6 +360,22 @@ func (sdk *FabricSDK) loadConfig(configProvider core.ConfigProvider) error {
 		}
 
 		sdk.opts.ConfigBackend = configBackend
+	}
+	return nil
+}
+
+//loadEndpointConfig loads config from config backend when configs are not provided through opts or override missing interfaces from opts with config backend
+func (sdk *FabricSDK) loadEndpointConfig(configBackend core.ConfigBackend) error {
+	defEndpointConfig, err := fabImpl.ConfigFromBackend(configBackend)
+	if err != nil {
+		return errors.WithMessage(err, "failed to initialize endpoint config from config backend")
+	}
+
+	if sdk.opts.endpointConfig == nil {
+		sdk.opts.endpointConfig = defEndpointConfig
+
+	} else {
+		sdk.opts.endpointConfig = fabImpl.UpdateMissingOptsWithDefaultConfig(sdk.opts.endpointConfig.(*fabImpl.EndpointConfigOptions), defEndpointConfig)
 	}
 	return nil
 }
