@@ -32,7 +32,7 @@ func TestParentContext(t *testing.T) {
 	chaincodeID := mainChaincodeID
 
 	//prepare contexts
-	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
+	org1AdminClientContext := sdk.LocalContext(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
 	org1AdminChannelContext := sdk.ChannelContext(mainTestSetup.ChannelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
 
 	//prepare context

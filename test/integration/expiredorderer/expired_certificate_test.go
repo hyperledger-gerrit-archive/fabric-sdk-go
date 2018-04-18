@@ -63,7 +63,7 @@ func TestExpiredCert(t *testing.T) {
 	defer integration.CleanupUserData(t, sdk)
 
 	//prepare contexts
-	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
+	ordererClientContext := sdk.LocalContext(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
 
 	// Channel management client is responsible for managing channels (create/update channel)
 	chMgmtClient, err := resmgmt.New(ordererClientContext)

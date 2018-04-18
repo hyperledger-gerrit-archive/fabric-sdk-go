@@ -82,9 +82,9 @@ func TestOrgsEndToEnd(t *testing.T) {
 func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK) int {
 
 	//prepare contexts
-	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
-	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
-	org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
+	ordererClientContext := sdk.LocalContext(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
+	org1AdminClientContext := sdk.LocalContext(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
+	org2AdminClientContext := sdk.LocalContext(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
 	org1AdminChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
