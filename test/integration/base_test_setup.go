@@ -166,7 +166,7 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 	}
 
 	//prepare context
-	clientContext := sdk.Context(user, fabsdk.WithOrg(orgName))
+	clientContext := sdk.LocalContext(user, fabsdk.WithOrg(orgName))
 
 	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
 	resMgmtClient, err := resmgmt.New(clientContext)

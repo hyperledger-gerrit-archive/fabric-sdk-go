@@ -62,13 +62,14 @@ func TestRevokedPeer(t *testing.T) {
 	defer integration.CleanupUserData(t, sdk)
 
 	//prepare contexts
-	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
+	ordererLocalContext := sdk.LocalContext(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
 	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
-	org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
+	org1AdminLocalContext := sdk.LocalContext(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
+	org2AdminLocalContext := sdk.LocalContext(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
 	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 
 	// Channel management client is responsible for managing channels (create/update channel)
-	chMgmtClient, err := resmgmt.New(ordererClientContext)
+	chMgmtClient, err := resmgmt.New(ordererLocalContext)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +88,7 @@ func TestRevokedPeer(t *testing.T) {
 	createChannel(org1AdminUser, org2AdminUser, chMgmtClient, t)
 
 	// Org1 resource management client (Org1 is default org)
-	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
+	org1ResMgmt, err := resmgmt.New(org1AdminLocalContext)
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
@@ -98,7 +99,7 @@ func TestRevokedPeer(t *testing.T) {
 	}
 
 	// Org2 resource management client
-	org2ResMgmt, err := resmgmt.New(org2AdminClientContext)
+	org2ResMgmt, err := resmgmt.New(org2AdminLocalContext)
 	if err != nil {
 		t.Fatal(err)
 	}
