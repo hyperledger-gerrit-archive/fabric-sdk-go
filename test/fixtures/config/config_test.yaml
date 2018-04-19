@@ -54,6 +54,10 @@ client:
 #    timeout:
 #      connection: 15s
 #      response: 15s
+#  discovery:
+#    timeout:
+#      connection: 15s
+#      response: 15s
 #  global:
 #    timeout:
 #      query: 180s
@@ -64,6 +68,7 @@ client:
 #      eventServiceIdle: 2m
 #      channelConfig: 30m
 #      channelMembership: 30s
+#      discovery: 10s
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:
@@ -452,4 +457,3 @@ entityMatchers:
     - pattern: (\w+).org2.example.(\w+)
       urlSubstitutionExp:
       mappedHost: local.ca.org2.example.com
-

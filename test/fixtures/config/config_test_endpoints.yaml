@@ -49,6 +49,10 @@ client:
     timeout:
       connection: 3s
       response: 10s
+  discovery:
+    timeout:
+      connection: 15s
+      response: 15s
   global:
     timeout:
       query: 45s
@@ -59,6 +63,7 @@ client:
       eventServiceIdle: 2m
       channelConfig: 60s
       channelMembership: 30s
+      discovery: 15s
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:
