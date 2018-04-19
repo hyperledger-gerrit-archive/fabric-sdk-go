@@ -25,7 +25,7 @@ import (
 var securityLevel = 256
 
 const (
-	providerTypePKCS11 = "PKCS11"
+	providerTypePKCS11 = "pkcs11"
 )
 
 func TestBadConfig(t *testing.T) {
@@ -51,7 +51,7 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	providerLib, softHSMPin, softHSMTokenLabel := pkcs11.FindPKCS11Lib()
 
 	mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
+	mockConfig.EXPECT().SecurityProvider().Return("pkcs11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
@@ -76,7 +76,7 @@ func TestCryptoSuiteByConfigPKCS11Failure(t *testing.T) {
 	defer mockCtrl.Finish()
 	//Prepare Config
 	mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("PKCS11")
+	mockConfig.EXPECT().SecurityProvider().Return("pkcs11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
 	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
