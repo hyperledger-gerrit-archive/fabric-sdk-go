@@ -33,7 +33,7 @@ func (c *Config) IsSecurityEnabled() bool {
 
 // SecurityAlgorithm returns cryptoSuite config hash algorithm
 func (c *Config) SecurityAlgorithm() string {
-	return c.backend.GetString("client.BCCSP.security.hashAlgorithm")
+	return c.backend.GetLowerString("client.BCCSP.security.hashAlgorithm")
 }
 
 // SecurityLevel returns cryptSuite config security level
@@ -43,7 +43,7 @@ func (c *Config) SecurityLevel() int {
 
 //SecurityProvider provider SW or PKCS11
 func (c *Config) SecurityProvider() string {
-	return c.backend.GetString("client.BCCSP.security.default.provider")
+	return c.backend.GetLowerString("client.BCCSP.security.default.provider")
 }
 
 //SoftVerify flag
