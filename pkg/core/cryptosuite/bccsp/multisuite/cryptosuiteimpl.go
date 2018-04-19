@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package multisuite
 
 import (
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
@@ -15,10 +17,10 @@ import (
 
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
 func GetSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
-	switch config.SecurityProvider() {
-	case "SW":
+	switch {
+	case strings.EqualFold(config.SecurityProvider(), "SW"):
 		return sw.GetSuiteByConfig(config)
-	case "PKCS11":
+	case strings.EqualFold(config.SecurityProvider(), "PKCS11"):
 		return pkcs11.GetSuiteByConfig(config)
 	}
 

@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package pkcs11
 
 import (
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspPkcs11 "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/pkcs11"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
@@ -21,7 +23,7 @@ var logger = logging.NewLogger("fabsdk/core")
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
 func GetSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	// TODO: delete this check?
-	if config.SecurityProvider() != "PKCS11" {
+	if !strings.EqualFold(config.SecurityProvider(), "PKCS11") {
 		return nil, errors.Errorf("Unsupported BCCSP Provider: %s", config.SecurityProvider())
 	}
 

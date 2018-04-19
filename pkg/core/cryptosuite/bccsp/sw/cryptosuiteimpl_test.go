@@ -33,22 +33,34 @@ func TestBadConfig(t *testing.T) {
 }
 
 func TestCryptoSuiteByConfigSW(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
-	mockConfig.EXPECT().SecurityProvider().Return("SW")
-	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
-	mockConfig.EXPECT().SecurityLevel().Return(256)
-	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
-
-	//Get cryptosuite using config
-	c, err := GetSuiteByConfig(mockConfig)
-	if err != nil {
-		t.Fatalf("Not supposed to get error, but got: %v", err)
+	// test multiple string cases
+	securityProviderTypes := []string{
+		// upper case
+		"SW",
+		// lower case
+		"sw",
+		// mixed case
+		"Sw",
 	}
 
-	verifyHashFn(t, c)
+	for _, securityProviderType := range securityProviderTypes {
+		mockCtrl := gomock.NewController(t)
+
+		mockConfig := mockcore.NewMockCryptoSuiteConfig(mockCtrl)
+		mockConfig.EXPECT().SecurityProvider().Return(securityProviderType).AnyTimes()
+		mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
+		mockConfig.EXPECT().SecurityLevel().Return(256)
+		mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
+
+		//Get cryptosuite using config
+		c, err := GetSuiteByConfig(mockConfig)
+		if err != nil {
+			t.Fatalf("Not supposed to get error, but got: %v", err)
+		}
+
+		verifyHashFn(t, c)
+		mockCtrl.Finish()
+	}
 }
 
 func TestCryptoSuiteByBadConfigSW(t *testing.T) {

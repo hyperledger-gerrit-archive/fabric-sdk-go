@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package sw
 
 import (
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
@@ -21,7 +23,7 @@ var logger = logging.NewLogger("fabsdk/core")
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
 func GetSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	// TODO: delete this check?
-	if config.SecurityProvider() != "SW" {
+	if !strings.EqualFold(config.SecurityProvider(), "SW") {
 		return nil, errors.Errorf("Unsupported BCCSP Provider: %s", config.SecurityProvider())
 	}
 
