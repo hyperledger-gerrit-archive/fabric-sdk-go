@@ -97,9 +97,11 @@ func (s *discoveryService) GetPeers() ([]fab.Peer, error) {
 		if chPeer != nil {
 			peerConfig = &chPeer.PeerConfig
 		} else {
-			peerConfig, err = s.ctx.EndpointConfig().PeerConfigByURL(peer.URL())
-			if err != nil || peerConfig == nil {
-				//TODO there shouldn't be error when peerconfig not found, will be fixed
+			peerConfig, err = s.ctx.EndpointConfig().PeerConfig(peer.URL())
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to get peer config from [%s]", peer.URL())
+			}
+			if peerConfig == nil {
 				logger.Debugf("unable to get peer config from [%s] : error [%v]", peer.URL(), err)
 				continue
 			}

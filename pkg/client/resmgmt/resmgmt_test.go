@@ -377,7 +377,6 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Should have failed to join channel since global orderer certs are not configured properly")
 	}
-	fmt.Println(err)
 }
 
 func TestIsChaincodeInstalled(t *testing.T) {
