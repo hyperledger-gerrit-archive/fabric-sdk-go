@@ -91,7 +91,7 @@ func WithOrdererURL(url string) RequestOption {
 			return errors.WithMessage(err, "orderer not found")
 		}
 		if ordererCfg == nil {
-			return errors.New("orderer not found")
+			return errors.Errorf("orderer not found for url:%s", url)
 		}
 
 		orderer, err := ctx.InfraProvider().CreateOrdererFromConfig(ordererCfg)
