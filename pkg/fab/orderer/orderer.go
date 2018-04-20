@@ -180,6 +180,10 @@ func FromOrdererName(name string) Option {
 			return err
 		}
 
+		if ordererCfg == nil {
+			return errors.Errorf("orderer config not found for orderer : %s", name)
+		}
+
 		return FromOrdererConfig(ordererCfg)(o)
 	}
 }

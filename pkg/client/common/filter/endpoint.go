@@ -48,7 +48,7 @@ type EndpointFilter struct {
 // Accept returns false if this peer is to be excluded from the target list
 func (f *EndpointFilter) Accept(peer fab.Peer) bool {
 
-	peerConfig, err := f.ctx.EndpointConfig().PeerConfigByURL(peer.URL())
+	peerConfig, err := f.ctx.EndpointConfig().PeerConfig(peer.URL())
 	if err != nil || peerConfig == nil {
 		return true
 	}
