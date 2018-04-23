@@ -25,7 +25,7 @@ client:
   organization: org1
 
   logging:
-    level: info
+    level: debug
 
   # Global configuration for peer, event service and orderer timeouts
   # if this this section is omitted, then default values will be used (same values as below)
@@ -94,7 +94,7 @@ client:
 
   tlsCerts:
     # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
-    systemCertPool: false
+    systemCertPool: true
 
     # [Optional]. Client key and cert for TLS handshake with peers and orderers
     client:
