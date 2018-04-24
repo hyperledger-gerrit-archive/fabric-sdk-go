@@ -465,6 +465,10 @@ func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, erro
 // is provided, the certficate is added to the pool
 func (c *EndpointConfig) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPool, error) {
 	c.certPoolLock.RLock()
+	if len(certs) == 1 && certs[0] == nil {
+		logger.Errorf("Going to panic!")
+		panic("panic!")
+	}
 	if len(certs) == 0 || c.containsCerts(certs...) {
 		defer c.certPoolLock.RUnlock()
 		return c.tlsCertPool, nil
