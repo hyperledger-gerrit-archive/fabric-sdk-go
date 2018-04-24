@@ -688,7 +688,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 	// Verify signature(s)
 	err = rc.verifyTPSignature(channelService, txProposalResponse)
 	if err != nil {
-		return tp.TxnID, errors.WithMessage(err, "sending deploy transaction proposal failed")
+		return tp.TxnID, errors.WithMessage(err, "sending deploy transaction proposal failed to verify signature")
 	}
 
 	eventService, err := channelService.EventService()
