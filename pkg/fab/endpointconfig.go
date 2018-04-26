@@ -57,9 +57,10 @@ const (
 )
 
 //ConfigFromBackend returns endpoint config implementation for given backend
-func ConfigFromBackend(coreBackend core.ConfigBackend) (fab.EndpointConfig, error) {
+func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, error) {
+
 	config := &EndpointConfig{
-		backend:         lookup.New(coreBackend),
+		backend:         lookup.New(coreBackend...),
 		tlsCertsByName:  make(map[string][]int),
 		tlsCertPool:     x509.NewCertPool(),
 		peerMatchers:    make(map[int]*regexp.Regexp),
@@ -165,7 +166,13 @@ func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 		return nil, err
 	}
 
-	for _, orderer := range config.Orderers {
+	for name, orderer := range config.Orderers {
+
+		matchedOrderer := c.tryMatchingOrdererConfig(config, name)
+		if matchedOrderer != nil {
+			//if found in entity matcher then use the matched one
+			orderer = *matchedOrderer
+		}
 
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
@@ -298,6 +305,12 @@ func (c *EndpointConfig) NetworkPeers() ([]fab.NetworkPeer, error) {
 	netPeers := []fab.NetworkPeer{}
 
 	for name, p := range netConfig.Peers {
+
+		matchedPeer := c.tryMatchingPeerConfig(netConfig, name)
+		if matchedPeer != nil {
+			//if found in entity matcher then use the matched one
+			p = *matchedPeer
+		}
 
 		if err = c.verifyPeerConfig(p, name, endpoint.IsTLSEnabled(p.URL)); err != nil {
 			return nil, err

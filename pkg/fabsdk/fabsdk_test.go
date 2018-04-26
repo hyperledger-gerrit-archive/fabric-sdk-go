@@ -250,7 +250,7 @@ func TestWithConfigSuccess(t *testing.T) {
 		t.Fatalf("Error getting config backend from sdk: %s", err)
 	}
 
-	identityConfig, err := msp.ConfigFromBackend(configBackend)
+	identityConfig, err := msp.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Error getting identity config: %s", err)
 	}

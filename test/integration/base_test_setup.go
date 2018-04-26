@@ -85,7 +85,7 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 		}
 	}
 
-	targets, err := OrgTargetPeers(configBackend, []string{setup.OrgID})
+	targets, err := OrgTargetPeers([]string{setup.OrgID}, configBackend...)
 	if err != nil {
 		return errors.Wrapf(err, "loading target peers from config failed")
 	}
@@ -135,7 +135,7 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get config backend")
 	}
 
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get endpoint config")
 	}

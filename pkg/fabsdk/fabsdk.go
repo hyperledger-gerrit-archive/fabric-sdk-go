@@ -49,7 +49,7 @@ type options struct {
 	CryptoSuiteConfig core.CryptoSuiteConfig
 	endpointConfig    fab.EndpointConfig
 	IdentityConfig    msp.IdentityConfig
-	ConfigBackend     core.ConfigBackend
+	ConfigBackend     []core.ConfigBackend
 }
 
 // Option configures the SDK.
@@ -323,7 +323,7 @@ func (sdk *FabricSDK) Close() {
 }
 
 //Config returns config backend used by all SDK config types
-func (sdk *FabricSDK) Config() (core.ConfigBackend, error) {
+func (sdk *FabricSDK) Config() ([]core.ConfigBackend, error) {
 	if sdk.opts.ConfigBackend == nil {
 		return nil, errors.New("unable to find config backend")
 	}
@@ -374,16 +374,16 @@ func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs,
 
 		//configs passed through opts take priority over default ones
 		if c.cryptoSuiteConfig == nil {
-			c.cryptoSuiteConfig = cryptosuite.ConfigFromBackend(configBackend)
+			c.cryptoSuiteConfig = cryptosuite.ConfigFromBackend(configBackend...)
 		}
 
-		c.endpointConfig, err = sdk.loadEndpointConfig(configBackend)
+		c.endpointConfig, err = sdk.loadEndpointConfig(configBackend...)
 		if err != nil {
 			return nil, errors.WithMessage(err, "unable to load endpoint config")
 		}
 
 		if c.identityConfig == nil {
-			c.identityConfig, err = mspImpl.ConfigFromBackend(configBackend)
+			c.identityConfig, err = mspImpl.ConfigFromBackend(configBackend...)
 			if err != nil {
 				return nil, errors.WithMessage(err, "failed to initialize identity config from config backend")
 			}
@@ -396,13 +396,13 @@ func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs,
 }
 
 //loadEndpointConfig loads config from config backend when configs are not provided through opts or override missing interfaces from opts with config backend
-func (sdk *FabricSDK) loadEndpointConfig(configBackend core.ConfigBackend) (fab.EndpointConfig, error) {
+func (sdk *FabricSDK) loadEndpointConfig(configBackend ...core.ConfigBackend) (fab.EndpointConfig, error) {
 	endpointConfigOpt, ok := sdk.opts.endpointConfig.(*fabImpl.EndpointConfigOptions)
 
 	// if optional endpoint was nil or not all of its sub interface functions were overridden,
 	// then get default endpoint config and override the functions that were not overridden by opts
 	if sdk.opts.endpointConfig == nil || (ok && !fabImpl.IsEndpointConfigFullyOverridden(endpointConfigOpt)) {
-		defEndpointConfig, err := fabImpl.ConfigFromBackend(configBackend)
+		defEndpointConfig, err := fabImpl.ConfigFromBackend(configBackend...)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to initialize endpoint config from config backend")
 		}

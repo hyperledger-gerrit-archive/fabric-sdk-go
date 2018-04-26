@@ -81,8 +81,8 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get configbackend for test: %v", err)
 	}
-	configProvider := func() (core.ConfigBackend, error) {
-		return customBackend, nil
+	configProvider := func() ([]core.ConfigBackend, error) {
+		return []core.ConfigBackend{customBackend}, nil
 	}
 
 	sdk2, err := New(configProvider)
@@ -133,8 +133,8 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	}
 }
 
-func checkClientOrg(configBackend core.ConfigBackend, t *testing.T, orgName string) {
-	identityConfig, err := msp.ConfigFromBackend(configBackend)
+func checkClientOrg(configBackend []core.ConfigBackend, t *testing.T, orgName string) {
+	identityConfig, err := msp.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("Error getting identity config : %s", err)
 	}
@@ -155,7 +155,7 @@ func getCustomBackend() (*mockCore.MockConfigBackend, error) {
 
 	//read existing client config from config
 	clientConfig := &mspImpl.ClientConfig{}
-	configLookup := lookup.New(backend)
+	configLookup := lookup.New(backend...)
 	err = configLookup.UnmarshalKey("client", clientConfig)
 	if err != nil {
 		return nil, err

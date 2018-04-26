@@ -44,7 +44,7 @@ func TestLedgerClientQueries(t *testing.T) {
 		t.Fatalf("failed to get config backend, error: %v", err)
 	}
 
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	endpointConfig, err := fab.ConfigFromBackend(configBackend...)
 	if err != nil {
 		t.Fatalf("failed to get endpoint config, error: %v", err)
 	}
