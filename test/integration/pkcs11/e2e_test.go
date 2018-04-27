@@ -20,7 +20,7 @@ import (
 
 func TestE2E(t *testing.T) {
 	// Create SDK setup for the integration tests
-	e2e.Run(t,
+	e2e.Run(t, true,
 		config.FromFile("../"+ConfigTestFile),
 		fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{}))
 }
