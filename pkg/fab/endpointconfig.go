@@ -127,7 +127,7 @@ func (c *EndpointConfig) MSPID(org string) (string, error) {
 }
 
 // PeerMSPID returns msp that peer belongs to
-func (c *EndpointConfig) PeerMSPID(name string) (string, error) {
+func (c *EndpointConfig) PeerMSPID(peerNameOrURL string) (string, error) {
 	netConfig, err := c.NetworkConfig()
 	if err != nil {
 		return "", err
@@ -138,13 +138,13 @@ func (c *EndpointConfig) PeerMSPID(name string) (string, error) {
 	// Find organisation/msp that peer belongs to
 	for _, org := range netConfig.Organizations {
 		for i := 0; i < len(org.Peers); i++ {
-			if strings.EqualFold(org.Peers[i], name) {
+			if strings.EqualFold(org.Peers[i], peerNameOrURL) {
 				// peer belongs to this org add org msp
 				mspID = org.MSPID
 				break
 			} else {
 				peer, err := c.findMatchingPeer(org.Peers[i])
-				if err == nil && strings.EqualFold(peer, name) {
+				if err == nil && strings.EqualFold(peer, peerNameOrURL) {
 					mspID = org.MSPID
 					break
 				}
@@ -476,7 +476,7 @@ func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, erro
 }
 
 // TLSCACertPool returns the configured cert pool. If a certConfig
-// is provided, the certficate is added to the pool
+// is provided, the certificate is added to the pool
 func (c *EndpointConfig) TLSCACertPool(certs ...*x509.Certificate) (*x509.CertPool, error) {
 	return c.tlsCertPool.Get(certs...)
 }
