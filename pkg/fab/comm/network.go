@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
@@ -69,4 +71,18 @@ func SearchPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.PeerConfi
 	}
 
 	return nil, errors.Errorf("unable to get peerconfig for given url : %s", url)
+}
+
+// SearchOrdererConfigFromURL searches for the orderer configuration based on a URL.
+func SearchOrdererConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.OrdererConfig, error) {
+	ordererCfgs, err := cfg.OrderersConfig()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed by search orderer config by URL")
+	}
+	for _, ordererCfg := range ordererCfgs {
+		if strings.EqualFold(ordererCfg.URL, url) {
+			return &ordererCfg, nil
+		}
+	}
+	return nil, errors.Errorf("failed to search orderer config for given URL : %s", url)
 }

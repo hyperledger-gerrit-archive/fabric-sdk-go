@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
@@ -80,15 +81,22 @@ func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOpti
 	}
 }
 
-// WithOrdererURL allows an orderer to be specified for the request.
-// The orderer will be looked-up based on the url argument.
+// WithOrdererNameorURL allows an orderer to be specified for the request.
+// The orderer will be looked-up based on the name/url argument.
 // A default orderer implementation will be used.
-func WithOrdererURL(url string) RequestOption {
+func WithOrdererNameorURL(nameOrURL string) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 
-		ordererCfg, err := ctx.EndpointConfig().OrdererConfig(url)
+		ordererCfg, err := ctx.EndpointConfig().OrdererConfig(nameOrURL)
 		if err != nil {
-			return errors.Wrapf(err, "orderer not found for url : %s", url)
+			s, ok := status.FromError(err)
+			if !ok || s.Code != status.NoMatchingOrdererEntity.ToInt32() {
+				return errors.Wrapf(err, "orderer not found for url : %s", nameOrURL)
+			}
+			ordererCfg, err = comm.SearchOrdererConfigFromURL(ctx.EndpointConfig(), nameOrURL)
+			if err != nil {
+				return errors.Wrapf(err, "orderer not found for url : %s", nameOrURL)
+			}
 		}
 
 		orderer, err := ctx.InfraProvider().CreateOrdererFromConfig(ordererCfg)
