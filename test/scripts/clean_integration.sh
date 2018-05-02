@@ -33,7 +33,7 @@ if [ ! -z "$CONTAINERS" ]; then
     echo "Removing chaincode containers created from fixtures ..."
     $DOCKER_CMD rm $DOCKER_REMOVE_ARGS $CONTAINERS
 fi
-
+[p]
 if [ ! -z "$IMAGES" ]; then
     echo "Removing chaincode images created from fixtures ..."
     $DOCKER_CMD rmi $DOCKER_REMOVE_ARGS $IMAGES
