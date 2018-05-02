@@ -16,6 +16,8 @@ type CryptoSuiteConfig interface {
 	SecurityProviderLibPath() string
 	SecurityProviderPin() string
 	SecurityProviderLabel() string
+	SecurityProviderAddress() string
+	SecurityProviderToken() string
 	KeyStorePath() string
 }
 
