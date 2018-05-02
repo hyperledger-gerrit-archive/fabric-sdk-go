@@ -14,6 +14,10 @@ import (
 	"os"
 	"path"
 	"testing"
+
+	"strings"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Test golang ChainCode packaging
@@ -29,13 +33,14 @@ func TestNewCCPackage(t *testing.T) {
 	}
 
 	r := bytes.NewReader(ccPackage.Code)
+
 	gzf, err := gzip.NewReader(r)
 	if err != nil {
 		t.Fatalf("error from gzip.NewReader %v", err)
 	}
 	tarReader := tar.NewReader(gzf)
 	i := 0
-	exampleccExist := false
+	var exampleccExist, eventMetaInfExists, examplecc1MetaInfExists, fooMetaInfoExists, metaInfFooExists bool
 	for {
 		header, err := tarReader.Next()
 
@@ -50,12 +55,27 @@ func TestNewCCPackage(t *testing.T) {
 		if header.Name == "src/github.com/example_cc/example_cc.go" {
 			exampleccExist = true
 		}
+		if header.Name == "META-INF/sample-json/event.json" {
+			eventMetaInfExists = true
+		}
+		if header.Name == "META-INF/example1.json" {
+			examplecc1MetaInfExists = true
+		}
+		if strings.HasPrefix(header.Name, "foo-META-INF") {
+			fooMetaInfoExists = true
+		}
+		if strings.HasPrefix(header.Name, "META-INF-foo") {
+			metaInfFooExists = true
+		}
+
 		i++
 	}
 
-	if !exampleccExist {
-		t.Fatalf("src/github.com/example_cc/example_cc.go not exist in tar file")
-	}
+	assert.True(t, exampleccExist, "src/github.com/example_cc/example_cc.go does not exists in tar file")
+	assert.True(t, eventMetaInfExists, "META-INF/event.json does not exists in tar file")
+	assert.True(t, examplecc1MetaInfExists, "META-INF/example1.json does not exists in tar file")
+	assert.False(t, fooMetaInfoExists, "invalid root directory found")
+	assert.False(t, metaInfFooExists, "invalid root directory found")
 
 }
 
