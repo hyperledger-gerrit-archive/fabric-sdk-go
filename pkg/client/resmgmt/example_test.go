@@ -224,7 +224,7 @@ func ExampleClient_SaveChannel_withOrdererURL() {
 	}
 	defer r.Close()
 
-	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererURL("example.com"))
+	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererNameOrURL("example.com"))
 	if err != nil {
 		fmt.Printf("failed to save channel: %v", err)
 	}
