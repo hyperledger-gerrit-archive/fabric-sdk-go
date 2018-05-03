@@ -60,6 +60,16 @@ func NewMockIdentityConfigCustomized(tlsEnabled, mutualTLSEnabled, errorCase boo
 	return &MockConfig{tlsEnabled: tlsEnabled, mutualTLSEnabled: mutualTLSEnabled, errorCase: errorCase}
 }
 
+// SecurityProviderAddress will be set only if provider is Vault
+func (c *MockConfig) SecurityProviderAddress() string {
+	return ""
+}
+
+// SecurityProviderToken will be set only if provider is Vault
+func (c *MockConfig) SecurityProviderToken() string {
+	return ""
+}
+
 // Client ...
 func (c *MockConfig) Client() (*msp.ClientConfig, error) {
 	clientConfig := msp.ClientConfig{}
