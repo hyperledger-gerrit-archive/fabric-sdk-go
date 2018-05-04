@@ -80,9 +80,9 @@ func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOpti
 	}
 }
 
-// WithOrdererURL allows an orderer to be specified for the request.
+// WithNetworkOrderer allows an orderer to be specified for the request.
 // The orderer will be looked-up based on the name/url argument.
-func WithOrdererURL(nameOrURL string) RequestOption {
+func WithNetworkOrderer(nameOrURL string) RequestOption {
 
 	return func(ctx context.Client, opts *requestOptions) error {
 
