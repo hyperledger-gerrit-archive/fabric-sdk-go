@@ -252,7 +252,7 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 	}
 
 	// Test targets only
-	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithOrdererURL("orderer.example.com"))
+	err = rc.JoinChannel("mychannel", WithTargets(peers...), WithNetworkOrderer("orderer.example.com"))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -1186,12 +1186,12 @@ func TestSaveChannelSuccess(t *testing.T) {
 	assert.Contains(t, err.Error(), "reading channel config file failed")
 
 	// Test valid Save Channel request (success)
-	resp, err := cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererURL("example.com"))
+	resp, err := cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithNetworkOrderer("example.com"))
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 
 	// Test valid Save Channel request (success / filename)
-	resp, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigPath: channelConfig}, WithOrdererURL("example.com"))
+	resp, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigPath: channelConfig}, WithNetworkOrderer("example.com"))
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 }
@@ -1250,7 +1250,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1}
 
 	// Test empty option (default order is random orderer from config)
-	opts := WithOrdererURL("")
+	opts := WithNetworkOrderer("")
 	resp, err := cc.SaveChannel(req, opts)
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
@@ -1262,7 +1262,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 
 	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2}
 
-	opts = WithOrdererURL("orderer.example.com")
+	opts = WithNetworkOrderer("orderer.example.com")
 	resp, err = cc.SaveChannel(req, opts)
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
@@ -1279,7 +1279,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 
 	cc = setupResMgmtClient(t, ctx)
 
-	opts = WithOrdererURL("Invalid")
+	opts = WithNetworkOrderer("Invalid")
 	_, err = cc.SaveChannel(req, opts)
 	assert.NotNil(t, err, "Should have failed for invalid orderer ID")
 	assert.Contains(t, err.Error(), "failed to read opts in resmgmt: orderer not found for url")
@@ -1288,7 +1288,7 @@ func TestSaveChannelWithOpts(t *testing.T) {
 func TestJoinChannelWithInvalidOpts(t *testing.T) {
 
 	cc := setupDefaultResMgmtClient(t)
-	opts := WithOrdererURL("Invalid")
+	opts := WithNetworkOrderer("Invalid")
 	err := cc.JoinChannel("mychannel", opts)
 	assert.NotNil(t, err, "Should have failed for invalid orderer ID")
 	assert.Contains(t, err.Error(), "failed to read opts in resmgmt: orderer not found for url")
@@ -1331,7 +1331,7 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 
 	secondCtx := fcmocks.NewMockContext(mspmocks.NewMockSigningIdentity("second", "second"))
 	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2, SigningIdentities: []msp.SigningIdentity{cc.ctx, secondCtx}}
-	resp, err = cc.SaveChannel(req, WithOrdererURL(""))
+	resp, err = cc.SaveChannel(req, WithNetworkOrderer(""))
 	assert.Nil(t, err, "Failed to save channel with multiple signing identities: %s", err)
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 }

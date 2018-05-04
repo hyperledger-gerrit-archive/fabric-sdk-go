@@ -146,15 +146,6 @@ func newMockConfig(channelPeers ...fab.ChannelPeer) *mockConfig {
 	}
 }
 
-func (c *mockConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error) {
-	for _, pc := range peerConfigs {
-		if pc.URL == url {
-			return &pc, nil
-		}
-	}
-	return nil, nil
-}
-
 func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 	fmt.Printf("mockConfig.ChannelPeers - returning %#v", c.channelPeers)
 	return c.channelPeers, nil
