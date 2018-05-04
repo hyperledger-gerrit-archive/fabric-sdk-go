@@ -228,6 +228,121 @@ func ExampleClient_Revoke() {
 	// Output: revoke user is completed
 }
 
+func ExampleWithCA() {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	_, err = c.GetAllIdentities(WithCA("CA"))
+	if err != nil {
+		fmt.Printf("Get identities return error %v", err)
+		return
+	}
+	fmt.Println("identities retrieved")
+
+	// Output: identities retrieved
+}
+
+func ExampleClient_CreateIdentity() {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	_, err = c.CreateIdentity(&IdentityRequest{ID: "123", Affiliation: "org2",
+		Attributes: []Attribute{{Name: "attName1", Value: "attValue1"}}})
+	if err != nil {
+		fmt.Printf("Create identity return error %v", err)
+		return
+	}
+	fmt.Println("identity created")
+
+	// Output: identity created
+}
+
+func ExampleClient_ModifyIdentity() {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	_, err = c.ModifyIdentity(&IdentityRequest{ID: "123", Affiliation: "org2", Secret: "top-secret"})
+	if err != nil {
+		fmt.Printf("Modify identity return error %v", err)
+		return
+	}
+	fmt.Println("identity modified")
+
+	// Output: identity modified
+}
+
+func ExampleClient_RemoveIdentity() {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	_, err = c.RemoveIdentity(&RemoveIdentityRequest{ID: "123"})
+	if err != nil {
+		fmt.Printf("Remove identity return error %v", err)
+		return
+	}
+	fmt.Println("identity removed")
+
+	// Output: identity removed
+}
+
+func ExampleClient_GetIdentity() {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	_, err = c.GetIdentity("123")
+	if err != nil {
+		fmt.Printf("Get identity return error %v", err)
+		return
+	}
+	fmt.Println("identity retrieved")
+
+	// Output: identity retrieved
+}
+
+func ExampleClient_GetAllIdentities() {
+
+	// Create msp client
+	c, err := New(mockClientProvider())
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	_, err = c.GetAllIdentities()
+	if err != nil {
+		fmt.Printf("Get identities return error %v", err)
+		return
+	}
+	fmt.Println("identities retrieved")
+
+	// Output: identities retrieved
+}
+
 func mockClientProvider() context.ClientProvider {
 	log.SetLogger(nil)
 	f := testFixture{}
