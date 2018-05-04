@@ -167,7 +167,11 @@ func (p *peerEndorser) sendProposal(ctx reqContext.Context, proposal fab.Process
 				err = status.NewFromExtractedChaincodeError(code, message)
 			}
 		}
+	} else {
+		//check error from response (for :fabric v1.2 and later)
+		err = status.ExtractChaincodeErrorFromResponse(resp)
 	}
+
 	return resp, err
 }
 
