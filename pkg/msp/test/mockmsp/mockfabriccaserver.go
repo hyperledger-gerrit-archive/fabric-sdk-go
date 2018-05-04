@@ -85,6 +85,7 @@ func (s *MockFabricCAServer) Start(lis net.Listener, cryptoSuite core.CryptoSuit
 	http.HandleFunc("/register", s.register)
 	http.HandleFunc("/enroll", s.enroll)
 	http.HandleFunc("/reenroll", s.enroll)
+	http.HandleFunc("/identities", s.register)
 
 	server := &http.Server{
 		Addr:      addr,

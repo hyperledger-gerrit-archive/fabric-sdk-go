@@ -208,6 +208,47 @@ func TestRegister(t *testing.T) {
 	}
 }
 
+// TestCreateIdentity tests creating identity
+func TestCreateIdentity(t *testing.T) {
+
+	time.Sleep(2 * time.Second)
+
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	// Create with nil request
+	_, err := f.caClient.CreateIdentity(nil)
+	if err == nil {
+		t.Fatalf("Expected error with nil request")
+	}
+
+	// Create without required parameters
+	_, err = f.caClient.CreateIdentity(&api.IdentityRequest{Affiliation: "Org1"})
+	fmt.Println(err)
+	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+		t.Fatalf("Expected error due to missing required parameters")
+	}
+
+	_, err = f.caClient.CreateIdentity(&api.IdentityRequest{ID: "Some name"})
+	fmt.Println(err)
+	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+		t.Fatalf("Expected error due to missing required parameters")
+	}
+
+	// Create identity with valid request
+	var attributes []api.Attribute
+	attributes = append(attributes, api.Attribute{Name: "test1", Value: "test2"})
+	attributes = append(attributes, api.Attribute{Name: "test2", Value: "test3"})
+	secret, err := f.caClient.CreateIdentity(&api.IdentityRequest{ID: "test", Affiliation: "test", Attributes: attributes})
+	if err != nil {
+		t.Fatalf("identityManager Register return error %v", err)
+	}
+	if secret != "mockSecretValue" {
+		t.Fatalf("identityManager Register return wrong value %s", secret)
+	}
+}
+
 // TestEmbeddedRegistar tests registration with embedded registrar identity
 func TestEmbeddedRegistar(t *testing.T) {
 

@@ -132,6 +132,42 @@ func (c *CAClientImpl) Enroll(enrollmentID string, enrollmentSecret string) erro
 	return nil
 }
 
+// CreateIdentity create a new identity with the Fabric CA server. An enrollment secret is returned which can then be used,
+// along with the enrollment ID, to enroll a new identity.
+//  Parameters:
+//  request holds info about identity
+//  options holds optional request options
+//
+//  Returns:
+//  Return the secret of this new identity
+func (c *CAClientImpl) CreateIdentity(request *api.IdentityRequest) (string, error) {
+
+	if c.adapter == nil {
+		return "", fmt.Errorf("no CAs configured for organization: %s", c.orgName)
+	}
+
+	if request == nil {
+		return "", errors.New("must provide identity request")
+	}
+
+	// Checke required parameters (ID and affiliation)
+	if request.ID == "" || request.Affiliation == "" {
+		return "", errors.New("ID and affiliation are required")
+	}
+
+	registrar, err := c.getRegistrar(c.registrar.EnrollID, c.registrar.EnrollSecret)
+	if err != nil {
+		return "", err
+	}
+
+	secret, err := c.adapter.CreateIdentity(registrar.PrivateKey(), registrar.EnrollmentCertificate(), request)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create identity")
+	}
+
+	return secret, nil
+}
+
 // Reenroll an enrolled user in order to obtain a new signed X509 certificate
 func (c *CAClientImpl) Reenroll(enrollmentID string) error {
 
