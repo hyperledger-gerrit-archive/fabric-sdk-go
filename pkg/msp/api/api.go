@@ -21,6 +21,7 @@ type CAClient interface {
 	Reenroll(enrollmentID string) error
 	Register(request *RegistrationRequest) (string, error)
 	Revoke(request *RevocationRequest) (*RevocationResponse, error)
+	CreateIdentity(request *IdentityRequest) (string, error)
 }
 
 // AttributeRequest is a request for an attribute.
@@ -88,4 +89,40 @@ type RevokedCert struct {
 	Serial string
 	// AKI of the revoked certificate
 	AKI string
+}
+
+// IdentityRequest represents the request to add/update identity to the fabric-ca-server
+type IdentityRequest struct {
+
+	// The enrollment ID which uniquely identifies an identity (required)
+	ID string
+
+	// The identity's affiliation (required)
+	Affiliation string
+
+	// Array of attributes to assign to the user
+	Attributes []Attribute
+
+	// Type of identity being registered (e.g. 'peer, app, user'). Default is 'user'.
+	Type string
+
+	// The maximum number of times the secret can be reused to enroll (default CA's Max Enrollment)
+	MaxEnrollments int
+
+	// The enrollment secret. If not provided, a random secret is generated.
+	Secret string
+
+	// Name of the CA to send the request to within the Fabric CA server (optional)
+	CAName string
+}
+
+// IdentityResponse is the response from the any read/add/modify/remove identity call
+type IdentityResponse struct {
+	ID             string
+	Type           string
+	Affiliation    string
+	Attributes     []Attribute
+	MaxEnrollments int
+	Secret         string
+	CAName         string
 }

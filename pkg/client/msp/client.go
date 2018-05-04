@@ -87,6 +87,39 @@ func WithSecret(secret string) EnrollmentOption {
 	}
 }
 
+// CreateIdentity crates a new identity with the Fabric CA server. An enrollment secret is returned which can then be used,
+// along with the enrollment ID, to enroll a new identity.
+//  Parameters:
+//  request holds info about identity
+//  options holds optional request options
+//
+//  Returns:
+//  Return the secret of this new identity
+func (c *Client) CreateIdentity(request *IdentityRequest) (string, error) {
+
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return "", err
+	}
+
+	var attrs []mspapi.Attribute
+	for i := range request.Attributes {
+		attrs = append(attrs, mspapi.Attribute{Name: request.Attributes[i].Name, Value: request.Attributes[i].Value, ECert: request.Attributes[i].ECert})
+	}
+
+	req := &mspapi.IdentityRequest{
+		ID:             request.ID,
+		Type:           request.Type,
+		MaxEnrollments: request.MaxEnrollments,
+		Affiliation:    request.Affiliation,
+		Attributes:     attrs,
+		CAName:         request.CAName,
+		Secret:         request.Secret,
+	}
+
+	return ca.CreateIdentity(req)
+}
+
 // Enroll enrolls a registered user in order to receive a signed X509 certificate.
 // A new key pair is generated for the user. The private key and the
 // enrollment certificate issued by the CA are stored in SDK stores.

@@ -41,3 +41,8 @@ func (mgr *MockCAClient) Register(request *api.RegistrationRequest) (string, err
 func (mgr *MockCAClient) Revoke(request *api.RevocationRequest) (*api.RevocationResponse, error) {
 	return nil, errors.New("not implemented")
 }
+
+// CreateIdentity craetes identity
+func (mgr *MockCAClient) CreateIdentity(request *api.IdentityRequest) (string, error) {
+	return "", errors.New("not implemented")
+}

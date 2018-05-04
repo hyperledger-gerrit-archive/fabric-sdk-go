@@ -150,6 +150,47 @@ func (c *fabricCAAdapter) Revoke(key core.Key, cert []byte, request *api.Revocat
 	}, nil
 }
 
+// CreateIdentity creates new identity
+// key: registrar private key
+// cert: registrar enrollment certificate
+func (c *fabricCAAdapter) CreateIdentity(key core.Key, cert []byte, request *api.IdentityRequest) (string, error) {
+
+	logger.Debugf("Creating identity [%s:%s]", request.ID, request.Affiliation)
+
+	// Contruct request for Fabric CA client
+	var attributes []caapi.Attribute
+	for i := range request.Attributes {
+		attributes = append(attributes, caapi.Attribute{Name: request.Attributes[i].Name, Value: request.Attributes[i].Value, ECert: request.Attributes[i].ECert})
+	}
+
+	// Create revocation request
+	req := caapi.AddIdentityRequest{
+		CAName:         request.CAName,
+		ID:             request.ID,
+		Affiliation:    request.Affiliation,
+		Attributes:     attributes,
+		Type:           request.Type,
+		MaxEnrollments: request.MaxEnrollments,
+		Secret:         request.Secret,
+	}
+
+	if req.CAName == "" {
+		req.CAName = c.caClient.Config.CAName
+	}
+
+	registrar, err := c.caClient.NewIdentity(key, cert)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	response, err := registrar.AddIdentity(&req)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to add identity")
+	}
+
+	return response.Secret, nil
+}
+
 func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.IdentityConfig) (*calib.Client, error) {
 
 	// Create new Fabric-ca client without configs
