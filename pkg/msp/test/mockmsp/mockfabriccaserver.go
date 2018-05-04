@@ -82,9 +82,12 @@ func (s *MockFabricCAServer) Start(lis net.Listener, cryptoSuite core.CryptoSuit
 	s.cryptoSuite = cryptoSuite
 
 	// Register request handlers
+
 	http.HandleFunc("/register", s.register)
 	http.HandleFunc("/enroll", s.enroll)
 	http.HandleFunc("/reenroll", s.enroll)
+	http.HandleFunc("/identities", s.identity)
+	http.HandleFunc("/identities/123", s.identity)
 
 	server := &http.Server{
 		Addr:      addr,
@@ -140,4 +143,37 @@ func (s *MockFabricCAServer) enroll(w http.ResponseWriter, req *http.Request) {
 func fillCAInfo(info *serverInfoResponseNet) {
 	info.CAName = "MockCAName"
 	info.CAChain = util.B64Encode([]byte("MockCAChain"))
+}
+
+// Register user
+func (s *MockFabricCAServer) identity(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case "GET":
+		// Serve the resource.
+		resp := &api.GetIDResponse{ID: "123", Affiliation: "org2"}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+	case "POST":
+		// Create a new record.
+		resp := &api.IdentityResponse{ID: "123", Affiliation: "org2", Secret: "top-secret"}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+	case "PUT":
+		// Update an existing record.
+		resp := &api.IdentityResponse{ID: "123", Affiliation: "org2", Secret: "new-top-secret"}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+	case "DELETE":
+		// Remove the record.
+		resp := &api.IdentityResponse{ID: "123"}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+	default:
+		// Give an error message.
+	}
+
 }

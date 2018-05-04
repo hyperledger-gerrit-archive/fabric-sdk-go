@@ -150,6 +150,170 @@ func (c *fabricCAAdapter) Revoke(key core.Key, cert []byte, request *api.Revocat
 	}, nil
 }
 
+// CreateIdentity creates new identity
+// key: registrar private key
+// cert: registrar enrollment certificate
+func (c *fabricCAAdapter) CreateIdentity(key core.Key, cert []byte, request *api.IdentityRequest) (*api.IdentityResponse, error) {
+
+	logger.Debugf("Creating identity [%s:%s]", request.ID, request.Affiliation)
+
+	var attributes []caapi.Attribute
+	for i := range request.Attributes {
+		attributes = append(attributes, caapi.Attribute{Name: request.Attributes[i].Name, Value: request.Attributes[i].Value, ECert: request.Attributes[i].ECert})
+	}
+
+	// Create add identity request
+	req := caapi.AddIdentityRequest{
+		CAName:         request.CAName,
+		ID:             request.ID,
+		Affiliation:    request.Affiliation,
+		Attributes:     attributes,
+		Type:           request.Type,
+		MaxEnrollments: request.MaxEnrollments,
+		Secret:         request.Secret,
+	}
+
+	if req.CAName == "" {
+		req.CAName = c.caClient.Config.CAName
+	}
+
+	registrar, err := c.caClient.NewIdentity(key, cert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	response, err := registrar.AddIdentity(&req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add identity")
+	}
+
+	return getIdentityResponse(response), nil
+}
+
+// ModifyIdentity  modifies identity
+// key: registrar private key
+// cert: registrar enrollment certificate
+func (c *fabricCAAdapter) ModifyIdentity(key core.Key, cert []byte, request *api.IdentityRequest) (*api.IdentityResponse, error) {
+
+	logger.Debugf("Updating identity [%s:%s]", request.ID, request.Affiliation)
+
+	var attributes []caapi.Attribute
+	for i := range request.Attributes {
+		attributes = append(attributes, caapi.Attribute{Name: request.Attributes[i].Name, Value: request.Attributes[i].Value, ECert: request.Attributes[i].ECert})
+	}
+
+	// Create modify identity request
+	req := caapi.ModifyIdentityRequest{
+		CAName:         request.CAName,
+		ID:             request.ID,
+		Affiliation:    request.Affiliation,
+		Attributes:     attributes,
+		Type:           request.Type,
+		MaxEnrollments: request.MaxEnrollments,
+		Secret:         request.Secret,
+	}
+
+	if req.CAName == "" {
+		req.CAName = c.caClient.Config.CAName
+	}
+
+	registrar, err := c.caClient.NewIdentity(key, cert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	response, err := registrar.ModifyIdentity(&req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to modify identity")
+	}
+
+	return getIdentityResponse(response), nil
+}
+
+// RemoveIdentity  removes identity
+// key: registrar private key
+// cert: registrar enrollment certificate
+func (c *fabricCAAdapter) RemoveIdentity(key core.Key, cert []byte, request *api.RemoveIdentityRequest) (*api.IdentityResponse, error) {
+
+	logger.Debugf("Removing identity [%s]", request.ID)
+
+	// Create remove request
+	req := caapi.RemoveIdentityRequest{
+		CAName: request.CAName,
+		Force:  request.Force,
+		ID:     request.ID,
+	}
+
+	if req.CAName == "" {
+		req.CAName = c.caClient.Config.CAName
+	}
+
+	registrar, err := c.caClient.NewIdentity(key, cert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	response, err := registrar.RemoveIdentity(&req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to remove identity")
+	}
+
+	return getIdentityResponse(response), nil
+}
+
+func getIdentityResponse(response *caapi.IdentityResponse) *api.IdentityResponse {
+
+	var attributes []api.Attribute
+	for i := range response.Attributes {
+		attributes = append(attributes, api.Attribute{Name: response.Attributes[i].Name, Value: response.Attributes[i].Value, ECert: response.Attributes[i].ECert})
+	}
+
+	ret := &api.IdentityResponse{ID: response.ID,
+		Affiliation:    response.Affiliation,
+		Type:           response.Type,
+		Attributes:     attributes,
+		MaxEnrollments: response.MaxEnrollments,
+		Secret:         response.Secret,
+		CAName:         response.CAName,
+	}
+
+	return ret
+}
+
+// GetIdentity retrieves identity information
+// key: registrar private key
+// cert: registrar enrollment certificate
+// id: identity id
+func (c *fabricCAAdapter) GetIdentity(key core.Key, cert []byte, id string) (*api.IdentityResponse, error) {
+
+	logger.Debugf("Retrieving identity [%s]", id)
+
+	registrar, err := c.caClient.NewIdentity(key, cert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	response, err := registrar.GetIdentity(id, c.caClient.Config.CAName)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get identity")
+	}
+
+	var attributes []api.Attribute
+	for i := range response.Attributes {
+		attributes = append(attributes, api.Attribute{Name: response.Attributes[i].Name, Value: response.Attributes[i].Value, ECert: response.Attributes[i].ECert})
+	}
+
+	ret := &api.IdentityResponse{ID: response.ID,
+		Affiliation:    response.Affiliation,
+		Type:           response.Type,
+		Attributes:     attributes,
+		MaxEnrollments: response.MaxEnrollments,
+		CAName:         response.CAName,
+	}
+
+	return ret, nil
+}
+
 func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.IdentityConfig) (*calib.Client, error) {
 
 	// Create new Fabric-ca client without configs

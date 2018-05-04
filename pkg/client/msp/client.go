@@ -87,6 +87,147 @@ func WithSecret(secret string) EnrollmentOption {
 	}
 }
 
+// CreateIdentity creates a new identity with the Fabric CA server. An enrollment secret is returned which can then be used,
+// along with the enrollment ID, to enroll a new identity.
+//  Parameters:
+//  request holds info about identity
+//
+//  Returns:
+//  Return identity info including the secret
+func (c *Client) CreateIdentity(request *IdentityRequest) (*IdentityResponse, error) {
+
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	var attrs []mspapi.Attribute
+	for i := range request.Attributes {
+		attrs = append(attrs, mspapi.Attribute{Name: request.Attributes[i].Name, Value: request.Attributes[i].Value, ECert: request.Attributes[i].ECert})
+	}
+
+	req := &mspapi.IdentityRequest{
+		ID:             request.ID,
+		Type:           request.Type,
+		MaxEnrollments: request.MaxEnrollments,
+		Affiliation:    request.Affiliation,
+		Attributes:     attrs,
+		CAName:         request.CAName,
+		Secret:         request.Secret,
+	}
+
+	response, err := ca.CreateIdentity(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return getIdentityResponse(response), nil
+}
+
+// ModifyIdentity modifies identity with the Fabric CA server.
+//  Parameters:
+//  request holds info about identity
+//
+//  Returns:
+//  Return updated identity info
+func (c *Client) ModifyIdentity(request *IdentityRequest) (*IdentityResponse, error) {
+
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	var attrs []mspapi.Attribute
+	for i := range request.Attributes {
+		attrs = append(attrs, mspapi.Attribute{Name: request.Attributes[i].Name, Value: request.Attributes[i].Value, ECert: request.Attributes[i].ECert})
+	}
+
+	req := &mspapi.IdentityRequest{
+		ID:             request.ID,
+		Type:           request.Type,
+		MaxEnrollments: request.MaxEnrollments,
+		Affiliation:    request.Affiliation,
+		Attributes:     attrs,
+		CAName:         request.CAName,
+		Secret:         request.Secret,
+	}
+
+	response, err := ca.ModifyIdentity(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return getIdentityResponse(response), nil
+}
+
+// RemoveIdentity removes identity with the Fabric CA server.
+//  Parameters:
+//  request holds info about identity to be removed
+//
+//  Returns:
+//  Return removed identity info
+func (c *Client) RemoveIdentity(request *RemoveIdentityRequest) (*IdentityResponse, error) {
+
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &mspapi.RemoveIdentityRequest{
+		ID:     request.ID,
+		Force:  request.Force,
+		CAName: request.CAName,
+	}
+
+	response, err := ca.RemoveIdentity(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return getIdentityResponse(response), nil
+}
+
+// GetIdentity retrieves identity information.
+//  Parameters:
+//  ID is required identity ID
+//
+//  Returns:
+//  Response containing identity information
+func (c *Client) GetIdentity(ID string) (*IdentityResponse, error) {
+
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := ca.GetIdentity(ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return getIdentityResponse(response), nil
+
+}
+
+func getIdentityResponse(response *mspapi.IdentityResponse) *IdentityResponse {
+
+	var attributes []Attribute
+	for i := range response.Attributes {
+		attributes = append(attributes, Attribute{Name: response.Attributes[i].Name, Value: response.Attributes[i].Value, ECert: response.Attributes[i].ECert})
+	}
+
+	res := &IdentityResponse{ID: response.ID,
+		Affiliation:    response.Affiliation,
+		Type:           response.Type,
+		Attributes:     attributes,
+		MaxEnrollments: response.MaxEnrollments,
+		Secret:         response.Secret,
+		CAName:         response.CAName,
+	}
+
+	return res
+}
+
 // Enroll enrolls a registered user in order to receive a signed X509 certificate.
 // A new key pair is generated for the user. The private key and the
 // enrollment certificate issued by the CA are stored in SDK stores.
