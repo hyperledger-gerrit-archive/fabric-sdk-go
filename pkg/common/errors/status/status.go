@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	grpcstatus "google.golang.org/grpc/status"
 )
@@ -174,4 +175,13 @@ func NewFromGRPCStatus(s *grpcstatus.Status) *Status {
 func NewFromExtractedChaincodeError(code int, message string) *Status {
 	return &Status{Group: ChaincodeStatus, Code: int32(code),
 		Message: message, Details: nil}
+}
+
+//ExtractChaincodeErrorFromResponse extracts chaincode error from proposal response
+func ExtractChaincodeErrorFromResponse(resp *pb.ProposalResponse) *Status {
+	if resp.Response.Status != int32(common.Status_SUCCESS) {
+		details := []interface{}{resp.Endorsement, resp.Response.Payload}
+		return New(ChaincodeStatus, resp.Response.Status, resp.Response.Message, details)
+	}
+	return nil
 }

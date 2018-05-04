@@ -123,3 +123,22 @@ func TestChaincodeStatus(t *testing.T) {
 	assert.Equal(t, "key not found", s.Message)
 	assert.Equal(t, int32(500), s.Code)
 }
+
+func TestChaincodeStatusFromResponse(t *testing.T) {
+	//For error response
+	response := &pb.ProposalResponse{
+		Response: &pb.Response{Status: 500, Payload: []byte("Unknown function"), Message: "Chaincode error"},
+	}
+	s := ExtractChaincodeErrorFromResponse(response)
+	assert.Equal(t, "Chaincode error", s.Message)
+	assert.Equal(t, int32(500), s.Code)
+	assert.Equal(t, ChaincodeStatus, s.Group)
+	assert.Equal(t, []byte("Unknown function"), s.Details[1])
+
+	//For successful response
+	response = &pb.ProposalResponse{
+		Response: &pb.Response{Status: 200, Payload: []byte("TEST"), Message: "Success"},
+	}
+	s = ExtractChaincodeErrorFromResponse(response)
+	assert.Nil(t, s)
+}
