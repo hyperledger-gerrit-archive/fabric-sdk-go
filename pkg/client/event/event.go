@@ -18,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 	"github.com/pkg/errors"
 )
 
@@ -25,6 +26,8 @@ import (
 type Client struct {
 	eventService      fab.EventService
 	permitBlockEvents bool
+	fromBlock         uint64
+	seekType          seek.Type
 }
 
 // New returns a Client instance. Client receives events such as block, filtered block,
@@ -51,7 +54,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 
 	var es fab.EventService
 	if eventClient.permitBlockEvents {
-		es, err = channelContext.ChannelService().EventService(client.WithBlockEvents())
+		es, err = channelContext.ChannelService().EventService(client.WithBlockEvents(), client.WithSeekType(eventClient.seekType), client.WithBlockNum(eventClient.fromBlock))
 	} else {
 		es, err = channelContext.ChannelService().EventService()
 	}
