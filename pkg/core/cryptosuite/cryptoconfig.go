@@ -41,17 +41,17 @@ func (c *Config) SecurityLevel() int {
 	return c.backend.GetInt("client.BCCSP.security.level")
 }
 
-//SecurityProvider provider SW or PKCS11
+// SecurityProvider provider SW or PKCS11
 func (c *Config) SecurityProvider() string {
 	return c.backend.GetLowerString("client.BCCSP.security.default.provider")
 }
 
-//SoftVerify flag
+// SoftVerify flag
 func (c *Config) SoftVerify() bool {
 	return c.backend.GetBool("client.BCCSP.security.softVerify")
 }
 
-//SecurityProviderLibPath will be set only if provider is PKCS11
+// SecurityProviderLibPath will be set only if provider is PKCS11
 func (c *Config) SecurityProviderLibPath() string {
 	configuredLibs := c.backend.GetString("client.BCCSP.security.library")
 	libPaths := strings.Split(configuredLibs, ",")
@@ -71,14 +71,24 @@ func (c *Config) SecurityProviderLibPath() string {
 	return lib
 }
 
-//SecurityProviderPin will be set only if provider is PKCS11
+// SecurityProviderPin will be set only if provider is PKCS11
 func (c *Config) SecurityProviderPin() string {
 	return c.backend.GetString("client.BCCSP.security.pin")
 }
 
-//SecurityProviderLabel will be set only if provider is PKCS11
+// SecurityProviderLabel will be set only if provider is PKCS11
 func (c *Config) SecurityProviderLabel() string {
 	return c.backend.GetString("client.BCCSP.security.label")
+}
+
+// SecurityProviderAddress will be set only if provider is Vault
+func (c *Config) SecurityProviderAddress() string {
+	return c.backend.GetString("client.BCCSP.security.address")
+}
+
+// SecurityProviderToken will be set only if provider is Vault
+func (c *Config) SecurityProviderToken() string {
+	return c.backend.GetString("client.BCCSP.security.token")
 }
 
 // KeyStorePath returns the keystore path used by BCCSP

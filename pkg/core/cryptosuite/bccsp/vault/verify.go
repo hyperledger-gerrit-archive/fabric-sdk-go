@@ -1,0 +1,40 @@
+/*
+Copyright Hyperledger and its contributors.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
+package vault
+
+import (
+	"encoding/base64"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/vault/internal"
+	"github.com/pkg/errors"
+)
+
+// Verify verifies signature against key k and digest
+// The opts argument should be appropriate for the algorithm used.
+func (csp *CryptoSuite) Verify(k core.Key, signature, digest []byte, opts core.SignerOpts) (valid bool, err error) {
+	keyID, err := csp.loadKeyID(k.SKI())
+
+	if err != nil {
+		return false, err
+	}
+
+	secret, err := csp.client.Logical().Write(
+		"transit/verify/"+keyID,
+
+		map[string]interface{}{
+			"input":     base64.StdEncoding.EncodeToString(digest),
+			"signature": string(signature),
+		},
+	)
+
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to verify the signature")
+	}
+
+	return internal.NewSecretWrapper(secret).ParseVerification(), nil
+}
