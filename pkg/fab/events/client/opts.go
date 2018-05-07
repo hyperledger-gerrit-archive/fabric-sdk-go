@@ -7,10 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package client
 
 import (
+	"math"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 )
 
 type params struct {
@@ -23,6 +25,8 @@ type params struct {
 	maxReconnAttempts       uint
 	permitBlockEvents       bool
 	reconn                  bool
+	seekType                seek.Type
+	fromBlock               uint64
 }
 
 func defaultParams() *params {
@@ -34,6 +38,8 @@ func defaultParams() *params {
 		reconnInitialDelay:      0,
 		timeBetweenConnAttempts: 5 * time.Second,
 		respTimeout:             5 * time.Second,
+		seekType:                seek.Newest,
+		fromBlock:               math.MaxUint64,
 	}
 }
 
@@ -115,6 +121,26 @@ func WithResponseTimeout(value time.Duration) options.Opt {
 	}
 }
 
+// WithSeekType indicates the  type of seek desired - newest, oldest or from given block
+// Only deliverclient supports this
+func WithSeekType(value seek.Type) options.Opt {
+	return func(p options.Params) {
+		if setter, ok := p.(seekTypeSetter); ok {
+			setter.SetSeekType(value)
+		}
+	}
+}
+
+// WithBlockNum specifies the block number from which events are to be received.
+// Note that this option is only valid if SeekType is set to SeekFrom.
+func WithBlockNum(value uint64) options.Opt {
+	return func(p options.Params) {
+		if setter, ok := p.(fromBlockSetter); ok {
+			setter.SetFromBlock(value)
+		}
+	}
+}
+
 func (p *params) SetEventConsumerBufferSize(value uint) {
 	p.eventConsumerBufferSize = value
 }
@@ -159,6 +185,16 @@ func (p *params) PermitBlockEvents() {
 	p.permitBlockEvents = true
 }
 
+func (p *params) SetFromBlock(value uint64) {
+	logger.Debugf("FromBlock: %d", value)
+	p.fromBlock = value
+}
+
+func (p *params) SetSeekType(value seek.Type) {
+	logger.Debugf("SeekType: %s", value)
+	p.seekType = value
+}
+
 type reconnectSetter interface {
 	SetReconnect(value bool)
 }
@@ -189,4 +225,12 @@ type responseTimeoutSetter interface {
 
 type permitBlockEventsSetter interface {
 	PermitBlockEvents()
+}
+
+type seekTypeSetter interface {
+	SetSeekType(value seek.Type)
+}
+
+type fromBlockSetter interface {
+	SetFromBlock(value uint64)
 }

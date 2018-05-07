@@ -1,6 +1,5 @@
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
-
 SPDX-License-Identifier: Apache-2.0
 */
 
@@ -447,10 +446,6 @@ func newMockConfig() *mockConfig {
 	return &mockConfig{
 		EndpointConfig: fabmocks.NewMockEndpointConfig(),
 	}
-}
-
-func (c *mockConfig) PeerConfigByURL(url string) (*fab.PeerConfig, error) {
-	return &fab.PeerConfig{}, nil
 }
 
 func newMockContext() *fabmocks.MockContext {
