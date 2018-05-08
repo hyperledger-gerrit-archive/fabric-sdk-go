@@ -87,6 +87,48 @@ func TestMSP(t *testing.T) {
 
 }
 
+func TestRegister(t *testing.T) {
+	f := textFixture{}
+	sdk := f.setup()
+	defer f.close()
+
+	ctxProvider := sdk.Context()
+
+	// Get the Client.
+	// Without WithOrg option, it uses default client organization.
+	msp, err := New(ctxProvider)
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	_, err = msp.Register(&RegistrationRequest{Name: "testuser"})
+	if err != nil {
+		t.Fatalf("Register return error %v", err)
+	}
+
+}
+
+func TestRevoke(t *testing.T) {
+	f := textFixture{}
+	sdk := f.setup()
+	defer f.close()
+
+	ctxProvider := sdk.Context()
+
+	// Get the Client.
+	// Without WithOrg option, it uses default client organization.
+	msp, err := New(ctxProvider)
+	if err != nil {
+		t.Fatalf("failed to create CA client: %v", err)
+	}
+
+	_, err = msp.Revoke(&RevocationRequest{Name: "testuser"})
+	if err != nil {
+		t.Fatalf("Revoke return error %v", err)
+	}
+
+}
+
 func testWithOrg2(t *testing.T, ctxProvider contextApi.ClientProvider) {
 	msp, err := New(ctxProvider, WithOrg("Org2"))
 	if err != nil {
