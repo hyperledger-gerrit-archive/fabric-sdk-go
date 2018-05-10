@@ -237,7 +237,8 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 }
 
 func checkPeerPem(org string, idConfig *IdentityConfig, peer string, t *testing.T) {
-	p0, err := idConfig.endpointConfig.PeerConfig(peer)
+	p0, ok, err := idConfig.endpointConfig.PeerConfig(peer)
+	assert.True(t, ok)
 	if err != nil {
 		t.Fatalf("Failed to load %s of %s from the config. Error: %s", peer, org, err)
 	}

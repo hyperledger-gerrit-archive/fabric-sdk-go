@@ -183,17 +183,17 @@ func (c *EndpointConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 }
 
 // OrdererConfig returns the requested orderer
-func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, error) {
+func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, bool, error) {
 	networkConfig, err := c.NetworkConfig()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	orderer, ok := networkConfig.Orderers[strings.ToLower(nameOrURL)]
 
 	if !ok {
 		ordererCfgs, err := c.OrderersConfig()
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		for _, ordererCfg := range ordererCfgs {
 			if strings.EqualFold(ordererCfg.URL, nameOrURL) {
@@ -208,7 +208,7 @@ func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, er
 		logger.Debugf("Could not find Orderer for [%s], trying with Entity Matchers", nameOrURL)
 		matchingOrdererConfig := c.tryMatchingOrdererConfig(networkConfig, strings.ToLower(nameOrURL))
 		if matchingOrdererConfig == nil {
-			return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
+			return nil, false, nil
 		}
 		logger.Debugf("Found matching Orderer Config for [%s]", nameOrURL)
 		orderer = *matchingOrdererConfig
@@ -218,7 +218,7 @@ func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, er
 		orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
 	}
 
-	return &orderer, nil
+	return &orderer, true, nil
 }
 
 // PeersConfig Retrieves the fabric peers for the specified org from the
@@ -253,10 +253,10 @@ func (c *EndpointConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
 }
 
 // PeerConfig Retrieves a specific peer from the configuration by name or url
-func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
+func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool, error) {
 	networkConfig, err := c.NetworkConfig()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	//lookup by name in config
@@ -285,7 +285,7 @@ func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
 	}
 
 	if matchPeerConfig == nil {
-		return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingPeerEntity.ToInt32(), "no matching peer config found", nil))
+		return nil, false, nil
 	}
 
 	logger.Debugf("Found MatchingPeerConfig for name/url [%s]", nameOrURL)
@@ -294,7 +294,7 @@ func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
 		matchPeerConfig.TLSCACerts.Path = pathvar.Subst(peerConfig.TLSCACerts.Path)
 	}
 
-	return matchPeerConfig, nil
+	return matchPeerConfig, true, nil
 }
 
 // NetworkConfig returns the network configuration defined in the config file
@@ -372,10 +372,10 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 }
 
 // ChannelConfig returns the channel configuration
-func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, error) {
+func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool, error) {
 	networkConfig, err := c.NetworkConfig()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// viper lowercases all key maps
@@ -383,12 +383,12 @@ func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, 
 	if !ok {
 		matchingChannel := c.tryMatchingChannelConfig(networkConfig, name)
 		if matchingChannel == nil {
-			return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingChannelEntity.ToInt32(), "no matching channel config found", nil))
+			return nil, false, nil
 		}
-		return matchingChannel, nil
+		return matchingChannel, true, nil
 	}
 
-	return &ch, nil
+	return &ch, true, nil
 }
 
 // ChannelPeers returns the channel peers configuration
@@ -453,14 +453,14 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 // ChannelOrderers returns a list of channel orderers
 func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, error) {
 	orderers := []fab.OrdererConfig{}
-	channel, err := c.ChannelConfig(name)
-	if err != nil || channel == nil {
+	channel, ok, err := c.ChannelConfig(name)
+	if err != nil || !ok {
 		return nil, errors.Errorf("Unable to retrieve channel config: %s", err)
 	}
 
 	for _, chOrderer := range channel.Orderers {
-		orderer, err := c.OrdererConfig(chOrderer)
-		if err != nil || orderer == nil {
+		orderer, ok, err := c.OrdererConfig(chOrderer)
+		if err != nil || !ok {
 			return nil, errors.Errorf("unable to retrieve orderer config: %s", err)
 		}
 

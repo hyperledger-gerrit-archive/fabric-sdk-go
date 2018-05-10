@@ -16,7 +16,6 @@ import (
 
 	reqContext "context"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -83,8 +82,8 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 		if !ok {
 			logger.Debugf("Failed to get channel Cfg orderer [%s] from ordererDict, now trying orderer Matchers in Entity Matchers", target)
 			// Try to find a match from entityMatchers config
-			matchingOrdererConfig, matchErr := ctx.EndpointConfig().OrdererConfig(strings.ToLower(target))
-			if matchErr == nil {
+			matchingOrdererConfig, found, matchErr := ctx.EndpointConfig().OrdererConfig(strings.ToLower(target))
+			if matchErr == nil && found {
 				logger.Debugf("Found matching ordererConfig from entity Matchers for channel Cfg Orderer [%s]", target)
 				oCfg = *matchingOrdererConfig
 				ok = true
@@ -115,20 +114,20 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 //will return empty list when orderers are not found in endpoint config
 func orderersFromChannel(ctx context.Client, channelID string) ([]fab.Orderer, error) {
 
-	chNetworkConfig, err := ctx.EndpointConfig().ChannelConfig(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get channel network config")
+	chNetworkConfig, ok, err := ctx.EndpointConfig().ChannelConfig(channelID)
+	if err != nil || !ok {
+		return nil, errors.Errorf("failed to get channel network config : %s", err)
 	}
 
 	orderers := []fab.Orderer{}
 	for _, chOrderer := range chNetworkConfig.Orderers {
 
-		ordererConfig, err := ctx.EndpointConfig().OrdererConfig(chOrderer)
+		ordererConfig, ok, err := ctx.EndpointConfig().OrdererConfig(chOrderer)
 		if err != nil {
-			s, ok := status.FromError(err)
-			if !ok || s.Code != status.NoMatchingOrdererEntity.ToInt32() {
-				return nil, errors.Wrapf(err, "unable to get orderer config from [%s]", chOrderer)
-			}
+			return nil, errors.Wrapf(err, "unable to get orderer config from [%s]", chOrderer)
+		}
+
+		if !ok {
 			//continue if given channel orderer not found in endpoint config
 			continue
 		}
