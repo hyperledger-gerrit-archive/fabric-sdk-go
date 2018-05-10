@@ -123,18 +123,18 @@ func (c *MockConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
 }
 
 // PeerConfig Retrieves a specific peer from the configuration by org and name
-func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
+func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool, error) {
 
 	if nameOrURL == "invalid" {
-		return nil, errors.New("no peer")
+		return nil, false, errors.New("no peer")
 	}
 	if c.customPeerCfg != nil {
-		return c.customPeerCfg, nil
+		return c.customPeerCfg, true, nil
 	}
 	cfg := fab.PeerConfig{
 		URL: "example.com",
 	}
-	return &cfg, nil
+	return &cfg, true, nil
 }
 
 // TLSCACertPool ...
@@ -168,7 +168,7 @@ func (c *MockConfig) SecurityProviderLibPath() string {
 
 // OrderersConfig returns a list of defined orderers
 func (c *MockConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
-	oConfig, err := c.OrdererConfig("")
+	oConfig, _, err := c.OrdererConfig("")
 
 	return []fab.OrdererConfig{*oConfig}, err
 }
@@ -194,18 +194,18 @@ func (c *MockConfig) SetCustomRandomOrdererCfg(customRandomOrdererCfg *fab.Order
 }
 
 // OrdererConfig not implemented
-func (c *MockConfig) OrdererConfig(name string) (*fab.OrdererConfig, error) {
+func (c *MockConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool, error) {
 	if name == "Invalid" {
-		return nil, errors.New("no orderer")
+		return nil, false, errors.New("no orderer")
 	}
 	if c.customOrdererCfg != nil {
-		return c.customOrdererCfg, nil
+		return c.customOrdererCfg, true, nil
 	}
 	oConfig := fab.OrdererConfig{
 		URL: "example.com",
 	}
 
-	return &oConfig, nil
+	return &oConfig, true, nil
 }
 
 // MSPID not implemented
@@ -244,8 +244,8 @@ func (c *MockConfig) NetworkConfig() (*fab.NetworkConfig, error) {
 }
 
 // ChannelConfig returns the channel configuration
-func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, error) {
-	return &fab.ChannelNetworkConfig{Policies: fab.ChannelPolicies{}}, nil
+func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool, error) {
+	return &fab.ChannelNetworkConfig{Policies: fab.ChannelPolicies{}}, true, nil
 }
 
 // ChannelPeers returns the channel peers configuration
@@ -270,7 +270,7 @@ func (c *MockConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, error) {
 		return nil, errors.New("no orderer")
 	}
 
-	oConfig, err := c.OrdererConfig("")
+	oConfig, _, err := c.OrdererConfig("")
 
 	return []fab.OrdererConfig{*oConfig}, err
 }

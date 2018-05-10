@@ -340,7 +340,7 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 
 	err = rc.JoinChannel("mychannel", WithTargets(peer1))
 	assert.NotNil(t, err, "Should have failed to join channel since no orderer has been configured")
-	assert.Contains(t, err.Error(), "no matching channel config found")
+	assert.Contains(t, err.Error(), "Unable to retrieve channel config")
 
 	// Misconfigured channel orderer
 	configBackend = getInvalidChannelOrdererBackend(backend...)
@@ -354,7 +354,8 @@ func TestJoinChannelNoOrdererConfig(t *testing.T) {
 	rc = setupResMgmtClient(t, ctx)
 
 	err = rc.JoinChannel("mychannel", WithTargets(peer1))
-	if err == nil || !strings.Contains(err.Error(), "no matching orderer config found") {
+	fmt.Println(err.Error())
+	if err == nil || !strings.Contains(err.Error(), "unable to retrieve orderer config") {
 		t.Fatalf("Should have failed to join channel since channel orderer has been misconfigured")
 	}
 
@@ -1282,7 +1283,8 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	opts = WithOrdererEndpoint("Invalid")
 	_, err = cc.SaveChannel(req, opts)
 	assert.NotNil(t, err, "Should have failed for invalid orderer ID")
-	assert.Contains(t, err.Error(), "failed to read opts in resmgmt: orderer not found for url")
+	fmt.Println(err.Error())
+	assert.Contains(t, err.Error(), "failed to read opts in resmgmt: failed to get orderer config for given URL")
 }
 
 func TestJoinChannelWithInvalidOpts(t *testing.T) {

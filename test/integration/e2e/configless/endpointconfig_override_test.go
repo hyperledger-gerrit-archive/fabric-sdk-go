@@ -427,7 +427,7 @@ func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 type exampleOrdererConfig struct{}
 
 //OrdererConfig overrides EndpointConfig's OrdererConfig function which returns the ordererConfig instance for the name/URL arg
-func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.OrdererConfig, error) {
+func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.OrdererConfig, bool, error) {
 	orderer, ok := networkConfig.Orderers[strings.ToLower(ordererNameOrURL)]
 	if !ok {
 		// EntityMatchers are not used in this implementation, below is an example of how to use them if needed, see default implementation for live example
@@ -436,14 +436,14 @@ func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.Orde
 		//	return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
 		//}
 		//orderer = *matchingOrdererConfig
-		return nil, errors.Errorf("orderer '%s' not found in the configs", ordererNameOrURL)
+		return nil, false, errors.Errorf("orderer '%s' not found in the configs", ordererNameOrURL)
 	}
 
 	if orderer.TLSCACerts.Path != "" {
 		orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
 	}
 
-	return &orderer, nil
+	return &orderer, true, nil
 }
 
 type examplePeersConfig struct {
@@ -516,10 +516,10 @@ func (m *examplePeersConfig) verifyPeerConfig(p fab.PeerConfig, peerName string,
 type examplePeerConfig struct{}
 
 // PeerConfig overrides EndpointConfig's PeerConfig function which returns the peerConfig instance for the name/URL arg
-func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
+func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool, error) {
 	pcfg, ok := peersConfig[nameOrURL]
 	if ok {
-		return &pcfg, nil
+		return &pcfg, true, nil
 	}
 	if pcfg.TLSCACerts.Path != "" {
 		pcfg.TLSCACerts.Path = pathvar.Subst(pcfg.TLSCACerts.Path)
@@ -527,7 +527,7 @@ func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error
 	// EntityMatchers are not used in this implementation
 	// see default implementation (pkg/fab/endpointconfig.go) to see how they're used
 
-	return nil, errors.Errorf("peer '%s' not found in the configs", nameOrURL)
+	return nil, false, nil
 }
 
 type exampleNetworkConfig struct{}
@@ -581,7 +581,7 @@ func (m *exampleNetworkPeers) verifyPeerConfig(p fab.PeerConfig, peerName string
 type exampleChannelConfig struct{}
 
 // ChannelConfig overrides EndpointConfig's ChannelConfig function which returns the channelConfig instance for the channel name arg
-func (m *exampleChannelConfig) ChannelConfig(channelName string) (*fab.ChannelNetworkConfig, error) {
+func (m *exampleChannelConfig) ChannelConfig(channelName string) (*fab.ChannelNetworkConfig, bool, error) {
 	ch, ok := channelsConfig[strings.ToLower(channelName)]
 	if !ok {
 		// EntityMatchers are not used in this implementation, below is an example of how to use them if needed
@@ -590,10 +590,10 @@ func (m *exampleChannelConfig) ChannelConfig(channelName string) (*fab.ChannelNe
 		//	return nil, errors.WithMessage(matchErr, "channel config not found")
 		//}
 		//return matchingChannel, nil
-		return nil, errors.Errorf("No channel found for '%s'", channelName)
+		return nil, false, errors.Errorf("No channel found for '%s'", channelName)
 	}
 
-	return &ch, nil
+	return &ch, true, nil
 }
 
 type exampleChannelPeers struct {
@@ -675,14 +675,14 @@ func (m *exampleChannelOrderers) ChannelOrderers(channelName string) ([]fab.Orde
 	oCfg := &exampleOrdererConfig{}
 
 	orderers := []fab.OrdererConfig{}
-	channel, err := chCfg.ChannelConfig(channelName)
-	if err != nil || channel == nil {
+	channel, ok, err := chCfg.ChannelConfig(channelName)
+	if err != nil || !ok {
 		return nil, errors.Errorf("Unable to retrieve channel config: %s", err)
 	}
 
 	for _, chOrderer := range channel.Orderers {
-		orderer, err := oCfg.OrdererConfig(chOrderer)
-		if err != nil || orderer == nil {
+		orderer, ok, err := oCfg.OrdererConfig(chOrderer)
+		if err != nil || !ok {
 			return nil, errors.Errorf("unable to retrieve orderer config: %s", err)
 		}
 
