@@ -39,11 +39,12 @@ func (m *MockEndpointConfig) EXPECT() *MockEndpointConfigMockRecorder {
 }
 
 // ChannelConfig mocks base method
-func (m *MockEndpointConfig) ChannelConfig(arg0 string) (*fab.ChannelNetworkConfig, error) {
+func (m *MockEndpointConfig) ChannelConfig(arg0 string) (*fab.ChannelNetworkConfig, bool, error) {
 	ret := m.ctrl.Call(m, "ChannelConfig", arg0)
 	ret0, _ := ret[0].(*fab.ChannelNetworkConfig)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // ChannelConfig indicates an expected call of ChannelConfig
@@ -141,11 +142,12 @@ func (mr *MockEndpointConfigMockRecorder) NetworkPeers() *gomock.Call {
 }
 
 // OrdererConfig mocks base method
-func (m *MockEndpointConfig) OrdererConfig(arg0 string) (*fab.OrdererConfig, error) {
+func (m *MockEndpointConfig) OrdererConfig(arg0 string) (*fab.OrdererConfig, bool, error) {
 	ret := m.ctrl.Call(m, "OrdererConfig", arg0)
 	ret0, _ := ret[0].(*fab.OrdererConfig)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // OrdererConfig indicates an expected call of OrdererConfig
@@ -167,11 +169,12 @@ func (mr *MockEndpointConfigMockRecorder) OrderersConfig() *gomock.Call {
 }
 
 // PeerConfig mocks base method
-func (m *MockEndpointConfig) PeerConfig(arg0 string) (*fab.PeerConfig, error) {
+func (m *MockEndpointConfig) PeerConfig(arg0 string) (*fab.PeerConfig, bool, error) {
 	ret := m.ctrl.Call(m, "PeerConfig", arg0)
 	ret0, _ := ret[0].(*fab.PeerConfig)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // PeerConfig indicates an expected call of PeerConfig

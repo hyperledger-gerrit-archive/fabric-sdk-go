@@ -92,35 +92,36 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	customBackend.KeyValueMap["channels"] = "INVALID"
 	_, err = sampleEndpointConfig.NetworkConfig()
-	if err == nil {
-		t.Fatal("Network config load supposed to fail")
-	}
+	assert.NotNil(t, err, "Network config load supposed to fail")
+	assert.Contains(t, err.Error(), "network configuration load failed: failed to parse 'channels' config")
 
 	//Testing MSPID failure scenario
 	mspID, err := sampleEndpointConfig.MSPID("peerorg1")
-	if mspID != "" || err == nil {
-		t.Fatal("Get MSP ID supposed to fail")
-	}
+	assert.Empty(t, mspID, "Get MSP ID supposed to fail")
+	assert.NotNil(t, err, "Get MSP ID supposed to fail")
+	assert.Contains(t, err.Error(), "network configuration load failed: failed to parse 'channels' config")
 
 	//Testing OrdererConfig failure scenario
-	oConfig, err := sampleEndpointConfig.OrdererConfig("peerorg1")
-	if oConfig != nil || err == nil {
-		t.Fatal("Testing get OrdererConfig supposed to fail")
-	}
+	oConfig, ok, err := sampleEndpointConfig.OrdererConfig("peerorg1")
+	assert.False(t, ok, "Testing get OrdererConfig supposed to fail")
+	assert.Nil(t, oConfig, "Testing get OrdererConfig supposed to fail")
+	assert.NotNil(t, err, "Testing get OrdererConfig supposed to fail")
+	assert.Contains(t, err.Error(), "network configuration load failed: failed to parse 'channels' config")
 
 	//Testing PeersConfig failure scenario
 	pConfigs, err := sampleEndpointConfig.PeersConfig("peerorg1")
-	if pConfigs != nil || err == nil {
-		t.Fatal("Testing PeersConfig supposed to fail")
-	}
+	assert.Nil(t, pConfigs, "Testing get PeersConfig supposed to fail")
+	fmt.Println(err.Error())
+	assert.NotNil(t, err, "Testing get PeersConfig supposed to fail")
+	assert.Contains(t, err.Error(), "network configuration load failed: failed to parse 'channels' config")
 
 	checkCAConfigFailsByNetworkConfig(sampleEndpointConfig, t)
 }
 
 func checkCAConfigFailsByNetworkConfig(sampleEndpointConfig *EndpointConfig, t *testing.T) {
 	//Testing ChannelConfig failure scenario
-	chConfig, err := sampleEndpointConfig.ChannelConfig("invalid")
-	if chConfig != nil || err == nil {
+	_, ok, err := sampleEndpointConfig.ChannelConfig("invalid")
+	if ok || err == nil {
 		t.Fatal("Testing ChannelConfig supposed to fail")
 	}
 	//Testing ChannelPeers failure scenario
@@ -304,8 +305,8 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	oConfig, _ := endpointConfig.OrdererConfig("invalid")
-	if oConfig != nil {
+	_, ok, _ := endpointConfig.OrdererConfig("invalid")
+	if ok {
 		t.Fatal("Testing non-existing OrdererConfig failed")
 	}
 
@@ -363,12 +364,14 @@ func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedCo
 
 	endpointConfig := config1.(*EndpointConfig)
 
-	expectedConfig, err := endpointConfig.PeerConfig(expectedConfigURL)
+	expectedConfig, ok, err := endpointConfig.PeerConfig(expectedConfigURL)
+	assert.True(t, ok)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	fetchedConfig, err := endpointConfig.PeerConfig(fetchedConfigURL)
+	fetchedConfig, ok, err := endpointConfig.PeerConfig(fetchedConfigURL)
+	assert.True(t, ok)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -393,15 +396,13 @@ func testCommonConfigOrderer(t *testing.T, expectedConfigHost string, fetchedCon
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	expectedConfig, err = endpointConfig.OrdererConfig(expectedConfigHost)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	expectedConfig, ok, err := endpointConfig.OrdererConfig(expectedConfigHost)
+	assert.True(t, ok)
+	assert.Nil(t, err, "unexpected error")
 
-	fetchedConfig, err = endpointConfig.OrdererConfig(fetchedConfigHost)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	fetchedConfig, ok, err = endpointConfig.OrdererConfig(fetchedConfigHost)
+	assert.True(t, ok)
+	assert.Nil(t, err, "unexpected error")
 
 	if expectedConfig.URL == "" {
 		t.Fatalf("Url value for the host is empty")
@@ -487,15 +488,13 @@ func testCommonConfigChannel(t *testing.T, expectedConfigName string, fetchedCon
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	expectedConfig, err = endpointConfig.ChannelConfig(expectedConfigName)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	expectedConfig, ok, err := endpointConfig.ChannelConfig(expectedConfigName)
+	assert.True(t, ok)
+	assert.Nil(t, err, "unexpected error")
 
-	fetchedConfig, err = endpointConfig.ChannelConfig(fetchedConfigName)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	fetchedConfig, ok, err = endpointConfig.ChannelConfig(fetchedConfigName)
+	assert.True(t, ok)
+	assert.Nil(t, err, "unexpected error")
 
 	return expectedConfig, fetchedConfig
 }
@@ -549,15 +548,13 @@ func testCommonConfigPeer(t *testing.T, expectedConfigHost string, fetchedConfig
 
 	endpointConfig := config1.(*EndpointConfig)
 
-	expectedConfig, err = endpointConfig.PeerConfig(expectedConfigHost)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	expectedConfig, ok, err := endpointConfig.PeerConfig(expectedConfigHost)
+	assert.True(t, ok)
+	assert.Nil(t, err, "unexpected error ")
 
-	fetchedConfig, err = endpointConfig.PeerConfig(fetchedConfigHost)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	fetchedConfig, ok, err = endpointConfig.PeerConfig(fetchedConfigHost)
+	assert.True(t, ok)
+	assert.Nil(t, err, "unexpected error ")
 
 	if expectedConfig.URL == "" {
 		t.Fatalf("Url value for the host is empty")
@@ -667,14 +664,10 @@ func TestSystemCertPoolDisabled(t *testing.T) {
 	customBackend.KeyValueMap["client.tlsCerts.systemCertPool"] = false
 	// get a config file with pool disabled
 	endpointConfig, err := ConfigFromBackend(customBackend)
-	if err != nil {
-		t.Fatal("Failed to get endpoint config from backend")
-	}
+	assert.Nil(t, err, "Failed to get endpoint config from backend")
 
 	_, err = endpointConfig.TLSCACertPool()
-	if err != nil {
-		t.Fatal("not supposed to get error")
-	}
+	assert.Nil(t, err, "unexpected error")
 }
 
 func TestInitConfigFromRawWithPem(t *testing.T) {
@@ -738,11 +731,11 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 
 func checkPem(endpointConfig *EndpointConfig, t *testing.T) {
 	peer0 := "peer0.org1.example.com"
-	p0, err := endpointConfig.PeerConfig(peer0)
+	p0, ok, err := endpointConfig.PeerConfig(peer0)
 	if err != nil {
 		t.Fatalf("Failed to load %s of %s from the config. Error: %s", peer0, org1, err)
 	}
-	if p0 == nil {
+	if !ok {
 		t.Fatalf("%s of %s cannot be nil", peer0, org1)
 	}
 	pPem := `-----BEGIN CERTIFICATE-----

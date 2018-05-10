@@ -15,7 +15,6 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -215,51 +214,60 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 	}
 
 	//If missing from opts, check config and update opts from config
-	chSdkCfg, err := ctx.EndpointConfig().ChannelConfig(c.channelID)
+	chSdkCfg, ok, err := ctx.EndpointConfig().ChannelConfig(c.channelID)
 	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok || s.Code != status.NoMatchingChannelEntity.ToInt32() {
-			return err
-		}
+		return errors.WithMessage(err, "resolveOptsFromConfig failed")
 	}
 
-	//resolve opts
-	c.resolveMaxResponsesOptsFromConfig(chSdkCfg)
-	c.resolveMinResponsesOptsFromConfig(chSdkCfg)
-	c.resolveRetryOptsFromConfig(chSdkCfg)
+	if ok {
+		//resolve opts from channel config
+		c.resolveMaxResponsesOptsFromConfig(chSdkCfg)
+		c.resolveMinResponsesOptsFromConfig(chSdkCfg)
+		c.resolveRetryOptsFromConfig(chSdkCfg)
+	}
+
+	//set defaults for missing opts
+	c.resolveMissingOptsToDefault()
 
 	return nil
 }
 
 func (c *ChannelConfig) resolveMaxResponsesOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
 	if c.opts.MaxTargets == 0 {
-		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+		if &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
 			c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
-		}
-		if c.opts.MaxTargets == 0 {
-			c.opts.MaxTargets = defaultMaxTargets
 		}
 	}
 }
 
 func (c *ChannelConfig) resolveMinResponsesOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
 	if c.opts.MinResponses == 0 {
-		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+		if &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
 			c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
 		}
-		if c.opts.MinResponses == 0 {
-			c.opts.MinResponses = defaultMinResponses
-		}
 	}
-
 }
 
 func (c *ChannelConfig) resolveRetryOptsFromConfig(chSdkCfg *fab.ChannelNetworkConfig) {
-
 	if c.opts.RetryOpts.RetryableCodes == nil {
-		if chSdkCfg != nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+		if &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
 			c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts
 		}
+	}
+}
+
+func (c *ChannelConfig) resolveMissingOptsToDefault() {
+
+	if c.opts.MaxTargets == 0 {
+		c.opts.MaxTargets = defaultMaxTargets
+	}
+
+	if c.opts.MinResponses == 0 {
+		c.opts.MinResponses = defaultMinResponses
+	}
+
+	if c.opts.RetryOpts.RetryableCodes == nil {
+
 		if c.opts.RetryOpts.Attempts == 0 {
 			c.opts.RetryOpts.Attempts = retry.DefaultAttempts
 		}

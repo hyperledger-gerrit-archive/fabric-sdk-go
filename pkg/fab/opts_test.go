@@ -286,8 +286,8 @@ func (m *mockrderersConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 
 type mockOrdererConfig struct{}
 
-func (m *mockOrdererConfig) OrdererConfig(name string) (*fab.OrdererConfig, error) {
-	return &fab.OrdererConfig{URL: "o.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, nil
+func (m *mockOrdererConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool, error) {
+	return &fab.OrdererConfig{URL: "o.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, true, nil
 }
 
 type mockPeersConfig struct{}
@@ -298,8 +298,8 @@ func (m *mockPeersConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
 
 type mockPeerConfig struct{}
 
-func (m *mockPeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
-	return &fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, nil
+func (m *mockPeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool, error) {
+	return &fab.PeerConfig{URL: "p.com", EventURL: "event.p.com", GRPCOptions: nil, TLSCACerts: endpoint.TLSConfig{Path: "", Pem: ""}}, true, nil
 }
 
 type mockNetworkConfig struct{}
@@ -316,8 +316,8 @@ func (m *mockNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, error) {
 
 type mockChannelConfig struct{}
 
-func (m *mockChannelConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, error) {
-	return &fab.ChannelNetworkConfig{}, nil
+func (m *mockChannelConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool, error) {
+	return &fab.ChannelNetworkConfig{}, true, nil
 }
 
 type mockChannelPeers struct{}

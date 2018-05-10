@@ -62,7 +62,7 @@ type orderersConfig interface {
 
 // ordererConfig interface allows to uniquely override EndpointConfig interface's OrdererConfig() function
 type ordererConfig interface {
-	OrdererConfig(name string) (*fab.OrdererConfig, error)
+	OrdererConfig(name string) (*fab.OrdererConfig, bool, error)
 }
 
 // peersConfig interface allows to uniquely override EndpointConfig interface's PeersConfig() function
@@ -72,7 +72,7 @@ type peersConfig interface {
 
 // peerConfig interface allows to uniquely override EndpointConfig interface's PeerConfig() function
 type peerConfig interface {
-	PeerConfig(nameOrURL string) (*fab.PeerConfig, error)
+	PeerConfig(nameOrURL string) (*fab.PeerConfig, bool, error)
 }
 
 // networkConfig interface allows to uniquely override EndpointConfig interface's NetworkConfig() function
@@ -87,7 +87,7 @@ type networkPeers interface {
 
 // channelConfig interface allows to uniquely override EndpointConfig interface's ChannelConfig() function
 type channelConfig interface {
-	ChannelConfig(name string) (*fab.ChannelNetworkConfig, error)
+	ChannelConfig(name string) (*fab.ChannelNetworkConfig, bool, error)
 }
 
 // channelPeers interface allows to uniquely override EndpointConfig interface's ChannelPeers() function
