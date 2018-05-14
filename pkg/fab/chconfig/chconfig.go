@@ -15,12 +15,12 @@ import (
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 	imsp "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -216,11 +216,8 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 
 	//If missing from opts, check config and update opts from config
 	chSdkCfg, err := ctx.EndpointConfig().ChannelConfig(c.channelID)
-	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok || s.Code != status.NoMatchingChannelEntity.ToInt32() {
-			return err
-		}
+	if err != nil && err != fabImpl.ErrConfigEntityNotFound {
+		return err
 	}
 
 	//resolve opts

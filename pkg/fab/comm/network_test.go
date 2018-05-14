@@ -66,6 +66,7 @@ func TestSearchPeerConfigFromURL(t *testing.T) {
 
 	peer0Org1, err := sampleConfig.PeerConfig("peer0.org1.example.com")
 	assert.Nil(t, err, "supposed to get no error")
+	assert.NotNil(t, peer0Org1, "supposed to get valid peerConfig")
 
 	//Positive scenario,
 	// peerconfig should be found using matched URL

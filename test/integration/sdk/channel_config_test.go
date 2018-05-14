@@ -190,9 +190,11 @@ func setupOrderer(t *testing.T, endPointConfig fab.EndpointConfig, address strin
 	//Get orderer config by orderer address
 	oCfg, err := endPointConfig.OrdererConfig(resolveOrdererAddress(address))
 	require.Nil(t, err)
+	require.NotNil(t, oCfg)
 
 	o, err := orderer.New(endPointConfig, orderer.FromOrdererConfig(oCfg))
 	require.Nil(t, err)
+	require.NotNil(t, o)
 
 	return o
 }

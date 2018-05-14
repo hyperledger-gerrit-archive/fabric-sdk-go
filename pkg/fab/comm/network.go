@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/pkg/errors"
 )
 
@@ -49,12 +49,10 @@ func SearchPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.PeerConfi
 		return peerCfg, nil
 	}
 
-	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok || s.Code != status.NoMatchingPeerEntity.ToInt32() {
-			return nil, errors.Wrapf(err, "unable to get peer config from [%s]", url)
-		}
+	if err != fabImpl.ErrConfigEntityNotFound {
+		return nil, errors.Wrapf(err, "unable to get peer config from [%s]", url)
 	}
+
 	//If the given url is already parsed URL through entity matcher, then 'cfg.PeerConfig()'
 	//may return NoMatchingPeerEntity error. So retry with network peer URLs
 	networkPeers, err := cfg.NetworkPeers()

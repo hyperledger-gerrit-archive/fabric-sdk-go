@@ -304,9 +304,12 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	oConfig, _ := endpointConfig.OrdererConfig("invalid")
+	oConfig, err := endpointConfig.OrdererConfig("invalid")
 	if oConfig != nil {
 		t.Fatal("Testing non-existing OrdererConfig failed")
+	}
+	if err != ErrConfigEntityNotFound {
+		t.Fatal("Expected 'ErrConfigEntityNotFound' type error")
 	}
 
 	orderers, err := endpointConfig.OrderersConfig()
@@ -488,14 +491,12 @@ func testCommonConfigChannel(t *testing.T, expectedConfigName string, fetchedCon
 	}
 
 	expectedConfig, err = endpointConfig.ChannelConfig(expectedConfigName)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	assert.Nil(t, err, "unexpected error")
+	assert.NotNil(t, expectedConfig, "invalid ChannelConfig")
 
 	fetchedConfig, err = endpointConfig.ChannelConfig(fetchedConfigName)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	assert.Nil(t, err, "unexpected error")
+	assert.NotNil(t, fetchedConfig, "invalid ChannelConfig")
 
 	return expectedConfig, fetchedConfig
 }

@@ -16,9 +16,9 @@ import (
 
 	reqContext "context"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 )
 
@@ -125,12 +125,11 @@ func orderersFromChannel(ctx context.Client, channelID string) ([]fab.Orderer, e
 
 		ordererConfig, err := ctx.EndpointConfig().OrdererConfig(chOrderer)
 		if err != nil {
-			s, ok := status.FromError(err)
-			if !ok || s.Code != status.NoMatchingOrdererEntity.ToInt32() {
-				return nil, errors.Wrapf(err, "unable to get orderer config from [%s]", chOrderer)
+			if err == fabImpl.ErrConfigEntityNotFound {
+				//continue if given channel orderer not found in endpoint config
+				continue
 			}
-			//continue if given channel orderer not found in endpoint config
-			continue
+			return nil, errors.Wrapf(err, "unable to get orderer config from [%s]", chOrderer)
 		}
 
 		orderer, err := ctx.InfraProvider().CreateOrdererFromConfig(ordererConfig)

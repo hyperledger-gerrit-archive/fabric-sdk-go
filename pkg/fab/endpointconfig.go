@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -56,6 +55,10 @@ const (
 
 	defaultCacheSweepInterval = time.Second * 15
 )
+
+//ErrConfigEntityNotFound is a error type returned in endpoint config
+// when there is no OrdererConfig or PeerConfig or ChannelConfig found for given key
+var ErrConfigEntityNotFound = errors.New("could not find config entity")
 
 //ConfigFromBackend returns endpoint config implementation for given backend
 func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, error) {
@@ -208,7 +211,7 @@ func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, er
 		logger.Debugf("Could not find Orderer for [%s], trying with Entity Matchers", nameOrURL)
 		matchingOrdererConfig := c.tryMatchingOrdererConfig(networkConfig, strings.ToLower(nameOrURL))
 		if matchingOrdererConfig == nil {
-			return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
+			return nil, ErrConfigEntityNotFound
 		}
 		logger.Debugf("Found matching Orderer Config for [%s]", nameOrURL)
 		orderer = *matchingOrdererConfig
@@ -285,7 +288,7 @@ func (c *EndpointConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
 	}
 
 	if matchPeerConfig == nil {
-		return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingPeerEntity.ToInt32(), "no matching peer config found", nil))
+		return nil, ErrConfigEntityNotFound
 	}
 
 	logger.Debugf("Found MatchingPeerConfig for name/url [%s]", nameOrURL)
@@ -383,7 +386,7 @@ func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, 
 	if !ok {
 		matchingChannel := c.tryMatchingChannelConfig(networkConfig, name)
 		if matchingChannel == nil {
-			return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingChannelEntity.ToInt32(), "no matching channel config found", nil))
+			return nil, ErrConfigEntityNotFound
 		}
 		return matchingChannel, nil
 	}
@@ -453,14 +456,14 @@ func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 // ChannelOrderers returns a list of channel orderers
 func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, error) {
 	orderers := []fab.OrdererConfig{}
-	channel, err := c.ChannelConfig(name)
-	if err != nil || channel == nil {
+	channelCfg, err := c.ChannelConfig(name)
+	if err != nil {
 		return nil, errors.Errorf("Unable to retrieve channel config: %s", err)
 	}
 
-	for _, chOrderer := range channel.Orderers {
+	for _, chOrderer := range channelCfg.Orderers {
 		orderer, err := c.OrdererConfig(chOrderer)
-		if err != nil || orderer == nil {
+		if err != nil {
 			return nil, errors.Errorf("unable to retrieve orderer config: %s", err)
 		}
 
@@ -954,7 +957,7 @@ func (c *EndpointConfig) findMatchingPeer(peerName string) (string, error) {
 		}
 	}
 
-	return "", errors.WithStack(status.New(status.ClientStatus, status.NoMatchingPeerEntity.ToInt32(), "no matching peer config found", nil))
+	return "", ErrConfigEntityNotFound
 }
 
 func (c *EndpointConfig) compileMatchers() error {

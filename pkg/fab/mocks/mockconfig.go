@@ -16,6 +16,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/pkg/errors"
 )
 
@@ -126,7 +127,7 @@ func (c *MockConfig) PeersConfig(org string) ([]fab.PeerConfig, error) {
 func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, error) {
 
 	if nameOrURL == "invalid" {
-		return nil, errors.New("no peer")
+		return nil, fabImpl.ErrConfigEntityNotFound
 	}
 	if c.customPeerCfg != nil {
 		return c.customPeerCfg, nil
@@ -196,7 +197,7 @@ func (c *MockConfig) SetCustomRandomOrdererCfg(customRandomOrdererCfg *fab.Order
 // OrdererConfig not implemented
 func (c *MockConfig) OrdererConfig(name string) (*fab.OrdererConfig, error) {
 	if name == "Invalid" {
-		return nil, errors.New("no orderer")
+		return nil, fabImpl.ErrConfigEntityNotFound
 	}
 	if c.customOrdererCfg != nil {
 		return c.customOrdererCfg, nil
@@ -252,7 +253,7 @@ func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelNetworkConfig, erro
 func (c *MockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, error) {
 
 	if name == "noChannelPeers" {
-		return nil, nil
+		return nil, fabImpl.ErrConfigEntityNotFound
 	}
 
 	peerChCfg := fab.PeerChannelConfig{EndorsingPeer: true, ChaincodeQuery: true, LedgerQuery: true, EventSource: true}

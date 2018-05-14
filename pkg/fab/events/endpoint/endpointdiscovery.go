@@ -8,10 +8,10 @@ package endpoint
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/pkg/errors"
 )
 
@@ -100,8 +100,7 @@ func (s *discoveryService) GetPeers() ([]fab.Peer, error) {
 		} else {
 			peerConfig, err = s.ctx.EndpointConfig().PeerConfig(peer.URL())
 			if err != nil {
-				errStatus, ok := status.FromError(err)
-				if ok && errStatus.Code == status.NoMatchingPeerEntity.ToInt32() {
+				if err == fabImpl.ErrConfigEntityNotFound {
 					logger.Debugf("no peer found for URL :%s", peer.URL())
 					continue
 				}
