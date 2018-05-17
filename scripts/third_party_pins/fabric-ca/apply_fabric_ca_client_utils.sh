@@ -70,6 +70,15 @@ gofilter() {
 } 
 
 echo "Filtering Go sources for allowed functions ..."
+
+FILTER_FILENAME="api/net.go"
+START_LINE=`grep -n "IdemixEnrollmentRequestNet is" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..5}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
+
+
 FILTER_MODE="allow"
 FILTERS_ENABLED="fn"
 

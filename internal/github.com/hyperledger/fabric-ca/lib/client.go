@@ -82,6 +82,7 @@ func (c *Client) Init() error {
 			return errors.Wrap(err, "Failed to create keystore directory")
 		}
 		c.keyFile = path.Join(keyDir, "key.pem")
+
 		// Cert directory and file
 		certDir := path.Join(mspDir, "signcerts")
 		err = os.MkdirAll(certDir, 0755)
@@ -89,12 +90,14 @@ func (c *Client) Init() error {
 			return errors.Wrap(err, "Failed to create signcerts directory")
 		}
 		c.certFile = path.Join(certDir, "cert.pem")
+
 		// CA certs directory
 		c.caCertsDir = path.Join(mspDir, "cacerts")
 		err = os.MkdirAll(c.caCertsDir, 0755)
 		if err != nil {
 			return errors.Wrap(err, "Failed to create cacerts directory")
 		}
+
 		c.csp = cfg.CSP
 		// Create http.Client object and associate it with this client
 		err = c.initHTTPClient()
@@ -123,22 +126,31 @@ func (c *Client) initHTTPClient() error {
 	return nil
 }
 
-// GetServerInfoResponse is the response from the GetServerInfo call
-type GetServerInfoResponse struct {
+// GetCAInfoResponse is the response from the GetServerInfo call
+type GetCAInfoResponse struct {
 	// CAName is the name of the CA
 	CAName string
 	// CAChain is the PEM-encoded bytes of the fabric-ca-server's CA chain.
 	// The 1st element of the chain is the root CA cert
 	CAChain []byte
+	// Idemix issuer public key of the CA
+	IssuerPublicKey []byte
 	// Version of the server
 	Version string
 }
 
 // Convert from network to local server information
-func (c *Client) net2LocalServerInfo(net *serverInfoResponseNet, local *GetServerInfoResponse) error {
+func (c *Client) net2LocalServerInfo(net *serverInfoResponseNet, local *GetCAInfoResponse) error {
 	caChain, err := util.B64Decode(net.CAChain)
 	if err != nil {
 		return err
+	}
+	if net.IssuerPublicKey != "" {
+		ipk, err := util.B64Decode(net.IssuerPublicKey)
+		if err != nil {
+			return err
+		}
+		local.IssuerPublicKey = ipk
 	}
 	local.CAName = net.CAName
 	local.CAChain = caChain
@@ -149,7 +161,7 @@ func (c *Client) net2LocalServerInfo(net *serverInfoResponseNet, local *GetServe
 // EnrollmentResponse is the response from Client.Enroll and Identity.Reenroll
 type EnrollmentResponse struct {
 	Identity   *Identity
-	ServerInfo GetServerInfoResponse
+	ServerInfo GetCAInfoResponse
 }
 
 // Enroll enrolls a new identity
@@ -424,11 +436,13 @@ func (c *Client) StreamResponse(req *http.Request, stream string, cb func(*json.
 	defer resp.Body.Close()
 
 	dec := json.NewDecoder(resp.Body)
-	err = streamer.StreamJSONArray(dec, stream, cb)
+	results, err := streamer.StreamJSONArray(dec, stream, cb)
 	if err != nil {
 		return err
 	}
-
+	if !results {
+		fmt.Println("No results returned")
+	}
 	return nil
 }
 

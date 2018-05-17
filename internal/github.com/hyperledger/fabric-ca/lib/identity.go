@@ -160,7 +160,9 @@ func (i *Identity) GetIdentity(id, caname string) (*api.GetIDResponse, error) {
 // GetAllIdentities returns all identities that the caller is authorized to see
 func (i *Identity) GetAllIdentities(caname string, cb func(*json.Decoder) error) error {
 	log.Debugf("Entering identity.GetAllIdentities")
-	err := i.GetStreamResponse("identities", caname, "result.identities", cb)
+	queryParam := make(map[string]string)
+	queryParam["ca"] = caname
+	err := i.GetStreamResponse("identities", queryParam, "result.identities", cb)
 	if err != nil {
 		return err
 	}
@@ -253,13 +255,17 @@ func (i *Identity) Get(endpoint, caname string, result interface{}) error {
 }
 
 // GetStreamResponse sends a request to an endpoint and streams the response
-func (i *Identity) GetStreamResponse(endpoint, caname, stream string, cb func(*json.Decoder) error) error {
+func (i *Identity) GetStreamResponse(endpoint string, queryParam map[string]string, stream string, cb func(*json.Decoder) error) error {
 	req, err := i.client.newGet(endpoint)
 	if err != nil {
 		return err
 	}
-	if caname != "" {
-		addQueryParm(req, "ca", caname)
+	if queryParam != nil {
+		for key, value := range queryParam {
+			if value != "" {
+				addQueryParm(req, key, value)
+			}
+		}
 	}
 	err = i.addTokenAuthHdr(req, nil)
 	if err != nil {
@@ -329,7 +335,7 @@ func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
 	log.Debug("Adding token-based authorization header")
 	cert := i.ecert.cert
 	key := i.ecert.key
-	token, err := util.CreateToken(i.CSP, cert, key, body)
+	token, err := util.CreateToken(i.CSP, cert, key, req.Method, req.URL.RequestURI(), body)
 	if err != nil {
 		return errors.WithMessage(err, "Failed to add token authorization header")
 	}
