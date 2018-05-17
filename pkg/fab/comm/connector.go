@@ -34,9 +34,8 @@ type CachingConnector struct {
 	sweepTime     time.Duration
 	idleTime      time.Duration
 	index         map[*grpc.ClientConn]*cachedConn
-	lock          sync.Mutex
+	lock          sync.RWMutex
 	waitgroup     sync.WaitGroup
-	janitorChan   chan *cachedConn
 	janitorDone   chan bool
 	janitorClosed chan bool
 }
@@ -55,8 +54,7 @@ func NewCachingConnector(sweepTime time.Duration, idleTime time.Duration) *Cachi
 	cc := CachingConnector{
 		conns:         sync.Map{},
 		index:         map[*grpc.ClientConn]*cachedConn{},
-		janitorChan:   make(chan *cachedConn),
-		janitorDone:   make(chan bool),
+		janitorDone:   make(chan bool, 1),
 		janitorClosed: make(chan bool, 1),
 		sweepTime:     sweepTime,
 		idleTime:      idleTime,
@@ -73,12 +71,12 @@ func NewCachingConnector(sweepTime time.Duration, idleTime time.Duration) *Cachi
 
 // Close cleans up cached connections.
 func (cc *CachingConnector) Close() {
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
-
+	cc.lock.RLock()
+	doneChannel := cc.janitorDone
+	cc.lock.RUnlock()
 	// Safety check to see if the connector has been closed. This represents a
 	// bug in the calling code, but it's not good to panic here.
-	if cc.janitorDone == nil {
+	if doneChannel == nil {
 		logger.Warn("Trying to close connector after already closed")
 		return
 	}
@@ -93,7 +91,16 @@ func (cc *CachingConnector) Close() {
 		cc.waitgroup.Wait()
 	}
 
-	close(cc.janitorChan)
+	if len(cc.index) > 0 {
+		logger.Debugf("flushing connection cache with open connections [%d]", len(cc.index))
+	} else {
+		logger.Debugf("flushing connection cache")
+	}
+
+	cc.lock.Lock()
+	defer cc.lock.Unlock()
+
+	cc.flush()
 	close(cc.janitorClosed)
 	close(cc.janitorDone)
 	cc.janitorDone = nil
@@ -101,6 +108,9 @@ func (cc *CachingConnector) Close() {
 
 // DialContext is a wrapper for grpc.DialContext where connections are cached.
 func (cc *CachingConnector) DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	cc.lock.Lock()
+	defer cc.lock.Unlock()
+
 	logger.Debugf("DialContext: %s", target)
 
 	c, ok := cc.loadConn(target)
@@ -149,7 +159,7 @@ func (cc *CachingConnector) ReleaseConn(conn *grpc.ClientConn) {
 		cconn.open--
 	}
 
-	cc.updateJanitor(cconn)
+	cc.ensureJanitorStarted()
 }
 
 func (cc *CachingConnector) loadConn(target string) (*cachedConn, bool) {
@@ -168,9 +178,6 @@ func (cc *CachingConnector) loadConn(target string) (*cachedConn, bool) {
 }
 
 func (cc *CachingConnector) createConn(ctx context.Context, target string, opts ...grpc.DialOption) (*cachedConn, error) {
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
-
 	if cc.janitorDone == nil {
 		return nil, errors.New("caching connector is closed")
 	}
@@ -204,11 +211,9 @@ func (cc *CachingConnector) openConn(ctx context.Context, c *cachedConn) error {
 		return err
 	}
 
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
 	c.open++
 	c.lastOpen = time.Now()
-	cc.updateJanitor(c)
+	cc.ensureJanitorStarted()
 
 	logger.Debugf("connection was opened [%s]", c.target)
 	return nil
@@ -228,9 +233,6 @@ func waitConn(ctx context.Context, conn *grpc.ClientConn, targetState connectivi
 }
 
 func (cc *CachingConnector) shutdownConn(cconn *cachedConn) {
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
-
 	if cc.janitorDone == nil {
 		logger.Debug("Connector already closed")
 		return
@@ -240,42 +242,40 @@ func (cc *CachingConnector) shutdownConn(cconn *cachedConn) {
 	cc.conns.Delete(cconn.target)
 	delete(cc.index, cconn.conn)
 
-	cconn.open = 0
-	cconn.lastClose = time.Time{}
-
-	cc.updateJanitor(cconn)
+	cc.ensureJanitorStarted()
 }
 
-func (cc *CachingConnector) removeConn(target string) {
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
-
-	logger.Debugf("removing connection [%s]", target)
-	connRaw, ok := cc.conns.Load(target)
-	if ok {
-		c, ok := connRaw.(*cachedConn)
-		if ok {
-			delete(cc.index, c.conn)
-			cc.conns.Delete(target)
-			if err := c.conn.Close(); err != nil {
-				logger.Debugf("unable to close connection [%s]", err)
-			}
+func (cc *CachingConnector) sweepAndRemove() {
+	now := time.Now()
+	for conn, cachedConn := range cc.index {
+		if cachedConn.open == 0 && now.After(cachedConn.lastClose.Add(cc.idleTime)) {
+			logger.Debugf("connection janitor closing connection [%s]", cachedConn.target)
+			cc.removeConn(cachedConn)
+		} else if conn.GetState() == connectivity.Shutdown {
+			logger.Debugf("connection already closed [%s]", cachedConn.target)
+			cc.removeConn(cachedConn)
 		}
 	}
 }
 
-func (cc *CachingConnector) updateJanitor(c *cachedConn) {
+func (cc *CachingConnector) removeConn(c *cachedConn) {
+	logger.Debugf("removing connection [%s]", c.target)
+	delete(cc.index, c.conn)
+	cc.conns.Delete(c.target)
+	if err := c.conn.Close(); err != nil {
+		logger.Debugf("unable to close connection [%s]", err)
+	}
+}
+
+func (cc *CachingConnector) ensureJanitorStarted() {
 	select {
 	case <-cc.janitorClosed:
 		logger.Debugf("janitor not started")
 		cc.waitgroup.Add(1)
-		go janitor(cc.sweepTime, cc.idleTime, &cc.waitgroup, cc.janitorChan, cc.janitorClosed, cc.janitorDone, cc.removeConn)
+		go cc.janitor()
 	default:
 		logger.Debugf("janitor already started")
 	}
-	cClone := *c
-
-	cc.janitorChan <- &cClone
 }
 
 // The janitor monitors open connections for shutdown state or extended non-usage.
@@ -292,91 +292,34 @@ func (cc *CachingConnector) updateJanitor(c *cachedConn) {
 //    calls "connRemove" callback when closing a connection.
 //    decrements the "wg" waitgroup when exiting.
 //    writes to the "done" go channel when closing due to becoming empty.
-
-type connRemoveNotifier func(target string)
-
-func janitor(sweepTime time.Duration, idleTime time.Duration, wg *sync.WaitGroup, conn chan *cachedConn, close chan bool, done chan bool, connRemove connRemoveNotifier) {
+func (cc *CachingConnector) janitor() {
 	logger.Debugf("starting connection janitor")
-	defer wg.Done()
+	defer cc.waitgroup.Done()
 
-	conns := map[string]*cachedConn{}
-	ticker := time.NewTicker(sweepTime)
+	ticker := time.NewTicker(cc.sweepTime)
 	for {
 		select {
-		case <-done:
-			if len(conns) > 0 {
-				logger.Debugf("flushing connection janitor with open connections [%d]", len(conns))
-			} else {
-				logger.Debugf("flushing connection janitor")
-			}
-			flush(conns)
+		case <-cc.janitorDone:
 			return
-		case c := <-conn:
-			cache(conns, c)
 		case <-ticker.C:
-			rm := sweep(conns, idleTime)
-			for _, target := range rm {
-				connRemove(target)
-				delete(conns, target)
-			}
-
-			if len(conns) == 0 {
+			cc.lock.Lock()
+			cc.sweepAndRemove()
+			numConn := len(cc.index)
+			cc.lock.Unlock()
+			if numConn == 0 {
 				logger.Debugf("closing connection janitor")
-				close <- true
+				cc.janitorClosed <- true
 				return
 			}
 		}
 	}
 }
 
-func cache(conns map[string]*cachedConn, updateConn *cachedConn) {
-
-	c, ok := conns[updateConn.target]
-	if ok && updateConn.lastClose.IsZero() && updateConn.conn.GetState() == connectivity.Shutdown {
-		logger.Debugf("connection shutdown detected in connection janitor")
-		// We need to remove the connection from sweep consideration immediately
-		// since the connector has already removed it. Otherwise we can have a race
-		// between shutdown and creating a connection concurrently.
-		delete(conns, updateConn.target)
-		return
-	}
-
-	if !ok {
-		logger.Debugf("new connection in connection janitor")
-	} else if c.conn != updateConn.conn {
-		logger.Debugf("connection change in connection janitor")
-
-		if err := c.conn.Close(); err != nil {
-			logger.Debugf("unable to close connection [%s]", err)
-		}
-
-	} else {
-		logger.Debugf("updating existing connection in connection janitor")
-	}
-
-	conns[updateConn.target] = updateConn
-}
-
-func flush(conns map[string]*cachedConn) {
-	for _, c := range conns {
-		logger.Debugf("connection janitor closing connection [%s]", c.target)
+func (cc *CachingConnector) flush() {
+	for _, c := range cc.index {
+		logger.Debugf("flushing connection [%s]", c.target)
 		closeConn(c.conn)
 	}
-}
-
-func sweep(conns map[string]*cachedConn, idleTime time.Duration) []string {
-	rm := make([]string, 0, len(conns))
-	now := time.Now()
-	for _, c := range conns {
-		if c.open == 0 && now.After(c.lastClose.Add(idleTime)) {
-			logger.Debugf("connection janitor closing connection [%s]", c.target)
-			rm = append(rm, c.target)
-		} else if c.conn.GetState() == connectivity.Shutdown {
-			logger.Debugf("connection already closed [%s]", c.target)
-			rm = append(rm, c.target)
-		}
-	}
-	return rm
 }
 
 func closeConn(conn *grpc.ClientConn) {

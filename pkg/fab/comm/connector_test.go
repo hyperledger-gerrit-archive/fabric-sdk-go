@@ -16,6 +16,7 @@ import (
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -25,8 +26,8 @@ const (
 
 	normalSweepTime = 5 * time.Second
 	normalIdleTime  = 10 * time.Second
-	shortSweepTime  = 100 * time.Millisecond
-	shortIdleTime   = 200 * time.Millisecond
+	shortSweepTime  = 10 * time.Nanosecond
+	shortIdleTime   = 15 * time.Nanosecond
 	shortSleepTime  = 1000
 )
 
@@ -139,7 +140,7 @@ func TestConnectorShouldJanitorRestart(t *testing.T) {
 	assert.Nil(t, err, "DialContext should have succeeded")
 
 	connector.ReleaseConn(conn1)
-	time.Sleep(shortIdleTime * 3)
+	time.Sleep(shortIdleTime * 50)
 
 	ctx, cancel = context.WithTimeout(context.Background(), normalTimeout)
 	conn2, err := connector.DialContext(ctx, endorserAddr[0], grpc.WithInsecure())
@@ -164,7 +165,7 @@ func TestConnectorShouldSweep(t *testing.T) {
 	assert.Nil(t, err, "DialContext should have succeeded")
 
 	connector.ReleaseConn(conn1)
-	time.Sleep(shortIdleTime * 3)
+	time.Sleep(normalTimeout)
 	assert.Equal(t, connectivity.Shutdown, conn1.GetState(), "connection should be shutdown")
 	assert.NotEqual(t, connectivity.Shutdown, conn3.GetState(), "connection should not be shutdown")
 
@@ -177,7 +178,7 @@ func TestConnectorShouldSweep(t *testing.T) {
 }
 
 func TestConnectorConcurrent(t *testing.T) {
-	const goroutines = 50
+	const goroutines = 5000
 
 	connector := NewCachingConnector(shortSweepTime, shortIdleTime)
 	defer connector.Close()
@@ -187,14 +188,14 @@ func TestConnectorConcurrent(t *testing.T) {
 	// Test immediate release
 	wg.Add(goroutines)
 	for i := 0; i < goroutines; i++ {
-		go testDial(t, &wg, connector, endorserAddr[i%2], 0, 1)
+		go testDial(t, &wg, connector, endorserAddr[i%len(endorserAddr)], 0, 1)
 	}
 	wg.Wait()
 
 	// Test long intervals for releasing connection
 	wg.Add(goroutines)
 	for i := 0; i < goroutines; i++ {
-		go testDial(t, &wg, connector, endorserAddr[i%2], shortSleepTime*3, 1)
+		go testDial(t, &wg, connector, endorserAddr[i%len(endorserAddr)], shortSleepTime*3, 1)
 	}
 	wg.Wait()
 
@@ -209,9 +210,29 @@ func TestConnectorConcurrent(t *testing.T) {
 	// Test random intervals for releasing connection
 	wg.Add(goroutines)
 	for i := 0; i < goroutines; i++ {
-		go testDial(t, &wg, connector, endorserAddr[i%2], 0, shortSleepTime*3)
+		go testDial(t, &wg, connector, endorserAddr[i%len(endorserAddr)], 0, shortSleepTime*3)
 	}
 	wg.Wait()
+}
+
+func TestConnectorConcurrentSweep(t *testing.T) {
+	const goroutines = 50
+
+	connector := NewCachingConnector(shortSweepTime, shortIdleTime)
+	defer connector.Close()
+
+	wg := sync.WaitGroup{}
+
+	for j := 0; j < len(endorserAddr); j++ {
+		wg.Add(goroutines)
+		for i := 0; i < goroutines; i++ {
+			go testDial(t, &wg, connector, endorserAddr[0], 0, 1)
+		}
+		wg.Wait()
+
+		//Sleeping to wait for sweep
+		time.Sleep(shortIdleTime)
+	}
 }
 
 func testDial(t *testing.T, wg *sync.WaitGroup, connector *CachingConnector, addr string, minSleepBeforeRelease int, maxSleepBeforeRelease int) {
@@ -227,9 +248,15 @@ func testDial(t *testing.T, wg *sync.WaitGroup, connector *CachingConnector, add
 	proposal := pb.SignedProposal{}
 	resp, err := endorserClient.ProcessProposal(context.Background(), &proposal)
 
-	assert.Nil(t, err, "peer process proposal should not have error")
-	assert.Equal(t, int32(200), resp.GetResponse().Status)
+	require.Nil(t, err, "peer process proposal should not have error")
+	require.NotNil(t, resp)
+	require.Equal(t, int32(200), resp.GetResponse().Status)
 
-	randomSleep := rand.Intn(maxSleepBeforeRelease)
+	var randomSleep int
+	if maxSleepBeforeRelease == 0 {
+		randomSleep = 0
+	} else {
+		randomSleep = rand.Intn(maxSleepBeforeRelease)
+	}
 	time.Sleep(time.Duration(minSleepBeforeRelease)*time.Millisecond + time.Duration(randomSleep)*time.Millisecond)
 }

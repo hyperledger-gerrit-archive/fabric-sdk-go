@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 
 	go grpcServer.Serve(lis)
 
-	srvs, addrs, err := startEndorsers(2, endorserAddress)
+	srvs, addrs, err := startEndorsers(30, endorserAddress)
 	if err != nil {
 		panic(fmt.Sprintf("Error starting endorser %s", err))
 	}
