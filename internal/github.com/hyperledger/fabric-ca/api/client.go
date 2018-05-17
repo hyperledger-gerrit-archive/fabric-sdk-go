@@ -67,17 +67,20 @@ type EnrollmentRequest struct {
 	Name string `json:"name" skip:"true"`
 	// The secret returned via Register
 	Secret string `json:"secret,omitempty" skip:"true" mask:"password"`
-	// Profile is the name of the signing profile to use in issuing the certificate
-	Profile string `json:"profile,omitempty" help:"Name of the signing profile to use in issuing the certificate"`
-	// Label is the label to use in HSM operations
-	Label string `json:"label,omitempty" help:"Label to use in HSM operations"`
-	// CSR is Certificate Signing Request info
-	CSR *CSRInfo `json:"csr,omitempty" help:"Certificate Signing Request info"`
 	// CAName is the name of the CA to connect to
 	CAName string `json:"caname,omitempty" skip:"true"`
 	// AttrReqs are requests for attributes to add to the certificate.
 	// Each attribute is added only if the requestor owns the attribute.
 	AttrReqs []*AttributeRequest `json:"attr_reqs,omitempty"`
+	// Profile is the name of the signing profile to use in issuing the X509 certificate
+	Profile string `json:"profile,omitempty" help:"Name of the signing profile to use in issuing the certificate"`
+	// Label is the label to use in HSM operations
+	Label string `json:"label,omitempty" help:"Label to use in HSM operations"`
+	// CSR is Certificate Signing Request info
+	CSR *CSRInfo `json:"csr,omitempty" help:"Certificate Signing Request info"`
+	// The type of the enrollment request: x509 or idemix
+	// The default is a request for an X509 enrollment certificate
+	Type string `def:"x509" help:"The type of enrollment request: 'x509' or 'idemix'"`
 }
 
 func (er EnrollmentRequest) String() string {
@@ -315,6 +318,33 @@ type CSRInfo struct {
 	KeyRequest   *BasicKeyRequest `json:"key,omitempty"`
 	CA           *csr.CAConfig    `json:"ca,omitempty"`
 	SerialNumber string           `json:"serial_number,omitempty"`
+}
+
+// GetCertificatesRequest represents the request to get certificates from the server
+// per the enrollment ID and/or AKI and Serial. If neither ID or AKI/Serial are
+// provided all certificates are returned which are in or under the caller's affiliation.
+// By default all certificates are returned. However, only revoked and/or expired
+// certificates can be requested by providing a time range.
+type GetCertificatesRequest struct {
+	ID         string    `skip:"true"`                                    // Get certificates for this enrollment ID
+	AKI        string    `help:"Get certificates for this AKI"`           // Get certificate that matches this AKI
+	Serial     string    `help:"Get certificates for this serial number"` // Get certificate that matches this serial
+	Revoked    TimeRange `skip:"true"`                                    // Get certificates which were revoked between the specified time range
+	Expired    TimeRange `skip:"true"`                                    // Get certificates which expire between the specified time range
+	NotExpired bool      `help:"Don't return expired certificates"`       // Don't return expired certificates
+	NotRevoked bool      `help:"Don't return revoked certificates"`       // Don't return revoked certificates
+	CAName     string    `skip:"true"`                                    // Name of CA to send request to within the server
+}
+
+// CertificateResponse contains the response from Get or Delete certificate request.
+type CertificateResponse struct {
+	Certs []string `json:"certs"`
+}
+
+// TimeRange specifies a range of time
+type TimeRange struct {
+	StartTime string
+	EndTime   string
 }
 
 // BasicKeyRequest encapsulates size and algorithm for the key to be generated

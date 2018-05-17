@@ -64,7 +64,7 @@ FABRIC_DEV_REGISTRY_PRE_CMD ?= docker login -u docker -p docker nexus3.hyperledg
 
 # Upstream fabric patching (overridable)
 THIRDPARTY_FABRIC_CA_BRANCH ?= master
-THIRDPARTY_FABRIC_CA_COMMIT ?= v1.1.0
+THIRDPARTY_FABRIC_CA_COMMIT ?= 71aac26dddd41cea524b4fc7d66d113c2e365639
 THIRDPARTY_FABRIC_BRANCH    ?= master
 THIRDPARTY_FABRIC_COMMIT    ?= a8cc2c46d8cec1ad199741c0630a46ccb24084ac
 
