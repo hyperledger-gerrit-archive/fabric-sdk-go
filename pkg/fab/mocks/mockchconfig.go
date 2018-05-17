@@ -60,6 +60,11 @@ func (cfg *MockChannelCfg) Versions() *fab.Versions {
 	return cfg.MockVersions
 }
 
+// HasCapability indicates whether or not the given group has the given capability
+func (cfg *MockChannelCfg) HasCapability(group fab.ConfigGroupKey, capability string) bool {
+	panic("not implemented")
+}
+
 // MockChannelConfig mockcore query channel configuration
 type MockChannelConfig struct {
 	channelID string
