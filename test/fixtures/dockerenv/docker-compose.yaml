@@ -74,8 +74,8 @@ services:
       - ORDERER_GENERAL_TLS_CLIENTAUTHENABLED
       - ORDERER_GENERAL_TLS_CLIENTROOTCAS
     #comment out logging.driver in order to render the debug logs  
-    logging:
-      driver: none
+#    logging:
+#      driver: none
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
     command: orderer
     ports:
@@ -126,8 +126,8 @@ services:
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default      
     #comment out logging.driver in order to render the debug logs 
-    logging:
-      driver: none 
+#    logging:
+#      driver: none
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: peer node start
     ports:
@@ -188,8 +188,8 @@ services:
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default     
     #comment out logging.driver in order to render the debug logs
-    logging:
-      driver: none
+#    logging:
+#      driver: none
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: peer node start
     ports:
@@ -250,8 +250,8 @@ services:
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default     
     #comment out logging.driver in order to render the debug logs
-    logging:
-      driver: none
+#    logging:
+#      driver: none
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: peer node start
     ports:
