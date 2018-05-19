@@ -1,0 +1,16 @@
+#
+# Copyright Unchain BV Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '3.2'
+
+services:
+  vault:
+    image: vault:0.10.0
+    environment:
+      VAULT_ADDR: http://0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    entrypoint: vault server -dev
+    
