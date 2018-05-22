@@ -192,6 +192,7 @@ func (c *Client) Enroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error)
 	}
 	post.SetBasicAuth(req.Name, req.Secret)
 	var result enrollmentResponseNet
+
 	err = c.SendReq(post, &result)
 	if err != nil {
 		return nil, err
