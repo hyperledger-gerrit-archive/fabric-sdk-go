@@ -23,7 +23,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
 )
@@ -258,7 +257,7 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		return errors.WithMessage(err, "failed to create selection provider")
 	}
 
-	channelProvider, err := chpvdr.New(infraProvider)
+	channelProvider, err := sdk.opts.Service.CreateChannelProvider(cfg.endpointConfig)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create channel provider")
 	}
@@ -303,6 +302,13 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		err = pi.Initialize(sdk.provider)
 		if err != nil {
 			return errors.WithMessage(err, "failed to initialize selection provider")
+		}
+	}
+
+	if pi, ok := channelProvider.(providerInit); ok {
+		err = pi.Initialize(sdk.provider)
+		if err != nil {
+			return errors.WithMessage(err, "failed to initialize channel provider")
 		}
 	}
 
