@@ -108,6 +108,18 @@ func GetSignerFromCert(cert *x509.Certificate, csp core.CryptoSuite) (core.Key, 
 	return privateKey, signer, nil
 }
 
+// GetSignerFromCertFile load skiFile and load private key represented by ski and return bccsp signer that conforms to crypto.Signer
+func GetSignerFromCertFile(certBytes []byte, csp core.CryptoSuite) (core.Key, crypto.Signer, *x509.Certificate, error) {
+	// Parse certificate
+	parsedCa, err := helpers.ParseCertificatePEM(certBytes)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	// Get the signer from the cert
+	key, cspSigner, err := GetSignerFromCert(parsedCa, csp)
+	return key, cspSigner, parsedCa, err
+}
+
 // BCCSPKeyRequestGenerate generates keys through BCCSP
 // somewhat mirroring to cfssl/req.KeyRequest.Generate()
 func BCCSPKeyRequestGenerate(req *csr.CertificateRequest, myCSP core.CryptoSuite) (core.Key, crypto.Signer, error) {
@@ -225,16 +237,4 @@ func LoadX509KeyPair(certFile, keyFile []byte, csp core.CryptoSuite) (*tls.Certi
 	}
 
 	return cert, nil
-}
-
-// GetSignerFromCertFile load skiFile and load private key represented by ski and return bccsp signer that conforms to crypto.Signer
-func GetSignerFromCertFile(certBytes []byte, csp core.CryptoSuite) (core.Key, crypto.Signer, *x509.Certificate, error) {
-	// Parse certificate
-	parsedCa, err := helpers.ParseCertificatePEM(certBytes)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	// Get the signer from the cert
-	key, cspSigner, err := GetSignerFromCert(parsedCa, csp)
-	return key, cspSigner, parsedCa, err
 }

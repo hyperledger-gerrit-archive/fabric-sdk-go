@@ -26,6 +26,13 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 )
 
+// Identity is fabric-ca's implementation of an identity
+type Identity struct {
+	name   string
+	client *Client
+	creds  []credential.Credential
+}
+
 // NewIdentity is the constructor for identity
 func NewIdentity(client *Client, name string, creds []credential.Credential) *Identity {
 	id := new(Identity)
@@ -33,13 +40,6 @@ func NewIdentity(client *Client, name string, creds []credential.Credential) *Id
 	id.client = client
 	id.creds = creds
 	return id
-}
-
-// Identity is fabric-ca's implementation of an identity
-type Identity struct {
-	name   string
-	client *Client
-	creds  []credential.Credential
 }
 
 // GetName returns the identity name
@@ -334,7 +334,7 @@ func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
 	var err error
 	for _, cred := range i.creds {
 		if cred.Type() == x509.CredType {
-			token, err = cred.CreateToken(req, body)
+			token, err = cred.CreateOAuthToken(req, body)
 			if err != nil {
 				return errors.WithMessage(err, "Failed to add token authorization header")
 			}
