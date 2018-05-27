@@ -11,6 +11,10 @@ package chpvdr
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -18,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockClientContext struct {
@@ -43,17 +48,21 @@ func TestBasicValidChannel(t *testing.T) {
 	err = cp.Initialize(ctx)
 	assert.NoError(t, err)
 
+	testChannelCfg := mocks.NewMockChannelCfg("testchannel")
+	testChannelCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
+
 	mockChConfigCache := newMockChCfgCache(chconfig.NewChannelCfg(""))
 	mockChConfigCache.Put(chconfig.NewChannelCfg("mychannel"))
+	mockChConfigCache.Put(testChannelCfg)
 	cp.chCfgCache = mockChConfigCache
 
-	channelService, err := cp.ChannelService(clientCtx, "mychannel")
+	// System channel
+	channelService, err := cp.ChannelService(clientCtx, "")
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
 
-	// System channel
-	channelService, err = cp.ChannelService(clientCtx, "")
+	channelService, err = cp.ChannelService(clientCtx, "mychannel")
 	if err != nil {
 		t.Fatalf("Unexpected error creating Channel Service: %v", err)
 	}
@@ -69,6 +78,33 @@ func TestBasicValidChannel(t *testing.T) {
 	channelConfig, err := channelService.ChannelConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, channelConfig)
+	assert.NotEmptyf(t, channelConfig.ID(), "Got empty channel ID from channel config")
+
+	eventService, err := channelService.EventService()
+	require.NoError(t, err)
+	require.NotNil(t, eventService)
+
+	discovery, err := channelService.Discovery()
+	require.NoError(t, err)
+	require.NotNil(t, discovery)
+	_, ok := discovery.(*staticdiscovery.DiscoveryService)
+	assert.Truef(t, ok, "Expecting discovery to be Static")
+
+	selection, err := channelService.Selection()
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	_, ok = selection.(*dynamicselection.SelectionService)
+	assert.Truef(t, ok, "Expecting selection to be Dynamic")
+
+	// testchannel has v1_2 capabilities
+	channelService, err = cp.ChannelService(clientCtx, "testchannel")
+	require.NoError(t, err)
+	require.NotNil(t, channelService)
+	discovery, err = channelService.Discovery()
+	require.NoError(t, err)
+	require.NotNil(t, discovery)
+	_, ok = discovery.(*dynamicdiscovery.ChannelService)
+	assert.Truef(t, ok, "Expecting discovery to be Dynamic for v1_2")
 }
 
 func TestResolveEventServiceType(t *testing.T) {
