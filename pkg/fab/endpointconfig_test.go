@@ -155,6 +155,7 @@ func TestTimeouts(t *testing.T) {
 	customBackend.KeyValueMap["client.global.cache.channelConfig"] = "3m"
 	customBackend.KeyValueMap["client.global.cache.channelMembership"] = "4m"
 	customBackend.KeyValueMap["client.global.cache.discovery"] = "15s"
+	customBackend.KeyValueMap["client.global.cache.selection"] = "15m"
 
 	endpointConfig, err := ConfigFromBackend(customBackend)
 	if err != nil {
@@ -208,6 +209,8 @@ func checkTimeouts(endpointConfig fab.EndpointConfig, t *testing.T, errStr strin
 	assert.Equal(t, time.Minute*4, t1, "ChannelMembershipRefresh")
 	t1 = endpointConfig.Timeout(fab.DiscoveryServiceRefresh)
 	assert.Equal(t, time.Second*15, t1, "DiscoveryServiceRefresh")
+	t1 = endpointConfig.Timeout(fab.SelectionServiceRefresh)
+	assert.Equal(t, time.Minute*15, t1, "SelectionServiceRefresh")
 	t1 = endpointConfig.Timeout(fab.DiscoveryConnection)
 	assert.Equal(t, time.Second*20, t1, "DiscoveryConnection")
 	t1 = endpointConfig.Timeout(fab.DiscoveryResponse)
@@ -230,6 +233,8 @@ func TestDefaultTimeouts(t *testing.T) {
 	customBackend.KeyValueMap["client.global.cache.eventServiceIdle"] = ""
 	customBackend.KeyValueMap["client.global.cache.channelConfig"] = ""
 	customBackend.KeyValueMap["client.global.cache.channelMembership"] = ""
+	customBackend.KeyValueMap["client.global.cache.discovery"] = ""
+	customBackend.KeyValueMap["client.global.cache.selection"] = ""
 
 	endpointConfig, err := ConfigFromBackend(customBackend)
 	if err != nil {
@@ -260,6 +265,14 @@ func TestDefaultTimeouts(t *testing.T) {
 	t1 = endpointConfig.Timeout(fab.OrdererConnection)
 	if t1 != defaultOrdererConnectionTimeout {
 		t.Fatalf(errStr, "OrdererConnection", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.DiscoveryServiceRefresh)
+	if t1 != defaultDiscoveryRefreshInterval {
+		t.Fatalf(errStr, "DiscoveryRefreshInterval", t1)
+	}
+	t1 = endpointConfig.Timeout(fab.SelectionServiceRefresh)
+	if t1 != defaultSelectionRefreshInterval {
+		t.Fatalf(errStr, "SelectionRefreshInterval", t1)
 	}
 	checkDefaultTimeout(endpointConfig, t, errStr)
 }
