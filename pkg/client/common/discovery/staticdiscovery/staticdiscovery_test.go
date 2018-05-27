@@ -18,23 +18,8 @@ import (
 
 func TestStaticDiscovery(t *testing.T) {
 
-	configBackend, err := config.FromFile("../../../../../test/fixtures/config/config_test.yaml")()
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	config1, err := fabImpl.ConfigFromBackend(configBackend...)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	discoveryProvider, err := New(config1)
-	if err != nil {
-		t.Fatalf("Failed to  setup discovery provider: %s", err)
-	}
-	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
-
-	discoveryService, err := discoveryProvider.CreateDiscoveryService("mychannel")
+	ctx := mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP"))
+	discoveryService, err := NewService(ctx.EndpointConfig(), ctx.InfraProvider(), "mychannel")
 	if err != nil {
 		t.Fatalf("Failed to setup discovery service: %s", err)
 	}
@@ -53,20 +38,9 @@ func TestStaticDiscovery(t *testing.T) {
 }
 
 func TestStaticDiscoveryWhenChannelIsEmpty(t *testing.T) {
-	configBackend, err := config.FromFile("../../../../../test/fixtures/config/config_test.yaml")()
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
 
-	config1, err := fabImpl.ConfigFromBackend(configBackend...)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	discoveryProvider, _ := New(config1)
-	discoveryProvider.Initialize(mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP")))
-
-	_, err = discoveryProvider.CreateDiscoveryService("")
+	ctx := mocks.NewMockContext(mockmsp.NewMockSigningIdentity("user1", "Org1MSP"))
+	_, err := NewService(ctx.EndpointConfig(), ctx.InfraProvider(), "")
 	assert.Error(t, err, "expecting error when channel ID is empty")
 }
 

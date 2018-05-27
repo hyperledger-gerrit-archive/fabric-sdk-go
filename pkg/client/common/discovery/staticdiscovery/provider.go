@@ -38,31 +38,6 @@ func (dp *DiscoveryProvider) Initialize(fabPvdr contextAPI.Providers) error {
 	return nil
 }
 
-// CreateDiscoveryService return discovery service for specific channel
-func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.DiscoveryService, error) {
-	if channelID == "" {
-		return nil, errors.New("channel ID must be provided")
-	}
-
-	// Use configured channel peers
-	chPeers, err := dp.config.ChannelPeers(channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "unable to read configuration for channel peers")
-	}
-
-	peers := []fab.Peer{}
-	for _, p := range chPeers {
-		newPeer, err := dp.fabPvdr.CreatePeerFromConfig(&p.NetworkPeer)
-		if err != nil || newPeer == nil {
-			return nil, errors.WithMessage(err, "NewPeer failed")
-		}
-
-		peers = append(peers, newPeer)
-	}
-
-	return &discoveryService{config: dp.config, peers: peers}, nil
-}
-
 // CreateLocalDiscoveryService return a local discovery service
 func (dp *DiscoveryProvider) CreateLocalDiscoveryService(mspID string) (fab.DiscoveryService, error) {
 	peers := []fab.Peer{}

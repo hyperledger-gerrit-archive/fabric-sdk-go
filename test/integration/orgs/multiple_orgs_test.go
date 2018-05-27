@@ -29,11 +29,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
-
-	selection "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 
 	"os"
 
@@ -413,7 +410,7 @@ func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T, ccName st
 	t.Logf("verifyErrorFromCC status.FromError s: %s, ok: %t", s, ok)
 
 	require.True(t, ok, "expected status error")
-	require.Equal(t, s.Code, int32(status.MultipleErrors))
+	require.Equal(t, int32(status.MultipleErrors), s.Code)
 
 	for _, err := range err.(multi.Errors) {
 		s, ok := status.FromError(err)
@@ -473,13 +470,8 @@ func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, targets []string, ccNa
 }
 
 func testWithOrg2(t *testing.T, expectedValue int, ccName string) int {
-	// Specify user that will be used by dynamic selection service (to retrieve chanincode policy information)
-	// This user has to have privileges to query lscc for chaincode data
-	mychannelUser := selection.ChannelUser{ChannelID: channelID, Username: "User1", OrgName: "Org1"}
-
 	// Create SDK setup for channel client with dynamic selection
-	sdk, err := fabsdk.New(integration.ConfigBackend,
-		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{ChannelUsers: []selection.ChannelUser{mychannelUser}}))
+	sdk, err := fabsdk.New(integration.ConfigBackend)
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
@@ -570,15 +562,4 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 	if err != nil {
 		t.Fatal(err)
 	}
-}
-
-// DynamicSelectionProviderFactory is configured with dynamic (endorser) selection provider
-type DynamicSelectionProviderFactory struct {
-	defsvc.ProviderFactory
-	ChannelUsers []selection.ChannelUser
-}
-
-// CreateSelectionProvider returns a new implementation of dynamic selection provider
-func (f *DynamicSelectionProviderFactory) CreateSelectionProvider(config fab.EndpointConfig) (fab.SelectionProvider, error) {
-	return selection.New(config, f.ChannelUsers)
 }

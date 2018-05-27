@@ -17,8 +17,7 @@ import (
 )
 
 const (
-	ch  = "orgchannel"
-	ch2 = "channel2"
+	ch = "orgchannel"
 
 	mspID1 = "Org1MSP"
 	mspID2 = "Org2MSP"
@@ -44,22 +43,6 @@ func TestDiscoveryProvider(t *testing.T) {
 
 	p := New(config, WithRefreshInterval(30*time.Second), WithResponseTimeout(10*time.Second))
 	defer p.Close()
-
-	service1, err := p.CreateDiscoveryService(ch)
-	assert.NoError(t, err)
-
-	chCtx := mocks.NewMockChannelContext(ctx, ch)
-
-	err = service1.(*channelService).Initialize(chCtx)
-	assert.NoError(t, err)
-
-	service2, err := p.CreateDiscoveryService(ch)
-	assert.NoError(t, err)
-	assert.Equal(t, service1, service2)
-
-	service2, err = p.CreateDiscoveryService(ch2)
-	assert.NoError(t, err)
-	assert.NotEqual(t, service1, service2)
 
 	localService1, err := p.CreateLocalDiscoveryService(mspID1)
 	assert.NoError(t, err)
