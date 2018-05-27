@@ -49,7 +49,7 @@ var (
 	clientConfig = msp.ClientConfig{
 		Organization:    "org1",
 		Logging:         api.LoggingType{Level: "info"},
-		CryptoConfig:    msp.CCType{Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}"},
+		CryptoConfig:    msp.CCType{Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}")},
 		CredentialStore: msp.CredentialStoreType{Path: "/tmp/msp"},
 		TLSCerts: endpoint.MutualTLSConfig{Client: endpoint.TLSKeyPair{
 			Key:  endpoint.TLSConfig{Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/mutual_tls/client_sdk_go-key.pem")},
@@ -141,7 +141,7 @@ var (
 				"allow-insecure":           false,
 			},
 			TLSCACerts: endpoint.TLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem",
+				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem"),
 			},
 		},
 	}
@@ -159,7 +159,7 @@ var (
 				"allow-insecure":           false,
 			},
 			TLSCACerts: endpoint.TLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem",
+				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
 			},
 		},
 		"peer0.org2.example.com": {
@@ -174,7 +174,7 @@ var (
 				"allow-insecure":           false,
 			},
 			TLSCACerts: endpoint.TLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem",
+				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"),
 			},
 		},
 	}
@@ -183,13 +183,13 @@ var (
 		"ca.org1.example.com": {
 			URL: "https://ca.org1.example.com:7054",
 			TLSCACerts: endpoint.MutualTLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem",
+				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem"),
 				Client: endpoint.TLSKeyPair{
 					Key: endpoint.TLSConfig{
-						Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem",
+						Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem"),
 					},
 					Cert: endpoint.TLSConfig{
-						Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem",
+						Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"),
 					},
 				},
 			},
@@ -202,13 +202,13 @@ var (
 		"ca.org2.example.com": {
 			URL: "https://ca.org2.example.com:8054",
 			TLSCACerts: endpoint.MutualTLSConfig{
-				Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem",
+				Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/ca_root.pem"),
 				Client: endpoint.TLSKeyPair{
 					Key: endpoint.TLSConfig{
-						Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem",
+						Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client-key.pem"),
 					},
 					Cert: endpoint.TLSConfig{
-						Path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem",
+						Path: pathvar.Subst("${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabricca/tls/certs/client/client_fabric_client.pem"),
 					},
 				},
 			},
@@ -286,6 +286,7 @@ var defaultTypes = map[fab.TimeoutType]time.Duration{
 	fab.ChannelConfigRefresh:     time.Minute * 90,
 	fab.ChannelMembershipRefresh: time.Second * 60,
 	fab.DiscoveryServiceRefresh:  time.Second * 10,
+	fab.SelectionServiceRefresh:  time.Minute * 15,
 	// EXPERIMENTAL - do we need this to be configurable?
 	fab.CacheSweepInterval: time.Second * 15,
 }
@@ -515,8 +516,11 @@ func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool)
 	if err != nil {
 		return nil, false
 	}
-	// EntityMatchers are not used in this implementation
-	// see default implementation (pkg/fab/endpointconfig.go) to see how they're used
+
+	i := strings.Index(nameOrURL, ":")
+	if i > 0 {
+		return m.PeerConfig(nameOrURL[0:i])
+	}
 
 	return nil, false
 }
