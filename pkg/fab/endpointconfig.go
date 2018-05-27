@@ -737,9 +737,12 @@ func (c *EndpointConfig) tryMatchingPeerConfig(networkConfig *fab.NetworkConfig,
 	//loop over peerentityMatchers to find the matching peer
 	for _, k := range keys {
 		v := c.peerMatchers[k]
+		logger.Debugf("Trying to match peer [%s] with matcher [%s]", peerName, v.String())
 		if v.MatchString(peerName) {
+			logger.Debugf("Peer [%s] matched using matcher [%s]", peerName, v.String())
 			return c.matchPeer(networkConfig, peerName, k, v)
 		}
+		logger.Debugf("Peer [%s] did not match using matcher [%s]", peerName, v.String())
 	}
 
 	return nil

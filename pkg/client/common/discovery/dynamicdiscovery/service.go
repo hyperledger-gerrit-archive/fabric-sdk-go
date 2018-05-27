@@ -12,6 +12,7 @@ import (
 	"time"
 
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
+	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fabdiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
@@ -41,8 +42,18 @@ type service struct {
 
 type queryPeers func() ([]fab.Peer, error)
 
-func newService(query queryPeers, options options) *service {
-	logger.Debugf("Creating new dynamic discovery service with cache refresh interval %s", options.refreshInterval)
+func newService(config fab.EndpointConfig, query queryPeers, opts ...coptions.Opt) *service {
+	options := options{}
+	coptions.Apply(&options, opts)
+
+	if options.refreshInterval == 0 {
+		options.refreshInterval = config.Timeout(fab.DiscoveryServiceRefresh)
+	}
+
+	if options.responseTimeout == 0 {
+		options.responseTimeout = config.Timeout(fab.DiscoveryResponse)
+	}
+
 	return &service{
 		responseTimeout: options.responseTimeout,
 		peersRef: lazyref.New(
@@ -54,7 +65,7 @@ func newService(query queryPeers, options options) *service {
 	}
 }
 
-// Initialize initializes the service with local context
+// Initialize initializes the service with client context
 func (s *service) Initialize(ctx contextAPI.Client) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()

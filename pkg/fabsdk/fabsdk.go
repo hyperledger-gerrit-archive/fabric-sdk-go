@@ -239,22 +239,10 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		return errors.WithMessage(err, "failed to create infra provider")
 	}
 
-	// Initialize discovery provider
-	discoveryProvider, err := sdk.opts.Service.CreateDiscoveryProvider(cfg.endpointConfig)
-	if err != nil {
-		return errors.WithMessage(err, "failed to create discovery provider")
-	}
-
 	// Initialize local discovery provider
 	localDiscoveryProvider, err := sdk.opts.Service.CreateLocalDiscoveryProvider(cfg.endpointConfig)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create local discovery provider")
-	}
-
-	// Initialize selection provider (for selecting endorsing peers)
-	selectionProvider, err := sdk.opts.Service.CreateSelectionProvider(cfg.endpointConfig)
-	if err != nil {
-		return errors.WithMessage(err, "failed to create selection provider")
 	}
 
 	channelProvider, err := sdk.opts.Service.CreateChannelProvider(cfg.endpointConfig)
@@ -269,9 +257,7 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		context.WithCryptoSuite(cryptoSuite),
 		context.WithSigningManager(signingManager),
 		context.WithUserStore(userStore),
-		context.WithDiscoveryProvider(discoveryProvider),
 		context.WithLocalDiscoveryProvider(localDiscoveryProvider),
-		context.WithSelectionProvider(selectionProvider),
 		context.WithIdentityManagerProvider(identityManagerProvider),
 		context.WithInfraProvider(infraProvider),
 		context.WithChannelProvider(channelProvider))
@@ -284,24 +270,10 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		}
 	}
 
-	if pi, ok := discoveryProvider.(providerInit); ok {
-		err = pi.Initialize(sdk.provider)
-		if err != nil {
-			return errors.WithMessage(err, "failed to initialize discovery provider")
-		}
-	}
-
 	if pi, ok := localDiscoveryProvider.(providerInit); ok {
 		err = pi.Initialize(sdk.provider)
 		if err != nil {
 			return errors.WithMessage(err, "failed to initialize local discovery provider")
-		}
-	}
-
-	if pi, ok := selectionProvider.(providerInit); ok {
-		err = pi.Initialize(sdk.provider)
-		if err != nil {
-			return errors.WithMessage(err, "failed to initialize selection provider")
 		}
 	}
 
@@ -317,13 +289,10 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 
 // Close frees up caches and connections being maintained by the SDK
 func (sdk *FabricSDK) Close() {
-	if pvdr, ok := sdk.provider.DiscoveryProvider().(closeable); ok {
-		pvdr.Close()
-	}
 	if pvdr, ok := sdk.provider.LocalDiscoveryProvider().(closeable); ok {
 		pvdr.Close()
 	}
-	if pvdr, ok := sdk.provider.SelectionProvider().(closeable); ok {
+	if pvdr, ok := sdk.provider.ChannelProvider().(closeable); ok {
 		pvdr.Close()
 	}
 	sdk.provider.InfraProvider().Close()

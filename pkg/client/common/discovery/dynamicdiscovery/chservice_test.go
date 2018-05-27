@@ -11,12 +11,14 @@ import (
 	"time"
 
 	dyndiscmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -24,6 +26,8 @@ const (
 )
 
 func TestDiscoveryService(t *testing.T) {
+	logging.SetLevel("fabsdk/client", logging.DEBUG)
+
 	ctx := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", mspID1))
 	config := &config{
 		EndpointConfig: mocks.NewMockEndpointConfig(),
@@ -59,22 +63,15 @@ func TestDiscoveryService(t *testing.T) {
 		return discClient, nil
 	}
 
-	membershipService := newChannelService(
-		options{
-			refreshInterval: 500 * time.Millisecond,
-			responseTimeout: 2 * time.Second,
-		},
+	service, err := NewChannelService(
+		ctx, ch,
+		WithRefreshInterval(500*time.Millisecond),
+		WithResponseTimeout(2*time.Second),
 	)
-	defer membershipService.Close()
+	require.NoError(t, err)
+	defer service.Close()
 
-	chCtx := mocks.NewMockChannelContext(ctx, ch)
-	err := membershipService.Initialize(chCtx)
-	assert.NoError(t, err)
-	// Initialize again should produce no error
-	err = membershipService.Initialize(chCtx)
-	assert.NoError(t, err)
-
-	peers, err := membershipService.GetPeers()
+	peers, err := service.GetPeers()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(peers))
 
@@ -90,11 +87,11 @@ func TestDiscoveryService(t *testing.T) {
 		},
 	)
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
-	peers, err = membershipService.GetPeers()
+	peers, err = service.GetPeers()
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(peers))
+	assert.Equalf(t, 1, len(peers), "Expected 1 peer")
 
 	discClient.SetResponses(
 		&dyndiscmocks.MockDiscoverEndpointResponse{
@@ -113,9 +110,9 @@ func TestDiscoveryService(t *testing.T) {
 		},
 	)
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
-	peers, err = membershipService.GetPeers()
+	peers, err = service.GetPeers()
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(peers))
+	assert.Equalf(t, 2, len(peers), "Expected 2 peers")
 }

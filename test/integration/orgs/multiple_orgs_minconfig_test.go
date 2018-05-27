@@ -12,11 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,9 +27,7 @@ const bootStrapCC = "btspExampleCC"
 // other peers not in the config (example org1 has 2 peers and only peer0 is defined in the bootstrap configs)
 func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 	configPath := "../../fixtures/config/config_test_multiorg_bootstrap.yaml"
-	sdk, err := fabsdk.New(config.FromFile(configPath),
-		fabsdk.WithServicePkg(&DynamicDiscoveryProviderFactory{}),
-	)
+	sdk, err := fabsdk.New(config.FromFile(configPath))
 	if err != nil {
 		require.NoError(t, err, "Failed to create new SDK")
 	}
@@ -54,7 +50,7 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 	setupClientContextsAndChannel(t, sdk, &mc)
 
 	// wait some time to allow the gossip to propagate the peers discovery
-	time.Sleep(10 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	testDynamicDiscovery(t, sdk)
 
@@ -85,7 +81,10 @@ func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK) []fab.Peer {
 	require.NoError(t, err, "Error creating channel context")
 
 	chCtx.ChannelService()
-	peers, err := chCtx.DiscoveryService().GetPeers()
+	discovery, err := chCtx.ChannelService().Discovery()
+	require.NoErrorf(t, err, "Error getting discovery service for channel [%s]", channelID)
+
+	peers, err := discovery.GetPeers()
 	require.NoErrorf(t, err, "Error getting peers for channel [%s]", channelID)
 	require.NotEmptyf(t, peers, "No peers were found for channel [%s]", channelID)
 
@@ -94,19 +93,4 @@ func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK) []fab.Peer {
 		t.Logf("%d- [%s] - MSP [%s]", i, p.URL(), p.MSPID())
 	}
 	return peers
-}
-
-// DynamicDiscoveryProviderFactory is configured with dynamic (endorser) selection provider
-type DynamicDiscoveryProviderFactory struct {
-	defsvc.ProviderFactory
-}
-
-// CreateDiscoveryProvider returns a new dynamic discovery provider
-func (f *DynamicDiscoveryProviderFactory) CreateDiscoveryProvider(config fab.EndpointConfig) (fab.DiscoveryProvider, error) {
-	return dynamicdiscovery.New(config), nil
-}
-
-// CreateLocalDiscoveryProvider returns a new local dynamic discovery provider
-func (f *DynamicDiscoveryProviderFactory) CreateLocalDiscoveryProvider(config fab.EndpointConfig) (fab.LocalDiscoveryProvider, error) {
-	return dynamicdiscovery.New(config), nil
 }
