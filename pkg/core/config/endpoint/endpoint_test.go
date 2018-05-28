@@ -9,6 +9,8 @@ package endpoint
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIsTLSEnabled(t *testing.T) {
@@ -213,5 +215,27 @@ func TestTLSConfig_TLSCertNegative(t *testing.T) {
 	if c != nil {
 		t.Fatalf("cert's TLSCert() call returned non empty certificate")
 	}
+
+}
+
+func TestTLSConfigBytes(t *testing.T) {
+
+	// test with wrong path
+	tlsConfig := &TLSConfig{
+		Path: "../testdata/config_test.yaml",
+		Pem:  "",
+	}
+
+	bytes1, err := tlsConfig.Bytes()
+	assert.Nil(t, err, "tlsConfig.Bytes supposed to succeed")
+	assert.NotEmpty(t, bytes1, "supposed to get valid bytes")
+
+	tlsConfig.Path = "../testdata/config_test_pem.yaml"
+	bytes2, err := tlsConfig.Bytes()
+	assert.Nil(t, err, "tlsConfig.Bytes supposed to succeed")
+	assert.NotEmpty(t, bytes2, "supposed to get valid bytes")
+
+	//even after changing path, it should return previous bytes
+	assert.Equal(t, bytes1, bytes2, "any update to tlsconfig path after first bytes call should not take effect")
 
 }

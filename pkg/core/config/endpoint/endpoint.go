@@ -77,13 +77,16 @@ type TLSConfig struct {
 	// If Path is available, then it will be used to load the cert
 	// if Pem is available, then it has the raw data of the cert it will be used as-is
 	// Certificate root certificate path
+	// If both Path and Pem are available, pem takes the precedence
 	Path string
 	// Certificate actual content
 	Pem string
 }
 
 // Bytes returns the tls certificate as a byte array by loading it either from the embedded Pem or Path
-func (cfg TLSConfig) Bytes() ([]byte, error) {
+// Note: After first call to Bytes() function returning valid bytes, any update to Path will not take effect
+// since bytes from first call will be used for any subsequent call results.
+func (cfg *TLSConfig) Bytes() ([]byte, error) {
 	var bytes []byte
 	var err error
 
@@ -91,17 +94,17 @@ func (cfg TLSConfig) Bytes() ([]byte, error) {
 		bytes = []byte(cfg.Pem)
 	} else if cfg.Path != "" {
 		bytes, err = ioutil.ReadFile(cfg.Path)
-
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to load pem bytes from path %s", cfg.Path)
 		}
+		cfg.Pem = string(bytes)
 	}
 
 	return bytes, nil
 }
 
 // TLSCert returns the tls certificate as a *x509.Certificate by loading it either from the embedded Pem or Path
-func (cfg TLSConfig) TLSCert() (*x509.Certificate, error) {
+func (cfg *TLSConfig) TLSCert() (*x509.Certificate, error) {
 	bytes, err := cfg.Bytes()
 
 	if err != nil {

@@ -236,8 +236,6 @@ var (
 
 	// creating instances of each interface to be referenced in the integration tests:
 	timeoutImpl          = &exampleTimeout{}
-	mspIDImpl            = &exampleMSPID{}
-	peerMSPIDImpl        = &examplePeerMSPID{}
 	orderersConfigImpl   = newOrderersConfigImpl()
 	ordererConfigImpl    = &exampleOrdererConfig{}
 	peersConfigImpl      = newPeersConfigImpl()
@@ -253,8 +251,6 @@ var (
 	cryptoConfigPathImpl = &exampleCryptoConfigPath{}
 	endpointConfigImpls  = []interface{}{
 		timeoutImpl,
-		mspIDImpl,
-		peerMSPIDImpl,
 		orderersConfigImpl,
 		ordererConfigImpl,
 		peersConfigImpl,
@@ -304,23 +300,8 @@ func (m *exampleTimeout) Timeout(tType fab.TimeoutType) time.Duration {
 	return t
 }
 
-type exampleMSPID struct{}
-
-//MSPID overrides EndpointConfig's MSPID function which returns the mspID for the given org name in the arg
-func (m *exampleMSPID) MSPID(org string) (string, bool) {
-	//lowercase org name to make it case insensitive, depends on application preference, for the sake of this example, make it case in-sensitive
-	mspID := orgsConfig[strings.ToLower(org)].MSPID
-	if mspID == "" {
-		return "", false
-	}
-
-	return mspID, true
-}
-
-type examplePeerMSPID struct{}
-
-//PeerMSPID overrides EndpointConfig's PeerMSPID function which returns the mspID for the given org name in the arg
-func (m *examplePeerMSPID) PeerMSPID(name string) (string, bool) {
+//PeerMSPID  returns the mspID for the given org name in the arg
+func PeerMSPID(name string) (string, bool) {
 	// Find organisation/msp that peer belongs to
 	for _, org := range orgsConfig {
 		for i := 0; i < len(org.Peers); i++ {
@@ -541,7 +522,6 @@ type exampleNetworkPeers struct {
 func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
 	netPeers := []fab.NetworkPeer{}
 	// referencing another interface to call PeerMSPID to match config yaml content
-	peerMSPID := &examplePeerMSPID{}
 
 	for name, p := range networkConfig.Peers {
 
@@ -553,7 +533,7 @@ func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
 		}
 
-		mspID, ok := peerMSPID.PeerMSPID(name)
+		mspID, ok := PeerMSPID(name)
 		if !ok {
 			return nil, false
 		}
@@ -599,8 +579,6 @@ type exampleChannelPeers struct {
 // ChannelPeers overrides EndpointConfig's ChannelPeers function which returns the list of peers for the channel name arg
 func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPeer, bool) {
 	peers := []fab.ChannelPeer{}
-	// referencing another interface to call PeerMSPID to match config yaml content
-	peerMSPID := &examplePeerMSPID{}
 
 	chConfig, ok := channelsConfig[strings.ToLower(channelName)]
 	if !ok {
@@ -637,7 +615,7 @@ func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPee
 			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
 		}
 
-		mspID, ok := peerMSPID.PeerMSPID(peerName)
+		mspID, ok := PeerMSPID(peerName)
 		if !ok {
 			return nil, false
 		}
@@ -652,6 +630,7 @@ func (m *exampleChannelPeers) ChannelPeers(channelName string) ([]fab.ChannelPee
 	return peers, true
 
 }
+
 func (m *exampleChannelPeers) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
 	if p.URL == "" {
 		return errors.Errorf("URL does not exist or empty for peer %s", peerName)

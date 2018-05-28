@@ -58,7 +58,13 @@ func ConfigFromEndpointConfig(endpointConfig fab.EndpointConfig, coreBackend ...
 type IdentityConfig struct {
 	endpointConfig fab.EndpointConfig
 	backend        *lookup.ConfigLookup
+	entityMatchers *entityMatchers
 	caMatchers     map[int]*regexp.Regexp
+}
+
+//entityMatchers for identity configuration
+type entityMatchers struct {
+	matchers map[string][]fab.MatchConfig
 }
 
 // Client returns the Client config
@@ -239,7 +245,7 @@ func (c *IdentityConfig) tryMatchingCAConfig(networkConfig *fab.NetworkConfig, c
 
 func (c *IdentityConfig) findMatchingCert(networkConfig *fab.NetworkConfig, caName string, v *regexp.Regexp, k int) (*msp.CAConfig, string) {
 	// get the matching Config from the index number
-	certAuthorityMatchConfig := networkConfig.EntityMatchers["certificateauthority"][k]
+	certAuthorityMatchConfig := c.entityMatchers.matchers["certificateauthority"][k]
 	//Get the certAuthorityMatchConfig from mapped host
 	caConfig, ok := networkConfig.CertificateAuthorities[strings.ToLower(certAuthorityMatchConfig.MappedHost)]
 	if !ok {
@@ -279,12 +285,16 @@ func (c *IdentityConfig) getPortIfPresent(url string) (int, bool) {
 }
 
 func (c *IdentityConfig) compileMatchers() error {
-	networkConfig, ok := c.endpointConfig.NetworkConfig()
-	if !ok {
-		return errors.New("failed to get network config")
+	entityMatchers := entityMatchers{}
+
+	err := c.backend.UnmarshalKey("entityMatchers", &entityMatchers.matchers)
+	logger.Debugf("Matchers are: %+v", entityMatchers)
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse 'entityMatchers' config item")
 	}
-	if networkConfig.EntityMatchers["certificateauthority"] != nil {
-		certMatchersConfig := networkConfig.EntityMatchers["certificateauthority"]
+
+	if entityMatchers.matchers["certificateauthority"] != nil {
+		certMatchersConfig := entityMatchers.matchers["certificateauthority"]
 		var err error
 		for i := 0; i < len(certMatchersConfig); i++ {
 			if certMatchersConfig[i].Pattern != "" {
@@ -295,5 +305,6 @@ func (c *IdentityConfig) compileMatchers() error {
 			}
 		}
 	}
+	c.entityMatchers = &entityMatchers
 	return nil
 }
