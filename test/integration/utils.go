@@ -180,7 +180,7 @@ func CleanupTestPath(t *testing.T, storePath string) {
 // CleanupUserData removes user data.
 func CleanupUserData(t *testing.T, sdk *fabsdk.FabricSDK) {
 	var keyStorePath, credentialStorePath string
-
+	t.Log("Cleaning up user data")
 	configBackend, err := sdk.Config()
 	if err != nil {
 		// if an error is returned from Config, it means configBackend was nil, in this case simply hard code
