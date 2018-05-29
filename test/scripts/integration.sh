@@ -26,7 +26,7 @@ TEST_LOCAL="${TEST_LOCAL:-false}"
 REPO="github.com/hyperledger/fabric-sdk-go"
 
 # Packages to include in test run
-PKGS=`$GO_CMD list $REPO/test/integration/... 2> /dev/null | \
+PKGS=`$GO_CMD list $REPO/test/integration/msp 2> /dev/null | \
       grep -v ^$REPO/test/integration/pkcs11 | \
       grep -v ^$REPO/test/integration/revoked | \
       grep -v ^$REPO/test/integration/expiredorderer | \
@@ -73,4 +73,4 @@ if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
 fi
 
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
-$GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m -count=1 configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
+$GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m -v -count=1 configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}

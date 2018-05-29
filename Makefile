@@ -176,7 +176,7 @@ export DOCKER_CMD
 export DOCKER_COMPOSE_CMD
 
 .PHONY: all
-all: checks unit-test integration-test
+all: integration-test
 
 .PHONY: depend
 depend:
