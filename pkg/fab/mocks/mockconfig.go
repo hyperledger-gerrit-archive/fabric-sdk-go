@@ -168,9 +168,9 @@ func (c *MockConfig) SecurityProviderLibPath() string {
 }
 
 // OrderersConfig returns a list of defined orderers
-func (c *MockConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
+func (c *MockConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 	oConfig, _ := c.OrdererConfig("")
-	return []fab.OrdererConfig{*oConfig}, true
+	return []fab.OrdererConfig{*oConfig}, nil
 }
 
 //SetCustomNetworkPeerCfg sets custom orderer config for unit-tests
@@ -229,8 +229,8 @@ func (c *MockConfig) CryptoConfigPath() string {
 }
 
 // NetworkConfig not implemented
-func (c *MockConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
-	return nil, false
+func (c *MockConfig) NetworkConfig() *fab.NetworkConfig {
+	return nil
 }
 
 // ChannelConfig returns the channel configuration

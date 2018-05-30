@@ -80,11 +80,11 @@ type CommManager interface {
 //EndpointConfig contains endpoint network configurations
 type EndpointConfig interface {
 	Timeout(TimeoutType) time.Duration
-	OrderersConfig() ([]OrdererConfig, bool)
+	OrderersConfig() ([]OrdererConfig, error)
 	OrdererConfig(nameOrURL string) (*OrdererConfig, bool)
 	PeersConfig(org string) ([]PeerConfig, bool)
 	PeerConfig(nameOrURL string) (*PeerConfig, bool)
-	NetworkConfig() (*NetworkConfig, bool)
+	NetworkConfig() *NetworkConfig
 	NetworkPeers() ([]NetworkPeer, bool)
 	ChannelConfig(name string) (*ChannelNetworkConfig, bool)
 	ChannelPeers(name string) ([]ChannelPeer, bool)

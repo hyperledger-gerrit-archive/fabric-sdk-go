@@ -45,7 +45,7 @@ type timeout interface {
 
 // orderersConfig interface allows to uniquely override EndpointConfig interface's OrderersConfig() function
 type orderersConfig interface {
-	OrderersConfig() ([]fab.OrdererConfig, bool)
+	OrderersConfig() ([]fab.OrdererConfig, error)
 }
 
 // ordererConfig interface allows to uniquely override EndpointConfig interface's OrdererConfig() function
@@ -65,7 +65,7 @@ type peerConfig interface {
 
 // networkConfig interface allows to uniquely override EndpointConfig interface's NetworkConfig() function
 type networkConfig interface {
-	NetworkConfig() (*fab.NetworkConfig, bool)
+	NetworkConfig() *fab.NetworkConfig
 }
 
 // networkPeers interface allows to uniquely override EndpointConfig interface's NetworkPeers() function

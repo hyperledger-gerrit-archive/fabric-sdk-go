@@ -68,8 +68,8 @@ func SearchPeerConfigFromURL(cfg fab.EndpointConfig, url string) (*fab.PeerConfi
 
 // MSPID returns the MSP ID for the requested organization
 func MSPID(cfg fab.EndpointConfig, org string) (string, bool) {
-	networkConfig, ok := cfg.NetworkConfig()
-	if !ok {
+	networkConfig := cfg.NetworkConfig()
+	if networkConfig == nil {
 		return "", false
 	}
 	// viper lowercases all key maps, org is lower case
