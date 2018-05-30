@@ -62,7 +62,7 @@ FABRIC_RELEASE_REGISTRY     ?= registry.hub.docker.com
 FABRIC_DEV_REGISTRY         ?= nexus3.hyperledger.org:10001
 FABRIC_DEV_REGISTRY_PRE_CMD ?= docker login -u docker -p docker nexus3.hyperledger.org:10001
 
-# Upstream fabric patching (overridable)
+## Upstream fabric patching (overridable)
 THIRDPARTY_FABRIC_CA_BRANCH ?= master
 THIRDPARTY_FABRIC_CA_COMMIT ?= 2032d7736ec3254f7ad2555770743b90c5956274
 THIRDPARTY_FABRIC_BRANCH    ?= master
