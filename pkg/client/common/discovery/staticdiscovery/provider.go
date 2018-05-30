@@ -66,11 +66,7 @@ func (dp *DiscoveryProvider) CreateDiscoveryService(channelID string) (fab.Disco
 // CreateLocalDiscoveryService return a local discovery service
 func (dp *DiscoveryProvider) CreateLocalDiscoveryService(mspID string) (fab.DiscoveryService, error) {
 	peers := []fab.Peer{}
-
-	netPeers, ok := dp.config.NetworkPeers()
-	if !ok {
-		return nil, errors.New("unable to read configuration for network peers")
-	}
+	netPeers := dp.config.NetworkPeers()
 
 	for _, p := range netPeers {
 		newPeer, err := dp.fabPvdr.CreatePeerFromConfig(&p)

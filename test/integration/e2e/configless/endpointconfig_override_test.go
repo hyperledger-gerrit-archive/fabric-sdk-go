@@ -384,7 +384,7 @@ type exampleOrderersConfig struct {
 }
 
 //OrderersConfig overrides EndpointConfig's OrderersConfig function which returns the ordererConfigs list
-func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
+func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, error) {
 	orderers := []fab.OrdererConfig{}
 
 	for _, orderer := range orderersConfig {
@@ -392,16 +392,16 @@ func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
 		if orderer.TLSCACerts.Path != "" {
 			orderer.TLSCACerts.Path = pathvar.Subst(orderer.TLSCACerts.Path)
 		} else if len(orderer.TLSCACerts.Pem) == 0 && !m.isSystemCertPool {
-			return nil, false
+			return nil, errors.Errorf("Orderer has no certs configured. Make sure TLSCACerts.Pem or TLSCACerts.Path is set for %s", orderer.URL)
 		}
 		err := orderer.TLSCACerts.LoadBytes()
 		if err != nil {
-			return nil, false
+			return nil, errors.WithMessage(err, "Failed to load cert bytes for "+orderer.URL)
 		}
 		orderers = append(orderers, orderer)
 	}
 
-	return orderers, true
+	return orderers, nil
 }
 
 type exampleOrdererConfig struct{}
@@ -524,8 +524,8 @@ func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool)
 type exampleNetworkConfig struct{}
 
 // NetworkConfig overrides EndpointConfig's NetworkConfig function which returns the full network Config instance
-func (m *exampleNetworkConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
-	return &networkConfig, true
+func (m *exampleNetworkConfig) NetworkConfig() *fab.NetworkConfig {
+	return &networkConfig
 }
 
 type exampleNetworkPeers struct {
@@ -533,14 +533,14 @@ type exampleNetworkPeers struct {
 }
 
 //NetworkPeers overrides EndpointConfig's NetworkPeers function which returns the networkPeers list
-func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
+func (m *exampleNetworkPeers) NetworkPeers() []fab.NetworkPeer {
 	netPeers := []fab.NetworkPeer{}
 	// referencing another interface to call PeerMSPID to match config yaml content
 
 	for name, p := range networkConfig.Peers {
 
 		if err := m.verifyPeerConfig(p, name, endpoint.IsTLSEnabled(p.URL)); err != nil {
-			return nil, false
+			return nil
 		}
 
 		if p.TLSCACerts.Path != "" {
@@ -549,19 +549,19 @@ func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
 
 		err := p.TLSCACerts.LoadBytes()
 		if err != nil {
-			return nil, false
+			return nil
 		}
 
 		mspID, ok := PeerMSPID(name)
 		if !ok {
-			return nil, false
+			return nil
 		}
 
 		netPeer := fab.NetworkPeer{PeerConfig: p, MSPID: mspID}
 		netPeers = append(netPeers, netPeer)
 	}
 
-	return netPeers, true
+	return netPeers
 }
 func (m *exampleNetworkPeers) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
 	if p.URL == "" {

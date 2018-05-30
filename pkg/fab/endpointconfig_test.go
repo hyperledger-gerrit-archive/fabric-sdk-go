@@ -94,8 +94,8 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 	err = sampleEndpointConfig.ResetNetworkConfig()
 	assert.NotNil(t, err)
 
-	_, ok := sampleEndpointConfig.NetworkConfig()
-	if ok {
+	netConfig := sampleEndpointConfig.NetworkConfig()
+	if netConfig != nil {
 		t.Fatal("Network config load supposed to fail")
 	}
 
@@ -105,6 +105,11 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 		t.Fatal("Get MSP ID supposed to fail")
 	}
 
+	customBackend.KeyValueMap["channels"], _ = configBackend.Lookup("channels")
+	err = sampleEndpointConfig.ResetNetworkConfig()
+	if err != nil {
+		t.Fatalf("failed to reset network config, cause:%v", err)
+	}
 	//Testing OrdererConfig failure scenario
 	oConfig, ok := sampleEndpointConfig.OrdererConfig("peerorg1")
 	if oConfig != nil || ok {
@@ -312,9 +317,9 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal("Testing non-existing OrdererConfig failed")
 	}
 
-	orderers, ok := endpointConfig.OrderersConfig()
-	if !ok {
-		t.Fatal("Failed to get orderer config")
+	orderers, err := endpointConfig.OrderersConfig()
+	if err != nil {
+		t.Fatalf("Failed to get orderer config, cause : %v", err)
 	}
 
 	if orderers[0].TLSCACerts.Path != "" {
@@ -627,8 +632,8 @@ func TestNetworkConfig(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	conf, ok := endpointConfig.NetworkConfig()
-	assert.True(t, ok)
+	conf := endpointConfig.NetworkConfig()
+	assert.NotNil(t, conf)
 
 	if len(conf.Orderers) == 0 {
 		t.Fatal("Expected orderers to be set")
@@ -679,9 +684,9 @@ func TestInitConfigFromRawWithPem(t *testing.T) {
 
 	endpointConfig := config1.(*EndpointConfig)
 
-	o, ok := endpointConfig.OrderersConfig()
-	if !ok {
-		t.Fatalf("Failed to load orderers from config.")
+	o, err := endpointConfig.OrderersConfig()
+	if err != nil {
+		t.Fatalf("Failed to load orderers from config, cause : %v", err)
 	}
 
 	if len(o) == 0 {
@@ -784,8 +789,8 @@ func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	conf, ok := endpointConfig.NetworkConfig()
-	assert.True(t, ok)
+	conf := endpointConfig.NetworkConfig()
+	assert.NotNil(t, conf)
 
 	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Cert.Pem == "" {
 		t.Fatal("Failed to parse the embedded cert for user EmbeddedUser")
@@ -816,9 +821,9 @@ func TestLoadConfigWithEmbeddedUsersWithPaths(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	conf, ok := endpointConfig.NetworkConfig()
+	conf := endpointConfig.NetworkConfig()
 
-	assert.True(t, ok)
+	assert.NotNil(t, conf)
 
 	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUserWithPaths")].Cert.Path == "" {
 		t.Fatal("Failed to parse the embedded cert for user EmbeddedUserWithPaths")
@@ -1147,9 +1152,8 @@ func TestPeerChannelConfig(t *testing.T) {
 	}
 
 	//get network config
-	networkConfig, ok := config.NetworkConfig()
-	assert.True(t, ok)
-
+	networkConfig := config.NetworkConfig()
+	assert.NotNil(t, networkConfig)
 	//Test if channels config are working as expected, with time values parsed properly
 	assert.True(t, len(networkConfig.Channels) == 3)
 	assert.True(t, len(networkConfig.Channels["mychannel"].Peers) == 1)
@@ -1217,8 +1221,7 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	assert.NotNil(t, endpointConfig, "Invalid endpoint config from multiple backends")
 
 	//Get network Config
-	networkConfig, ok := endpointConfig.NetworkConfig()
-	assert.True(t, ok, "failed to get network config")
+	networkConfig := endpointConfig.NetworkConfig()
 	assert.NotNil(t, networkConfig, "Invalid networkConfig")
 
 	//Client
@@ -1286,9 +1289,7 @@ func TestNetworkPeersWithEntityMatchers(t *testing.T) {
 }
 
 func testNetworkPeers(t *testing.T, endpointConfig fab.EndpointConfig) {
-	networkPeers, ok := endpointConfig.NetworkPeers()
-
-	assert.True(t, ok, "supposed to be successful")
+	networkPeers := endpointConfig.NetworkPeers()
 	assert.NotNil(t, networkPeers, "supposed to get valid network peers")
 	assert.Equal(t, 2, len(networkPeers), "supposed to get 2 network peers")
 	assert.NotEmpty(t, networkPeers[0].MSPID)
