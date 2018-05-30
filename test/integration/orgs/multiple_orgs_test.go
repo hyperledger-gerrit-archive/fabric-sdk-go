@@ -453,6 +453,29 @@ func verifyErrorFromCC(chClientOrg1User *channel.Client, t *testing.T, ccName st
 	}
 }
 
+func queryInstantiatedCC(t *testing.T, resMgmt *resmgmt.Client, channelID, ccName string) bool {
+	found := false
+	for i := 0; i < 5; i++ {
+		// Verify that example CC is instantiated on Org1 peer
+		chaincodeQueryResponse, err := resMgmt.QueryInstantiatedChaincodes(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+		require.NoError(t, err, "QueryInstantiatedChaincodes return error")
+
+		t.Logf("Found %d instantiated chaincodes:", len(chaincodeQueryResponse.Chaincodes))
+		for _, chaincode := range chaincodeQueryResponse.Chaincodes {
+			t.Logf("Found instantiated chaincode Name: [%s], Version: [%s], Path: [%s]", chaincode.Name, chaincode.Version, chaincode.Path)
+			if chaincode.Name == ccName {
+				found = true
+				break
+			}
+		}
+		if found {
+			return true
+		}
+		time.Sleep(5 * time.Second)
+	}
+	return false
+}
+
 func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Client, ccPkg *resource.CCPackage, ccName, ccVersion string) {
 	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Package: ccPkg}
 
@@ -466,25 +489,10 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 
 	instantiateCC(t, org1ResMgmt, ccName, ccVersion)
 
-	found := false
-	for i := 0; i < 5; i++ {
-		// Verify that example CC is instantiated on Org1 peer
-		chaincodeQueryResponse, err := org1ResMgmt.QueryInstantiatedChaincodes(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-		require.NoError(t, err, "QueryInstantiatedChaincodes return error")
+	found := queryInstantiatedCC(t, org1ResMgmt, channelID, ccName)
+	require.True(t, found, "QueryInstantiatedChaincodes failed to find instantiated '%s' chaincode", ccName)
 
-		t.Logf("Found %d instantiated chaincodes:", len(chaincodeQueryResponse.Chaincodes))
-		for _, chaincode := range chaincodeQueryResponse.Chaincodes {
-			t.Logf("Found instantiated chaincode Name: [%s], Version: [%s], Path: [%s]", chaincode.Name, chaincode.Version, chaincode.Path)
-			if chaincode.Name == ccName {
-				found = true
-				break
-			}
-		}
-		if found {
-			break
-		}
-		time.Sleep(5 * time.Second)
-	}
+	found = queryInstantiatedCC(t, org2ResMgmt, channelID, ccName)
 	require.True(t, found, "QueryInstantiatedChaincodes failed to find instantiated '%s' chaincode", ccName)
 }
 
