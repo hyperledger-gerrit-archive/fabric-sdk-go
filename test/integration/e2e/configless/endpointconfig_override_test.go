@@ -372,18 +372,18 @@ type exampleOrderersConfig struct {
 }
 
 //OrderersConfig overrides EndpointConfig's OrderersConfig function which returns the ordererConfigs list
-func (m *exampleOrderersConfig) OrderersConfig() ([]fab.OrdererConfig, bool) {
+func (m *exampleOrderersConfig) OrderersConfig() []fab.OrdererConfig {
 	orderers := []fab.OrdererConfig{}
 
 	for _, orderer := range orderersConfig {
 
 		if orderer.TLSCACerts.Path == "" && len(orderer.TLSCACerts.Pem) == 0 && !m.isSystemCertPool {
-			return nil, false
+			return nil
 		}
 		orderers = append(orderers, orderer)
 	}
 
-	return orderers, true
+	return orderers
 }
 
 type exampleOrdererConfig struct{}
@@ -487,8 +487,8 @@ func (m *examplePeerConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool)
 type exampleNetworkConfig struct{}
 
 // NetworkConfig overrides EndpointConfig's NetworkConfig function which returns the full network Config instance
-func (m *exampleNetworkConfig) NetworkConfig() (*fab.NetworkConfig, bool) {
-	return &networkConfig, true
+func (m *exampleNetworkConfig) NetworkConfig() *fab.NetworkConfig {
+	return &networkConfig
 }
 
 type exampleNetworkPeers struct {
@@ -496,26 +496,38 @@ type exampleNetworkPeers struct {
 }
 
 //NetworkPeers overrides EndpointConfig's NetworkPeers function which returns the networkPeers list
-func (m *exampleNetworkPeers) NetworkPeers() ([]fab.NetworkPeer, bool) {
+func (m *exampleNetworkPeers) NetworkPeers() []fab.NetworkPeer {
 	netPeers := []fab.NetworkPeer{}
 	// referencing another interface to call PeerMSPID to match config yaml content
 
 	for name, p := range networkConfig.Peers {
 
 		if err := m.verifyPeerConfig(p, name, endpoint.IsTLSEnabled(p.URL)); err != nil {
-			return nil, false
+			return nil
 		}
 
+<<<<<<< 9bae2501bc54e5f8c3f618baae922c4cb80add22
+=======
+		if p.TLSCACerts.Path != "" {
+			p.TLSCACerts.Path = pathvar.Subst(p.TLSCACerts.Path)
+		}
+
+		err := p.TLSCACerts.LoadBytes()
+		if err != nil {
+			return nil
+		}
+
+>>>>>>> [FAB-10417] endpointconfig return type refactoring
 		mspID, ok := PeerMSPID(name)
 		if !ok {
-			return nil, false
+			return nil
 		}
 
 		netPeer := fab.NetworkPeer{PeerConfig: p, MSPID: mspID}
 		netPeers = append(netPeers, netPeer)
 	}
 
-	return netPeers, true
+	return netPeers
 }
 
 func (m *exampleNetworkPeers) verifyPeerConfig(p fab.PeerConfig, peerName string, tlsEnabled bool) error {
