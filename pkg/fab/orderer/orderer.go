@@ -9,6 +9,7 @@ package orderer
 import (
 	reqContext "context"
 	"crypto/x509"
+	"io"
 	"time"
 
 	"github.com/pkg/errors"
@@ -289,32 +290,53 @@ func (o *Orderer) SendBroadcast(ctx reqContext.Context, envelope *fab.SignedEnve
 		logger.Debugf("unable to close broadcast client [%s]", err)
 	}
 
-	select {
-	case broadcastStatus := <-responses:
-		return &broadcastStatus, nil
-	case broadcastErr := <-errs:
-		return nil, broadcastErr
+	s, err := wrapStreamStatusRPC(responses, errs)
+	return &s, err
+}
+
+// wrapStreamStatusRPC returns the last response and err and blocks until the chan is closed.
+func wrapStreamStatusRPC(responses chan common.Status, errs chan error) (common.Status, error) {
+	var status common.Status
+	var err error
+
+	for {
+		select {
+		case s, ok := <-responses:
+			if !ok {
+				return status, errors.WithMessage(err, "error from orderer")
+			}
+			status = s
+		case e := <-errs:
+			err = e
+		}
 	}
 }
 
 func broadcastStream(broadcastClient ab.AtomicBroadcast_BroadcastClient, responses chan common.Status, errs chan error) {
-
-	broadcastResponse, err := broadcastClient.Recv()
-	if err != nil {
-		rpcStatus, ok := grpcstatus.FromError(err)
-		if ok {
-			err = status.NewFromGRPCStatus(rpcStatus)
+	for {
+		broadcastResponse, err := broadcastClient.Recv()
+		if err == io.EOF {
+			// done
+			close(responses)
+			return
 		}
-		errs <- errors.Wrap(err, "broadcast recv failed")
-		return
-	}
 
-	if broadcastResponse.Status != common.Status_SUCCESS {
-		errs <- status.New(status.OrdererServerStatus, int32(broadcastResponse.Status), broadcastResponse.Info, nil)
-		return
-	}
+		if err != nil {
+			rpcStatus, ok := grpcstatus.FromError(err)
+			if ok {
+				err = status.NewFromGRPCStatus(rpcStatus)
+			}
+			errs <- errors.Wrap(err, "broadcast recv failed")
+			close(responses)
+			return
+		}
 
-	responses <- broadcastResponse.Status
+		if broadcastResponse.Status == common.Status_SUCCESS {
+			responses <- broadcastResponse.Status
+		} else {
+			errs <- status.New(status.OrdererServerStatus, int32(broadcastResponse.Status), broadcastResponse.Info, nil)
+		}
+	}
 }
 
 // SendDeliver sends a deliver request to the ordering service and returns the
@@ -374,23 +396,29 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 }
 
 func blockStream(deliverClient ab.AtomicBroadcast_DeliverClient, responses chan *common.Block, errs chan error) {
+
 	for {
 		response, err := deliverClient.Recv()
-		if err != nil {
-			errs <- errors.Wrap(err, "recv from ordering service failed")
+		if err == io.EOF {
+			// done
+			close(responses)
 			return
 		}
+
+		if err != nil {
+			errs <- errors.Wrap(err, "recv from ordering service failed")
+			close(responses)
+			return
+		}
+
 		// Assert response type
 		switch t := response.Type.(type) {
-		// Seek operation success, no more resposes
+		// Seek operation success, no more responses
 		case *ab.DeliverResponse_Status:
 			logger.Debugf("Received deliver response status from ordering service: %s", t.Status)
 			if t.Status != common.Status_SUCCESS {
 				errs <- status.New(status.OrdererServerStatus, int32(t.Status), "error status from ordering service", []interface{}{})
-				return
 			}
-			close(responses)
-			return
 
 		// Response is a requested block
 		case *ab.DeliverResponse_Block:
@@ -398,8 +426,8 @@ func blockStream(deliverClient ab.AtomicBroadcast_DeliverClient, responses chan 
 			responses <- response.GetBlock()
 		// Unknown response
 		default:
-			errs <- errors.Errorf("unknown response type from ordering service %T", t)
-			return
+			// ignore unknown types.
+			logger.Debugf("unknown response type from ordering service %T", t)
 		}
 	}
 }
