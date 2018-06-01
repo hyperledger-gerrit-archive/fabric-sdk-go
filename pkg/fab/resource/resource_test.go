@@ -217,8 +217,9 @@ func TestGenesisBlockOrdererErr(t *testing.T) {
 	ctx := setupContext()
 
 	orderer := mocks.NewMockOrderer("", nil)
-	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockError())
+	orderer.CloseQueue()
+
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
 	_, err := GenesisBlockFromOrderer(reqCtx, channelName, orderer)
@@ -233,9 +234,9 @@ func TestGenesisBlock(t *testing.T) {
 	ctx := setupContext()
 
 	orderer := mocks.NewMockOrderer("", nil)
-	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.CloseQueue()
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
 	_, err := GenesisBlockFromOrderer(reqCtx, channelName, orderer)
@@ -250,10 +251,11 @@ func TestGenesisBlockWithRetry(t *testing.T) {
 	ctx := setupContext()
 
 	orderer := mocks.NewMockOrderer("", nil)
-	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(status.New(status.OrdererServerStatus, int32(common.Status_SERVICE_UNAVAILABLE), "service unavailable", []interface{}{}))
 	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
 	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.CloseQueue()
+
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
 	block, err := GenesisBlockFromOrderer(reqCtx, channelName, orderer, WithRetry(retry.DefaultResMgmtOpts))
@@ -285,8 +287,8 @@ func TestGenesisBlockOrderer(t *testing.T) {
 	ctx := setupContext()
 
 	orderer := mocks.NewMockOrderer("", nil)
-	defer orderer.Close()
 	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockError())
+	orderer.CloseQueue()
 
 	//Call get Genesis block
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
