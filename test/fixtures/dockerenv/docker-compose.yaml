@@ -74,8 +74,8 @@ services:
       - ORDERER_GENERAL_TLS_CLIENTAUTHENABLED
       - ORDERER_GENERAL_TLS_CLIENTROOTCAS
     #comment out logging.driver in order to render the debug logs  
-    logging:
-      driver: none
+    #logging:
+    #  driver: none
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
     command: orderer
     ports:
