@@ -9,6 +9,7 @@ package orderer
 import (
 	reqContext "context"
 	"crypto/x509"
+	"io"
 	"time"
 
 	"github.com/pkg/errors"
@@ -309,12 +310,30 @@ func broadcastStream(broadcastClient ab.AtomicBroadcast_BroadcastClient, respons
 		return
 	}
 
+	err = waitForBroadcastEOF(broadcastClient)
+	if err != nil {
+		errs <- errors.Wrap(err, "waitForEOF failed")
+		return
+	}
+
 	if broadcastResponse.Status != common.Status_SUCCESS {
 		errs <- status.New(status.OrdererServerStatus, int32(broadcastResponse.Status), broadcastResponse.Info, nil)
 		return
 	}
 
 	responses <- broadcastResponse.Status
+}
+
+func waitForBroadcastEOF(broadcastClient ab.AtomicBroadcast_BroadcastClient) error {
+	for {
+		_, err := broadcastClient.Recv()
+		if err == io.EOF {
+			// done
+			return nil
+		} else {
+			return err
+		}
+	}
 }
 
 // SendDeliver sends a deliver request to the ordering service and returns the
@@ -374,23 +393,29 @@ func (o *Orderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelo
 }
 
 func blockStream(deliverClient ab.AtomicBroadcast_DeliverClient, responses chan *common.Block, errs chan error) {
+
 	for {
 		response, err := deliverClient.Recv()
-		if err != nil {
-			errs <- errors.Wrap(err, "recv from ordering service failed")
+		if err == io.EOF {
+			// done
+			close(responses)
 			return
 		}
+
+		if err != nil {
+			errs <- errors.Wrap(err, "recv from ordering service failed")
+			close(responses)
+			return
+		}
+
 		// Assert response type
 		switch t := response.Type.(type) {
-		// Seek operation success, no more resposes
+		// Seek operation success, no more responses
 		case *ab.DeliverResponse_Status:
 			logger.Debugf("Received deliver response status from ordering service: %s", t.Status)
 			if t.Status != common.Status_SUCCESS {
 				errs <- status.New(status.OrdererServerStatus, int32(t.Status), "error status from ordering service", []interface{}{})
-				return
 			}
-			close(responses)
-			return
 
 		// Response is a requested block
 		case *ab.DeliverResponse_Block:
@@ -398,8 +423,8 @@ func blockStream(deliverClient ab.AtomicBroadcast_DeliverClient, responses chan 
 			responses <- response.GetBlock()
 		// Unknown response
 		default:
-			errs <- errors.Errorf("unknown response type from ordering service %T", t)
-			return
+			// ignore unknown types.
+			logger.Debugf("unknown response type from ordering service %T", t)
 		}
 	}
 }
