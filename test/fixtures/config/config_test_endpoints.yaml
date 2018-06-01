@@ -25,7 +25,7 @@ client:
   organization: org1
 
   logging:
-    level: info
+    level: debug
 
 # Global configuration for peer, event service and orderer timeouts
   peer:

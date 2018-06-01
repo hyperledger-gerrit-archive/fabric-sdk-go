@@ -25,7 +25,7 @@ client:
   organization: org1
 
   logging:
-    level: info
+    level: debug
 
   # eventService:
   #   # Event service type (optional). If not specified then the type is automatically
