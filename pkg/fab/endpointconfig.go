@@ -98,6 +98,7 @@ type EndpointConfig struct {
 	ordererConfigs           []fab.OrdererConfig
 	channelPeersByChannel    map[string][]fab.ChannelPeer
 	channelOrderersByChannel map[string][]fab.OrdererConfig
+	tlsClientCerts           []tls.Certificate
 	peerMatchers             map[int]*regexp.Regexp
 	ordererMatchers          map[int]*regexp.Regexp
 	channelMatchers          map[int]*regexp.Regexp
@@ -299,33 +300,8 @@ func (c *EndpointConfig) EventServiceType() fab.EventServiceType {
 }
 
 // TLSClientCerts loads the client's certs for mutual TLS
-// It checks the config for embedded pem files before looking for cert files
-func (c *EndpointConfig) TLSClientCerts() ([]tls.Certificate, error) {
-
-	var clientCerts tls.Certificate
-	cb := c.networkConfig.Client.TLSCerts.Client.Cert.Bytes()
-	if len(cb) == 0 {
-		// if no cert found in the config, return empty cert chain
-		return []tls.Certificate{clientCerts}, nil
-	}
-
-	// Load private key from cert using default crypto suite
-	cs := cryptosuite.GetDefault()
-	pk, err := cryptoutil.GetPrivateKeyFromCert(cb, cs)
-
-	// If CryptoSuite fails to load private key from cert then load private key from config
-	if err != nil || pk == nil {
-		logger.Debugf("Reading pk from config, unable to retrieve from cert: %s", err)
-		return c.loadPrivateKeyFromConfig(&c.networkConfig.Client, clientCerts, cb)
-	}
-
-	// private key was retrieved from cert
-	clientCerts, err = cryptoutil.X509KeyPair(cb, pk, cs)
-	if err != nil {
-		return nil, err
-	}
-
-	return []tls.Certificate{clientCerts}, nil
+func (c *EndpointConfig) TLSClientCerts() []tls.Certificate {
+	return c.tlsClientCerts
 }
 
 func (c *EndpointConfig) loadPrivateKeyFromConfig(clientConfig *msp.ClientConfig, clientCerts tls.Certificate, cb []byte) ([]tls.Certificate, error) {
@@ -566,6 +542,11 @@ func (c *EndpointConfig) preloadAllTLSConfig(networkConfig *fab.NetworkConfig) e
 	err = c.preLoadCATLSConfig(networkConfig)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load CA TLSConfig ")
+	}
+
+	err = c.preloadTLSClientCerts(networkConfig)
+	if err != nil {
+		return errors.WithMessage(err, "failed to load TLS client certs ")
 	}
 
 	return nil
@@ -811,6 +792,43 @@ func (c *EndpointConfig) preloadChannelOrderers(networkConfig *fab.NetworkConfig
 
 	c.channelOrderersByChannel = channelOrderersByChannel
 
+	return nil
+}
+
+// preloadTLSClientCerts loads the client's certs for mutual TLS
+// It checks the config for embedded pem files before looking for cert files
+func (c *EndpointConfig) preloadTLSClientCerts(networkConfig *fab.NetworkConfig) error {
+
+	var clientCerts tls.Certificate
+	cb := networkConfig.Client.TLSCerts.Client.Cert.Bytes()
+	if len(cb) == 0 {
+		// if no cert found in the config, empty cert chain should be used
+		c.tlsClientCerts = []tls.Certificate{clientCerts}
+		return nil
+	}
+
+	// Load private key from cert using default crypto suite
+	cs := cryptosuite.GetDefault()
+	pk, err := cryptoutil.GetPrivateKeyFromCert(cb, cs)
+
+	// If CryptoSuite fails to load private key from cert then load private key from config
+	if err != nil || pk == nil {
+		logger.Debugf("Reading pk from config, unable to retrieve from cert: %s", err)
+		tlsClientCerts, err := c.loadPrivateKeyFromConfig(&networkConfig.Client, clientCerts, cb)
+		if err != nil {
+			return errors.WithMessage(err, "failed to preload TLS client certs")
+		}
+		c.tlsClientCerts = tlsClientCerts
+		return nil
+	}
+
+	// private key was retrieved from cert
+	clientCerts, err = cryptoutil.X509KeyPair(cb, pk, cs)
+	if err != nil {
+		return errors.WithMessage(err, "failed to preload TLS client certs, failed to get X509KeyPair")
+	}
+
+	c.tlsClientCerts = []tls.Certificate{clientCerts}
 	return nil
 }
 
@@ -1120,20 +1138,24 @@ func (c *EndpointConfig) loadTLSCerts() ([]*x509.Certificate, error) {
 	errs := multi.Errors{}
 
 	for _, peer := range c.networkPeers {
-		cert, err := peer.TLSCACerts.TLSCert()
+		cert, ok, err := peer.TLSCACerts.TLSCert()
 		if err != nil {
 			errs = append(errs, errors.WithMessage(err, "for peer: "+peer.URL))
 			continue
 		}
-		certs = append(certs, cert)
+		if ok {
+			certs = append(certs, cert)
+		}
 	}
 	for _, orderer := range c.ordererConfigs {
-		cert, err := orderer.TLSCACerts.TLSCert()
+		cert, ok, err := orderer.TLSCACerts.TLSCert()
 		if err != nil {
 			errs = append(errs, errors.WithMessage(err, "for orderer: "+orderer.URL))
 			continue
 		}
-		certs = append(certs, cert)
+		if ok {
+			certs = append(certs, cert)
+		}
 	}
 	return certs, errs.ToError()
 }
