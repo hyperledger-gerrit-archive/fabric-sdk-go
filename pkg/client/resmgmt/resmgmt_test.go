@@ -1034,9 +1034,9 @@ func getNetworkConfig(t *testing.T) fab.EndpointConfig {
 
 func TestSaveChannelSuccess(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := fcmocks.StartMockBroadcastServer("127.0.0.1:0", grpcServer)
+	mb := fcmocks.MockBroadcastServer{}
+	addr := mb.Start("127.0.0.1:0")
+	defer mb.Stop()
 
 	ctx := setupTestContext("test", "Org1MSP")
 
@@ -1137,9 +1137,9 @@ func TestSaveChannelFailure(t *testing.T) {
 
 func TestSaveChannelWithOpts(t *testing.T) {
 
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := fcmocks.StartMockBroadcastServer("127.0.0.1:0", grpcServer)
+	mb := fcmocks.MockBroadcastServer{}
+	addr := mb.Start("127.0.0.1:0")
+	defer mb.Stop()
 
 	ctx := setupTestContext("test", "Org1MSP")
 
@@ -1210,9 +1210,10 @@ func TestJoinChannelWithInvalidOpts(t *testing.T) {
 }
 
 func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
-	grpcServer := grpc.NewServer()
-	defer grpcServer.Stop()
-	_, addr := fcmocks.StartMockBroadcastServer("127.0.0.1:0", grpcServer)
+	mb := fcmocks.MockBroadcastServer{}
+	addr := mb.Start("127.0.0.1:0")
+	defer mb.Stop()
+
 	ctx := setupTestContext("test", "Org1MSP")
 
 	mockConfig := &fcmocks.MockConfig{}

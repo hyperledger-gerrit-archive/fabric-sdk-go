@@ -132,7 +132,7 @@ func startCustomizedMockServer(t *testing.T, serverURL string, grpcServer *grpc.
 		t.Logf("Error starting test server %s", err)
 		t.FailNow()
 	}
-	t.Logf("Starting test customized server on %s\n", addr)
+	t.Logf("Starting test customized server on %s", addr)
 	go grpcServer.Serve(lis)
 
 	return addr

@@ -7,16 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	"fmt"
-	"net"
-
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-
-	rwsetutil "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
-	kvrwset "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"golang.org/x/net/context"
 )
 
 // MockEndorserServer mock endoreser server to process endorsement proposals
@@ -72,6 +67,7 @@ func (m *MockEndorserServer) createProposalResponsePayload() []byte {
 	return prpBytes
 }
 
+/*
 //StartEndorserServer starts mock server for unit testing purpose
 func StartEndorserServer(endorserTestURL string) *MockEndorserServer {
 	grpcServer := grpc.NewServer()
@@ -88,4 +84,4 @@ func StartEndorserServer(endorserTestURL string) *MockEndorserServer {
 		}
 	}()
 	return endorserServer
-}
+}*/
