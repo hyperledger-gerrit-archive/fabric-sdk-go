@@ -1,0 +1,9 @@
+Code-Review+1: Bob Stasyszyn <bob.stasyszyn@securekey.com>
+Verified+1: Troy Ronda <troy@troyronda.com>
+Code-Review+2: Aleksandar Likic <aleksandar.likic@securekey.com>
+Code-Review+1: Sudesh Shetty <sudesh.shetty@securekey.com>
+Submitted-by: Troy Ronda <troy@troyronda.com>
+Submitted-at: Tue, 05 Jun 2018 16:17:33 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/22769
+Project: fabric-sdk-go
+Branch: refs/heads/master
