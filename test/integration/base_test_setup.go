@@ -104,7 +104,7 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	}
 	defer func() {
 		if err = r.Close(); err != nil {
-			fmt.Printf("close error %v\n", err)
+			panic(fmt.Sprintf("close error %v\n", err))
 		}
 
 	}()

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package orderer
 
 import (
+	"bufio"
 	reqContext "context"
 	"crypto/x509"
 	"fmt"
@@ -116,7 +117,7 @@ func startMockServer(grpcServer *grpc.Server) (*mocks.MockBroadcastServer, strin
 	if err != nil {
 		panic(fmt.Sprintf("Error starting test server %s", err))
 	}
-	fmt.Printf("Starting test server on %s\n", addr)
+	logf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
 
 	return broadcastServer, addr
@@ -554,4 +555,13 @@ func TestNewOrdererSecured(t *testing.T) {
 		t.Fatal("Peer conn should be constructed")
 	}
 
+}
+
+// logf writes to stdout and flushes. Applicable for when t.Logf can't be used.
+func logf(template string, args ...interface{}) {
+	f := bufio.NewWriter(os.Stdout)
+	defer f.Flush()
+
+	f.Write([]byte(fmt.Sprintf(template, args...)))
+	f.Write([]byte(fmt.Sprintln()))
 }

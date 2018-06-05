@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package config
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -244,7 +245,7 @@ func setUp(m *testing.M) {
 	var err error
 	cfgBackend, err := FromFile(configTestFilePath)()
 	if err != nil {
-		fmt.Println(err.Error())
+		logf(err.Error())
 	}
 	if len(cfgBackend) != 1 {
 		panic("invalid backend found")
@@ -490,3 +491,12 @@ func TestFromDefaultPathFailure(t *testing.T) {
 	}
 }
 */
+
+// logf writes to stdout and flushes. Applicable for when t.Logf can't be used.
+func logf(template string, args ...interface{}) {
+	f := bufio.NewWriter(os.Stdout)
+	defer f.Flush()
+
+	f.Write([]byte(fmt.Sprintf(template, args...)))
+	f.Write([]byte(fmt.Sprintln()))
+}

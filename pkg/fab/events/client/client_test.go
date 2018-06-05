@@ -9,8 +9,10 @@ SPDX-License-Identifier: Apache-2.0
 package client
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -824,7 +826,7 @@ func checkConcurrentEvents(blockTestErr chan error, t *testing.T, fblockTestErr 
 
 func checkIfAllEventsRecv(blockTestDone bool, fblockTestDone bool, ccTestDone bool, txStatusTestDone bool) bool {
 	if blockTestDone && fblockTestDone && ccTestDone && txStatusTestDone {
-		fmt.Println("All tests completed successfully")
+		logf("All tests completed successfully")
 		return true
 	}
 	return false
@@ -880,7 +882,7 @@ func listenBlockEvents(channelID string, eventch <-chan *fab.BlockEvent, expecte
 		select {
 		case _, ok := <-eventch:
 			if !ok {
-				fmt.Println("Block events channel was closed")
+				logf("Block events channel was closed")
 				return
 			}
 			numReceived++
@@ -888,7 +890,7 @@ func listenBlockEvents(channelID string, eventch <-chan *fab.BlockEvent, expecte
 			if numReceived != expected {
 				errch <- errors.Errorf("Expected [%d] events but received [%d]", expected, numReceived)
 			} else {
-				fmt.Printf("Received %d block events\n", numReceived)
+				logf("Received %d block events", numReceived)
 				errch <- nil
 			}
 			return
@@ -903,7 +905,7 @@ func listenFilteredBlockEvents(channelID string, eventch <-chan *fab.FilteredBlo
 		select {
 		case fbevent, ok := <-eventch:
 			if !ok {
-				fmt.Print("Filtered block events channel was closed \n")
+				logf("Filtered block events channel was closed \n")
 				return
 			}
 			if fbevent.FilteredBlock == nil {
@@ -919,7 +921,7 @@ func listenFilteredBlockEvents(channelID string, eventch <-chan *fab.FilteredBlo
 			if numReceived != expected {
 				errch <- errors.Errorf("Expected [%d] events but received [%d]", expected, numReceived)
 			} else {
-				fmt.Printf("Received %d filtered block events\n", numReceived)
+				logf("Received %d filtered block events", numReceived)
 				errch <- nil
 			}
 			return
@@ -935,7 +937,7 @@ func listenChaincodeEvents(channelID string, eventch <-chan *fab.CCEvent, expect
 		select {
 		case event, ok := <-eventch:
 			if !ok {
-				fmt.Println("CC events channel was closed")
+				logf("CC events channel was closed")
 				return
 			}
 			if event.BlockNumber > 0 && event.BlockNumber <= lastBlockNum {
@@ -947,7 +949,7 @@ func listenChaincodeEvents(channelID string, eventch <-chan *fab.CCEvent, expect
 			if numReceived != expected {
 				errch <- errors.Errorf("Expected [%d] events but received [%d]", expected, numReceived)
 			} else {
-				fmt.Printf("Received %d CC events\n", numReceived)
+				logf("Received %d CC events", numReceived)
 				errch <- nil
 			}
 			return
@@ -1216,15 +1218,15 @@ func listenConnection(eventch chan *dispatcher.ConnectionEvent, outcome chan moc
 
 	for {
 		e, ok := <-eventch
-		fmt.Printf("listenConnection - got event [%+v] - ok=[%t]\n", e, ok)
+		logf("listenConnection - got event [%+v] - ok=[%t]", e, ok)
 		if !ok {
-			fmt.Println("listenConnection - Returning terminated outcome")
+			logf("listenConnection - Returning terminated outcome")
 			outcome <- mockconn.ClosedOutcome
 			break
 		}
 		if e.Connected {
 			if state == Disconnected {
-				fmt.Println("listenConnection - Returning reconnected outcome")
+				logf("listenConnection - Returning reconnected outcome")
 				outcome <- mockconn.ReconnectedOutcome
 			}
 			state = Connected
@@ -1273,11 +1275,11 @@ var clientProvider = func(context context.Client, chConfig fab.ChannelCfg, disco
 	opts = append(opts, WithBlockEvents())
 	return newClient(context, chConfig, discoveryService, connectionProvider, opts,
 		func() error {
-			fmt.Println("AfterConnect called")
+			logf("AfterConnect called")
 			return nil
 		},
 		func() error {
-			fmt.Println("BeforeReconnect called")
+			logf("BeforeReconnect called")
 			return nil
 		})
 }
@@ -1294,11 +1296,11 @@ var failAfterConnectClientProvider = func(context context.Client, chConfig fab.C
 var filteredClientProvider = func(context context.Client, chConfig fab.ChannelCfg, discoveryService fab.DiscoveryService, connectionProvider api.ConnectionProvider, opts []options.Opt) (*Client, error) {
 	return newClient(context, chConfig, discoveryService, connectionProvider, opts,
 		func() error {
-			fmt.Println("AfterConnect called")
+			logf("AfterConnect called")
 			return nil
 		},
 		func() error {
-			fmt.Println("BeforeReconnect called")
+			logf("BeforeReconnect called")
 			return nil
 		})
 }
@@ -1391,4 +1393,13 @@ func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expecte
 	if !found {
 		t.Fatalf("expecting one of [%v] but received [%s]", expectedEventNames, event.EventName)
 	}
+}
+
+// logf writes to stdout and flushes. Applicable for when t.Logf can't be used.
+func logf(template string, args ...interface{}) {
+	f := bufio.NewWriter(os.Stdout)
+	defer f.Flush()
+
+	f.Write([]byte(fmt.Sprintf(template, args...)))
+	f.Write([]byte(fmt.Sprintln()))
 }

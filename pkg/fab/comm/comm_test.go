@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -73,14 +74,23 @@ func startEndorsers(count int, address string) ([]*grpc.Server, []string, error)
 func startEndorserServer(grpcServer *grpc.Server, address string) (*mocks.MockEndorserServer, string, bool) {
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		fmt.Printf("Error starting test server %s\n", err)
+		logf("Error starting test server %s\n", err)
 		return nil, "", false
 	}
 	addr := lis.Addr().String()
 
 	endorserServer := &mocks.MockEndorserServer{}
 	pb.RegisterEndorserServer(grpcServer, endorserServer)
-	fmt.Printf("Starting test server on %s\n", addr)
+	logf("Starting test server on %s\n", addr)
 	go grpcServer.Serve(lis)
 	return endorserServer, addr, true
+}
+
+// logf writes to stdout and flushes. Applicable for when t.Logf can't be used.
+func logf(template string, args ...interface{}) {
+	f := bufio.NewWriter(os.Stdout)
+	defer f.Flush()
+
+	f.Write([]byte(fmt.Sprintf(template, args...)))
+	f.Write([]byte(fmt.Sprintln()))
 }
