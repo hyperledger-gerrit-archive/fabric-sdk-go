@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"bytes"
 	"crypto/tls"
 	"testing"
 
@@ -1363,15 +1364,20 @@ func TestNetworkConfigurationLoading(t *testing.T) {
 	endpointCfg, err := ConfigFromBackend(cfgBackend...)
 	assert.Nil(t, err)
 	configImpl := endpointCfg.(*EndpointConfig)
-	fmt.Println(len(configImpl.networkPeers))
+
+	var buf bytes.Buffer
+
+	buf.WriteString(fmt.Sprintln(len(configImpl.networkPeers)))
 	nwPeers := configImpl.NetworkPeers()
-	fmt.Println(len(nwPeers))
-	fmt.Println(len(configImpl.peerConfigsByOrg))
+	buf.WriteString(fmt.Sprintln(len(nwPeers)))
+	buf.WriteString(fmt.Sprintln(len(configImpl.peerConfigsByOrg)))
 	chPeers, ok := configImpl.ChannelPeers("orgchannel")
-	fmt.Println("chOrd :-", len(chPeers), ok)
+	buf.WriteString(fmt.Sprintln("chOrd :-", len(chPeers), ok))
 	chPeers, ok = configImpl.channelPeersByChannel["orgchannel"]
-	fmt.Println("chOrd MAP :-", len(chPeers), ok)
+	buf.WriteString(fmt.Sprintln("chOrd MAP :-", len(chPeers), ok))
 	ordCfgs := configImpl.OrderersConfig()
-	fmt.Println("ordCfgs :-", len(ordCfgs))
-	fmt.Println("ordCfgs ARRAY :-", len(configImpl.ordererConfigs))
+	buf.WriteString(fmt.Sprintln("ordCfgs :-", len(ordCfgs)))
+	buf.WriteString(fmt.Sprintln("ordCfgs ARRAY :-", len(configImpl.ordererConfigs)))
+
+	t.Log(buf.String())
 }

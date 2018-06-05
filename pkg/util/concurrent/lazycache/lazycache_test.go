@@ -7,7 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package lazycache
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -191,7 +193,10 @@ func TestClose(t *testing.T) {
 
 // fail - as t.Fatalf() is not goroutine safe, this function behaves like t.Fatalf().
 func fail(t *testing.T, template string, args ...interface{}) {
-	fmt.Printf(template, args...)
-	fmt.Println()
+	f := bufio.NewWriter(os.Stdout)
+	defer f.Flush()
+
+	f.Write([]byte(fmt.Sprintf(template, args...)))
+	f.Write([]byte(fmt.Sprintln()))
 	t.Fail()
 }
