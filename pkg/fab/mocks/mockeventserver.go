@@ -9,8 +9,10 @@ package mocks
 import (
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
 )
@@ -20,26 +22,46 @@ type MockEventServer struct {
 	server     pb.Events_ChatServer
 	grpcServer *grpc.Server
 	channel    chan *pb.Event
+	srv        *grpc.Server
+	wg         sync.WaitGroup
 }
 
-// StartMockEventServer will start mock event server for unit testing purpose
-func StartMockEventServer(testAddress string) (*MockEventServer, error) {
-	grpcServer := grpc.NewServer()
-	grpcServer.GetServiceInfo()
+// Start the mock event server
+func (m *MockEventServer) Start(testAddress string) string {
+	if m.srv != nil {
+		panic("MockEventServer already started")
+	}
+	m.srv = grpc.NewServer()
+
 	lis, err := net.Listen("tcp", testAddress)
 	if err != nil {
-		return nil, fmt.Errorf("starting test server failed %s", err)
+		panic(fmt.Sprintf("starting test server failed %s", err))
 	}
-	eventServer := &MockEventServer{grpcServer: grpcServer}
-	pb.RegisterEventsServer(grpcServer, eventServer)
-	fmt.Printf("Starting mock event server\n")
+
+	addr := lis.Addr().String()
+
+	test.Logf("Starting MockEventServer [%s]", addr)
+	pb.RegisterEventsServer(m.srv, m)
 	go func() {
-		if err := grpcServer.Serve(lis); err != nil {
-			fmt.Printf("StartMockEventServer failed %s\n", err)
+		m.wg.Add(1)
+		defer m.wg.Done()
+		if err := m.srv.Serve(lis); err != nil {
+			test.Logf("StartMockEventServer failed [%s]", err)
 		}
 	}()
 
-	return eventServer, nil
+	return addr
+}
+
+// Stop the mock event server and wait for completion.
+func (m *MockEventServer) Stop() {
+	if m.srv == nil {
+		panic("MockEventServer not started")
+	}
+
+	m.srv.Stop()
+	m.wg.Wait()
+	m.srv = nil
 }
 
 // Chat for event chatting
@@ -72,9 +94,4 @@ func (m *MockEventServer) Chat(srv pb.Events_ChatServer) error {
 // SendMockEvent used for sending mock events to event server
 func (m *MockEventServer) SendMockEvent(event *pb.Event) {
 	m.channel <- event
-}
-
-// Stop mock event
-func (m *MockEventServer) Stop() {
-	m.grpcServer.Stop()
 }
