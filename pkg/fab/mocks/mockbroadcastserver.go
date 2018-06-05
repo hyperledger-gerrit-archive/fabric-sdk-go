@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // TestBlock is a test block
@@ -39,6 +40,7 @@ type MockBroadcastServer struct {
 	DeliverResponse              *po.DeliverResponse
 	BroadcastError               error
 	BroadcastCustomResponse      *po.BroadcastResponse
+	Creds                        credentials.TransportCredentials
 	srv                          *grpc.Server
 	wg                           sync.WaitGroup
 }
@@ -98,7 +100,13 @@ func (m *MockBroadcastServer) Start(address string) string {
 	if m.srv != nil {
 		panic("MockBroadcastServer already started")
 	}
-	m.srv = grpc.NewServer()
+
+	// pass in TLS creds if present
+	if m.Creds != nil {
+		m.srv = grpc.NewServer(grpc.Creds(m.Creds))
+	} else {
+		m.srv = grpc.NewServer()
+	}
 
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
