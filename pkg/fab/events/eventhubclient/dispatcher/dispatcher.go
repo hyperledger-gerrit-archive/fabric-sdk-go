@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package dispatcher
 
 import (
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -140,7 +142,7 @@ func (ed *Dispatcher) handleUnregInterestsResponse(e *pb.Event_Unregister) {
 
 func validateInterests(have []*pb.Interest, want []*pb.Interest) error {
 	if len(have) != len(want) {
-		return errors.New("all interests were not registered/unregistered")
+		return errors.New(fmt.Sprintf("all interests were not registered/unregistered have: [%+v]\nwant:[%+v]", have, want))
 	}
 	for _, hi := range have {
 		found := false
