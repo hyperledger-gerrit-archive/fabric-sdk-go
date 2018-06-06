@@ -113,15 +113,11 @@ func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientP
 		t.Fatalf("failed to get context: %s", err)
 	}
 
-	clientConfig, err := ctx.IdentityConfig().Client()
-	if err != nil {
-		t.Fatalf("config.Client() failed: %s", err)
-	}
-
+	clientConfig := ctx.IdentityConfig().Client()
 	myOrg := clientConfig.Organization
 
-	caConfig, err := ctx.IdentityConfig().CAConfig(myOrg)
-	if err != nil {
+	caConfig, ok := ctx.IdentityConfig().CAConfig(myOrg)
+	if !ok {
 		t.Fatalf("CAConfig failed: %s", err)
 	}
 

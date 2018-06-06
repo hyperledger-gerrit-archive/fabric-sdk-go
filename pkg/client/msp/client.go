@@ -80,10 +80,7 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 	}
 
 	if msp.orgName == "" {
-		clientConfig, err := ctx.IdentityConfig().Client()
-		if err != nil {
-			return nil, errors.WithMessage(err, "failed to create Client")
-		}
+		clientConfig := ctx.IdentityConfig().Client()
 		msp.orgName = clientConfig.Organization
 	}
 	if msp.orgName == "" {
