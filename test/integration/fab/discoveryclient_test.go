@@ -14,12 +14,16 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
+	fabdiscovery "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
 const (
@@ -138,5 +142,77 @@ func TestDiscoveryClientLocalPeers(t *testing.T) {
 		t.Logf("--- Endpoint: %s\n", aliveMsg.Membership.Endpoint)
 
 		assert.Nil(t, peer.StateInfoMessage, "expected nil StateInfoMessage for local peer")
+	}
+}
+
+func TestDiscoveryClientSelectEndorsers(t *testing.T) {
+	sdk := mainSDK
+	testSetup := mainTestSetup
+
+	ctxProvider := sdk.Context(fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+	ctx, err := ctxProvider()
+	require.NoError(t, err, "error getting channel context")
+
+	chaincodeID := integration.GenerateRandomID()
+	initArgs := [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte(integration.ExampleCCInitB)}
+
+	instResp, err := integration.InstallAndInstantiateCC(
+		sdk, fabsdk.WithUser("Admin"), orgName,
+		chaincodeID, "github.com/example_cc", "v0",
+		integration.GetDeployPath(), initArgs,
+		func() (*cb.SignaturePolicyEnvelope, error) {
+			return cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
+		},
+	)
+
+	require.Nil(t, err, "InstallAndInstantiateExampleCC returned error")
+	require.NotEmpty(t, instResp, "instantiate response should be populated")
+
+	// Wait for Gossip to propagate the instantiated blocks to all peers
+	time.Sleep(5 * time.Second)
+
+	interest := &fabdiscovery.ChaincodeInterest{
+		Chaincodes: []*fabdiscovery.ChaincodeCall{
+			{
+				Name:            chaincodeID,
+				CollectionNames: nil,
+			},
+		},
+	}
+
+	var client *discovery.Client
+	client, err = discovery.New(ctx)
+	require.NoError(t, err, "error creating discovery client")
+
+	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(30*time.Second))
+	defer cancel()
+
+	req, err := discclient.NewRequest().OfChannel(testSetup.ChannelID).AddEndorsersQuery(interest)
+	require.NoError(t, err, "error adding endorsers query")
+
+	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer1URL)
+	require.NoErrorf(t, err, "error getting peer config for [%s]", peer1URL)
+
+	responses, err := client.Send(reqCtx, req, peerCfg1.PeerConfig)
+	require.NoError(t, err, "error calling discover service send")
+	require.NotEmpty(t, responses, "expecting one response but got none")
+
+	resp := responses[0]
+	chanResp := resp.ForChannel(testSetup.ChannelID)
+
+	endorsers, err := chanResp.Endorsers(interest.Chaincodes, discclient.NoPriorities, discclient.NoExclusion)
+	require.NoError(t, err, "error getting endorsers")
+	require.NotEmpty(t, endorsers, "expecting at least one endorser but got none")
+
+	t.Logf("*** Endorsers for chaincode [%s] channel %s:\n", chaincodeID, testSetup.ChannelID)
+	for _, endorser := range endorsers {
+		aliveMsg := endorser.AliveMessage.GetAliveMsg()
+		if !assert.NotNil(t, aliveMsg, "got nil AliveMessage") {
+			continue
+		}
+		if !assert.NotNil(t, aliveMsg.Membership, "got nil Membership") {
+			continue
+		}
+		t.Logf("--- Endpoint: %s\n", aliveMsg.Membership.Endpoint)
 	}
 }

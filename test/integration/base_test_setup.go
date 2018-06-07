@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 
@@ -125,30 +126,32 @@ func GetDeployPath() string {
 
 // InstallAndInstantiateExampleCC install and instantiate using resource management client
 func InstallAndInstantiateExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, chainCodeID string) (resmgmt.InstantiateCCResponse, error) {
-	return InstallAndInstantiateCC(sdk, user, orgName, chainCodeID, "github.com/example_cc", "v0", GetDeployPath(), initArgs)
-}
-
-// InstallAndInstantiateCC install and instantiate using resource management client
-func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte) (resmgmt.InstantiateCCResponse, error) {
-
-	ccPkg, err := packager.NewCCPackage(ccPath, goPath)
-	if err != nil {
-		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "creating chaincode package failed")
-	}
-
 	configBackend, err := sdk.Config()
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get config backend")
 	}
-
 	endpointConfig, err := fab.ConfigFromBackend(configBackend)
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get endpoint config")
 	}
-
 	mspID, ok := comm.MSPID(endpointConfig, orgName)
 	if !ok {
 		return resmgmt.InstantiateCCResponse{}, errors.New("looking up MSP ID failed")
+	}
+	return InstallAndInstantiateCC(sdk, user, orgName, chainCodeID, "github.com/example_cc", "v0", GetDeployPath(), initArgs, func() (*cb.SignaturePolicyEnvelope, error) {
+		return cauthdsl.SignedByMspMember(mspID), nil
+	})
+}
+
+// PolicyProvider returns a chaincode policy
+type PolicyProvider func() (*cb.SignaturePolicyEnvelope, error)
+
+// InstallAndInstantiateCC install and instantiate using resource management client
+func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte, ccPolicyProvider PolicyProvider) (resmgmt.InstantiateCCResponse, error) {
+
+	ccPkg, err := packager.NewCCPackage(ccPath, goPath)
+	if err != nil {
+		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "creating chaincode package failed")
 	}
 
 	//prepare context
@@ -165,6 +168,10 @@ func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, o
 		return resmgmt.InstantiateCCResponse{}, err
 	}
 
-	ccPolicy := cauthdsl.SignedByMspMember(mspID)
+	ccPolicy, err := ccPolicyProvider()
+	if err != nil {
+		return resmgmt.InstantiateCCResponse{}, err
+	}
+
 	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy}, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 }
