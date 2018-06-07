@@ -64,6 +64,8 @@ const (
 	OrdererServerStatus
 	// FabricCAServerStatus status returned by the Fabric CA server
 	FabricCAServerStatus
+	// DiscoveryServerStatus status returned by the Discovery Server
+	DiscoveryServerStatus
 
 	// ClientStatus defines the status from responses inferred by fabric-sdk-go.
 	// This could be a result of response validation performed by the SDK - for example,
