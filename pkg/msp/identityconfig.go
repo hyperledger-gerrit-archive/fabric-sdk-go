@@ -217,7 +217,7 @@ func (c *IdentityConfig) loadClientTLSConfig(configEntity *identityConfigEntity)
 		return errors.WithMessage(err, "failed to load client cert")
 	}
 
-	identityClient := &msp.ClientConfig{}
+	identityClient := msp.ClientConfig{}
 	identityClient.Organization = configEntity.Client.Organization
 	identityClient.Logging = configEntity.Client.Logging
 	identityClient.CryptoConfig = configEntity.Client.CryptoConfig
@@ -225,7 +225,7 @@ func (c *IdentityConfig) loadClientTLSConfig(configEntity *identityConfigEntity)
 	identityClient.TLSKey = configEntity.Client.TLSCerts.Client.Key.Bytes()
 	identityClient.TLSCert = configEntity.Client.TLSCerts.Client.Cert.Bytes()
 
-	c.client = identityClient
+	c.client = &identityClient
 
 	return nil
 }
@@ -288,7 +288,7 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 }
 
 func (c *IdentityConfig) getMSPCAConfig(caConfig *CAConfig) (*msp.CAConfig, error) {
-	mspCAConfig := &msp.CAConfig{}
+	mspCAConfig := msp.CAConfig{}
 	var err error
 
 	mspCAConfig.URL = caConfig.URL
@@ -301,7 +301,7 @@ func (c *IdentityConfig) getMSPCAConfig(caConfig *CAConfig) (*msp.CAConfig, erro
 		return nil, err
 	}
 
-	return mspCAConfig, nil
+	return &mspCAConfig, nil
 }
 
 func (c *IdentityConfig) getServerCerts(caConfig *CAConfig) ([][]byte, error) {

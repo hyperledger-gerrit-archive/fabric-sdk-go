@@ -47,7 +47,7 @@ type exampleClient struct {
 
 func (m *exampleClient) Client() *msp.ClientConfig {
 
-	mspClient := &msp.ClientConfig{}
+	mspClient := msp.ClientConfig{}
 	mspClient.Organization = strings.ToLower(client.Organization)
 	mspClient.Logging = client.Logging
 	mspClient.CredentialStore = client.CredentialStore
@@ -55,7 +55,7 @@ func (m *exampleClient) Client() *msp.ClientConfig {
 	mspClient.TLSCert = client.TLSCerts.Client.Cert.Bytes()
 	mspClient.TLSKey = client.TLSCerts.Client.Key.Bytes()
 
-	return mspClient
+	return &mspClient
 }
 
 type exampleCaConfig struct{}
@@ -65,7 +65,7 @@ func (m *exampleCaConfig) CAConfig(org string) (*msp.CAConfig, bool) {
 }
 
 func getMSPCAConfig(caConfig *caConfig) (*msp.CAConfig, error) {
-	mspCAConfig := &msp.CAConfig{}
+	mspCAConfig := msp.CAConfig{}
 	var err error
 
 	mspCAConfig.URL = caConfig.URL
@@ -78,7 +78,7 @@ func getMSPCAConfig(caConfig *caConfig) (*msp.CAConfig, error) {
 		return nil, err
 	}
 
-	return mspCAConfig, nil
+	return &mspCAConfig, nil
 }
 
 func getServerCerts(caConfig *caConfig) ([][]byte, error) {
