@@ -24,7 +24,7 @@ type IdentityManager struct {
 	orgMSPID        string
 	config          fab.EndpointConfig
 	cryptoSuite     core.CryptoSuite
-	embeddedUsers   map[string]endpoint.TLSKeyPair
+	embeddedUsers   map[string]endpoint.TLSKeyCertPair
 	mspPrivKeyStore core.KVStore
 	mspCertStore    core.KVStore
 	userStore       msp.UserStore

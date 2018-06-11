@@ -17,7 +17,6 @@ import (
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -26,6 +25,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 )
 
 const (
@@ -115,7 +115,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		}
 		backendMap := make(map[string]interface{})
 
-		networkConfig := fab.NetworkConfig{}
+		networkConfig := endpointConfigEntity{}
 		//get valid peer config
 		err = lookup.New(configBackends...).UnmarshalKey("peers", &networkConfig.Peers)
 		if err != nil {
@@ -130,4 +130,9 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		backends := append([]core.ConfigBackend{}, &mocks.MockConfigBackend{KeyValueMap: backendMap})
 		return append(backends, configBackends...), nil
 	}
+}
+
+//endpointConfigEntity contains endpoint config elements needed by endpointconfig
+type endpointConfigEntity struct {
+	Peers map[string]fabImpl.PeerConfig
 }

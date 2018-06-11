@@ -7,10 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"crypto/x509"
 	"testing"
 
 	"os"
 	"strings"
+
+	"encoding/pem"
+	"reflect"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -18,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -188,9 +193,14 @@ Af8EBTADAQH/MCkGA1UdDgQiBCBxaEP3nVHQx4r7tC+WO//vrPRM1t86SKN0s6XB
 8LWbHTAKBggqhkjOPQQDAgNIADBFAiEA96HXwCsuMr7tti8lpcv1oVnXg0FlTxR/
 SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 -----END CERTIFICATE-----`
-	loadedOPem := strings.TrimSpace(o[0].TLSCACerts.Pem) // viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
-	if loadedOPem != oPem {
-		t.Fatalf("Orderer Pem doesn't match. Expected [%s], but got [%s]", oPem, loadedOPem)
+
+	oCert, err := tlsCertByBytes([]byte(oPem))
+	if err != nil {
+		t.Fatal("failed to cert from pem bytes")
+	}
+
+	if !reflect.DeepEqual(oCert.RawSubject, o[0].TLSCACert.RawSubject) {
+		t.Fatal("certs supposed to match")
 	}
 
 	pc, ok := endpointConfig.PeersConfig(org1)
@@ -241,10 +251,14 @@ V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
 eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
 O94CDp7l2k7hMQI0zQ==
 -----END CERTIFICATE-----`
-	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem)
-	// viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
-	if loadedPPem != pPem {
-		t.Fatalf("%s Pem doesn't match. Expected [%s], but got [%s]", peer, pPem, loadedPPem)
+
+	oCert, err := tlsCertByBytes([]byte(pPem))
+	if err != nil {
+		t.Fatal("failed to cert from pem bytes")
+	}
+
+	if !reflect.DeepEqual(oCert.RawSubject, p0.TLSCACert.RawSubject) {
+		t.Fatal("certs supposed to match")
 	}
 }
 
@@ -473,4 +487,21 @@ func newViper(path string) *viper.Viper {
 		panic(err)
 	}
 	return myViper
+}
+
+func tlsCertByBytes(bytes []byte) (*x509.Certificate, error) {
+
+	block, _ := pem.Decode(bytes)
+
+	if block != nil {
+		pub, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		return pub, nil
+	}
+
+	//no cert found and there is no error
+	return nil, errors.New("empty byte")
 }

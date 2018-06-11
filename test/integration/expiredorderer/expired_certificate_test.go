@@ -14,7 +14,6 @@ import (
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"google.golang.org/grpc/grpclog"
@@ -28,6 +27,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 )
 
 const (
@@ -113,7 +113,7 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		}
 		backendMap := make(map[string]interface{})
 
-		networkConfig := fab.NetworkConfig{}
+		networkConfig := endpointConfigEntity{}
 		//get valid orderers config
 		err = lookup.New(configBackends...).UnmarshalKey("orderers", &networkConfig.Orderers)
 		if err != nil {
@@ -128,4 +128,9 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		backends := append([]core.ConfigBackend{}, &mocks.MockConfigBackend{KeyValueMap: backendMap})
 		return append(backends, configBackends...), nil
 	}
+}
+
+//endpointConfigEntity contains endpoint config elements needed by endpointconfig
+type endpointConfigEntity struct {
+	Orderers map[string]fabImpl.OrdererConfig
 }

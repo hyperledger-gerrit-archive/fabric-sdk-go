@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"crypto/x509"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
@@ -16,14 +18,14 @@ type NetworkConfig struct {
 	Name          string
 	Description   string
 	Version       string
-	Channels      map[string]ChannelNetworkConfig
+	Channels      map[string]ChannelEndpointConfig
 	Organizations map[string]OrganizationConfig
 	Orderers      map[string]OrdererConfig
 	Peers         map[string]PeerConfig
 }
 
-// ChannelNetworkConfig provides the definition of channels for the network
-type ChannelNetworkConfig struct {
+// ChannelEndpointConfig provides the definition of channels for the network
+type ChannelEndpointConfig struct {
 	// Orderers list of ordering service nodes
 	Orderers []string
 	// Peers a list of peer-channels that are part of this organization
@@ -70,7 +72,7 @@ type NetworkPeer struct {
 type OrganizationConfig struct {
 	MSPID                  string
 	CryptoPath             string
-	Users                  map[string]endpoint.TLSKeyPair
+	Users                  map[string]endpoint.TLSKeyCertPair
 	Peers                  []string
 	CertificateAuthorities []string
 }
@@ -79,7 +81,7 @@ type OrganizationConfig struct {
 type OrdererConfig struct {
 	URL         string
 	GRPCOptions map[string]interface{}
-	TLSCACerts  endpoint.TLSConfig
+	TLSCACert   *x509.Certificate
 }
 
 // PeerConfig defines a peer configuration
@@ -87,7 +89,7 @@ type PeerConfig struct {
 	URL         string
 	EventURL    string
 	GRPCOptions map[string]interface{}
-	TLSCACerts  endpoint.TLSConfig
+	TLSCACert   *x509.Certificate
 }
 
 // MatchConfig contains match pattern and substitution pattern

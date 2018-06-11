@@ -1272,8 +1272,8 @@ func getNoOrdererBackend(backend ...core.ConfigBackend) *mocks.MockConfigBackend
 func getInvalidChannelOrdererBackend(backend ...core.ConfigBackend) *mocks.MockConfigBackend {
 
 	//Create an invalid channel
-	channels := make(map[string]fab.ChannelNetworkConfig)
-	mychannel := fab.ChannelNetworkConfig{
+	channels := make(map[string]fab.ChannelEndpointConfig)
+	mychannel := fab.ChannelEndpointConfig{
 		Orderers: []string{"invalid.orderer.com"},
 	}
 	channels["mychannel"] = mychannel
@@ -1287,7 +1287,7 @@ func getInvalidChannelOrdererBackend(backend ...core.ConfigBackend) *mocks.MockC
 func getInvalidOrdererBackend(backend ...core.ConfigBackend) *mocks.MockConfigBackend {
 
 	//Create invalid orderer
-	networkConfig := fab.NetworkConfig{}
+	networkConfig := endpointConfigEntity{}
 	err := lookup.New(backend...).UnmarshalKey("orderers", &networkConfig.Orderers)
 	if err != nil {
 		panic(err)
@@ -1339,3 +1339,8 @@ EDAKBggqhkjOPQQDAgNHADBEAiAHp5Rbp9Em1G/UmKn8WsCbqDfWecVbZPQj3RK4
 oG5kQQIgQAe4OOKYhJdh3f7URaKfGTf492/nmRmtK+ySKjpHSrU=
 -----END CERTIFICATE-----
 `
+
+//endpointConfigEntity contains endpoint config elements needed by endpointconfig
+type endpointConfigEntity struct {
+	Orderers map[string]fabImpl.OrdererConfig
+}
