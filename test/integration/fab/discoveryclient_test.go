@@ -31,13 +31,13 @@ import (
 )
 
 const (
-	peer0_Org1 = "peer0.org1.example.com"
-	peer1_Org1 = "peer1.org1.example.com"
-	peer0_Org2 = "peer0.org2.example.com"
+	peer0Org1 = "peer0.org1.example.com"
+	peer1Org1 = "peer1.org1.example.com"
+	peer0Org2 = "peer0.org2.example.com"
 
-	peer0_Org1URL = "peer0.org1.example.com:7051"
-	peer1_Org1URL = "peer1.org1.example.com:7151"
-	peer0_Org2URL = "peer0.org2.example.com:8051"
+	peer0Org1URL = "peer0.org1.example.com:7051"
+	peer1Org1URL = "peer1.org1.example.com:7151"
+	peer0Org2URL = "peer0.org2.example.com:8051"
 
 	adminUser        = "Admin"
 	org2Name         = "Org2"
@@ -63,8 +63,8 @@ func TestDiscoveryClientPeers(t *testing.T) {
 
 	req := discclient.NewRequest().OfChannel(orgChannelID).AddPeersQuery()
 
-	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer0_Org1)
-	require.NoErrorf(t, err, "error getting peer config for [%s]", peer0_Org1)
+	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer0Org1)
+	require.NoErrorf(t, err, "error getting peer config for [%s]", peer0Org1)
 
 	responses, err := client.Send(reqCtx, req, peerCfg1.PeerConfig)
 	require.NoError(t, err, "error calling discover service send")
@@ -128,8 +128,8 @@ func TestDiscoveryClientLocalPeers(t *testing.T) {
 
 	req := discclient.NewRequest().AddLocalPeersQuery()
 
-	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer0_Org1)
-	require.NoErrorf(t, err, "error getting peer config for [%s]", peer0_Org1)
+	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer0Org1)
+	require.NoErrorf(t, err, "error getting peer config for [%s]", peer0Org1)
 
 	responses, err := client.Send(reqCtx, req, peerCfg1.PeerConfig)
 	require.NoError(t, err, "error calling discover service send")
@@ -169,16 +169,14 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// TODO: Add tests with private data collections
-
 	t.Run("Policy: Org1 Only", func(t *testing.T) {
 		ccID := integration.GenerateRandomID()
 		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccID, ccVersion, "OR('Org1MSP.member')", orgsContext)
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
-			[]string{peer0_Org1URL},
-			[]string{peer1_Org1URL},
+			[]string{peer0Org1URL},
+			[]string{peer1Org1URL},
 		)
 	})
 
@@ -189,7 +187,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
-			[]string{peer0_Org2URL},
+			[]string{peer0Org2URL},
 		)
 	})
 
@@ -200,9 +198,9 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
-			[]string{peer0_Org1URL},
-			[]string{peer1_Org1URL},
-			[]string{peer0_Org2URL},
+			[]string{peer0Org1URL},
+			[]string{peer1Org1URL},
+			[]string{peer0Org2URL},
 		)
 	})
 
@@ -213,8 +211,8 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
-			[]string{peer0_Org1URL, peer0_Org2URL},
-			[]string{peer1_Org1URL, peer0_Org2URL},
+			[]string{peer0Org1URL, peer0Org2URL},
+			[]string{peer1Org1URL, peer0Org2URL},
 		)
 	})
 
@@ -229,8 +227,8 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID1), newCCCall(ccID2)),
-			[]string{peer0_Org1URL, peer0_Org2URL},
-			[]string{peer1_Org1URL, peer0_Org2URL},
+			[]string{peer0Org1URL, peer0Org2URL},
+			[]string{peer1Org1URL, peer0Org2URL},
 		)
 	})
 }
@@ -244,8 +242,8 @@ func testEndorsers(t *testing.T, sdk *fabsdk.FabricSDK, interest *fabdiscovery.C
 	client, err = discovery.New(ctx)
 	require.NoError(t, err, "error creating discovery client")
 
-	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer0_Org1)
-	require.NoErrorf(t, err, "error getting peer config for [%s]", peer0_Org1)
+	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer0Org1)
+	require.NoErrorf(t, err, "error getting peer config for [%s]", peer0Org1)
 
 	var chanResp discclient.ChannelResponse
 	var lastErr error
