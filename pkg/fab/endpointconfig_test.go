@@ -8,6 +8,7 @@ package fab
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"testing"
 
 	"os"
@@ -16,11 +17,11 @@ import (
 
 	"time"
 
-	"path/filepath"
-
 	"strings"
 
 	"reflect"
+
+	"encoding/pem"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -30,6 +31,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -332,12 +334,8 @@ func TestOrdererConfig(t *testing.T) {
 	}
 
 	orderers := endpointConfig.OrderersConfig()
-	if orderers[0].TLSCACerts.Path != "" {
-		if !filepath.IsAbs(orderers[0].TLSCACerts.Path) {
-			t.Fatal("Expected GOPATH relative path to be replaced")
-		}
-	} else if len(orderers[0].TLSCACerts.Pem) == 0 {
-		t.Fatalf("Orderer %+v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
+	if orderers[0].TLSCACert == nil {
+		t.Fatalf("Orderer %+v must have TLS CA Cert", orderers[0])
 	}
 }
 
@@ -356,12 +354,8 @@ func TestChannelOrderers(t *testing.T) {
 		t.Fatalf("Expecting one channel orderer got %d", len(orderers))
 	}
 
-	if orderers[0].TLSCACerts.Path != "" {
-		if !filepath.IsAbs(orderers[0].TLSCACerts.Path) {
-			t.Fatal("Expected GOPATH relative path to be replaced")
-		}
-	} else if len(orderers[0].TLSCACerts.Pem) == 0 {
-		t.Fatalf("Orderer %v must have at least a TlsCACerts.Path or TlsCACerts.Pem set", orderers[0])
+	if orderers[0].TLSCACert == nil {
+		t.Fatalf("Orderer %v must have TLS CA CERT", orderers[0])
 	}
 }
 
@@ -391,7 +385,7 @@ func testCommonConfigPeerByURL(t *testing.T, expectedConfigURL string, fetchedCo
 		t.Fatal("Url value for the host is empty")
 	}
 
-	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACerts.Pem != expectedConfig.TLSCACerts.Pem {
+	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACert != expectedConfig.TLSCACert {
 		t.Fatal("Expected Config and fetched config differ")
 	}
 
@@ -420,7 +414,7 @@ func testCommonConfigOrderer(t *testing.T, expectedConfigHost string, fetchedCon
 		t.Fatal("Url value for the host is empty")
 	}
 
-	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACerts.Pem != expectedConfig.TLSCACerts.Pem {
+	if len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) || fetchedConfig.TLSCACert != expectedConfig.TLSCACert {
 		t.Fatal("Expected Config and fetched config differ")
 	}
 
@@ -564,7 +558,7 @@ func testCommonConfigPeer(t *testing.T, expectedConfigHost string, fetchedConfig
 		t.Fatal("Url value for the host is empty")
 	}
 
-	if fetchedConfig.TLSCACerts.Path != expectedConfig.TLSCACerts.Path || len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) {
+	if fetchedConfig.TLSCACert != expectedConfig.TLSCACert || len(fetchedConfig.GRPCOptions) != len(expectedConfig.GRPCOptions) {
 		t.Fatal("Expected Config and fetched config differ")
 	}
 
@@ -713,9 +707,14 @@ Af8EBTADAQH/MCkGA1UdDgQiBCBxaEP3nVHQx4r7tC+WO//vrPRM1t86SKN0s6XB
 8LWbHTAKBggqhkjOPQQDAgNIADBFAiEA96HXwCsuMr7tti8lpcv1oVnXg0FlTxR/
 SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 -----END CERTIFICATE-----`
-	loadedOPem := strings.TrimSpace(o[0].TLSCACerts.Pem) // viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
-	if loadedOPem != oPem {
-		t.Fatalf("Orderer Pem doesn't match. Expected ['%s'], but got ['%s']", oPem, loadedOPem)
+
+	oCert, err := tlsCertByBytes([]byte(oPem))
+	if err != nil {
+		t.Fatal("failed to cert from pem bytes")
+	}
+
+	if !reflect.DeepEqual(oCert.RawSubject, o[0].TLSCACert.RawSubject) {
+		t.Fatal("certs supposed to match")
 	}
 
 	pc, ok := endpointConfig.PeersConfig(org1)
@@ -753,11 +752,16 @@ V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
 eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
 O94CDp7l2k7hMQI0zQ==
 -----END CERTIFICATE-----`
-	loadedPPem := strings.TrimSpace(p0.TLSCACerts.Pem)
-	// viper's unmarshall adds a \n to the end of a string, hence the TrimeSpace
-	if loadedPPem != pPem {
-		t.Fatalf("%s Pem doesn't match. Expected ['%s'], but got ['%s']", peer0, pPem, loadedPPem)
+
+	oCert, err := tlsCertByBytes([]byte(pPem))
+	if err != nil {
+		t.Fatal("failed to cert from pem bytes")
 	}
+
+	if !reflect.DeepEqual(oCert.RawSubject, p0.TLSCACert.RawSubject) {
+		t.Fatal("certs supposed to match")
+	}
+
 }
 
 func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
@@ -798,21 +802,14 @@ func TestLoadConfigWithEmbeddedUsersWithPems(t *testing.T) {
 	conf := endpointConfig.NetworkConfig()
 	assert.NotNil(t, conf)
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Cert.Pem == "" {
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Cert == nil {
 		t.Fatal("Failed to parse the embedded cert for user EmbeddedUser")
 	}
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Key.Pem == "" {
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUser")].Key == nil {
 		t.Fatal("Failed to parse the embedded key for user EmbeddedUser")
 	}
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Key.Pem != "" {
-		t.Fatal("Mistakenly found an embedded key for user NonExistentEmbeddedUser")
-	}
-
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Cert.Pem != "" {
-		t.Fatal("Mistakenly found an embedded cert for user NonExistentEmbeddedUser")
-	}
 }
 
 func TestLoadConfigWithEmbeddedUsersWithPaths(t *testing.T) {
@@ -831,21 +828,14 @@ func TestLoadConfigWithEmbeddedUsersWithPaths(t *testing.T) {
 
 	assert.NotNil(t, conf)
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUserWithPaths")].Cert.Path == "" {
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUserWithPaths")].Cert == nil {
 		t.Fatal("Failed to parse the embedded cert for user EmbeddedUserWithPaths")
 	}
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUserWithPaths")].Key.Path == "" {
+	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("EmbeddedUserWithPaths")].Key == nil {
 		t.Fatal("Failed to parse the embedded key for user EmbeddedUserWithPaths")
 	}
 
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Key.Path != "" {
-		t.Fatal("Mistakenly found an embedded key for user NonExistentEmbeddedUser")
-	}
-
-	if conf.Organizations[strings.ToLower(org1)].Users[strings.ToLower("NonExistentEmbeddedUser")].Cert.Path != "" {
-		t.Fatal("Mistakenly found an embedded cert for user NonExistentEmbeddedUser")
-	}
 }
 
 func TestInitConfigFromRawWrongType(t *testing.T) {
@@ -1360,4 +1350,21 @@ func overrideClientTLSInBackend(backend core.ConfigBackend, tlsCerts *endpoint.M
 	backendOverride.KeyValueMap["client"] = endpointEntity.Client
 
 	return []core.ConfigBackend{&backendOverride, backend}, nil
+}
+
+func tlsCertByBytes(bytes []byte) (*x509.Certificate, error) {
+
+	block, _ := pem.Decode(bytes)
+
+	if block != nil {
+		pub, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		return pub, nil
+	}
+
+	//no cert found and there is no error
+	return nil, errors.New("empty byte")
 }

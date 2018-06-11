@@ -64,6 +64,12 @@ type MutualTLSConfig struct {
 	Client TLSKeyPair
 }
 
+// TLSKeyCertPair contains the private key and certificate for TLS encryption
+type TLSKeyCertPair struct {
+	Key  []byte
+	Cert []byte
+}
+
 // TLSKeyPair contains the private key and certificate for TLS encryption
 type TLSKeyPair struct {
 	Key  TLSConfig

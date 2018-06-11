@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package expiredorderer
 
 import (
+	"crypto/x509"
+	"errors"
 	"os"
 	"path"
 	"testing"
@@ -23,6 +25,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"time"
+
+	"encoding/pem"
+
+	"io/ioutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -121,11 +127,38 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		}
 		//change cert path to expired one
 		orderer1 := networkConfig.Orderers["orderer.example.com"]
-		orderer1.TLSCACerts.Path = expiredCertPath
+
+		cert, err := tlsCertByPath(expiredCertPath)
+		if err != nil {
+			t.Fatal("failed to get expired cert for test")
+		}
+
+		orderer1.TLSCACert = cert
 		networkConfig.Orderers["orderer.example.com"] = orderer1
 		backendMap["orderers"] = networkConfig.Orderers
 
 		backends := append([]core.ConfigBackend{}, &mocks.MockConfigBackend{KeyValueMap: backendMap})
 		return append(backends, configBackends...), nil
 	}
+}
+
+func tlsCertByPath(path string) (*x509.Certificate, error) {
+
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(bytes)
+	if block != nil {
+		pub, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		return pub, nil
+	}
+
+	//no cert found and there is no error
+	return nil, errors.New("empty byte")
 }
