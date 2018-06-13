@@ -9,7 +9,6 @@ package e2e
 import (
 	"path"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -106,10 +105,8 @@ func setupAndRun(t *testing.T, doSetup bool, configOpt core.ConfigProvider, sdkO
 		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
 	}
 
-	i := strings.Index(ccEvent.SourceURL, ":")
-
 	// Verify move funds transaction result on the same peer where the event came from.
-	verifyFundsIsMoved(client, t, value, ccEvent.SourceURL[0:i])
+	verifyFundsIsMoved(client, t, value, ccEvent.SourceURL)
 
 }
 
@@ -149,6 +146,7 @@ func createChannelAndCC(t *testing.T, sdk *fabsdk.FabricSDK) {
 }
 
 func verifyFundsIsMoved(client *channel.Client, t *testing.T, value []byte, targetEndpoints ...string) {
+
 	newValue := queryCC(client, t, targetEndpoints...)
 	valueInt, err := strconv.Atoi(string(value))
 	if err != nil {
