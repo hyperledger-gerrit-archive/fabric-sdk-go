@@ -177,9 +177,6 @@ func (g *groupsImpl) Nof(threshold int32) (GroupOfGroups, error) {
 	if int(threshold) > len(g.Items()) {
 		return nil, errors.New("N is greater than length of the group")
 	}
-	if threshold <= 0 {
-		return nil, errors.New("N must be greater than 0")
-	}
 	return getCombinations(g.Items(), threshold, 0)
 }
 
