@@ -16,8 +16,10 @@ set -e
 GO_CMD="${GO_CMD:-go}"
 FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-devstable}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
+TEST_CHANGED_ONLY="${TEST_CHANGED_ONLY:-false}"
 
 REPO="github.com/hyperledger/fabric-sdk-go"
+
 
 # Packages to include in test run
 PKGS=`$GO_CMD list $REPO... 2> /dev/null | \
@@ -27,6 +29,47 @@ PKGS=`$GO_CMD list $REPO... 2> /dev/null | \
       grep -v ^$REPO/internal/github.com/ | grep -v ^$REPO/third_party/ | \
       grep -v ^$REPO/pkg/core/cryptosuite/bccsp/pkcs11 | grep -v ^$REPO/pkg/core/cryptosuite/bccsp/multisuite | \
       grep -v ^$REPO/vendor/ | grep -v ^$REPO/test/`
+
+# Determine which directories have changes.
+CHANGED=$(git diff --name-only --diff-filter=ACMRTUXB HEAD)
+
+if [[ "$CHANGED" != "" ]]; then
+    CHANGED+=$'\n'
+fi
+
+LAST_COMMITS=($(git log -2 --pretty=format:"%h"))
+CHANGED+=$(git diff-tree --no-commit-id --name-only --diff-filter=ACMRTUXB -r ${LAST_COMMITS[1]} ${LAST_COMMITS[0]})
+
+CHANGED_PKGS=()
+while read -r line; do
+    if [ "$line" != "" ]; then
+        DIR=`dirname $line`
+        CHANGED_PKGS+=("$REPO/$DIR")
+    fi
+done <<< "$CHANGED"
+CHANGED_PKGS=($(printf "%s\n" "${CHANGED_PKGS[@]}" | sort -u | tr '\n' ' '))
+
+function filterExcludedPackages {
+    FILTERED_PKGS=()
+
+    for pkg in "${PKGS[@]}"
+    do
+        for i in "${CHANGED_PKGS[@]}"
+        do
+            if [ "$pkg" = "$i" ]; then
+              FILTERED_PKGS+=("$pkg")
+            fi
+        done
+    done
+
+    PKGS=("${FILTERED_PKGS[@]}")
+}
+
+# Reduce unit tests to changed packages.
+if [ "$TEST_CHANGED_ONLY" = true ]; then
+    filterExcludedPackages
+fi
+
 echo "Running unit tests..."
 
 RACEFLAG=""
