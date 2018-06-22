@@ -22,7 +22,7 @@ function findPackages {
     PKGS=()
     for i in "${src[@]}"
     do
-       PKG_LIST=`$GO_CMD list $i/... 2> /dev/null`
+       PKG_LIST=`${GO_CMD} list $i/... 2> /dev/null`
        while read -r line; do
           PKGS+=("$line")
        done <<< "$PKG_LIST"
@@ -70,6 +70,21 @@ function filterExcludedPackages {
     PKGS=("${FILTERED_PKGS[@]}")
 }
 
+function appendDepPackages {
+    DEP_PKGS=()
+    for pkg in "${PKGS[@]}"
+    do
+        DEP_PKGS+=(${pkg})
+        DEP_PKGS+=($(${GO_CMD} list -f '{{.Deps}}' ${pkg} | tr ' ' '\n' | grep "^${REPO}" | \
+            grep -v "^${REPO}/vendor/" | \
+            grep -v "^${REPO}/internal/github.com/" | \
+            grep -v "^${REPO}/third_party/github.com/" | \
+            tr '\n' ' '))
+    done
+
+    PKGS=($(printf "%s\n" "${DEP_PKGS[@]}" | sort -u | tr '\n' ' '))
+}
+
 # packagesToDirs convert packages to directories
 function packagesToDirs {
     DIRS=()
@@ -86,6 +101,7 @@ findPackages
 if [ "$LINT_CHANGED_ONLY" = true ]; then
     findChangedPackages
     filterExcludedPackages
+    appendDepPackages
 fi
 
 packagesToDirs
