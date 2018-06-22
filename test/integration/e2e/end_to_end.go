@@ -227,3 +227,8 @@ func createChannel(sdk *fabsdk.FabricSDK, t *testing.T, resMgmtClient *resmgmt.C
 	require.Nil(t, err, "error should be nil")
 	require.NotEmpty(t, txID, "transaction ID should be populated")
 }
+
+// Should trigger unit tests
+var (
+	helloLinter = ""
+)
