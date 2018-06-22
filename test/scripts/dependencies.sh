@@ -9,6 +9,27 @@
 # FABRIC_SDKGO_DEPEND_INSTALL: Installs dependencies
 # GO_DEP_COMMIT: Tag or commit level of the go dep tool to install (if FABRIC_SDKGO_DEPEND_INSTALL=true)
 
+
+
+echo "--- start debug environment"
+echo "GOPATH: ${GOPATH}"
+export GOPATH="${GOPATH:-$HOME/go}"
+echo "GOPATH: ${GOPATH}"
+ls -alh ${GOPATH}/
+echo "GOCACHE: ${GOCACHE}"
+export GOCACHE="${GOCACHE:-$HOME/.cache/go-build}"
+echo "GOCACHE: ${GOCACHE}"
+ls -alh ${GOCACHE}
+echo "GOPATH: ${GOPATH}/bin"
+ls -alh ${GOPATH}/bin
+echo "GOPATH: ${GOPATH}/pkg"
+ls -alh ${GOPATH}/pkg
+echo "GOPATH: ${GOPATH}/src"
+ls -alh ${GOPATH}/src
+echo "--- end debug environment"
+
+
+
 GO_CMD="${GO_CMD:-go}"
 GO_DEP_CMD="${GO_DEP_CMD:-dep}"
 GOPATH="${GOPATH:-$HOME/go}"
