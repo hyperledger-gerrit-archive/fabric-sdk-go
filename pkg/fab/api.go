@@ -95,3 +95,6 @@ type MatchConfig struct {
 }
 
 // Should trigger unit tests
+var (
+	helloLinter = ""
+)
