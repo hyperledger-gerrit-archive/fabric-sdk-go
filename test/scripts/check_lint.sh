@@ -9,7 +9,7 @@
 set -e
 LINT_CHANGED_ONLY="${LINT_CHANGED_ONLY:-false}"
 GO_CMD="${GO_CMD:-go}"
-GO_PROJECT="github.com/hyperledger/fabric-sdk-go"
+REPO="github.com/hyperledger/fabric-sdk-go"
 GOMETALINT_CMD=gometalinter
 
 # Find all packages that should be linted.
@@ -21,7 +21,7 @@ declare -a src=(
 PKGS=()
 for i in "${src[@]}"
 do
-   PKG_LIST=`$GO_CMD list $i/...`
+   PKG_LIST=`$GO_CMD list $i/... 2> /dev/null`
    while read -r line; do
       PKGS+=("$line")
    done <<< "$PKG_LIST"
@@ -41,7 +41,11 @@ CHANGED_PKGS=()
 while read -r line; do
     if [ "$line" != "" ]; then
         DIR=`dirname $line`
-        CHANGED_PKGS+=("$GO_PROJECT/$DIR")
+        if [ "$DIR" = "." ]; then
+            CHANGED_PKGS+=("$REPO")
+        else
+            CHANGED_PKGS+=("$REPO/$DIR")
+        fi
     fi
 done <<< "$CHANGED"
 CHANGED_PKGS=($(printf "%s\n" "${CHANGED_PKGS[@]}" | sort -u | tr '\n' ' '))
@@ -72,7 +76,7 @@ echo "Paths to lint:"
 DIRS=()
 for i in "${PKGS[@]}"
 do
-    lintdir=${i#$GO_PROJECT/}
+    lintdir=${i#REPO/}
     DIRS+=($lintdir)
     echo "  $lintdir"
 done
