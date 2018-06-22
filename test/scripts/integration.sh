@@ -38,12 +38,7 @@ if [ "$E2E_ONLY" == "true" ]; then
 fi
 
 echo "Running integration tests ..."
-RACEFLAG=""
-ARCH=$(uname -m)
-
-if [ "$ARCH" == "x86_64" ]; then
-    RACEFLAG="-race"
-fi
+RACEFLAG="-race"
 
 #Add entry here below for your key to be imported into softhsm
 declare -a PRIVATE_KEYS=(
