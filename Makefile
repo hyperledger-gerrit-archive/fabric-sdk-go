@@ -134,6 +134,7 @@ GO_DEP_COMMIT := v0.4.1
 # TODO introduce nightly and adjust verify
 ifdef JENKINS_URL
 export FABRIC_SDKGO_DEPEND_INSTALL=true
+export LINT_CHANGED_ONLY=true
 
 FABRIC_SDK_DEPRECATED_UNITTEST   := false
 FABRIC_STABLE_INTTEST            := true
@@ -176,7 +177,7 @@ export DOCKER_CMD
 export DOCKER_COMPOSE_CMD
 
 .PHONY: all
-all: checks unit-test integration-test
+all: checks lint-all unit-test integration-test
 
 .PHONY: depend
 depend:
@@ -195,8 +196,11 @@ license:
 
 .PHONY: lint
 lint: populate
-	@$(TEST_SCRIPTS_PATH)/check_lint.sh
+	@LINT_CHANGED_ONLY=true $(TEST_SCRIPTS_PATH)/check_lint.sh
 
+.PHONY: lint-all
+lint-all: populate
+	@$(TEST_SCRIPTS_PATH)/check_lint.sh
 
 .PHONY: build-softhsm2-image
 build-softhsm2-image:
