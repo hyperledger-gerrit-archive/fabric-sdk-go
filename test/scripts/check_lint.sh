@@ -14,6 +14,8 @@ SCRIPT_DIR="$(dirname "$0")"
 
 REPO="github.com/hyperledger/fabric-sdk-go"
 
+echo "Running check_lint.sh"
+
 source ${SCRIPT_DIR}/lib/find_packages.sh
 
 # Find all packages that should be linted.
@@ -28,6 +30,7 @@ if [ "$LINT_CHANGED_ONLY" = true ]; then
     findChangedPackages
     filterExcludedPackages
     appendDepPackages
+    PKGS=(${DEP_PKGS[@]})
 fi
 
 packagesToDirs
