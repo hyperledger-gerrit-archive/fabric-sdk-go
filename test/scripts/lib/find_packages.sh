@@ -54,22 +54,28 @@ function filterExcludedPackages {
         done
     done
 
-    PKGS=("${FILTERED_PKGS[@]}")
+    FILTERED_PKGS=("${FILTERED_PKGS[@]}")
 }
 
 function appendDepPackages {
-    DEP_PKGS=()
+    DEP_PKGS=("${FILTERED_PKGS[@]}")
     for pkg in "${PKGS[@]}"
     do
-        DEP_PKGS+=(${pkg})
-        DEP_PKGS+=($(${GO_CMD} list -f '{{.Deps}}' ${pkg} | tr ' ' '\n' | grep "^${REPO}" | \
+        DEPENDENCIES=($(${GO_CMD} list -f '{{.Deps}}' ${pkg} | tr ' ' '\n' | grep "^${REPO}" | \
             grep -v "^${REPO}/vendor/" | \
             grep -v "^${REPO}/internal/github.com/" | \
             grep -v "^${REPO}/third_party/github.com/" | \
             tr '\n' ' '))
+
+        for i in "${FILTERED_PKGS[@]}"
+        do
+            if [ "$pkg" = "$i" ]; then
+              DEP_PKGS+=("$pkg")
+            fi
+        done
     done
 
-    PKGS=($(printf "%s\n" "${DEP_PKGS[@]}" | sort -u | tr '\n' ' '))
+    DEP_PKGS=($(printf "%s\n" "${DEP_PKGS[@]}" | sort -u | tr '\n' ' '))
 }
 
 # packagesToDirs convert packages to directories

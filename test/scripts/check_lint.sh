@@ -28,6 +28,7 @@ if [ "$LINT_CHANGED_ONLY" = true ]; then
     findChangedPackages
     filterExcludedPackages
     appendDepPackages
+    PKGS=(${DEP_PKGS})
 fi
 
 packagesToDirs
