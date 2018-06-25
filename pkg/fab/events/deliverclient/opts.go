@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package deliverclient
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
@@ -74,7 +75,12 @@ func (p *params) SetFromBlock(value uint64) {
 
 func (p *params) SetSeekType(value seek.Type) {
 	logger.Debugf("SeekType: %s", value)
-	p.seekType = value
+	if value != "" {
+		p.seekType = value
+	} else {
+		fmt.Printf("SeekType must not be empty. Defaulting to %s", p.seekType)
+		logger.Warnf("SeekType must not be empty. Defaulting to %s", p.seekType)
+	}
 }
 
 func (p *params) SetResponseTimeout(value time.Duration) {
