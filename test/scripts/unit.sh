@@ -7,7 +7,7 @@
 # Environment variables that affect this script:
 # GO_TESTFLAGS: Flags are added to the go test command.
 # GO_LDFLAGS: Flags are added to the go test command (example: -s).
-# TEST_CHANGED_ONLY: Boolean on whether to only run tests on changed packages (but does not inspect dependencies).
+# TEST_CHANGED_ONLY: Boolean on whether to only run tests on changed packages.
 # TEST_RACE_CONDITIONS: Boolean on whether to test for race conditions.
 # FABRIC_SDKGO_CODELEVEL_TAG: Go tag that represents the fabric code target
 # FABRIC_SDKGO_CODELEVEL_VER: Version that represents the fabric code target (primarily for fixture lookup)
@@ -39,6 +39,10 @@ if [ "$TEST_CHANGED_ONLY" = true ]; then
     findChangedPackages
     filterExcludedPackages
     appendDepPackages
+
+    echo "PKGS: ${PKGS[@]}"
+    PKGS=(${DEP_PKGS[@]})
+    echo "PKGS: ${PKGS[@]}"
 fi
 
 RACEFLAG=""

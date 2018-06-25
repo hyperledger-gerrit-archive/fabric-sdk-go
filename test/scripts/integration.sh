@@ -7,6 +7,8 @@
 # Environment variables that affect this script:
 # GO_TESTFLAGS: Flags are added to the go test command.
 # GO_LDFLAGS: Flags are added to the go test command (example: -s).
+# TEST_CHANGED_ONLY: Boolean on whether to only run tests on changed packages.
+# TEST_RACE_CONDITIONS: Boolean on whether to test for race conditions.
 # FABRIC_SDKGO_CODELEVEL_TAG: Go tag that represents the fabric code target
 # FABRIC_SDKGO_CODELEVEL_VER: Version that represents the fabric code target
 # FABRIC_FIXTURE_VERSION: Version of fabric fixtures
@@ -16,34 +18,64 @@
 set -e
 
 GO_CMD="${GO_CMD:-go}"
+GOPATH="${GOPATH:-$HOME/go}"
 FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-stable}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
 FABRIC_FIXTURE_VERSION="${FABRIC_FIXTURE_VERSION:-v1.1}"
 CONFIG_FILE="${CONFIG_FILE:-config_test.yaml}"
 TEST_LOCAL="${TEST_LOCAL:-false}"
+TEST_CHANGED_ONLY="${TEST_CHANGED_ONLY:-false}"
+TEST_RACE_CONDITIONS="${TEST_RACE_CONDITIONS:-true}"
+SCRIPT_DIR="$(dirname "$0")"
 # TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
 REPO="github.com/hyperledger/fabric-sdk-go"
 
+source ${SCRIPT_DIR}/lib/find_packages.sh
+
 # Packages to include in test run
-PKGS=`$GO_CMD list $REPO/test/integration/... 2> /dev/null | \
+PKGS=(`$GO_CMD list $REPO/test/integration/... 2> /dev/null | \
       grep -v ^$REPO/test/integration/pkcs11 | \
       grep -v ^$REPO/test/integration/revoked | \
       grep -v ^$REPO/test/integration/expiredorderer | \
       grep -v ^$REPO/test/integration/expiredpeer | \
-      grep -v ^$REPO/test/integration\$`
+      grep -v ^$REPO/test/integration\$`)
 
 if [ "$E2E_ONLY" == "true" ]; then
-    PKGS=`$GO_CMD list $REPO/test/integration/e2e/... 2> /dev/null`
+    PKGS=(`$GO_CMD list $REPO/test/integration/e2e/... 2> /dev/null`)
+fi
+
+# Reduce unit tests to changed packages.
+if [ "$TEST_CHANGED_ONLY" = true ]; then
+    # findChangedPackages assumes that the working directory contains the repo; so change to the repo directory.
+    PWD=$(pwd)
+    cd "${GOPATH}/src/${REPO}"
+
+    findChangedPackages
+    filterExcludedPackages
+    appendDepPackages
+    PKGS=(${DEP_PKGS})
+    cd ${PWD}
+fi
+
+RACEFLAG=""
+if [ "$TEST_RACE_CONDITIONS" = true ]; then
+    ARCH=$(uname -m)
+
+    if [ "$ARCH" == "x86_64" ]; then
+        echo "Enabling race condition flag for upcoming integration test run"
+        RACEFLAG="-race"
+    else
+        echo "Race condition flag not supported on $ARCH for upcoming integration test run"
+    fi
+fi
+
+if [ ${#PKGS[@]} -eq 0 ]; then
+    echo "Skipping unit tests since no packages were changed"
+    exit 0
 fi
 
 echo "Running integration tests ..."
-RACEFLAG=""
-ARCH=$(uname -m)
-
-if [ "$ARCH" == "x86_64" ]; then
-    RACEFLAG="-race"
-fi
 
 #Add entry here below for your key to be imported into softhsm
 declare -a PRIVATE_KEYS=(
@@ -77,4 +109,4 @@ if [ "$FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER" == "PKCS11" ]; then
 fi
 
 GO_LDFLAGS="$GO_LDFLAGS -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
-$GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" $PKGS -p 1 -timeout=40m -count=1 configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
+$GO_CMD test $RACEFLAG -tags "$GO_TAGS" $GO_TESTFLAGS -ldflags="$GO_LDFLAGS" ${PKGS[@]} -p 1 -timeout=40m -count=1 configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
