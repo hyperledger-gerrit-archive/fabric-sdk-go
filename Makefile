@@ -209,7 +209,7 @@ build-softhsm2-image:
 		-f $(FIXTURE_SOFTHSM2_PATH)/Dockerfile .
 
 .PHONY: unit-test
-unit-test: checks depend populate
+unit-test: depend populate
 	@TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
 ifeq ($(FABRIC_SDK_DEPRECATED_UNITTEST),true)
 	@GO_TAGS="$(GO_TAGS) deprecated" TEST_CHANGED_ONLY=true GO_TESTFLAGS="$(GO_TESTFLAGS) -count=1" FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit.sh
@@ -219,7 +219,7 @@ endif
 unit-tests: unit-test
 
 .PHONY: unit-tests-pkcs11
-unit-tests-pkcs11: checks depend populate
+unit-tests-pkcs11: depend populate
 	@FABRIC_SDKGO_CODELEVEL=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) $(TEST_SCRIPTS_PATH)/unit-pkcs11.sh
 
 .PHONY: integration-tests-stable
@@ -291,40 +291,8 @@ integration-tests: integration-test
 
 .PHONY: integration-test
 integration-test: clean depend populate
-ifeq ($(FABRIC_STABLE_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable
-endif
-ifeq ($(FABRIC_STABLE_PKCS11_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-pkcs11
-endif
-ifeq ($(FABRIC_STABLE_REVOKED_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-revoked
-endif
-
-ifeq ($(FABRIC_STABLE_EXPIRED_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-orderer-cert-expired
-endif
-ifeq ($(FABRIC_STABLE_EXPIRED_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-peer-cert-expired
-endif
-
-ifeq ($(FABRIC_PRERELEASE_INTTEST),true)
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
 	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-prerelease
-endif
-ifeq ($(FABRIC_DEVSTABLE_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-devstable
-endif
-ifeq ($(FABRIC_PREV_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-prev
-endif
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
 
 .PHONY: integration-tests-local

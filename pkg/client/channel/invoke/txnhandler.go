@@ -8,6 +8,7 @@ package invoke
 
 import (
 	"bytes"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
@@ -78,6 +79,9 @@ func (h *ProposalProcessorHandler) Handle(requestContext *RequestContext, client
 		}
 		requestContext.Opts.Targets = endorsers
 	}
+
+	//Sleep before commit to simulate latency
+	time.Sleep(time.Millisecond * 800)
 
 	//Delegate to next step if any
 	if h.next != nil {
