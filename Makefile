@@ -291,40 +291,8 @@ integration-tests: integration-test
 
 .PHONY: integration-test
 integration-test: clean depend populate
-ifeq ($(FABRIC_STABLE_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable
-endif
-ifeq ($(FABRIC_STABLE_PKCS11_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-pkcs11
-endif
-ifeq ($(FABRIC_STABLE_REVOKED_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-revoked
-endif
-
-ifeq ($(FABRIC_STABLE_EXPIRED_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-orderer-cert-expired
-endif
-ifeq ($(FABRIC_STABLE_EXPIRED_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-peer-cert-expired
-endif
-
-ifeq ($(FABRIC_PRERELEASE_INTTEST),true)
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
 	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-prerelease
-endif
-ifeq ($(FABRIC_DEVSTABLE_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-devstable
-endif
-ifeq ($(FABRIC_PREV_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-prev
-endif
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
 
 .PHONY: integration-tests-local
