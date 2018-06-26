@@ -73,7 +73,7 @@ services:
       - ORDERER_GENERAL_TLS_ROOTCAS=[/etc/hyperledger/tls/orderer/ca.crt]
       - ORDERER_GENERAL_TLS_CLIENTAUTHENABLED
       - ORDERER_GENERAL_TLS_CLIENTROOTCAS
-    #comment out logging.driver in order to render the debug logs  
+    #comment out logging.driver in order to render the debug logs
     logging:
       driver: none
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
@@ -95,7 +95,7 @@ services:
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - CORE_PEER_ID=peer0.org1.example.com
-      - CORE_LOGGING_PEER=debug
+      - CORE_LOGGING_LEVEL=INFO
       # - CORE_LOGGING_GRPC=debug
       # - CORE_LOGGING_GOSSIP=debug
       # - CORE_CHAINCODE_STARTUPTIMEOUT=30s
@@ -124,10 +124,8 @@ services:
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default      
-    #comment out logging.driver in order to render the debug logs 
-    logging:
-      driver: none 
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
+      - CORE_PEER_GOSSIP_PVTDATA_TRANSIENTSTOREMAXBLOCKRETENTION=500
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: peer node start
     ports:
@@ -186,6 +184,7 @@ services:
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
+      - CORE_PEER_GOSSIP_PVTDATA_TRANSIENTSTOREMAXBLOCKRETENTION=500
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none
@@ -247,7 +246,8 @@ services:
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default     
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
+      - CORE_PEER_GOSSIP_PVTDATA_TRANSIENTSTOREMAXBLOCKRETENTION=500
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none
@@ -275,7 +275,7 @@ services:
       - golangruntime
 
   org2peer2:
-    image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_PEER_FIXTURE_IMAGE}:${ARCH}${ARCH_SEP}${FABRIC_PEER_FIXTURE_TAG}
+    image: securekey/fabric-peer:amd64-1.2.0-0.1.2-snapshot-11875fb
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - CORE_PEER_ID=peer1.org2.example.com
@@ -296,7 +296,6 @@ services:
       - CORE_PEER_ADDRESS=peer1.org2.example.com:9051
       - CORE_PEER_CHAINCODELISTENADDRESS=peer1.org2.example.com:9052
       - CORE_PEER_ADDRESSAUTODETECT=true
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.example.com:8051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org2.example.com:9051
       - CORE_PEER_EVENTS_ADDRESS=peer1.org2.example.com:9053
       - CORE_PEER_TLS_ENABLED=true
@@ -309,7 +308,8 @@ services:
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default     
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
+      - CORE_PEER_GOSSIP_PVTDATA_TRANSIENTSTOREMAXBLOCKRETENTION=500
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none

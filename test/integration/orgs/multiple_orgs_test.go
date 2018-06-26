@@ -7,7 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package orgs
 
 import (
+	"fmt"
 	"math"
+	"math/rand"
 	"path"
 	"runtime"
 	"strconv"
@@ -22,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,7 +55,7 @@ const (
 	org1User         = "User1"
 	org2User         = "User1"
 	channelID        = "orgchannel"
-	exampleCC        = "exampleCC"
+	exampleCC        = "benchmark_cc"
 )
 
 var (
@@ -152,9 +155,91 @@ func TestOrgsEndToEnd(t *testing.T) {
 		createAndJoinChannel(t, &mc)
 	}
 
-	expectedValue := testWithOrg1(t, sdk, &mc)
-	expectedValue = testWithOrg2(t, expectedValue, mc.ccName)
-	verifyWithOrg1(t, sdk, expectedValue, mc.ccName)
+	testPvtData(t, sdk, &mc)
+	// expectedValue = testWithOrg2(t, expectedValue, mc.ccName)
+	// verifyWithOrg1(t, sdk, expectedValue, mc.ccName)
+}
+
+// bounded parallel requests function by: https://gist.github.com/montanaflynn/ea4b92ed640f790c4b9cee36046a5383
+func testPvtData(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) {
+	// org1AdminChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
+	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
+	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
+
+	ccPkg, err := packager.NewCCPackage("github.com/benchmark_cc", "../../fixtures/testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create chaincode package for example cc
+	createCC(t, mc, ccPkg, mc.ccName, mc.ccVersion)
+
+	chClientOrg1User, _ := connectUserToOrgChannel(org1ChannelClientContext, t, org2ChannelClientContext)
+
+	// allow chaincode to start
+	time.Sleep(time.Second * 60)
+
+	concurrencyLimit := 150
+	numRequests := 200000
+	// this buffered channel will block at the concurrency limit
+	semaphoreChan := make(chan struct{}, concurrencyLimit)
+
+	// this channel will not block and collect the http request results
+	resultsChan := make(chan *error)
+
+	// make sure we close these channels when we're done with them
+	defer func() {
+		close(semaphoreChan)
+		close(resultsChan)
+	}()
+
+	// keen an index and loop through every url we will send a request to
+	for i := 0; i < numRequests; i++ {
+
+		// start a go routine with the index and url in a closure
+		go func(i int) {
+
+			// this sends an empty struct into the semaphoreChan which
+			// is basically saying add one to the limit, but when the
+			// limit has been reached block until there is room
+			semaphoreChan <- struct{}{}
+			fmt.Printf("Making request %d\n", i)
+			_, err := chClientOrg1User.Execute(channel.Request{
+				ChaincodeID: "benchmark_cc",
+				Fcn:         "setPrivateState",
+				Args:        [][]byte{[]byte(RandString(8)), []byte("test")},
+			})
+			fmt.Printf("Completed request %d\n", i)
+			if err != nil {
+				fmt.Printf("error on request %d: %s\n", i, err)
+			}
+
+			// now we can send the result struct through the resultsChan
+			resultsChan <- &err
+
+			// once we're done it's we read from the semaphoreChan which
+			// has the effect of removing one from the limit and allowing
+			// another goroutine to start
+			<-semaphoreChan
+
+		}(i)
+	}
+
+	// make a slice to hold the results we're expecting
+	var results []error
+
+	// start listening for any results over the resultsChan
+	// once we get a result append it to the result slice
+	for {
+		result := <-resultsChan
+		results = append(results, *result)
+
+		// if we've reached the expected amount of urls then stop
+		if len(results) == numRequests {
+			break
+		}
+	}
+
 }
 
 func createAndJoinChannel(t *testing.T, mc *multiorgContext) {
@@ -245,6 +330,20 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	verifyValue(t, chClientOrg1User, expectedValue, mc.ccName)
 
 	return expectedValue
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandString(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
 
 func connectUserToOrgChannel(org1ChannelClientContext contextAPI.ChannelProvider, t *testing.T, org2ChannelClientContext contextAPI.ChannelProvider) (*channel.Client, *channel.Client) {
@@ -513,7 +612,7 @@ func isCCInstantiated(t *testing.T, resMgmt *resmgmt.Client, channelID, ccName, 
 }
 
 func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccName, ccVersion string) {
-	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/example_cc", Version: ccVersion, Package: ccPkg}
+	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: "github.com/benchmark_cc", Version: ccVersion, Package: ccPkg}
 
 	// Ensure that Gossip has propagated it's view of local peers before invoking
 	// install since some peers may be missed if we call InstallCC too early
@@ -548,7 +647,24 @@ func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccNa
 }
 
 func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, ccName, ccVersion string) {
-	instantiateResp, err := integration.InstantiateChaincode(resMgmt, channelID, ccName, ccVersion, "AND ('Org1MSP.member','Org2MSP.member')")
+	policy, err := cauthdsl.FromString("OR ('Org1MSP.member','Org2MSP.member')")
+	require.NoError(t, err)
+
+	instantiateResp, err := integration.InstantiateChaincode(resMgmt, channelID, ccName, ccVersion, "AND ('Org1MSP.member','Org2MSP.member')",
+		&common.CollectionConfig{
+			Payload: &common.CollectionConfig_StaticCollectionConfig{
+				StaticCollectionConfig: &common.StaticCollectionConfig{
+					Name:              "billing",
+					RequiredPeerCount: 2,
+					MaximumPeerCount:  3,
+					MemberOrgsPolicy: &common.CollectionPolicyConfig{
+						Payload: &common.CollectionPolicyConfig_SignaturePolicy{
+							SignaturePolicy: policy,
+						},
+					},
+				},
+			},
+		})
 	require.NoError(t, err)
 	require.NotEmpty(t, instantiateResp, "transaction response should be populated for instantateCC")
 }
