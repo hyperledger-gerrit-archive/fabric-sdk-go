@@ -38,10 +38,14 @@ if [ "$TEST_CHANGED_ONLY" = true ]; then
     findChangedFiles
     cd ${PWD}
 
-    findChangedPackages
-    filterExcludedPackages
-    appendDepPackages
-    PKGS=(${DEP_PKGS[@]})
+    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)) ]]; then
+        echo "Test scripts, fixtures or metadata changed - running all tests"
+    else
+        findChangedPackages
+        filterExcludedPackages
+        appendDepPackages
+        PKGS=(${DEP_PKGS[@]})
+    fi
 fi
 
 RACEFLAG=""
