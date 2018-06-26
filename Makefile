@@ -30,7 +30,7 @@ DOCKER_COMPOSE_CMD ?= docker-compose
 FABRIC_STABLE_VERSION           := 1.1.0
 FABRIC_STABLE_VERSION_MINOR     := 1.1
 FABRIC_STABLE_VERSION_MAJOR     := 1
-FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.6
+FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.8
 
 FABRIC_PRERELEASE_VERSION       := 1.2.0-rc1
 FABRIC_PREV_VERSION             := 1.0.6
@@ -51,7 +51,7 @@ FABRIC_BASE_VERSION  ?= $(FABRIC_BASEIMAGE_STABLE_VERSION)
 
 # Fabric base docker image (overridable)
 FABRIC_BASE_IMAGE   ?= hyperledger/fabric-baseimage
-FABRIC_BASE_TAG     ?= $(ARCH)-$(FABRIC_BASE_VERSION)
+FABRIC_BASE_TAG     ?= $(FABRIC_BASE_VERSION)
 
 # Fabric tools docker image (overridable)
 FABRIC_TOOLS_IMAGE ?= hyperledger/fabric-tools
@@ -174,7 +174,6 @@ endif
 export GO_CMD
 export GO_DEP_CMD
 export ARCH
-export BASE_ARCH=$(ARCH)
 export GO_LDFLAGS
 export GO_DEP_COMMIT
 export GO_MOCKGEN_COMMIT
