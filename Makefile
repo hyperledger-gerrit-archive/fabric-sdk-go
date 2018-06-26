@@ -166,7 +166,6 @@ endif
 export GO_CMD
 export GO_DEP_CMD
 export ARCH
-export BASE_ARCH=$(ARCH)
 export GO_LDFLAGS
 export GO_DEP_COMMIT
 export GO_MOCKGEN_COMMIT
