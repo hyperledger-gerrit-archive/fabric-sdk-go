@@ -6,7 +6,7 @@
 ARG FABRIC_BASE_IMAGE=hyperledger/fabric-baseimage
 ARG FABRIC_BASE_TAG
 
-FROM ${FABRIC_BASE_IMAGE}:${FABRIC_BASE_TAG}
+FROM s390x/debian:jessie
 
 ENV GOPATH=/opt/gopath \
     GOROOT=/opt/go \
