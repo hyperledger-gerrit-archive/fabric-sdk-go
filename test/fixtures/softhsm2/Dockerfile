@@ -6,7 +6,7 @@
 ARG FABRIC_BASE_IMAGE=hyperledger/fabric-baseimage
 ARG FABRIC_BASE_TAG
 
-FROM ${FABRIC_BASE_IMAGE}:${FABRIC_BASE_TAG}
+FROM ${FABRIC_BASE_IMAGE}:0.4.9
 
 ENV GOPATH=/opt/gopath \
     GOROOT=/opt/go \
