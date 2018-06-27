@@ -8,9 +8,12 @@ set -xe
 
 ARCH=`uname -m`
 
-if [ $ARCH = "s390x" ]; then
-  echo "deb http://ftp.us.debian.org/debian sid main" >> /etc/apt/sources.list
-fi
+#if [ $ARCH = "s390x" ]; then
+#  cat /etc/apt/sources.list
+#  sed -i '/security.debian.org/d' /etc/apt/sources.list
+#  echo "deb http://ftp.us.debian.org/debian sid main" >> /etc/apt/sources.list
+#  cat /etc/apt/sources.list
+#fi
 
 apt-get update && \
 apt-get install -y --no-install-recommends softhsm2 curl git gcc g++ libtool libltdl-dev && \
