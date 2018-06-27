@@ -61,7 +61,7 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 
 	responsePayload := request.ProposalResponses[0].ProposalResponse.Payload
 	for _, r := range request.ProposalResponses {
-		if r.ProposalResponse.Response.Status != 200 {
+		if r.ProposalResponse.Response.Status < int32(common.Status_SUCCESS) || r.ProposalResponse.Response.Status >= int32(common.Status_BAD_REQUEST) {
 			return nil, errors.Errorf("proposal response was not successful, error code %d, msg %s", r.ProposalResponse.Response.Status, r.ProposalResponse.Response.Message)
 		}
 	}
