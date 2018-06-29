@@ -24,6 +24,10 @@ const (
 	peerURL         = "grpc://" + peerAddress
 )
 
+// Use the Event Hub server for testing
+var testServer *eventmocks.MockEventhubServer
+var endorserAddr []string
+
 func TestMain(m *testing.M) {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
