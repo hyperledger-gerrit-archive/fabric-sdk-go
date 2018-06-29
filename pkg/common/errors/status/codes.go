@@ -58,6 +58,9 @@ const (
 
 	// ChaincodeAlreadyLaunching indicates that an attempt for multiple simultaneous invokes was made to launch chaincode
 	ChaincodeAlreadyLaunching Code = 22
+
+	// ChaincodeNameNotFound indicates that an that an attempt was made to invoke a chaincode that's not yet initialized
+	ChaincodeNameNotFound Code = 23
 )
 
 // CodeName maps the codes in this packages to human-readable strings
