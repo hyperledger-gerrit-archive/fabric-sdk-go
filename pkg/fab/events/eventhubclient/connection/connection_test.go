@@ -20,6 +20,7 @@ import (
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )
 
@@ -31,17 +32,14 @@ var eventAddress string
 var eventURL string
 
 func TestInvalidConnectionOpts(t *testing.T) {
-	if _, err := New(newMockContext(), fabmocks.NewMockChannelCfg("channelid"), "grpcs://invalidhost:7053"); err == nil {
-		t.Fatal("expecting error creating new connection with invaid address but got none")
-	}
+	_, err := New(newMockContext(), fabmocks.NewMockChannelCfg("channelid"), "grpcs://invalidhost:7053")
+	assert.Error(t, err, "expecting error creating new connection with invaid address but got none")
 }
 
 func TestConnection(t *testing.T) {
 	channelID := "mychannel"
 	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), eventURL)
-	if err != nil {
-		t.Fatalf("error creating new connection: %s", err)
-	}
+	assert.NoError(t, err, "error creating new connection")
 
 	conn.Close()
 
@@ -52,9 +50,7 @@ func TestConnection(t *testing.T) {
 func TestSend(t *testing.T) {
 	channelID := "mychannel"
 	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), eventURL)
-	if err != nil {
-		t.Fatalf("error creating new connection: %s", err)
-	}
+	assert.NoError(t, err, "error creating new connection")
 
 	eventch := make(chan interface{})
 
@@ -71,27 +67,22 @@ func TestSend(t *testing.T) {
 	}
 
 	t.Log("Sending register event...")
-	if err := conn.Send(emsg); err != nil {
-		t.Fatalf("Error sending register interest event: %s", err)
-	}
+	err = conn.Send(emsg)
+	assert.NoError(t, err, "Error sending register interest event")
 
 	select {
 	case e, ok := <-eventch:
-		if !ok {
-			t.Fatal("unexpected closed connection")
-		}
+		assert.True(t, ok, "unexpected closed connection")
 		t.Logf("Got response: %#v", e)
+
 		eventHubEvent, ok := e.(*Event)
-		if !ok {
-			t.Fatalf("expected EventHubEvent but got %T", e)
-		}
+		assert.True(t, ok, "expected EventHubEvent but got %T", e)
+
 		evt, ok := eventHubEvent.Event.(*pb.Event)
-		if !ok {
-			t.Fatalf("expected Event but got %T", eventHubEvent.Event)
-		}
-		if !ok {
-			t.Fatalf("expected register response but got %T", evt.Event)
-		}
+		assert.True(t, ok, "expected Event but got %T", eventHubEvent.Event)
+
+		_, ok = evt.Event.(*pb.Event_Register)
+		assert.True(t, ok, "expected register response but got %T", evt.Event)
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for event")
 	}
@@ -107,9 +98,8 @@ func TestSend(t *testing.T) {
 	}
 
 	t.Log("Sending unregister event...")
-	if err := conn.Send(emsg); err != nil {
-		t.Fatalf("Error sending unregister interest event: %s", err)
-	}
+	err = conn.Send(emsg)
+	assert.NoError(t, err, "Error sending unregister interest event")
 
 	checkEvent(eventch, t)
 
@@ -119,22 +109,17 @@ func TestSend(t *testing.T) {
 func checkEvent(eventch chan interface{}, t *testing.T) {
 	select {
 	case e, ok := <-eventch:
-		if !ok {
-			t.Fatal("unexpected closed connection")
-		}
+		assert.True(t, ok, "unexpected closed connection")
 		t.Logf("Got response: %#v", e)
+
 		eventHubEvent, ok := e.(*Event)
-		if !ok {
-			t.Fatalf("expected EventHubEvent but got %T", e)
-		}
+		assert.True(t, ok, "expected EventHubEvent but got %T", e)
+
 		evt, ok := eventHubEvent.Event.(*pb.Event)
-		if !ok {
-			t.Fatalf("expected Event but got %T", eventHubEvent.Event)
-		}
+		assert.True(t, ok, "expected Event but got %T", eventHubEvent.Event)
+
 		_, ok = evt.Event.(*pb.Event_Unregister)
-		if !ok {
-			t.Fatalf("expected unregister response but got %T", evt.Event)
-		}
+		assert.True(t, ok, "expected unregister response but got %T", evt.Event)
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for event")
 	}
@@ -143,9 +128,7 @@ func checkEvent(eventch chan interface{}, t *testing.T) {
 func TestDisconnected(t *testing.T) {
 	channelID := "mychannel"
 	conn, err := New(newMockContext(), fabmocks.NewMockChannelCfg(channelID), eventURL)
-	if err != nil {
-		t.Fatalf("error creating new connection: %s", err)
-	}
+	assert.NoError(t, err, "error creating new connection")
 
 	eventch := make(chan interface{})
 
@@ -161,21 +144,17 @@ func TestDisconnected(t *testing.T) {
 		},
 	}
 
-	if err := conn.Send(emsg); err != nil {
-		t.Fatalf("Error sending register interest event: %s", err)
-	}
+	err = conn.Send(emsg)
+	assert.NoError(t, err, "Error sending register interest event")
 
 	ehServer.Disconnect(errors.New("simulating disconnect"))
 
 	select {
 	case e, ok := <-eventch:
-		if !ok {
-			t.Fatal("unexpected closed connection")
-		}
+		assert.True(t, ok, "unexpected closed connection")
+
 		_, ok = e.(*clientdisp.DisconnectedEvent)
-		if !ok {
-			t.Fatalf("expected DisconnectedEvent but got %T", e)
-		}
+		assert.True(t, ok, "expected DisconnectedEvent but got %T", e)
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for event")
 	}
@@ -202,8 +181,6 @@ func TestMain(m *testing.M) {
 	pb.RegisterEventsServer(grpcServer, ehServer)
 
 	go grpcServer.Serve(lis)
-
-	time.Sleep(2 * time.Second)
 	os.Exit(m.Run())
 }
 
