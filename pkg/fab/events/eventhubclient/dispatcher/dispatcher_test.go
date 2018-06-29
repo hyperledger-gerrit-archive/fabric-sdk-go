@@ -13,6 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/stretchr/testify/assert"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 
@@ -48,14 +49,11 @@ func TestRegisterInterests(t *testing.T) {
 			),
 		),
 	)
-	if err := dispatcher.Start(); err != nil {
-		t.Fatalf("Error starting dispatcher: %s", err)
-	}
+	err := dispatcher.Start()
+	assert.NoError(t, err, "Error starting dispatcher")
 
 	dispatcherEventch, err := dispatcher.EventCh()
-	if err != nil {
-		t.Fatalf("Error getting event channel from dispatcher: %s", err)
-	}
+	assert.NoError(t, err, "Error getting event channel from dispatcher")
 
 	// Connect
 	errch, dispatcherEventch := connectToDispatcher(dispatcherEventch, t)
@@ -74,9 +72,7 @@ func TestRegisterInterests(t *testing.T) {
 
 	select {
 	case err := <-errch:
-		if err != nil {
-			t.Fatalf("error unregistering interests: %s", err)
-		}
+		assert.NoError(t, err, "error unregistering interests")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for unregister interests response")
 	}
@@ -85,9 +81,7 @@ func TestRegisterInterests(t *testing.T) {
 	dispatcherEventch <- clientdisp.NewDisconnectEvent(errch)
 	select {
 	case err := <-errch:
-		if err != nil {
-			t.Fatalf("Error disconnecting: %s", err)
-		}
+		assert.NoError(t, err, "Error disconnecting")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for connection response")
 	}
@@ -95,14 +89,11 @@ func TestRegisterInterests(t *testing.T) {
 	// Disconnected
 	dispatcherEventch <- clientdisp.NewDisconnectedEvent(errors.New("simulating disconnected"))
 
-	time.Sleep(time.Second)
-
 	// Stop the dispatcher
 	stopResp := make(chan error)
 	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
-	if err := <-stopResp; err != nil {
-		t.Fatalf("Error stopping dispatcher: %s", err)
-	}
+	err = <-stopResp
+	assert.NoError(t, err, "Error stopping dispatcher")
 }
 
 func registerFilteredBlockEvent(dispatcherEventch chan<- interface{}, errch chan error, t *testing.T) chan<- interface{} {
@@ -115,9 +106,7 @@ func registerFilteredBlockEvent(dispatcherEventch chan<- interface{}, errch chan
 		errch)
 	select {
 	case err := <-errch:
-		if err != nil {
-			t.Fatalf("error registering interests: %s", err)
-		}
+		assert.NoError(t, err, "error registering interests")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for register interests response")
 	}
@@ -134,9 +123,7 @@ func checkFailedRegisterInterest(dispatcherEventch chan<- interface{}, errch cha
 		errch)
 	select {
 	case err := <-errch:
-		if err == nil {
-			t.Fatalf("expecting error registering interests but got none")
-		}
+		assert.Error(t, err, "expecting error registering interests but got none")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for register interests response")
 	}
@@ -146,14 +133,11 @@ func checkFailedRegisterInterest(dispatcherEventch chan<- interface{}, errch cha
 func TestRegisterInterestsInvalid(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := newDispatcher(channelID)
-	if err := dispatcher.Start(); err != nil {
-		t.Fatalf("Error starting dispatcher: %s", err)
-	}
+	err := dispatcher.Start()
+	assert.NoError(t, err, "Error starting dispatcher")
 
 	dispatcherEventch, err := dispatcher.EventCh()
-	if err != nil {
-		t.Fatalf("Error getting event channel from dispatcher: %s", err)
-	}
+	assert.NoError(t, err, "Error getting event channel from dispatcher")
 
 	// Connect
 	errch, dispatcherEventch := connectToDispatcher(dispatcherEventch, t)
@@ -172,9 +156,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 
 	select {
 	case err := <-errch:
-		if err == nil {
-			t.Fatal("expecting error unregistering interests but got none")
-		}
+		assert.Error(t, err, "expecting error unregistering interests but got none")
 	case <-time.After(2 * time.Second):
 		t.Fatalf("timeout waiting for unregister interests response")
 	}
@@ -183,9 +165,7 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 	dispatcherEventch <- clientdisp.NewDisconnectEvent(errch)
 	select {
 	case err := <-errch:
-		if err != nil {
-			t.Fatalf("Error disconnecting: %s", err)
-		}
+		assert.NoError(t, err, "Error disconnecting")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for connection response")
 	}
@@ -193,14 +173,11 @@ func TestRegisterInterestsInvalid(t *testing.T) {
 	// Disconnected
 	dispatcherEventch <- clientdisp.NewDisconnectedEvent(errors.New("simulating disconnected"))
 
-	time.Sleep(time.Second)
-
 	// Stop the dispatcher
 	stopResp := make(chan error)
 	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
-	if err := <-stopResp; err != nil {
-		t.Fatalf("Error stopping dispatcher: %s", err)
-	}
+	err = <-stopResp
+	assert.NoError(t, err, "Error stopping dispatcher")
 }
 
 func connectToDispatcher(dispatcherEventch chan<- interface{}, t *testing.T) (chan error, chan<- interface{}) {
@@ -208,9 +185,7 @@ func connectToDispatcher(dispatcherEventch chan<- interface{}, t *testing.T) (ch
 	dispatcherEventch <- clientdisp.NewConnectEvent(errch)
 	select {
 	case err := <-errch:
-		if err != nil {
-			t.Fatalf("Error connecting: %s", err)
-		}
+		assert.NoError(t, err, "Error connecting")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for connection response")
 	}
@@ -253,14 +228,11 @@ func TestTimedOutRegister(t *testing.T) {
 			),
 		),
 	)
-	if err := dispatcher.Start(); err != nil {
-		t.Fatalf("Error starting dispatcher: %s", err)
-	}
+	err := dispatcher.Start()
+	assert.NoError(t, err, "Error starting dispatcher")
 
 	dispatcherEventch, err := dispatcher.EventCh()
-	if err != nil {
-		t.Fatalf("Error getting event channel from dispatcher: %s", err)
-	}
+	assert.NoError(t, err, "Error getting event channel from dispatcher")
 
 	// Connect
 	errch := make(chan error)
@@ -268,9 +240,7 @@ func TestTimedOutRegister(t *testing.T) {
 
 	select {
 	case err := <-errch:
-		if err != nil {
-			t.Fatalf("Error connecting: %s", err)
-		}
+		assert.NoError(t, err, "Error connecting")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for connection response")
 	}
@@ -286,9 +256,7 @@ func TestTimedOutRegister(t *testing.T) {
 
 	select {
 	case err := <-errch:
-		if err == nil {
-			t.Fatal("expecting error due to no response from register interests but got none")
-		}
+		assert.Error(t, err, "expecting error due to no response from register interests but got none")
 	case <-time.After(2 * time.Second):
 
 	}
@@ -310,24 +278,19 @@ func TestBlockEvents(t *testing.T) {
 			),
 		),
 	)
-	if err := dispatcher.Start(); err != nil {
-		t.Fatalf("Error starting dispatcher: %s", err)
-	}
+	err := dispatcher.Start()
+	assert.NoError(t, err, "Error starting dispatcher")
 
 	dispatcherEventch, err := dispatcher.EventCh()
-	if err != nil {
-		t.Fatalf("Error getting event channel from dispatcher: %s", err)
-	}
+	assert.NoError(t, err, "Error getting event channel from dispatcher")
 
 	// Connect
 	errch := make(chan error)
 	dispatcherEventch <- clientdisp.NewConnectEvent(errch)
 
 	select {
-	case err := <-errch:
-		if err != nil {
-			t.Fatalf("Error connecting: %s", err)
-		}
+	case err = <-errch:
+		assert.NoError(t, err, "Error connecting")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for connection response")
 	}
@@ -340,8 +303,8 @@ func TestBlockEvents(t *testing.T) {
 	var reg fab.Registration
 	select {
 	case reg = <-regch:
-	case err := <-errch:
-		t.Fatalf("Error registering for block events: %s", err)
+	case err = <-errch:
+		assert.NoError(t, err, "Error registering for block events")
 	}
 
 	// Produce block - this should notify the connection
@@ -355,20 +318,15 @@ func TestBlockEvents(t *testing.T) {
 	// Stop
 	stopResp := make(chan error)
 	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
-	if err := <-stopResp; err != nil {
-		t.Fatalf("Error stopping dispatcher: %s", err)
-	}
+	err = <-stopResp
+	assert.NoError(t, err, "Error stopping dispatcher")
 }
 
 func checkBlockEvent(eventch chan *fab.BlockEvent, t *testing.T) {
 	select {
 	case event, ok := <-eventch:
-		if !ok {
-			t.Fatal("unexpected closed channel")
-		}
-		if event.SourceURL != sourceURL {
-			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
-		}
+		assert.True(t, ok, "unexpected closed channel")
+		assert.Equal(t, sourceURL, event.SourceURL)
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for block event")
 	}
@@ -389,14 +347,11 @@ func TestFilteredBlockEvents(t *testing.T) {
 			),
 		),
 	)
-	if err := dispatcher.Start(); err != nil {
-		t.Fatalf("Error starting dispatcher: %s", err)
-	}
+	err := dispatcher.Start()
+	assert.NoError(t, err, "Error starting dispatcher")
 
 	dispatcherEventch, err := dispatcher.EventCh()
-	if err != nil {
-		t.Fatalf("Error getting event channel from dispatcher: %s", err)
-	}
+	assert.NoError(t, err, "Error getting event channel from dispatcher")
 
 	// Connect
 	errch := make(chan error)
@@ -405,9 +360,7 @@ func TestFilteredBlockEvents(t *testing.T) {
 
 	select {
 	case err := <-errch:
-		if err != nil {
-			t.Fatalf("Error connecting: %s", err)
-		}
+		assert.NoError(t, err, "Error connecting")
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for connection response")
 	}
@@ -436,23 +389,16 @@ func TestFilteredBlockEvents(t *testing.T) {
 	// Stop
 	stopResp := make(chan error)
 	dispatcherEventch <- esdispatcher.NewStopEvent(stopResp)
-	if err := <-stopResp; err != nil {
-		t.Fatalf("Error stopping dispatcher: %s", err)
-	}
+	err = <-stopResp
+	assert.NoError(t, err, "Error stopping dispatcher")
 }
 
 func checkFilteredBlockEvent(eventch chan *fab.FilteredBlockEvent, t *testing.T, channelID string) {
 	select {
 	case event, ok := <-eventch:
-		if !ok {
-			t.Fatal("unexpected closed channel")
-		}
-		if event.FilteredBlock.ChannelId != channelID {
-			t.Fatalf("expecting channelID [%s] but got [%s]", channelID, event.FilteredBlock.ChannelId)
-		}
-		if event.SourceURL != sourceURL {
-			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
-		}
+		assert.True(t, ok, "unexpected closed channel")
+		assert.Equal(t, channelID, event.FilteredBlock.ChannelId)
+		assert.Equal(t, sourceURL, event.SourceURL)
 	case <-time.After(10 * time.Second):
 		t.Fatal("timed out waiting for filtered block event")
 	}
