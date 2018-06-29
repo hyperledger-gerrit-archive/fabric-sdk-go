@@ -1,5 +1,3 @@
-// +build testing
-
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -28,6 +26,7 @@ import (
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -50,9 +49,8 @@ func TestOptionsInNewClient(t *testing.T) {
 		clientmocks.NewDiscoveryService(peer1, peer2),
 		client.WithBlockEvents(),
 	)
-	if err != nil {
-		t.Fatalf("error creating new event hub client: %s", err)
-	}
+
+	assert.NoError(t, err, "error creating new event hub client")
 	client.Close()
 }
 
@@ -69,24 +67,16 @@ func TestClientConnect(t *testing.T) {
 				)),
 		),
 	)
-	if err != nil {
-		t.Fatalf("error creating channel event client: %s", err)
-	}
-	if eventClient.ConnectionState() != client.Disconnected {
-		t.Fatalf("expecting connection state %s but got %s", client.Disconnected, eventClient.ConnectionState())
-	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting: %s", err)
-	}
-	time.Sleep(500 * time.Millisecond)
-	if eventClient.ConnectionState() != client.Connected {
-		t.Fatalf("expecting connection state %s but got %s", client.Connected, eventClient.ConnectionState())
-	}
+	assert.NoError(t, err, "error creating channel event client")
+	assert.Equal(t, client.Disconnected, eventClient.ConnectionState())
+
+	err = eventClient.Connect()
+	assert.NoError(t, err, "error connecting")
+
+	assert.Equal(t, client.Connected, eventClient.ConnectionState())
+
 	eventClient.Close()
-	if eventClient.ConnectionState() != client.Disconnected {
-		t.Fatalf("expecting connection state %s but got %s", client.Disconnected, eventClient.ConnectionState())
-	}
-	time.Sleep(2 * time.Second)
+	assert.Equal(t, client.Disconnected, eventClient.ConnectionState())
 }
 
 func TestTimeoutClientConnect(t *testing.T) {
@@ -105,12 +95,10 @@ func TestTimeoutClientConnect(t *testing.T) {
 				)),
 		),
 	)
-	if err != nil {
-		t.Fatalf("error creating channel event client: %s", err)
-	}
-	if err := eventClient.Connect(); err == nil {
-		t.Fatal("expecting error connecting due to timeout registering interests")
-	}
+	assert.NoError(t, err, "error creating channel event client")
+
+	err = eventClient.Connect()
+	assert.Error(t, err, "expecting error connecting due to timeout registering interests")
 }
 
 // TestReconnect tests the ability of the Channel Event Client to retry multiple
@@ -222,9 +210,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 		esdispatcher.WithEventConsumerTimeout(time.Second),
 		client.WithMaxConnectAttempts(maxConnectAttempts),
 	)
-	if err != nil {
-		t.Fatalf("error creating channel event client: %s", err)
-	}
+	assert.NoError(t, err, "error creating channel event client")
 
 	var outcome clientmocks.Outcome
 	if err := eventClient.Connect(); err != nil {
@@ -234,9 +220,7 @@ func testConnect(t *testing.T, maxConnectAttempts uint, expectedOutcome clientmo
 		defer eventClient.Close()
 	}
 
-	if outcome != expectedOutcome {
-		t.Fatalf("Expecting that the reconnection attempt would result in [%s] but got [%s]", expectedOutcome, outcome)
-	}
+	assert.Equal(t, expectedOutcome, outcome, "Reconnection attempt outcome")
 }
 
 func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expectedOutcome clientmocks.Outcome, connAttemptResult clientmocks.ConnectAttemptResults) {
@@ -269,12 +253,10 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 		client.WithConnectionEvent(connectch),
 		client.WithResponseTimeout(2*time.Second),
 	)
-	if err != nil {
-		t.Fatalf("error creating channel event client: %s", err)
-	}
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
-	}
+	assert.NoError(t, err, "error creating channel event client")
+
+	err = eventClient.Connect()
+	assert.NoError(t, err, "error connecting channel event client")
 	defer eventClient.Close()
 
 	outcomech := make(chan clientmocks.Outcome)
@@ -291,9 +273,7 @@ func testReconnect(t *testing.T, reconnect bool, maxReconnectAttempts uint, expe
 		outcome = clientmocks.TimedOutOutcome
 	}
 
-	if outcome != expectedOutcome {
-		t.Fatalf("Expecting that the reconnection attempt would result in [%s] but got [%s]", expectedOutcome, outcome)
-	}
+	assert.Equal(t, expectedOutcome, outcome, "reconnection attempt outcome")
 }
 
 func newEventClient(t *testing.T, channelID string, connectResults clientmocks.ConnectAttemptResults, ledger *servicemocks.MockLedger, cp *clientmocks.ProviderFactory) *Client {
@@ -317,9 +297,7 @@ func newEventClient(t *testing.T, channelID string, connectResults clientmocks.C
 		client.WithMaxReconnectAttempts(1),
 		client.WithTimeBetweenConnectAttempts(time.Millisecond),
 	)
-	if err != nil {
-		t.Fatalf("error creating channel event client: %s", err)
-	}
+	assert.NoError(t, err, "error creating channel event client")
 	return eventClient
 }
 
@@ -332,25 +310,18 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 	ledger := servicemocks.NewMockLedger(ehmocks.BlockEventFactory, sourceURL)
 	cp := clientmocks.NewProviderFactory()
 	eventClient := newEventClient(t, channelID, connectResults, ledger, cp)
-	if err := eventClient.Connect(); err != nil {
-		t.Fatalf("error connecting channel event client: %s", err)
-	}
+	err := eventClient.Connect()
+	assert.NoError(t, err, "error connecting channel event client")
 	defer eventClient.Close()
 
 	_, blockch, err := eventClient.RegisterBlockEvent()
-	if err != nil {
-		t.Fatalf("error registering for block events: %s", err)
-	}
+	assert.NoError(t, err, "error registering for block events")
 
 	_, ccch, err := eventClient.RegisterChaincodeEvent(ccID, ".*")
-	if err != nil {
-		t.Fatalf("error registering for chaincode events: %s", err)
-	}
+	assert.NoError(t, err, "error registering for chaincode events")
 
 	numCh := make(chan clientmocks.Received)
 	go listenEvents(blockch, ccch, 20*time.Second, numCh, expectedBlockEvents, expectedCCEvents)
-
-	time.Sleep(500 * time.Millisecond)
 
 	numEvents := 0
 	numCCEvents := 0
@@ -368,14 +339,8 @@ func testReconnectRegistration(t *testing.T, expectedBlockEvents clientmocks.Num
 		servicemocks.NewTransactionWithCCEvent("txID", pb.TxValidationCode_VALID, ccID, "event1", nil),
 	)
 
-	// Wait a while for the subscriber to receive the event
-	time.Sleep(500 * time.Millisecond)
-
 	// Simulate a connection error
 	cp.Connection().ProduceEvent(clientdisp.NewDisconnectedEvent(errors.New("testing reconnect handling")))
-
-	// Wait for the client to reconnect
-	time.Sleep(2 * time.Second)
 
 	// Produce some more events after the client has reconnected
 	for ; numCCEvents < int(expectedCCEvents); numCCEvents++ {

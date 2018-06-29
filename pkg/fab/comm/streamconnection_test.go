@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc/keepalive"
-
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/keepalive"
 
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -28,17 +28,23 @@ var invalidStream = func(grpcconn *grpc.ClientConn) (grpc.ClientStream, error) {
 	return nil, errors.New("simulated error creating stream")
 }
 
-func TestStreamConnection(t *testing.T) {
-	channelID := "testchannel"
+func TestStreamConnectionEmptyURL(t *testing.T) {
+	const channelID = "testchannel"
 
 	context := newMockContext()
 	chConfig := fabmocks.NewMockChannelCfg(channelID)
 
 	_, err := NewStreamConnection(context, chConfig, testStream, "")
-	if err == nil {
-		t.Fatal("expected error creating new connection with empty URL")
-	}
-	_, err = NewStreamConnection(context, chConfig, testStream, "invalidhost:0000",
+	assert.Error(t, err, "expected error creating new connection with empty URL")
+}
+
+func TestStreamConnectionInvalidURL(t *testing.T) {
+	const channelID = "testchannel"
+
+	context := newMockContext()
+	chConfig := fabmocks.NewMockChannelCfg(channelID)
+
+	_, err := NewStreamConnection(context, chConfig, testStream, "invalidhost:0000",
 		WithFailFast(true),
 		WithCertificate(nil),
 		WithInsecure(),
@@ -46,34 +52,25 @@ func TestStreamConnection(t *testing.T) {
 		WithKeepAliveParams(keepalive.ClientParameters{}),
 		WithConnectTimeout(3*time.Second),
 	)
-	if err == nil {
-		t.Fatal("expected error creating new connection with invalid URL")
-	}
+	assert.Error(t, err, "expected error creating new connection with invalid URL")
+
 	_, err = NewStreamConnection(context, chConfig, invalidStream, peerURL)
-	if err == nil {
-		t.Fatal("expected error creating new connection with invalid stream but got none")
-	}
+	assert.Error(t, err, "expected error creating new connection with invalid stream but got none")
+}
+
+func TestStreamConnection(t *testing.T) {
+	const channelID = "testchannel"
+
+	context := newMockContext()
+	chConfig := fabmocks.NewMockChannelCfg(channelID)
 
 	conn, err := NewStreamConnection(context, chConfig, testStream, peerURL)
-	if err != nil {
-		t.Fatalf("error creating new connection: %s", err)
-	}
-	if conn.Closed() {
-		t.Fatal("expected connection to be open")
-	}
-	if conn.Stream() == nil {
-		t.Fatal("got invalid stream")
-	}
-	if _, err := context.Serialize(); err != nil {
-		t.Fatal("error getting identity")
-	}
-
-	time.Sleep(1 * time.Second)
+	assert.NoError(t, err, "error creating new connection")
+	assert.False(t, conn.Closed(), "expected connection to be open")
+	assert.NotNil(t, conn.Stream(), "got invalid stream")
 
 	conn.Close()
-	if !conn.Closed() {
-		t.Fatal("expected connection to be closed")
-	}
+	assert.True(t, conn.Closed(), "expected connection to be closed")
 
 	// Calling close again should be ignored
 	conn.Close()
