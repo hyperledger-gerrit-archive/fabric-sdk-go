@@ -123,8 +123,6 @@ func TestMain(m *testing.M) {
 	discovery.RegisterDiscoveryServer(grpcServer, discoverServer)
 
 	go grpcServer.Serve(lis)
-
-	time.Sleep(2 * time.Second)
 	os.Exit(m.Run())
 }
 
