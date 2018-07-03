@@ -4,9 +4,10 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package channel
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -26,12 +27,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-)
-
-const (
-	org1User      = "User1"
-	org1AdminUser = "Admin"
-	orgChannelID  = "orgchannel"
 )
 
 func TestChannelClient(t *testing.T) {
@@ -78,9 +73,9 @@ func TestChannelClient(t *testing.T) {
 	testQuery("201", chaincodeID, chClient, t)
 
 	// transaction
-	nestedCCID := integration.GenerateRandomID()
-	_, err = integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, nestedCCID)
-	require.NoError(t, err)
+	nestedCCID := fmt.Sprintf("%snested", integration.GenerateExampleID())
+	err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, nestedCCID)
+	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
 	testTransaction(chaincodeID, nestedCCID, chClient, t)
 
 	// Verify transaction
@@ -120,7 +115,7 @@ func TestCCToCC(t *testing.T) {
 	require.NoError(t, err)
 
 	ccVersion := "v0"
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	require.NoError(t, err)
 
 	cc1ID := integration.GenerateRandomID()
@@ -321,27 +316,6 @@ func testInvokeHandler(ccID string, chClient *channel.Client, t *testing.T) {
 	}
 }
 
-type TestTxFilter struct {
-	err          error
-	errResponses error
-}
-
-func (tf *TestTxFilter) ProcessTxProposalResponse(txProposalResponse []*fab.TransactionProposalResponse) ([]*fab.TransactionProposalResponse, error) {
-	if tf.err != nil {
-		return nil, tf.err
-	}
-
-	var newResponses []*fab.TransactionProposalResponse
-
-	if tf.errResponses != nil {
-		// 404 will cause transaction commit error
-		txProposalResponse[0].ProposalResponse.Response.Status = 404
-	}
-
-	newResponses = append(newResponses, txProposalResponse[0])
-	return newResponses, nil
-}
-
 func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
 
 	eventID := "test([a-zA-Z]+)"
@@ -435,7 +409,7 @@ func TestNoEndpoints(t *testing.T) {
 
 	// Using shared SDK instance to increase test speed.
 	testSetup := mainTestSetup
-	configProvider := config.FromFile("../../fixtures/config/config_test_endpoints.yaml")
+	configProvider := config.FromFile(integration.GetConfigPath("config_test_endpoints.yaml"))
 
 	if integration.IsLocal() {
 		//If it is a local test then add entity mapping to config backend to parse URLs

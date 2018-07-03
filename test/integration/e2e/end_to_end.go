@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	channelID      = "mychannel"
+	channelID      = "e2echannel"
 	orgName        = "Org1"
 	orgAdmin       = "Admin"
 	ordererOrgName = "ordererorg"
