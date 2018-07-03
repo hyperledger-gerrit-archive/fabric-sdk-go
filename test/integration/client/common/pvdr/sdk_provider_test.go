@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package pvdr
 
 import (
 	"fmt"
@@ -44,10 +44,9 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	chainCodeID := integration.GenerateRandomID()
-	resp, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chainCodeID)
+	chaincodeID := integration.GenerateExampleID()
+	err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
 	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
-	require.NotEmpty(t, resp, "instantiate response should be populated")
 
 	//prepare contexts
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
@@ -57,7 +56,7 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+	response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
@@ -65,14 +64,14 @@ func TestDynamicSelection(t *testing.T) {
 	value := response.Payload
 
 	// Move funds
-	response, err = chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+	response, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	valueInt, _ := strconv.Atoi(string(value))
-	verifyValue(t, chClient, valueInt+1, chainCodeID)
+	verifyValue(t, chClient, valueInt+1, chaincodeID)
 }
 
 func verifyValue(t *testing.T, chClient *channel.Client, expectedValue int, ccID string) {
@@ -130,10 +129,6 @@ func (cp *dynamicSelectionChannelProvider) Initialize(providers context.Provider
 		init.Initialize(providers)
 	}
 	return nil
-}
-
-type closable interface {
-	Close()
 }
 
 // Close frees resources and caches.
