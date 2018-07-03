@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 package configless
 
-// cryptoconfig_override_test.go is an example of programmatically configuring the sdk by injecting instances that implement CryptoSuiteConfig's functions (representing the sdk's crypto configs).
+// cryptoconfig_override_test.go is an example of programmatically configuring the client by injecting instances that implement CryptoSuiteConfig's functions (representing the client's crypto configs).
 // For the sake of overriding CryptoSuiteConfig in the integration tests, the implementations below return similar values to what is found in /test/fixtures/config/config_test.yaml
 // application developers can fully override these functions to load configs in any way that suit their application need
 

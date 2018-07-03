@@ -6,7 +6,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fab
+package discovery
 
 import (
 	"strings"
@@ -39,10 +39,6 @@ const (
 	peer0Org1URL = "peer0.org1.example.com:7051"
 	peer1Org1URL = "peer1.org1.example.com:7151"
 	peer0Org2URL = "peer0.org2.example.com:8051"
-
-	adminUser    = "Admin"
-	org2Name     = "Org2"
-	orgChannelID = "orgchannel"
 )
 
 func TestDiscoveryClientPeers(t *testing.T) {
@@ -163,7 +159,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	require.NoError(t, err)
 
 	ccVersion := "v0"
-	ccPkg, err := packager.NewCCPackage(ccPath, "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	require.NoError(t, err)
 
 	t.Run("Policy: Org1 Only", func(t *testing.T) {

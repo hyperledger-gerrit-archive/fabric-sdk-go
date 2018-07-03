@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// identityconfig_override_test.go is an example of programmatically configuring the sdk by injecting instances that implement IdentityConfig's functions (representing the sdk's msp configs)
+// identityconfig_override_test.go is an example of programmatically configuring the client by injecting instances that implement IdentityConfig's functions (representing the client's msp configs)
 // for the sake of overriding IdentityConfig integration tests, the structure variables below are similar to what is found in /test/fixtures/config/config_test.yaml
 // application developers can fully override these functions to load configs in any way that suit their application need
 

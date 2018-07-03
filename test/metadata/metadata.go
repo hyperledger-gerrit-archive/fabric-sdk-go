@@ -15,3 +15,6 @@ var CryptoConfigPath = "test/fixtures/fabric/v1/crypto-config"
 
 // Project is the Go project name relative to the Go Path
 var Project = "github.com/hyperledger/fabric-sdk-go"
+
+// TestChaincodePrefix is the prefix for instantiated chaincodes during integration tests
+var TestChaincodePrefix = ""
