@@ -42,14 +42,14 @@ findPackages
 if [ "$TEST_CHANGED_ONLY" = true ]; then
     findChangedFiles
 
-    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)) ]]; then
-        echo "Test scripts, fixtures or metadata changed - running all tests"
-    else
+#    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)) ]]; then
+#        echo "Test scripts, fixtures or metadata changed - running all tests"
+#    else
         findChangedPackages
         filterExcludedPackages
         appendDepPackages
         PKGS=(${DEP_PKGS[@]})
-    fi
+#    fi
 fi
 
 RACEFLAG=""
