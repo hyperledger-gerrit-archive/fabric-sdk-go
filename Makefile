@@ -77,8 +77,7 @@ FABRIC_SDK_DEPRECATED_UNITTEST   ?= false
 # Code levels to exercise integration/e2e tests against (overridable)
 FABRIC_STABLE_INTTEST          ?= true
 FABRIC_STABLE_PKCS11_INTTEST   ?= false
-FABRIC_STABLE_REVOKED_INTTEST  ?= false
-FABRIC_STABLE_EXPIRED_INTTEST  ?= false
+FABRIC_STABLE_NEGATIVE_INTTEST ?= false
 FABRIC_PREV_INTTEST            ?= false
 FABRIC_PRERELEASE_INTTEST      ?= false
 FABRIC_DEVSTABLE_INTTEST       ?= false
@@ -148,8 +147,7 @@ export FABRIC_SDKGO_DEPEND_INSTALL=true
 FABRIC_SDK_DEPRECATED_UNITTEST   := false
 FABRIC_STABLE_INTTEST            := true
 FABRIC_STABLE_PKCS11_INTTEST     := true
-FABRIC_STABLE_REVOKED_INTTEST    := true
-FABRIC_STABLE_EXPIRED_INTTEST    := true
+FABRIC_STABLE_NEGATIVE_INTTEST    := true
 FABRIC_PREV_INTTEST              := true
 FABRIC_PRERELEASE_INTTEST        := false
 FABRIC_DEVSTABLE_INTTEST         := false
@@ -267,25 +265,11 @@ integration-tests-devstable: clean depend populate
 		TEST_CHANGED_ONLY=true FABRIC_FIXTURE_VERSION=v$(FABRIC_DEVSTABLE_VERSION_MINOR) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_DEVSTABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_DEVSTABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-nopkcs11-test.yaml up --force-recreate --abort-on-container-exit
 	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_DEV_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-nopkcs11-test.yaml"
 
-.PHONY: integration-tests-stable-revoked
+.PHONY: integration-tests-stable-negative
 integration-tests-stable-revoked: clean depend populate
 	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-revoked.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-revoked.yaml"
-
-.PHONY: integration-tests-stable-orderer-cert-expired
-integration-tests-stable-orderer-cert-expired: clean depend populate
-	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-expired-orderer.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-expired-orderer.yaml"
-
-.PHONY: integration-tests-stable-peer-cert-expired
-integration-tests-stable-peer-cert-expired: clean depend populate
-	@cd $(FIXTURE_DOCKERENV_PATH) && \
-		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-expired-peer.yaml up --force-recreate --abort-on-container-exit
-	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-expired-peer.yaml"
-
-
+		TEST_CHANGED_ONLY=true FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_STABLE_CODELEVEL_VER) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_STABLE_CODELEVEL_TAG) FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(DOCKER_COMPOSE_CMD) -f docker-compose.yaml -f docker-compose-negative.yaml up --force-recreate --abort-on-container-exit
+	@cd $(FIXTURE_DOCKERENV_PATH) && FABRIC_DOCKER_REGISTRY=$(FABRIC_RELEASE_REGISTRY) $(FIXTURE_SCRIPTS_PATH)/check_status.sh "-f ./docker-compose.yaml -f ./docker-compose-negative.yaml"
 
 .PHONY: integration-tests-stable-pkcs11
 integration-tests-stable-pkcs11: clean depend populate build-softhsm2-image
@@ -317,18 +301,9 @@ ifeq ($(FABRIC_STABLE_PKCS11_INTTEST),true)
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
 	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-pkcs11
 endif
-ifeq ($(FABRIC_STABLE_REVOKED_INTTEST),true)
+ifeq ($(FABRIC_STABLE_NEGATIVE_INTTEST),true)
 	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-revoked
-endif
-
-ifeq ($(FABRIC_STABLE_EXPIRED_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-orderer-cert-expired
-endif
-ifeq ($(FABRIC_STABLE_EXPIRED_INTTEST),true)
-	@$(MAKE) -f $(MAKEFILE_THIS) clean
-	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-peer-cert-expired
+	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable-negative
 endif
 
 ifeq ($(FABRIC_PRERELEASE_INTTEST),true)

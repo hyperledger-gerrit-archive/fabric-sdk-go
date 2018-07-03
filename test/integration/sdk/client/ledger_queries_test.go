@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package client
 
 import (
 	"fmt"
@@ -114,7 +114,7 @@ func TestNoLedgerEndpoints(t *testing.T) {
 	// Using shared SDK instance to increase test speed.
 	testSetup := mainTestSetup
 
-	configProvider := config.FromFile("../../fixtures/config/config_test_endpoints.yaml")
+	configProvider := config.FromFile(integration.GetConfigPath("config_test_endpoints.yaml"))
 	//Add entity matchers if local test
 	if integration.IsLocal() {
 		configProvider = integration.AddLocalEntityMapping(configProvider, integration.LocalOrdererPeersConfig)

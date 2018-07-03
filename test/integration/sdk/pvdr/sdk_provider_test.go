@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package pvdr
 
 import (
 	"fmt"
@@ -130,10 +130,6 @@ func (cp *dynamicSelectionChannelProvider) Initialize(providers context.Provider
 		init.Initialize(providers)
 	}
 	return nil
-}
-
-type closable interface {
-	Close()
 }
 
 // Close frees resources and caches.
