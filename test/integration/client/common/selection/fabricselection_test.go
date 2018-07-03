@@ -6,25 +6,24 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package selection
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/fabricselection"
 	selectionopts "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
-	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/stretchr/testify/require"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
@@ -59,7 +58,7 @@ func TestFabricSelection(t *testing.T) {
 	require.NoError(t, err)
 
 	ccVersion := "v0"
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	require.NoError(t, err)
 
 	ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
