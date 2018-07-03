@@ -163,7 +163,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	require.NoError(t, err)
 
 	ccVersion := "v0"
-	ccPkg, err := packager.NewCCPackage(ccPath, "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	require.NoError(t, err)
 
 	t.Run("Policy: Org1 Only", func(t *testing.T) {
