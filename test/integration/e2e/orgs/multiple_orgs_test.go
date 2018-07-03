@@ -9,7 +9,6 @@ package orgs
 import (
 	"fmt"
 	"os"
-	"path"
 	"runtime"
 	"strconv"
 	"strings"
@@ -31,7 +30,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
@@ -196,7 +194,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -295,7 +293,7 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 
 	// create a channel for orgchannel.tx
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
-		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannel.tx"),
+		ChannelConfigPath: integration.GetChannelConfigPath("orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
 	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel of orgchannel")
@@ -307,7 +305,7 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	chMgmtClient, err = resmgmt.New(mc.org1AdminClientContext)
 	require.NoError(t, err, "failed to get a new channel management client for org1Admin")
 	req = resmgmt.SaveChannelRequest{ChannelID: channelID,
-		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannelOrg1MSPanchors.tx"),
+		ChannelConfigPath: integration.GetChannelConfigPath("orgchannelOrg1MSPanchors.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser}}
 	txID, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel for anchor peer 1")
@@ -319,7 +317,7 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	chMgmtClient, err = resmgmt.New(mc.org2AdminClientContext)
 	require.NoError(t, err, "failed to get a new channel management client for org2Admin")
 	req = resmgmt.SaveChannelRequest{ChannelID: channelID,
-		ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, "orgchannelOrg2MSPanchors.tx"),
+		ChannelConfigPath: integration.GetChannelConfigPath("orgchannelOrg2MSPanchors.tx"),
 		SigningIdentities: []msp.SigningIdentity{org2AdminUser}}
 	txID, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel for anchor peer 2")
