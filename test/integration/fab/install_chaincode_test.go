@@ -37,23 +37,6 @@ func TestChaincodeInstal(t *testing.T) {
 	sdk := mainSDK
 	testSetup := mainTestSetup
 
-	//testSetup := &integration.BaseSetupImpl{
-	//	ConfigFile:    "../" + integration.ConfigTestFile,
-	//	ChannelID:     "mychannel",
-	//	OrgID:         org1Name,
-	//	ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	//}
-
-	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	//if err != nil {
-	//	t.Fatalf("Failed to create new SDK: %s", err)
-	//}
-	//defer sdk.Close()
-
-	//if err := testSetup.Initialize(sdk); err != nil {
-	//	t.Fatal(err)
-	//}
-
 	testChaincodeInstallUsingChaincodePath(t, sdk, testSetup)
 
 	testChaincodeInstallUsingChaincodePackage(t, sdk, testSetup)

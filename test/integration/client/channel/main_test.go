@@ -3,27 +3,28 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
-package sdk
+package channel
 
 import (
 	"fmt"
 	"os"
-	"path"
 	"testing"
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	adminUser = "Admin"
-	org1Name  = "Org1"
-	org2Name  = "Org2"
-	ccPath    = "github.com/example_cc"
+	org1Name      = "Org1"
+	org2Name      = "Org2"
+	org1AdminUser = "Admin"
+	org2AdminUser = "Admin"
+	org1User      = "User1"
+	orgChannelID  = "orgchannel"
+	ccPath        = "github.com/example_cc"
 )
 
 var mainSDK *fabsdk.FabricSDK
@@ -41,7 +42,7 @@ func setup() {
 	testSetup := integration.BaseSetupImpl{
 		ChannelID:         "mychannel",
 		OrgID:             org1Name,
-		ChannelConfigFile: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelConfigFile: integration.GetChannelConfigPath("mychannel.tx"),
 	}
 
 	sdk, err := fabsdk.New(integration.ConfigBackend)
@@ -57,9 +58,9 @@ func setup() {
 		panic(err.Error())
 	}
 
-	chaincodeID := integration.GenerateRandomID()
-	if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
-		panic(fmt.Sprintf("InstallAndInstantiateExampleCC return error: %s", err))
+	chaincodeID := integration.GenerateExampleID(false)
+	if err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
+		panic(fmt.Sprintf("PrepareExampleCC return error: %s", err))
 	}
 
 	mainSDK = sdk
@@ -73,22 +74,22 @@ func teardown() {
 }
 
 func setupMultiOrgContext(t *testing.T, sdk *fabsdk.FabricSDK) []*integration.OrgContext {
-	org1AdminContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(org1Name))
+	org1AdminContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
 	org1ResMgmt, err := resmgmt.New(org1AdminContext)
 	require.NoError(t, err)
 
 	org1MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org1Name))
 	require.NoError(t, err)
-	org1Admin, err := org1MspClient.GetSigningIdentity(adminUser)
+	org1Admin, err := org1MspClient.GetSigningIdentity(org1AdminUser)
 	require.NoError(t, err)
 
-	org2AdminContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(org2Name))
+	org2AdminContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2Name))
 	org2ResMgmt, err := resmgmt.New(org2AdminContext)
 	require.NoError(t, err)
 
 	org2MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org2Name))
 	require.NoError(t, err)
-	org2Admin, err := org2MspClient.GetSigningIdentity(adminUser)
+	org2Admin, err := org2MspClient.GetSigningIdentity(org2AdminUser)
 	require.NoError(t, err)
 
 	// Ensure that Gossip has propagated its view of local peers before invoking

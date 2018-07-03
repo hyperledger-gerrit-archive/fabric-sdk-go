@@ -8,12 +8,10 @@ package fab
 import (
 	"fmt"
 	"os"
-	"path"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 var mainSDK *fabsdk.FabricSDK
@@ -22,7 +20,6 @@ var mainChaincodeID string
 
 const (
 	org1Name = "Org1"
-	ccPath   = "github.com/example_cc"
 )
 
 func TestMain(m *testing.M) {
@@ -36,7 +33,7 @@ func setup() {
 	testSetup := integration.BaseSetupImpl{
 		ChannelID:         "mychannel",
 		OrgID:             org1Name,
-		ChannelConfigFile: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelConfigFile: integration.GetChannelConfigPath("mychannel.tx"),
 	}
 
 	sdk, err := fabsdk.New(integration.ConfigBackend)
@@ -48,9 +45,9 @@ func setup() {
 		panic(err.Error())
 	}
 
-	chaincodeID := integration.GenerateRandomID()
-	if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
-		panic(fmt.Sprintf("InstallAndInstantiateExampleCC return error: %s", err))
+	chaincodeID := integration.GenerateExampleID(false)
+	if err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
+		panic(fmt.Sprintf("PrepareExampleCC return error: %s", err))
 	}
 
 	mainSDK = sdk

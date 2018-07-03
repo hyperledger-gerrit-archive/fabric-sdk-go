@@ -6,7 +6,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package channel
 
 import (
 	"testing"
@@ -17,6 +17,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -34,11 +36,11 @@ func TestPrivateData(t *testing.T) {
 
 	ccVersion := "v0"
 	ccPath := "github.com/example_pvt_cc"
-	ccPkg, err := packager.NewCCPackage(ccPath, "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage(ccPath, integration.GetDeployPath())
 	require.NoError(t, err)
 
 	coll1 := "collection1"
-	ccID := "example_pvt_cc" + "_" + integration.GenerateRandomID()
+	ccID := integration.GenerateExamplePvtID(true)
 	collConfig, err := newCollectionConfig(coll1, "OR('Org2MSP.member')", 0, 2, 1000)
 	require.NoError(t, err)
 	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext, collConfig)
@@ -95,11 +97,11 @@ func TestPrivateDataWithOrgDown(t *testing.T) {
 
 	ccVersion := "v0"
 	ccPath := "github.com/example_pvt_cc"
-	ccPkg, err := packager.NewCCPackage(ccPath, "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage(ccPath, integration.GetDeployPath())
 	require.NoError(t, err)
 
 	coll1 := "collection1"
-	ccID := "example_pvt_cc" + "_" + integration.GenerateRandomID()
+	ccID := integration.GenerateExamplePvtID(true)
 	collConfig, err := newCollectionConfig(coll1, "OR('Org3MSP.member')", 0, 2, 1000)
 	require.NoError(t, err)
 	err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member','Org3MSP.member')", orgsContext, collConfig)
@@ -138,4 +140,27 @@ func TestPrivateDataWithOrgDown(t *testing.T) {
 		t.Logf("Got %d response(s)", len(response.Responses))
 		require.NotEmptyf(t, response.Responses, "expecting at least one response")
 	})
+}
+
+func newCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64) (*cb.CollectionConfig, error) {
+	p, err := cauthdsl.FromString(policy)
+	if err != nil {
+		return nil, err
+	}
+	cpc := &cb.CollectionPolicyConfig{
+		Payload: &cb.CollectionPolicyConfig_SignaturePolicy{
+			SignaturePolicy: p,
+		},
+	}
+	return &cb.CollectionConfig{
+		Payload: &cb.CollectionConfig_StaticCollectionConfig{
+			StaticCollectionConfig: &cb.StaticCollectionConfig{
+				Name:              colName,
+				MemberOrgsPolicy:  cpc,
+				RequiredPeerCount: reqPeerCount,
+				MaximumPeerCount:  maxPeerCount,
+				BlockToLive:       blockToLive,
+			},
+		},
+	}, nil
 }

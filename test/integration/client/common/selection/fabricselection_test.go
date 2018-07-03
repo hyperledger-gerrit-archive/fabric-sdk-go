@@ -6,25 +6,24 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package selection
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/fabricselection"
 	selectionopts "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
-	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/stretchr/testify/require"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
@@ -59,7 +58,7 @@ func TestFabricSelection(t *testing.T) {
 	require.NoError(t, err)
 
 	ccVersion := "v0"
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	require.NoError(t, err)
 
 	ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
@@ -73,7 +72,7 @@ func TestFabricSelection(t *testing.T) {
 	require.True(t, ok)
 
 	t.Run("Policy: Org1 Only", func(t *testing.T) {
-		ccID := integration.GenerateRandomID()
+		ccID := integration.GenerateExampleID(true)
 		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member')", orgsContext)
 		testEndorsers(
 			t, selectionService,
@@ -85,7 +84,7 @@ func TestFabricSelection(t *testing.T) {
 	})
 
 	t.Run("Policy: Org2 Only", func(t *testing.T) {
-		ccID := integration.GenerateRandomID()
+		ccID := integration.GenerateExampleID(true)
 		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
@@ -97,7 +96,7 @@ func TestFabricSelection(t *testing.T) {
 	})
 
 	t.Run("Policy: Org1 or Org2", func(t *testing.T) {
-		ccID := integration.GenerateRandomID()
+		ccID := integration.GenerateExampleID(true)
 		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
@@ -111,7 +110,7 @@ func TestFabricSelection(t *testing.T) {
 	})
 
 	t.Run("Policy: Org1 and Org2", func(t *testing.T) {
-		ccID := integration.GenerateRandomID()
+		ccID := integration.GenerateExampleID(true)
 		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "AND('Org1MSP.member','Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
@@ -136,10 +135,10 @@ func TestFabricSelection(t *testing.T) {
 
 	// Chaincode to Chaincode
 	t.Run("Policy: CC1(Org1 Only) to CC2(Org2 Only)", func(t *testing.T) {
-		ccID1 := integration.GenerateRandomID()
+		ccID1 := integration.GenerateExampleID(true)
 		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID1, ccVersion, "OR('Org1MSP.member')", orgsContext)
 		require.NoError(t, err)
-		ccID2 := integration.GenerateRandomID()
+		ccID2 := integration.GenerateExampleID(true)
 		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID2, ccVersion, "OR('Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
@@ -153,7 +152,7 @@ func TestFabricSelection(t *testing.T) {
 
 	t.Run("Policy: Org1 or Org2; ColPolicy: Org1 only", func(t *testing.T) {
 		coll1 := "collection1"
-		ccID := integration.GenerateRandomID()
+		ccID := integration.GenerateExampleID(true)
 		collConfig, err := newCollectionConfig(coll1, "OR('Org1MSP.member')", 0, 2, 1000)
 		require.NoError(t, err)
 		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext, collConfig)

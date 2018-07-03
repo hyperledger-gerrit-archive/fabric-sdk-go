@@ -6,7 +6,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package fab
+package discovery
 
 import (
 	"strings"
@@ -39,10 +39,6 @@ const (
 	peer0Org1URL = "peer0.org1.example.com:7051"
 	peer1Org1URL = "peer1.org1.example.com:7151"
 	peer0Org2URL = "peer0.org2.example.com:8051"
-
-	adminUser    = "Admin"
-	org2Name     = "Org2"
-	orgChannelID = "orgchannel"
 )
 
 func TestDiscoveryClientPeers(t *testing.T) {
@@ -163,11 +159,11 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	require.NoError(t, err)
 
 	ccVersion := "v0"
-	ccPkg, err := packager.NewCCPackage(ccPath, "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	require.NoError(t, err)
 
 	t.Run("Policy: Org1 Only", func(t *testing.T) {
-		ccID := integration.GenerateRandomID()
+		ccID := integration.GenerateExampleID(true)
 		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member')", orgsContext)
 		testEndorsers(
 			t, mainSDK,
@@ -178,7 +174,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	})
 
 	t.Run("Policy: Org2 Only", func(t *testing.T) {
-		ccID := integration.GenerateRandomID()
+		ccID := integration.GenerateExampleID(true)
 		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
@@ -189,7 +185,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	})
 
 	t.Run("Policy: Org1 or Org2", func(t *testing.T) {
-		ccID := integration.GenerateRandomID()
+		ccID := integration.GenerateExampleID(true)
 		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "OR('Org1MSP.member','Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
@@ -202,7 +198,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	})
 
 	t.Run("Policy: Org1 and Org2", func(t *testing.T) {
-		ccID := integration.GenerateRandomID()
+		ccID := integration.GenerateExampleID(true)
 		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID, ccVersion, "AND('Org1MSP.member','Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
@@ -215,10 +211,10 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 
 	// Chaincode to Chaincode
 	t.Run("Policy: CC1(Org1 Only) to CC2(Org2 Only)", func(t *testing.T) {
-		ccID1 := integration.GenerateRandomID()
+		ccID1 := integration.GenerateExampleID(true)
 		err := integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID1, ccVersion, "OR('Org1MSP.member')", orgsContext)
 		require.NoError(t, err)
-		ccID2 := integration.GenerateRandomID()
+		ccID2 := integration.GenerateExampleID(true)
 		err = integration.InstallAndInstantiateChaincode(orgChannelID, ccPkg, ccPath, ccID2, ccVersion, "OR('Org2MSP.member')", orgsContext)
 		require.NoError(t, err)
 		testEndorsers(
