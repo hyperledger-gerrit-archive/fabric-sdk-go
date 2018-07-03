@@ -25,19 +25,22 @@ import (
 )
 
 const (
-	bootStrapCC                    = "btspExampleCC"
-	configPath                     = "../../fixtures/config/config_test_multiorg_bootstrap.yaml"
-	localOrderersPeersCAConfigPath = "../../fixtures/config/overrides/local_orderers_peers_ca_bootstrap.yaml"
-	entityMatchersConfigPath       = "../../fixtures/config/overrides/local_entity_matchers_bootstrap.yaml"
+	bootStrapCC                        = "btspExampleCC"
+	configFilename                     = "config_test_multiorg_bootstrap.yaml"
+	localOrderersPeersCAConfigFilename = "local_orderers_peers_ca_bootstrap.yaml"
+	entityMatchersConfigFilename       = "local_entity_matchers_bootstrap.yaml"
 )
 
 //TestOrgsEndToEndWithBootstrapConfigs does the same as TestOrgsEndToEnd with the difference of loading
 // minimal configs instead of the normal config_test.yaml configs and with the help of discovery service to discover
 // other peers not in the config (example org1 has 2 peers and only peer0 is defined in the bootstrap configs)
 func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
-	sdk, err := fabsdk.New(integration.FetchConfigBackend(configPath, localOrderersPeersCAConfigPath, entityMatchersConfigPath),
-		fabsdk.WithServicePkg(&DynamicDiscoveryProviderFactory{}),
-	)
+	cfgBackend := integration.FetchConfigBackend(
+		integration.GetConfigPath(configFilename),
+		integration.GetConfigOverridesPath(localOrderersPeersCAConfigFilename),
+		integration.GetConfigOverridesPath(entityMatchersConfigFilename))
+
+	sdk, err := fabsdk.New(cfgBackend, fabsdk.WithServicePkg(&DynamicDiscoveryProviderFactory{}))
 	if err != nil {
 		require.NoError(t, err, "Failed to create new SDK")
 	}

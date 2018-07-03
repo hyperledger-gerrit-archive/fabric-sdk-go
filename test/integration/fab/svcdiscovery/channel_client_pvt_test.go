@@ -6,7 +6,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package svcdiscovery
 
 import (
 	"testing"
@@ -34,7 +34,7 @@ func TestPrivateData(t *testing.T) {
 
 	ccVersion := "v0"
 	ccPath := "github.com/example_pvt_cc"
-	ccPkg, err := packager.NewCCPackage(ccPath, "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage(ccPath, integration.GetDeployPath())
 	require.NoError(t, err)
 
 	coll1 := "collection1"
@@ -95,7 +95,7 @@ func TestPrivateDataWithOrgDown(t *testing.T) {
 
 	ccVersion := "v0"
 	ccPath := "github.com/example_pvt_cc"
-	ccPkg, err := packager.NewCCPackage(ccPath, "../../fixtures/testdata")
+	ccPkg, err := packager.NewCCPackage(ccPath, integration.GetDeployPath())
 	require.NoError(t, err)
 
 	coll1 := "collection1"
