@@ -17,6 +17,7 @@ function findPackages {
            fi
        done
     done
+    echo "PKGS" ${PKGS[@]}
 }
 
 function findChangedFiles {
@@ -40,6 +41,7 @@ function findChangedFiles {
     else
         echo "Examining working directory changes"
     fi
+    echo "CHANGED_FILES" ${CHANGED_FILES[@]}
 }
 
 function findChangedPackages {
@@ -49,18 +51,25 @@ function findChangedPackages {
         declare allowedExtensions="(go|yaml|json|tx|pem|block)"
         declare fileExt=${file#*.}
 
+        echo "file" $file
+        echo "fileExt" $fileExt
+
         if [ "${file}" != "" ] && [[ ${fileExt} =~ $allowedExtensions ]]; then
             declare DIR=`dirname ${file}`
 
+            echo "DIR" $DIR
             if [ "${DIR}" = "." ]; then
+                echo "A" ${REPO}
                 CHANGED_PKG+=("${REPO}")
 #            vendor is not currently included in the git repository
 #            also git list currently prints out packages including the vendor/ prefix.
 #            elif [[ "${DIR}" =~ ^vendor/(.*)$ ]]; then
 #                CHANGED_PKGS+=("${BASH_REMATCH[1]}")
             elif [[ "${DIR}" =~ ^(.*)/testdata(.*)$ ]]; then
+                echo "B" "${REPO}/${BASH_REMATCH[1]}"
                 CHANGED_PKGS+=("${REPO}/${BASH_REMATCH[1]}")
             else
+                echo "C" "${REPO}/${DIR}"
                 CHANGED_PKGS+=("${REPO}/${DIR}")
             fi
         fi
@@ -68,6 +77,7 @@ function findChangedPackages {
 
     # Make result unique and filter out non-Go "packages".
     CHANGED_PKGS=($(printf "%s\n" "${CHANGED_PKGS[@]}" | sort -u | xargs ${GO_CMD} list 2> /dev/null | tr '\n' ' '))
+    echo "CHANGED_PKGS" ${CHANGED_PKGS[@]}
 }
 
 function filterExcludedPackages {
@@ -83,6 +93,7 @@ function filterExcludedPackages {
     done
 
     FILTERED_PKGS=("${FILTERED_PKGS[@]}")
+    echo "FILTERED_PKGS" ${FILTERED_PKGS[@]}
 }
 
 function calcDepPackages {
@@ -146,6 +157,7 @@ function appendDepPackages {
     done
 
     DEP_PKGS=($(printf "%s\n" "${DEP_PKGS[@]}" | sort -u | tr '\n' ' '))
+    echo "DEP_PKGS" ${DEP_PKGS[@]}
 }
 
 # packagesToDirs convert packages to directories
