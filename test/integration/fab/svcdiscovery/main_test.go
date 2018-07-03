@@ -3,32 +3,31 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
-package sdk
+package svcdiscovery
 
 import (
 	"fmt"
 	"os"
-	"path"
 	"testing"
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	adminUser = "Admin"
-	org1Name  = "Org1"
-	org2Name  = "Org2"
-	ccPath    = "github.com/example_cc"
+	org1Name     = "Org1"
+	org2Name     = "Org2"
+	adminUser    = "Admin"
+	org1User     = "User1"
+	orgChannelID = "orgchannel"
+	ccPath       = "github.com/example_cc"
 )
 
 var mainSDK *fabsdk.FabricSDK
 var mainTestSetup *integration.BaseSetupImpl
-var mainChaincodeID string
 
 func TestMain(m *testing.M) {
 	setup()
@@ -41,7 +40,7 @@ func setup() {
 	testSetup := integration.BaseSetupImpl{
 		ChannelID:         "mychannel",
 		OrgID:             org1Name,
-		ChannelConfigFile: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelConfigFile: integration.GetChannelConfigPath("mychannel.tx"),
 	}
 
 	sdk, err := fabsdk.New(integration.ConfigBackend)
@@ -57,14 +56,8 @@ func setup() {
 		panic(err.Error())
 	}
 
-	chaincodeID := integration.GenerateRandomID()
-	if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID); err != nil {
-		panic(fmt.Sprintf("InstallAndInstantiateExampleCC return error: %s", err))
-	}
-
 	mainSDK = sdk
 	mainTestSetup = &testSetup
-	mainChaincodeID = chaincodeID
 }
 
 func teardown() {
@@ -116,4 +109,17 @@ func setupMultiOrgContext(t *testing.T, sdk *fabsdk.FabricSDK) []*integration.Or
 			AnchorPeerConfigFile: "orgchannelOrg2MSPanchors.tx",
 		},
 	}
+}
+
+type closable interface {
+	Close()
+}
+
+func contains(list []string, value string) bool {
+	for _, e := range list {
+		if e == value {
+			return true
+		}
+	}
+	return false
 }
