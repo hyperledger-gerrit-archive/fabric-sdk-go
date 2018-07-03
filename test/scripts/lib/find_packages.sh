@@ -17,6 +17,7 @@ function findPackages {
            fi
        done
     done
+    echo "PKGS" ${PKGS[@]}
 }
 
 function findChangedFiles {
@@ -40,6 +41,7 @@ function findChangedFiles {
     else
         echo "Examining working directory changes"
     fi
+    echo "CHANGED_FILES" ${CHANGED_FILES[@]}
 }
 
 function findChangedPackages {
@@ -68,6 +70,7 @@ function findChangedPackages {
 
     # Make result unique and filter out non-Go "packages".
     CHANGED_PKGS=($(printf "%s\n" "${CHANGED_PKGS[@]}" | sort -u | xargs ${GO_CMD} list 2> /dev/null | tr '\n' ' '))
+    echo "CHANGED_PKGS" ${CHANGED_PKGS[@]}
 }
 
 function filterExcludedPackages {
@@ -83,6 +86,7 @@ function filterExcludedPackages {
     done
 
     FILTERED_PKGS=("${FILTERED_PKGS[@]}")
+    echo "FILTERED_PKGS" ${FILTERED_PKGS[@]}
 }
 
 function calcDepPackages {
@@ -146,6 +150,7 @@ function appendDepPackages {
     done
 
     DEP_PKGS=($(printf "%s\n" "${DEP_PKGS[@]}" | sort -u | tr '\n' ' '))
+    echo "DEP_PKGS" ${DEP_PKGS[@]}
 }
 
 # packagesToDirs convert packages to directories
