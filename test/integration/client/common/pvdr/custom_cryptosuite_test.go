@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package pvdr
 
 import (
 	"testing"
@@ -30,28 +30,9 @@ func customCryptoSuiteInit(t *testing.T) (*integration.BaseSetupImpl, string) {
 	sdk := mainSDK
 	testSetup := mainTestSetup
 
-	//testSetup := integration.BaseSetupImpl{
-	//	ConfigFile:    "../" + integration.ConfigTestFile,
-	//	ChannelID:     "mychannel",
-	//	OrgID:         org1Name,
-	//	ChannelConfig: path.Join("../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	//}
-
-	// Create SDK setup for the integration tests
-	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	//if err != nil {
-	//	t.Fatalf("Failed to create new SDK: %s", err)
-	//}
-	//defer sdk.Close()
-
-	//if err := testSetup.Initialize(sdk); err != nil {
-	//	t.Fatal(err)
-	//}
-
-	chaincodeID := integration.GenerateRandomID()
-	resp, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
+	chaincodeID := integration.GenerateExampleID()
+	err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
 	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
-	require.NotEmpty(t, resp, "instantiate response should be populated")
 
 	return testSetup, chaincodeID
 }
@@ -160,25 +141,25 @@ func TestCustomCryptoSuite(t *testing.T) {
 	//Get BCCSP custom wrapper for Test BCCSP
 	customBccspWrapper := getBCCSPWrapper(customBccspProvider)
 
-	sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
+	client, err := fabsdk.New(config.FromFile(testSetup.ConfigFile),
 		fabsdk.WithCorePkg(&CustomCryptoSuiteProviderFactory{bccspProvider: customBccspWrapper}))
 	if err != nil {
 		t.Fatalf("Failed to create new SDK: %s", err)
 	}
-	defer sdk.Close()
+	defer client.Close()
 
-	key, err := sdk.CryptoSuiteProvider().KeyGen(nil)
+	key, err := client.CryptoSuiteProvider().KeyGen(nil)
 	if err != nil {
-		t.Fatalf("Failed to get key from  sdk.CryptoSuiteProvider().KeyGen(): %s", err)
+		t.Fatalf("Failed to get key from  client.CryptoSuiteProvider().KeyGen(): %s", err)
 	}
 
 	bytes, err := key.Bytes()
 	if err != nil {
-		t.Fatalf("Failed to get key bytes from  sdk.CryptoSuiteProvider().KeyGen(): %s", err)
+		t.Fatalf("Failed to get key bytes from  client.CryptoSuiteProvider().KeyGen(): %s", err)
 	}
 
 	if string(bytes) != samplekey {
-		t.Fatalf("Unexpected sdk.CryptoSuiteProvider(), expected to find BCCSPWrapper features : %s", err)
+		t.Fatalf("Unexpected client.CryptoSuiteProvider(), expected to find BCCSPWrapper features : %s", err)
 	}
 }
 */

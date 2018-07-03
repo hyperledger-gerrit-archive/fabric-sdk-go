@@ -4,7 +4,7 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package resmgmt
 
 import (
 	"testing"
@@ -20,29 +20,6 @@ func TestResMgmtClientQueries(t *testing.T) {
 	sdk := mainSDK
 	testSetup := mainTestSetup
 	chaincodeID := mainChaincodeID
-
-	//testSetup := integration.BaseSetupImpl{
-	//	ConfigFile:    "../" + integration.ConfigTestFile,
-	//	ChannelID:     "mychannel",
-	//	OrgID:         org1Name,
-	//	ChannelConfig: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
-	//}
-
-	// Create SDK setup for the integration tests
-	//sdk, err := fabsdk.New(config.FromFile(testSetup.ConfigFile))
-	//if err != nil {
-	//	t.Fatalf("Failed to create new SDK: %s", err)
-	//}
-	//defer sdk.Close()
-
-	//if err := testSetup.Initialize(sdk); err != nil {
-	//	t.Fatal(err)
-	//}
-
-	//ccID := integration.GenerateRandomID()
-	//if _, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, ccID); err != nil {
-	//	t.Fatalf("InstallAndInstantiateExampleCC return error: %s", err)
-	//}
 
 	//prepare contexts
 	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
@@ -142,13 +119,4 @@ func testQueryConfigFromOrderer(t *testing.T, channelID string, client *resmgmt.
 		t.Fatal("QueryConfig should have failed for invalid orderer")
 	}
 
-}
-
-func contains(list []string, value string) bool {
-	for _, e := range list {
-		if e == value {
-			return true
-		}
-	}
-	return false
 }

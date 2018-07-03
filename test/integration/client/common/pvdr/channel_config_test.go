@@ -4,10 +4,9 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package sdk
+package pvdr
 
 import (
-	"path"
 	"strings"
 	"testing"
 
@@ -24,7 +23,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/require"
 )
 
@@ -77,7 +75,7 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 	testSetup := integration.BaseSetupImpl{
 		ChannelID:         "mychannel",
 		OrgID:             org1Name,
-		ChannelConfigFile: path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"),
+		ChannelConfigFile: integration.GetChannelConfigPath("mychannel.tx"),
 	}
 
 	configBackend, err := integration.ConfigBackend()
