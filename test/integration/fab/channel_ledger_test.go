@@ -8,7 +8,6 @@ package fab
 
 import (
 	"fmt"
-	"path"
 	"strconv"
 	"testing"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
@@ -38,13 +36,7 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 	// Using shared SDK instance to increase test speed.
 	sdk := mainSDK
 
-	//var sdkConfigFile = "../" + integration.ConfigTestFile
-	//	sdk, err := fabsdk.New(config.FromFile(sdkConfigFile))
-	//	if err != nil {
-	//		t.Fatalf("SDK init failed: %s", err)
-	//	}
 	// Get signing identity that is used to sign create channel request
-
 	orgMspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(orgName))
 	if err != nil {
 		t.Fatalf("failed to create org2MspClient, err : %s", err)
@@ -65,7 +57,7 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 		t.Fatalf("creating peers failed: %s", err)
 	}
 
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfigPath: path.Join("../../../", metadata.ChannelConfigPath, channelConfigFile), SigningIdentities: []msp.SigningIdentity{adminIdentity}}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfigPath: integration.GetChannelConfigPath(channelConfigFile), SigningIdentities: []msp.SigningIdentity{adminIdentity}}
 	err = integration.InitializeChannel(sdk, orgName, req, targets)
 	if err != nil {
 		t.Fatalf("failed to ensure channel has been initialized: %s", err)
@@ -74,17 +66,17 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 }
 
 func TestLedgerQueries(t *testing.T) {
+	testSetup := mainTestSetup
 
 	// Setup tests with a random chaincode ID.
 	sdk, targets := initializeLedgerTests(t)
 
 	// Using shared SDK instance to increase test speed.
-	//defer sdk.Close()
+	//defer client.Close()
 
-	chaincodeID := integration.GenerateRandomID()
-	resp, err := integration.InstallAndInstantiateExampleCC(sdk, fabsdk.WithUser("Admin"), orgName, chaincodeID)
+	chaincodeID := integration.GenerateExampleID()
+	err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
 	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
-	require.NotEmpty(t, resp, "instantiate response should be populated")
 
 	//prepare required contexts
 
