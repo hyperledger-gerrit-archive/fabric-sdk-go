@@ -100,10 +100,15 @@ func New(ctx contextAPI.Client, channelID string, discovery fab.DiscoveryService
 	}
 
 	s.chResponseCache = lazycache.New(
-		"Channel_Response_Cache",
+		"Fabric_Selection_Cache",
 		func(key lazycache.Key) (interface{}, error) {
-			return s.newChannelResponseRef(key.(*cacheKey).chaincodes, options.refreshInterval), nil
+			if logging.IsEnabledFor(moduleName, logging.DEBUG) {
+				key, _ := json.Marshal(key.(*cacheKey).chaincodes)
+				logger.Debugf("Refreshing endorsers for chaincodes [%s] in channel [%s] from discovery service...", key, channelID)
+			}
+			return s.queryEndorsers(key.(*cacheKey).chaincodes)
 		},
+		lazyref.WithRefreshInterval(lazyref.InitImmediately, options.refreshInterval),
 	)
 
 	return s, nil
@@ -158,26 +163,9 @@ func (s *Service) getEndorsers(chaincodes []*fab.ChaincodeCall, chResponse discc
 	return endpoints, err
 }
 
-func (s *Service) newChannelResponseRef(chaincodes []*fab.ChaincodeCall, refreshInterval time.Duration) *lazyref.Reference {
-	return lazyref.New(
-		func() (interface{}, error) {
-			if logging.IsEnabledFor(moduleName, logging.DEBUG) {
-				key, _ := json.Marshal(chaincodes)
-				logger.Debugf("Refreshing endorsers for chaincodes [%s] in channel [%s] from discovery service...", key, s.channelID)
-			}
-			return s.queryEndorsers(chaincodes)
-		},
-		lazyref.WithRefreshInterval(lazyref.InitImmediately, refreshInterval),
-	)
-}
-
 func (s *Service) getChannelResponse(chaincodes []*fab.ChaincodeCall) (discclient.ChannelResponse, error) {
 	key := newCacheKey(chaincodes)
-	ref, err := s.chResponseCache.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	chResp, err := ref.(*lazyref.Reference).Get()
+	chResp, err := s.chResponseCache.Get(key)
 	if err != nil {
 		return nil, err
 	}
