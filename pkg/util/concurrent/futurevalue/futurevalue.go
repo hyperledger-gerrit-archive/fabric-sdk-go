@@ -80,7 +80,7 @@ func (f *Value) MustGet() interface{} {
 
 // IsSet returns true if the value has been set, otherwise false is returned
 func (f *Value) IsSet() bool {
-	isSet, _, _ := f.get() //nolint
+	isSet, _, _ := f.get() // nolint: gas
 	return isSet
 }
 

@@ -183,7 +183,7 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 			func() (interface{}, error) {
 				handler.Handle(requestContext, clientContext)
 				return nil, requestContext.Error
-			})
+			}) // nolint: gas
 		complete <- true
 	}()
 	select {
