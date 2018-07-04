@@ -21,11 +21,18 @@ if [ "$FABRIC_SDKGO_DEPEND_INSTALL" = "true" ]; then
     GOPATH=$TMP $GO_CMD get -u github.com/AlekSi/gocov-xml
     GOPATH=$TMP $GO_CMD get -u github.com/golang/mock/mockgen
     GOPATH=$TMP $GO_CMD get -u github.com/alecthomas/gometalinter
+
     mkdir -p $GOPATH/bin
     cp $TMP/bin/* $GOPATH/bin
-    mkdir -p $GOPATH/src/github.com/alecthomas/gometalinter
-    cp -R $TMP/src/github.com/alecthomas/gometalinter/* $GOPATH/src/github.com/alecthomas/gometalinter
-    gometalinter --install
+    rm -Rf ${GOPATH}/src/github.com/alecthomas/gometalinter
+    mkdir -p ${GOPATH}/src/github.com/alecthomas/gometalinter
+    cp -Rf ${TMP}/src/github.com/alecthomas/gometalinter/* ${GOPATH}/src/github.com/alecthomas/gometalinter
+    gometalinter --install --force
+
+    # gas in gometalinter is out of date.
+    GOPATH=$TMP $GO_CMD get -u github.com/GoASTScanner/gas/cmd/gas/...
+    cp -f $TMP/bin/gas $GOPATH/bin
+    rm -Rf $TMP
 fi
 
 # Install specific version of go dep (particularly for CI)
