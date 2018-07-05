@@ -38,19 +38,21 @@ declare -a PKG_SRC=(
 declare PKG_EXCLUDE="(${REPO}/pkg/core/cryptosuite/bccsp/multisuite|${REPO}/pkg/core/cryptosuite/bccsp/pkcs11)"
 findPackages
 
+gdate +"%T.%3N"
 # Reduce unit tests to changed packages.
 if [ "$TEST_CHANGED_ONLY" = true ]; then
     findChangedFiles
 
-    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|gometalinter.json( |$)|ci.properties( |$)) ]]; then
-        echo "Test scripts, fixtures or metadata changed - running all tests"
-    else
+#    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|gometalinter.json( |$)|ci.properties( |$)) ]]; then
+#        echo "Test scripts, fixtures or metadata changed - running all tests"
+#    else
         findChangedPackages
         filterExcludedPackages
         appendDepPackages
         PKGS=(${DEP_PKGS[@]})
-    fi
+#    fi
 fi
+gdate +"%T.%3N"
 
 RACEFLAG=""
 if [ "$TEST_RACE_CONDITIONS" = true ]; then

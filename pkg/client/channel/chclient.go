@@ -297,3 +297,5 @@ func (cc *Client) RegisterChaincodeEvent(chainCodeID string, eventFilter string)
 func (cc *Client) UnregisterChaincodeEvent(registration fab.Registration) {
 	cc.eventService.Unregister(registration)
 }
+
+// HELLO
