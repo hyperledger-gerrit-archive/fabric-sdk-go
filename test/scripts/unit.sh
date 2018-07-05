@@ -34,8 +34,9 @@ echo "Running" $(basename "$0")
 # Find all packages that should be tested.
 declare -a PKG_SRC=(
     "./pkg"
+    "./test"
 )
-declare PKG_EXCLUDE="(${REPO}/pkg/core/cryptosuite/bccsp/multisuite|${REPO}/pkg/core/cryptosuite/bccsp/pkcs11)"
+declare PKG_EXCLUDE=""
 findPackages
 
 # Reduce unit tests to changed packages.
@@ -72,6 +73,13 @@ fi
 if [ "${TEST_WITH_LINTER}" = true ]; then
     runLinter
 fi
+
+# filter out excluded tests
+PKGS=($(echo "${PKGS[@]}" | tr ' ' '\n' | \
+    grep -v ^${REPO}/test | \
+    grep -v ^${REPO}/pkg/core/cryptosuite/bccsp/multisuite | \
+    grep -v ^${REPO}/pkg/core/cryptosuite/bccsp/pkcs11 | \
+    tr ' ' '\n'))
 
 echo "Running unit tests..."
 echo "Testing with code level $FABRIC_SDKGO_CODELEVEL_TAG (Fabric ${FABRIC_SDKGO_CODELEVEL_VER}) ..."
