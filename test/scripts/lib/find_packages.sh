@@ -20,7 +20,7 @@ function findPackages {
 }
 
 function findChangedFiles {
-    CHANGED_FILES=($(git diff --name-only --diff-filter=ACMRTUXB HEAD | tr '\n' ' '))
+    CHANGED_FILES=($(git diff --name-only --diff-filter=ACMRTUXBD HEAD | tr '\n' ' '))
     declare REMOTE_REF=$(git log -1 --pretty=format:"%d" | grep '[(].*\/' | wc -l)
 
     # TODO: handle untracked files
