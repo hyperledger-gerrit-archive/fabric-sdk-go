@@ -457,3 +457,5 @@ temp-clean:
 clean: temp-clean
 	-$(GO_CMD) clean
 	-FIXTURE_PROJECT_NAME=$(FIXTURE_PROJECT_NAME) DOCKER_REMOVE_FORCE=$(FIXTURE_DOCKER_REMOVE_FORCE) $(TEST_SCRIPTS_PATH)/clean_integration.sh
+
+# RERUN ALL
