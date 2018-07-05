@@ -83,9 +83,9 @@ func TestSearchPeerConfigFromURL(t *testing.T) {
 
 	assert.Nil(t, err, "supposed to get no error")
 	assert.NotNil(t, peerConfig, "supposed to get valid peerConfig by url :%s", testURL2)
-	assert.Equal(t, testURL, peerConfig.URL)
+	assert.Equal(t, testURL2, peerConfig.URL)
 	assert.Nil(t, err, "supposed to get no error")
-	assert.Equal(t, peer0Org1.EventURL, peerConfig.EventURL)
+	assert.Equal(t, "peer0.org1.example.com:7053", peerConfig.EventURL)
 
 }
 
