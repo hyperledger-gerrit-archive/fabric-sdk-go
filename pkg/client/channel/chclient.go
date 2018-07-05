@@ -30,6 +30,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var foo = "foo"
+
 // Client enables access to a channel on a Fabric network.
 //
 // A channel client instance provides a handler to interact with peers on specified channel.
