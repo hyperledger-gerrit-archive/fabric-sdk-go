@@ -20,13 +20,13 @@ if [ "${FABRIC_SDKGO_DEPEND_INSTALL}" = "true" ]; then
     GOPATH=${TMP} ${GO_CMD} get -u github.com/axw/gocov/...
     GOPATH=${TMP} ${GO_CMD} get -u github.com/AlekSi/gocov-xml
     GOPATH=${TMP} ${GO_CMD} get -u github.com/golang/mock/mockgen
-    GOPATH=${TMP} ${GO_CMD} get -u github.com/alecthomas/gometalinter
+    GOPATH=${TMP} ${GO_CMD} get -u gopkg.in/alecthomas/gometalinter.v2
 
     mkdir -p ${GOPATH}/bin
     cp ${TMP}/bin/* ${GOPATH}/bin
-    rm -Rf ${GOPATH}/src/github.com/alecthomas/gometalinter
-    mkdir -p ${GOPATH}/src/github.com/alecthomas/gometalinter
-    cp -Rf ${TMP}/src/github.com/alecthomas/gometalinter/* ${GOPATH}/src/github.com/alecthomas/gometalinter
+    rm -Rf ${GOPATH}/src/gopkg.in/alecthomas/gometalinter.v2
+    mkdir -p ${GOPATH}/src/gopkg.in/alecthomas/gometalinter.v2
+    cp -Rf ${TMP}/src/gopkg.in/alecthomas/gometalinter.v2/* ${GOPATH}/src/gopkg.in/alecthomas/gometalinter.v2
     gometalinter --install --force
 
     # gas in gometalinter is out of date.
@@ -53,7 +53,7 @@ type gocov >/dev/null 2>&1 || { echo >& 2 "gocov is not installed (go get -u git
 type gocov-xml >/dev/null 2>&1 || { echo >& 2 "gocov-xml is not installed (go get -u github.com/AlekSi/gocov-xml)"; ABORT=1; }
 type mockgen >/dev/null 2>&1 || { echo >& 2 "mockgen is not installed (go get -u github.com/golang/mock/mockgen)"; ABORT=1; }
 type ${GO_DEP_CMD} >/dev/null 2>&1 || { echo >& 2 "dep is not installed (go get -u github.com/golang/dep/cmd/dep)"; ABORT=1; }
-type gometalinter >/dev/null 2>&1 || { echo >& 2 "gometalinter is not installed (go get -u github.com/alecthomas/gometalinter)"; ABORT=1; }
+type gometalinter >/dev/null 2>&1 || { echo >& 2 "gometalinter is not installed (go get -u gopkg.in/alecthomas/gometalinter.v2)"; ABORT=1; }
 
 
 if [ -n "${ABORT}" ]; then

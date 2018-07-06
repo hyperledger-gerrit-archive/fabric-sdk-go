@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-GOMETALINT_CMD="gometalinter"
+GOMETALINT_CMD="gometalinter.v2"
 
 function runLinter {
     packagesToDirs
