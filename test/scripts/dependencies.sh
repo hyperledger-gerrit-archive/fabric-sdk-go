@@ -20,13 +20,13 @@ if [ "${FABRIC_SDKGO_DEPEND_INSTALL}" = "true" ]; then
     GOPATH=${TMP} ${GO_CMD} get -u github.com/axw/gocov/...
     GOPATH=${TMP} ${GO_CMD} get -u github.com/AlekSi/gocov-xml
     GOPATH=${TMP} ${GO_CMD} get -u github.com/golang/mock/mockgen
-    GOPATH=${TMP} ${GO_CMD} get -u github.com/alecthomas/gometalinter
+    GOPATH=${TMP} ${GO_CMD} get -u gopkg.in/alecthomas/gometalinter.v2
 
     mkdir -p ${GOPATH}/bin
     cp ${TMP}/bin/* ${GOPATH}/bin
-    rm -Rf ${GOPATH}/src/github.com/alecthomas/gometalinter
-    mkdir -p ${GOPATH}/src/github.com/alecthomas/gometalinter
-    cp -Rf ${TMP}/src/github.com/alecthomas/gometalinter/* ${GOPATH}/src/github.com/alecthomas/gometalinter
+    rm -Rf ${GOPATH}/src/gopkg.in/alecthomas/gometalinter.v2
+    mkdir -p ${GOPATH}/src/gopkg.in/alecthomas/gometalinter.v2
+    cp -Rf ${TMP}/src/gopkg.in/alecthomas/gometalinter.v2/* ${GOPATH}/src/gopkg.in/alecthomas/gometalinter.v2
     gometalinter --install --force
 
     # gas in gometalinter is out of date.
