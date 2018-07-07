@@ -100,6 +100,13 @@ function installGoPkg {
 }
 
 function isLastInstallCurrent {
+    declare filesModified=$(git status -s)
+
+    if [[ "${filesModified}" =~ ( |^)(test/scripts/dependencies.sh)($'\n'|$) ]]; then
+        echo "Dependencies script modified - installing dependencies"
+        return 1
+    fi
+
     if [ -f "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}" ]; then
         declare -a lastScriptUsage=($(cat < "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"))
         echo "Dependency script last ran ${lastScriptUsage[1]} on revision ${lastScriptUsage[0]}"
