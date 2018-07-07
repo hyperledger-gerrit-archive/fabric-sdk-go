@@ -100,6 +100,13 @@ function installGoPkg {
 }
 
 function isLastInstallCurrent {
+    declare filesModified=$(git status | grep -E 'test/scripts/populate-vendor.sh|Gopkg.lock')
+
+    if [ ! -z "${filesModified}" ]; then
+        echo "Dependencies script or Gopkg.lock modified - repopulating vendor"
+        #return 1
+    fi
+
     if [ -f "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}" ]; then
         declare -a lastScriptUsage=($(cat < "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"))
         echo "Dependency script last ran ${lastScriptUsage[1]} on revision ${lastScriptUsage[0]}"
