@@ -151,13 +151,29 @@ function writePkgDeps {
     declare pkg=${1}
     declare key="PKGDEPS__${pkg//[-\.\/]/_}"
 
-    declare -a depsAndImports=($(${GO_CMD} list -f '{{.TestImports}} {{.Deps}}' ${pkg} | tr -d '[]' | xargs | tr ' ' '\n' | \
+    declare -a testImports=($(${GO_CMD} list -f '{{.TestImports}}' ${pkg} | tr -d '[]' | xargs | tr ' ' '\n' | \
         grep "^${REPO}" | \
         grep -v "^${REPO}/vendor/" | \
         sort -u | \
         tr '\n' ' '))
 
-    echo "${depsAndImports[@]}" > ${PKG_DEPS_DIR}/${key}.txt
+    declare -a testImportsFiltered=($(echo ${testImports[@]} | tr ' ' '\n' | \
+        grep -v "^${REPO}/internal/github.com/" | \
+        grep -v "^${REPO}/third_party/github.com/" | \
+        tr '\n' ' '))
+
+    declare -a depsAndImports=($(${GO_CMD} list -f '{{.Deps}}' ${pkg} ${testImportsFiltered[@]} | tr -d '[]' | xargs | tr ' ' '\n' | \
+        grep "^${REPO}" | \
+        grep -v "^${REPO}/vendor/" | \
+        sort -u | \
+        tr '\n' ' ') ${testImports[@]})
+
+    declare val=""
+    if [ ${#depsAndImports[@]} -gt 0 ]; then
+        val=$(echo ${depsAndImports[@]} | tr ' ' '\n' | sort -u | tr '\n' ' ')
+    fi
+
+    echo "${val}" > ${PKG_DEPS_DIR}/${key}.txt
 }
 
 function evalPkgDeps {
