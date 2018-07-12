@@ -115,6 +115,7 @@ TEST_SCRIPTS_PATH      := test/scripts
 FIXTURE_SCRIPTS_PATH   := $(THIS_PATH)/test/scripts
 FIXTURE_DOCKERENV_PATH := $(THIS_PATH)/test/fixtures/dockerenv
 FIXTURE_SOFTHSM2_PATH  := $(THIS_PATH)/test/fixtures/softhsm2
+FIXTURE_SOCAT_PATH     := $(THIS_PATH)/test/fixtures/socat
 
 ifneq ($(GO_LDFLAGS),)
 GO_LDFLAGS_ARG := -ldflags=$(GO_LDFLAGS)
@@ -196,11 +197,15 @@ all: depend-noforce license unit-test integration-test
 .PHONY: depend
 depend:
 	@$(TEST_SCRIPTS_PATH)/dependencies.sh -f
+	@$(MAKE) -f $(MAKEFILE_THIS) build-socat-image
+	@$(MAKE) -f $(MAKEFILE_THIS) build-softhsm2-image
 
 .PHONY: depend-noforce
 depend-noforce:
 ifeq ($(FABRIC_SDKGO_DEPEND_INSTALL),true)
 	@$(TEST_SCRIPTS_PATH)/dependencies.sh
+	@$(MAKE) -f $(MAKEFILE_THIS) build-socat-image
+	@$(MAKE) -f $(MAKEFILE_THIS) build-softhsm2-image
 endif
 
 .PHONY: checks
@@ -220,10 +225,17 @@ lint-all: populate-noforce
 
 .PHONY: build-softhsm2-image
 build-softhsm2-image:
-	 @$(DOCKER_CMD) build --no-cache -q -t "softhsm2-image" \
+	 @$(DOCKER_CMD) build --no-cache -q -t "fabsdkgo-softhsm2" \
 		--build-arg FABRIC_BASE_IMAGE=$(FABRIC_BASE_IMAGE) \
 		--build-arg FABRIC_BASE_TAG=$(FABRIC_BASE_TAG) \
 		-f $(FIXTURE_SOFTHSM2_PATH)/Dockerfile .
+
+.PHONY: build-socat-image
+build-socat-image:
+	 @$(DOCKER_CMD) build --no-cache -q -t "fabsdkgo-socat" \
+		--build-arg FABRIC_BASE_IMAGE=$(FABRIC_BASE_IMAGE) \
+		--build-arg FABRIC_BASE_TAG=$(FABRIC_BASE_TAG) \
+		-f $(FIXTURE_SOCAT_PATH)/Dockerfile .
 
 .PHONY: unit-test
 unit-test: clean-tests depend-noforce populate-noforce license
