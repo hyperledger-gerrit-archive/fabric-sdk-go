@@ -125,7 +125,8 @@ services:
       # # bridge network as the peers
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default      
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
+      - CORE_VM_ENDPOINT=http://chaincoded.example.com:2375
     #comment out logging.driver in order to render the debug logs 
     logging:
       driver: none
@@ -151,6 +152,7 @@ services:
       - orderer1
       - builder
       - golangruntime
+      - chaincoded
 
   org1peer2:
     image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_PEER_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_PEER_FIXTURE_TAG}
@@ -188,6 +190,7 @@ services:
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
+      - CORE_VM_ENDPOINT=http://chaincoded.example.com:2375
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none
@@ -213,6 +216,7 @@ services:
       - orderer1
       - builder
       - golangruntime
+      - chaincoded
 
   org2peer1:
     image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_PEER_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_PEER_FIXTURE_TAG}
@@ -235,7 +239,7 @@ services:
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
       - CORE_PEER_LISTENADDRESS=peer0.org2.example.com:8051
       - CORE_PEER_ADDRESS=peer0.org2.example.com:8051
-      - CORE_PEER_CHAINCODELISTENADDRESS=peer0.org2.example.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=peer0.org2.example.com:8052
       - CORE_PEER_ADDRESSAUTODETECT=true
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org2.example.com:9051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org2.example.com:8051
@@ -251,6 +255,7 @@ services:
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default     
+      - CORE_VM_ENDPOINT=http://chaincoded.example.com:2375
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none
@@ -261,7 +266,7 @@ services:
       - "8053:8053"
     expose:
       - "8051"
-      - "7052"
+      - "8052"
       - "8053"
     volumes:
         - /var/run/:/host/var/run/
@@ -276,6 +281,7 @@ services:
       - orderer1
       - builder
       - golangruntime
+      - chaincoded
 
   org2peer2:
     image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_PEER_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_PEER_FIXTURE_TAG}
@@ -314,6 +320,7 @@ services:
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default     
+      - CORE_VM_ENDPOINT=http://chaincoded.example.com:2375
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none
@@ -339,9 +346,41 @@ services:
       - orderer1
       - builder
       - golangruntime
+      - chaincoded
 
+  dockerd:
+    image: bobrik/socat
+    command: TCP-LISTEN:2375,fork UNIX-CONNECT:/var/run/docker.sock
+    volumes:
+      - /var/run/:/var/run/
+    expose:
+      - "2375"
+    networks:
+      default:
+        aliases:
+          - dockerd.example.com
 
-
+  chaincoded:
+    image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_BASEIMAGE_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_BASEIMAGE_FIXTURE_TAG}
+    environment:
+      - DOCKER_HOST=http://dockerd.example.com:2375
+      #- CORE_CHAINCODE_LOGGING_LEVEL=debug
+    volumes:
+      - ../../../scripts/_go/src/chaincoded:/opt/gopath/src/chaincoded
+      - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
+      - ../../../test/fixtures/testdata/src/github.com/events_cc:/opt/gopath/src/github.com/events_cc
+      - ../../../test/fixtures/testdata/src/github.com/example_cc:/opt/gopath/src/github.com/example_cc
+      - ../../../test/fixtures/testdata/src/github.com/example_cc1:/opt/gopath/src/github.com/example_cc1
+      - ../../../test/fixtures/testdata/src/github.com/example_pvt_cc:/opt/gopath/src/github.com/example_pvt_cc
+    command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/chaincode.sh
+    networks:
+      default:
+        aliases:
+          - chaincoded.example.com
+    expose:
+      - "2375"
+    depends_on:
+      - dockerd
 
  # builder is only here to create a dependency on the image (not used as part of compose)
   builder:
