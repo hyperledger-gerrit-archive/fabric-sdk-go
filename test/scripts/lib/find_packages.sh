@@ -151,7 +151,13 @@ function writePkgDeps {
     declare pkg=${1}
     declare key="PKGDEPS__${pkg//[-\.\/]/_}"
 
-    declare -a depsAndImports=($(${GO_CMD} list -f '{{.TestImports}} {{.Deps}}' ${pkg} | tr -d '[]' | xargs | tr ' ' '\n' | \
+    declare -a pkgWithTestImports=($(${GO_CMD} list -f '{{.TestImports}}' ${pkg} | tr -d '[]' | xargs | tr ' ' '\n' | \
+        grep "^${REPO}" | \
+        grep -v "^${REPO}/vendor/" | \
+        sort -u | \
+        tr '\n' ' ') ${pkg})
+
+    declare -a depsAndImports=($(${GO_CMD} list -f '{{.Deps}}' ${pkgWithTestImports} | tr -d '[]' | xargs | tr ' ' '\n' | \
         grep "^${REPO}" | \
         grep -v "^${REPO}/vendor/" | \
         sort -u | \
