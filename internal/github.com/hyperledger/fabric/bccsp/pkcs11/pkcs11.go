@@ -20,9 +20,33 @@ import (
 	"math/big"
 	"sync"
 
+	"time"
+
 	logging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
 	"github.com/miekg/pkcs11"
 )
+
+var sessionCache map[string]*lazycache.Cache
+
+// keyPairCacheKey
+type keyPairCacheKey struct {
+	mod     *pkcs11.Ctx
+	session pkcs11.SessionHandle
+	ski     []byte
+	keyType bool
+}
+
+//String return string value for config key
+func (keyPairCacheKey *keyPairCacheKey) String() string {
+	return fmt.Sprintf("%x_%t", keyPairCacheKey.ski, keyPairCacheKey.keyType)
+}
+
+func timeTrack(start time.Time, msg string) {
+	elapsed := time.Since(start)
+	logger.Debugf("%s took %s", msg, elapsed)
+}
 
 func loadLib(lib, pin, label string) (*pkcs11.Ctx, uint, *pkcs11.SessionHandle, error) {
 	var slot uint = 0
@@ -107,7 +131,39 @@ func (csp *impl) getSession() (session pkcs11.SessionHandle) {
 		}
 		logger.Debugf("Created new pkcs11 session %+v on slot %d\n", s, csp.slot)
 		session = s
+		csp.rwMtx.RLock()
+		val, ok := sessionCache[fmt.Sprintf("%d", session)]
+		csp.rwMtx.RUnlock()
+		if ok {
+			csp.rwMtx.Lock()
+			val.Close()
+			sessionCache[fmt.Sprintf("%d", session)] = nil
+			csp.rwMtx.Unlock()
+
+		}
 	}
+
+	csp.rwMtx.RLock()
+	_, ok := sessionCache[fmt.Sprintf("%d", session)]
+	csp.rwMtx.RUnlock()
+
+	if !ok {
+		if sessionCache == nil {
+			sessionCache = make(map[string]*lazycache.Cache)
+		}
+		csp.rwMtx.Lock()
+		sessionCache[fmt.Sprintf("%d", session)] = lazycache.New(
+			"KeyPair_Resolver_Cache",
+			func(key lazycache.Key) (interface{}, error) {
+				return lazyref.New(
+					func() (interface{}, error) {
+						return getKeyPairFromSKI(key.(*keyPairCacheKey))
+					},
+				), nil
+			})
+		csp.rwMtx.Unlock()
+	}
+
 	return session
 }
 
@@ -128,13 +184,13 @@ func (csp *impl) getECKey(ski []byte) (pubKey *ecdsa.PublicKey, isPriv bool, err
 	session := csp.getSession()
 	defer csp.returnSession(session)
 	isPriv = true
-	_, err = findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
+	_, err = csp.findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
 	if err != nil {
 		isPriv = false
 		logger.Debugf("Private key not found [%s] for SKI [%s], looking for Public key", err, hex.EncodeToString(ski))
 	}
 
-	publicKey, err := findKeyPairFromSKI(p11lib, session, ski, publicKeyFlag)
+	publicKey, err := csp.findKeyPairFromSKI(p11lib, session, ski, publicKeyFlag)
 	if err != nil {
 		return nil, false, fmt.Errorf("Public key not found [%s] for SKI [%s]", err, hex.EncodeToString(ski))
 	}
@@ -306,7 +362,8 @@ func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error)
 	session := csp.getSession()
 	defer csp.returnSession(session)
 
-	privateKey, err := findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
+	privateKey, err := csp.findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
+	defer timeTrack(time.Now(), fmt.Sprintf("signing [session: %d]", session))
 	if err != nil {
 		return nil, nil, fmt.Errorf("Private key not found [%s]\n", err)
 	}
@@ -319,6 +376,7 @@ func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error)
 	var sig []byte
 
 	sig, err = p11lib.Sign(session, msg)
+
 	if err != nil {
 		return nil, nil, fmt.Errorf("P11: sign failed [%s]\n", err)
 	}
@@ -338,7 +396,7 @@ func (csp *impl) verifyP11ECDSA(ski []byte, msg []byte, R, S *big.Int, byteSize 
 
 	logger.Debugf("Verify ECDSA\n")
 
-	publicKey, err := findKeyPairFromSKI(p11lib, session, ski, publicKeyFlag)
+	publicKey, err := csp.findKeyPairFromSKI(p11lib, session, ski, publicKeyFlag)
 	if err != nil {
 		return false, fmt.Errorf("Public key not found [%s]\n", err)
 	}
@@ -442,31 +500,53 @@ const (
 	publicKeyFlag  = false
 )
 
-func findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
+func (csp *impl) findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
+	csp.rwMtx.RLock()
+	val, ok := sessionCache[fmt.Sprintf("%d", session)]
+	csp.rwMtx.RUnlock()
+	if ok {
+		defer timeTrack(time.Now(), fmt.Sprintf("finding  key [session: %d] [ski: %x]", session, ski))
+		value, err := val.Get(&keyPairCacheKey{mod: mod, session: session, ski: ski, keyType: keyType})
+		if err != nil {
+			return nil, err
+		}
+		lazyRef := value.(*lazyref.Reference)
+		resolver, err := lazyRef.Get()
+		if err != nil {
+			return nil, err
+		}
+		return resolver.(*pkcs11.ObjectHandle), nil
+	}
+
+	return nil, fmt.Errorf("cannot find session in sessionCache")
+
+}
+
+func getKeyPairFromSKI(keyPairCacheKey *keyPairCacheKey) (*pkcs11.ObjectHandle, error) {
 	ktype := pkcs11.CKO_PUBLIC_KEY
-	if keyType == privateKeyFlag {
+	if keyPairCacheKey.keyType == privateKeyFlag {
 		ktype = pkcs11.CKO_PRIVATE_KEY
 	}
 
 	template := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_CLASS, ktype),
-		pkcs11.NewAttribute(pkcs11.CKA_ID, ski),
+		pkcs11.NewAttribute(pkcs11.CKA_ID, keyPairCacheKey.ski),
 	}
-	if err := mod.FindObjectsInit(session, template); err != nil {
+	if err := keyPairCacheKey.mod.FindObjectsInit(keyPairCacheKey.session, template); err != nil {
 		return nil, err
 	}
 
 	// single session instance, assume one hit only
-	objs, _, err := mod.FindObjects(session, 1)
+	objs, _, err := keyPairCacheKey.mod.FindObjects(keyPairCacheKey.session, 1)
 	if err != nil {
 		return nil, err
 	}
-	if err = mod.FindObjectsFinal(session); err != nil {
+	if err = keyPairCacheKey.mod.FindObjectsFinal(keyPairCacheKey.session); err != nil {
 		return nil, err
 	}
 
 	if len(objs) == 0 {
-		return nil, fmt.Errorf("Key not found [%s]", hex.Dump(ski))
+		return nil, fmt.Errorf("Key not found [%s]", hex.Dump(keyPairCacheKey.ski))
 	}
 
 	return &objs[0], nil
@@ -585,7 +665,7 @@ func (csp *impl) getSecretValue(ski []byte) []byte {
 	session := csp.getSession()
 	defer csp.returnSession(session)
 
-	keyHandle, err := findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
+	keyHandle, err := csp.findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)
 
 	var privKey []byte
 	template := []*pkcs11.Attribute{
