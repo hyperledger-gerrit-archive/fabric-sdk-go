@@ -165,9 +165,14 @@ func (c *Cache) Close() {
 		// Already closed
 		return
 	}
-
 	logger.Debugf("%s - Closing cache", c.name)
+	c.DeleteAll()
+}
 
+// DeleteAll does the following:
+// - calls Close on all values that implement a Close() function
+// - deletes all entries from the cache
+func (c *Cache) DeleteAll() {
 	var keys []interface{}
 	c.m.Range(func(key interface{}, value interface{}) bool {
 		c.close(key.(string), value.(future))
@@ -176,6 +181,18 @@ func (c *Cache) Close() {
 	})
 
 	for _, key := range keys {
+		c.m.Delete(key)
+	}
+}
+
+// Delete does the following:
+// - calls Close on all values that implement a Close() function
+// - deletes key from the cache
+func (c *Cache) Delete(key Key) {
+	logger.Debugf("%s - Deleting cache key", key.String())
+	value, _ := c.m.Load(key)
+	if value != nil {
+		c.close(key.String(), value.(future))
 		c.m.Delete(key)
 	}
 }
