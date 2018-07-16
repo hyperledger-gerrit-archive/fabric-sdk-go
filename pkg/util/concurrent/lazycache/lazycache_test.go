@@ -126,25 +126,30 @@ func TestGet(t *testing.T) {
 
 			value, err := cache.Get(NewStringKey("Key1"))
 			if err != nil {
-				test.Failf(t, "Error returned: %s", err)
+				test.Logf("Error returned: %s", err)
+				t.Fail()
 			}
 			expectedValue := "Value_for_key_Key1"
 			if value != expectedValue {
-				test.Failf(t, "Expecting value [%s] but got [%s]", expectedValue, value)
+				test.Logf("Expecting value [%s] but got [%s]", expectedValue, value)
+				t.Fail()
 			}
 
 			value, err = cache.Get(NewStringKey("Key2"))
 			if err != nil {
-				test.Failf(t, "Error returned: %s", err)
+				test.Logf("Error returned: %s", err)
+				t.Fail()
 			}
 			expectedValue = "Value_for_key_Key2"
 			if value != expectedValue {
-				test.Failf(t, "Expecting value [%s] but got [%s]", expectedValue, value)
+				test.Logf("Expecting value [%s] but got [%s]", expectedValue, value)
+				t.Fail()
 			}
 
 			_, err = cache.Get(NewStringKey("error"))
 			if err == nil {
-				test.Failf(t, "Expecting error but got none")
+				test.Logf("Expecting error but got none")
+				t.Fail()
 			}
 		}()
 	}
