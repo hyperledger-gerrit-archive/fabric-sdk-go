@@ -28,8 +28,6 @@ import (
 	"github.com/miekg/pkcs11"
 )
 
-var sessionCache map[string]*lazycache.Cache
-
 var logger = flogging.MustGetLogger("bccsp_p11_sessioncache")
 
 const (
@@ -54,7 +52,7 @@ func timeTrack(start time.Time, msg string) {
 	logger.Debugf("%s took %s", msg, elapsed)
 }
 
-func ClearAllSession(rwMtx sync.RWMutex) {
+func ClearAllSession(rwMtx sync.RWMutex, sessionCache map[string]*lazycache.Cache) {
 
 	if sessionCache != nil && len(sessionCache) > 0 {
 		rwMtx.Lock()
@@ -66,7 +64,7 @@ func ClearAllSession(rwMtx sync.RWMutex) {
 	}
 }
 
-func ClearSession(rwMtx sync.RWMutex, key string) {
+func ClearSession(rwMtx sync.RWMutex, sessionCache map[string]*lazycache.Cache, key string) {
 	rwMtx.RLock()
 	val, ok := sessionCache[key]
 	rwMtx.RUnlock()
@@ -79,7 +77,7 @@ func ClearSession(rwMtx sync.RWMutex, key string) {
 	}
 }
 
-func AddSession(rwMtx sync.RWMutex, key string) {
+func AddSession(rwMtx sync.RWMutex, sessionCache map[string]*lazycache.Cache, key string) {
 	rwMtx.RLock()
 	_, ok := sessionCache[key]
 	rwMtx.RUnlock()
@@ -102,7 +100,7 @@ func AddSession(rwMtx sync.RWMutex, key string) {
 	}
 }
 
-func GetKeyPairFromSessionSKI(rwMtx sync.RWMutex, keyPairCacheKey *KeyPairCacheKey) (*pkcs11.ObjectHandle, error) {
+func GetKeyPairFromSessionSKI(rwMtx sync.RWMutex, sessionCache map[string]*lazycache.Cache, keyPairCacheKey *KeyPairCacheKey) (*pkcs11.ObjectHandle, error) {
 	rwMtx.RLock()
 	val, ok := sessionCache[fmt.Sprintf("%d", keyPairCacheKey.Session)]
 	rwMtx.RUnlock()
