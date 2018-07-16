@@ -66,10 +66,12 @@ func TestFutureValueGet(t *testing.T) {
 			defer wg.Done()
 			value, err := fv.Get()
 			if err != nil {
-				test.Failf(t, "received error: %s", err)
+				test.Logf("received error: %s", err)
+				t.Fail()
 			}
 			if value != expectedValue {
-				test.Failf(t, "expecting value [%s] but received [%s]", expectedValue, value)
+				test.Logf("expecting value [%s] but received [%s]", expectedValue, value)
+				t.Fail()
 			}
 		}()
 	}
@@ -99,7 +101,8 @@ func TestFutureValueGetWithError(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			if _, err := fv.Get(); err == nil {
-				test.Failf(t, "expecting error but received none")
+				test.Logf("expecting error but received none")
+				t.Fail()
 			}
 		}()
 	}
@@ -121,12 +124,14 @@ func TestMustGetPanic(t *testing.T) {
 	go func() {
 		defer func() {
 			if r := recover(); r == nil {
-				test.Failf(t, "Expecting panic but got none")
+				test.Logf("Expecting panic but got none")
+				t.Fail()
 			}
 			done <- true
 		}()
 		fv.MustGet()
-		test.Failf(t, "Expecting panic but got none")
+		test.Logf("Expecting panic but got none")
+		t.Fail()
 	}()
 
 	if _, err := fv.Initialize(); err == nil {
