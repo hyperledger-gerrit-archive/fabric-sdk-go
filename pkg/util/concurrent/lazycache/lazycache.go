@@ -180,6 +180,16 @@ func (c *Cache) Close() {
 	}
 }
 
+// Delete does the following:
+// - calls Close on all values that implement a Close() function
+// - deletes key from the cache
+func (c *Cache) Delete(key Key) {
+	logger.Debugf("%s - Deleting cache key", key.String())
+	value, _ := c.m.Load(key)
+	c.close(key.String(), value.(future))
+	c.m.Delete(key)
+}
+
 func (c *Cache) close(key string, f future) {
 	if !f.IsSet() {
 		logger.Debugf("%s - Reference for [%q] is not set", c.name, key)
