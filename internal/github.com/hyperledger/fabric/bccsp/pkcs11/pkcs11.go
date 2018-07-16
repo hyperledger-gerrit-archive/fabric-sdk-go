@@ -110,9 +110,9 @@ func (csp *impl) getSession() (session pkcs11.SessionHandle) {
 		}
 		logger.Debugf("Created new pkcs11 session %+v on slot %d\n", s, csp.slot)
 		session = s
-		cachebridge.ClearSession(csp.rwMtx, fmt.Sprintf("%d", session))
+		cachebridge.ClearSession(csp.rwMtx, csp.sessionCache, fmt.Sprintf("%d", session))
 	}
-	cachebridge.AddSession(csp.rwMtx, fmt.Sprintf("%d", session))
+	cachebridge.AddSession(csp.rwMtx, csp.sessionCache, fmt.Sprintf("%d", session))
 	return session
 }
 
