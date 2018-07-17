@@ -27,4 +27,4 @@ PEERS=(
 
 # Remove dev/null redirection to see chaincode logs
 echo "Running chaincoded ..."
-chaincoded ":9375" ${PEERS[@]} > /dev/null 2> /dev/null
+chaincoded ":9375" ${PEERS[@]}
