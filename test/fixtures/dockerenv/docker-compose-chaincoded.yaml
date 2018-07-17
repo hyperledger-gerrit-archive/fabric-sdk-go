@@ -31,8 +31,8 @@ services:
       - ../../../test/fixtures/testdata/src/github.com/example_pvt_cc:/opt/gopath/src/github.com/example_pvt_cc
     command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/chaincoded.sh
     #comment out logging.driver in order to render the debug logs
-    logging:
-      driver: none
+    #logging:
+    #  driver: none
     networks:
       default:
         aliases:
