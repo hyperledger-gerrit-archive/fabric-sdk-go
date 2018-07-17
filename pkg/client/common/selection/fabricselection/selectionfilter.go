@@ -73,14 +73,6 @@ func (s *prioritySelector) Compare(endpoint1, endpoint2 discclient.Peer) disccli
 func asPeerValue(ctx contextAPI.Client, endpoint *discclient.Peer) fab.Peer {
 	url := endpoint.AliveMessage.GetAliveMsg().GetMembership().Endpoint
 
-	// Get the mapped URL of the peer
-	peerConfig, found := ctx.EndpointConfig().PeerConfig(url)
-	if found {
-		url = peerConfig.URL
-	} else {
-		logger.Debugf("Peer config not found for url [%s]", url)
-	}
-
 	return &peerEndpointValue{
 		mspID:       endpoint.MSPID,
 		url:         url,
