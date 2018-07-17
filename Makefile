@@ -157,6 +157,8 @@ FABRIC_PRERELEASE_INTTEST        := false
 FABRIC_DEVSTABLE_INTTEST         := false
 FABRIC_STABLE_LOCAL_INTTEST      := false
 FABRIC_DEVSTABLE_LOCAL_INTTEST   := false
+
+GO_TESTFLAGS += -failfast
 endif
 
 # Determine if use mock chaincode daemon should be used
