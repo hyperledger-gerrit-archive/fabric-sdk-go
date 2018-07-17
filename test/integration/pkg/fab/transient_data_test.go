@@ -10,6 +10,7 @@ import (
 	reqContext "context"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -93,8 +94,15 @@ func createAndSendTransactionProposal(transactor fab.ProposalSender, chainCodeID
 		return nil, nil, errors.WithMessage(err, "creating transaction proposal failed")
 	}
 
-	tpr, err := transactor.SendTransactionProposal(tp, targets)
-	return tpr, tp, err
+	tpr, err := retry.NewInvoker(retry.New(retry.DefaultChannelOpts)).Invoke(
+		func() (interface{}, error) {
+			return transactor.SendTransactionProposal(tp, targets)
+		},
+	)
+	if err != nil {
+		return nil, tp, err
+	}
+	return tpr.([]*fab.TransactionProposalResponse), tp, err
 }
 
 func getTransactor(sdk *fabsdk.FabricSDK, channelID string, user string, orgName string) (reqContext.Context, reqContext.CancelFunc, fab.Transactor, error) {
