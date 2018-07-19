@@ -30,18 +30,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Client enables access to a channel on a Fabric network.
-//
-// A channel client instance provides a handler to interact with peers on specified channel.
-// An application that requires interaction with multiple channels should create a separate
-// instance of the channel client for each channel. Channel client supports non-admin functions only.
-type Client struct {
-	context      context.Channel
-	membership   fab.ChannelMembership
-	eventService fab.EventService
-	greylist     *greylist.Filter
-}
-
 // ClientOption describes a functional parameter for the New constructor
 type ClientOption func(*Client) error
 
@@ -69,12 +57,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, errors.WithMessage(err, "membership creation failed")
 	}
 
-	channelClient := Client{
-		membership:   membership,
-		eventService: eventService,
-		greylist:     greylistProvider,
-		context:      channelContext,
-	}
+	channelClient := newClient(channelContext, membership, eventService, greylistProvider)
 
 	for _, param := range opts {
 		err := param(&channelClient)
@@ -98,7 +81,7 @@ func (cc *Client) Query(request Request, options ...RequestOption) (Response, er
 	options = append(options, addDefaultTimeout(fab.Query))
 	options = append(options, addDefaultTargetFilter(cc.context, filter.ChaincodeQuery))
 
-	return cc.InvokeHandler(invoke.NewQueryHandler(), request, options...)
+	return callQuery(cc, request, options...)
 }
 
 // Execute prepares and executes transaction using request and optional request options
@@ -112,7 +95,7 @@ func (cc *Client) Execute(request Request, options ...RequestOption) (Response, 
 	options = append(options, addDefaultTimeout(fab.Execute))
 	options = append(options, addDefaultTargetFilter(cc.context, filter.EndorsingPeer))
 
-	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, options...)
+	return callExecute(cc, request, options...)
 }
 
 // addDefaultTargetFilter adds default target filter if target filter is not specified
