@@ -14,10 +14,19 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
+	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
+
+var orgExpectedPeers = map[string]int{
+	"Org1": 2,
+	"Org2": 2,
+}
 
 // GenerateExamplePvtID supplies a chaincode name for example_pvt_cc
 func GenerateExamplePvtID(randomize bool) string {
@@ -50,38 +59,81 @@ func GenerateExampleID(randomize bool) string {
 // PrepareExampleCC install and instantiate using resource management client
 func PrepareExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, chaincodeID string) error {
 	const (
-		ccPath    = "github.com/example_cc"
 		ccVersion = "v0"
 		channelID = "mychannel"
 	)
 
-	instantiated, err := queryInstantiatedCC(sdk, user, orgName, channelID, chaincodeID, ccVersion, false)
+	instantiated, err := queryInstantiatedCCWithSDK(sdk, user, orgName, channelID, chaincodeID, ccVersion, false)
 	if err != nil {
 		return errors.WithMessage(err, "Querying for instantiated status failed")
 	}
 
-	if !instantiated {
-		fmt.Printf("Installing and instantiating example chaincode...")
-		start := time.Now()
-
-		_, err := InstallAndInstantiateCC(sdk, user, orgName, chaincodeID, ccPath, ccVersion, GetDeployPath(), initArgs)
-		if err != nil {
-			return errors.WithMessage(err, "Installing or instantiating example chaincode failed")
-		}
-
-		t := time.Now()
-		elapsed := t.Sub(start)
-		fmt.Printf("Done [%d ms]\n", elapsed/time.Millisecond)
-	} else {
+	if instantiated {
 		err := resetExampleCC(sdk, user, orgName, channelID, chaincodeID, resetArgs)
 		if err != nil {
 			return errors.WithMessage(err, "Resetting example chaincode failed")
 		}
+		return nil
 	}
 
-	// TODO query all peers to wait for availability
+	fmt.Printf("Installing and instantiating example chaincode...")
+	start := time.Now()
+
+	ccPolicy, err := prepareOneOrgPolicy(sdk, orgName)
+	if err != nil {
+		return errors.WithMessage(err, "CC policy could not be prepared")
+	}
+
+	orgContexts, err := prepareOrgContexts(sdk, user, []string{orgName})
+	if err != nil {
+		return errors.WithMessage(err, "Org contexts could not be prepared")
+	}
+
+	err = InstallExampleChaincode(orgContexts, chaincodeID)
+	if err != nil {
+		return errors.WithMessage(err, "Installing example chaincode failed")
+	}
+
+	err = InstantiateExampleChaincode(orgContexts, channelID, chaincodeID, ccPolicy)
+	if err != nil {
+		return errors.WithMessage(err, "Instantiating example chaincode failed")
+	}
+
+	t := time.Now()
+	elapsed := t.Sub(start)
+	fmt.Printf("Done [%d ms]\n", elapsed/time.Millisecond)
 
 	return nil
+}
+
+// InstallAndInstantiateExampleChaincode installs the example chaincode to all peers in the given orgs and instantiates it on the given channel
+func InstallExampleChaincode(orgs []*OrgContext, ccID string) error {
+	const (
+		ccPath    = "github.com/example_cc"
+		ccVersion = "v0"
+	)
+
+	ccPkg, err := packager.NewCCPackage(ccPath, GetDeployPath())
+	if err != nil {
+		return errors.WithMessage(err, "creating chaincode package failed")
+	}
+
+	err = InstallChaincodeWithOrgContexts(orgs, ccPkg, ccPath, ccID, ccVersion)
+	if err != nil {
+		return errors.WithMessage(err, "installing example chaincode failed")
+	}
+
+	return nil
+}
+
+func InstantiateExampleChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*cb.CollectionConfig) error {
+	const (
+		ccPath    = "github.com/example_cc"
+		ccVersion = "v0"
+	)
+
+	_, err := InstantiateChaincode(orgs[0].ResMgmt, channelID, ccID, ccPath, ccVersion, ccPolicy, ExampleCCInitArgs(), collConfigs...)
+	return err
 }
 
 func resetExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, channelID string, chainCodeID string, args [][]byte) error {
@@ -106,13 +158,77 @@ func resetExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName st
 	return nil
 }
 
-func queryInstantiatedCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, channelID, ccName, ccVersion string, transientRetry bool) (bool, error) {
+func prepareOrgContexts(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgNames []string) ([]*OrgContext, error) {
+	orgContexts := make([]*OrgContext, len(orgNames))
+
+	for i, orgName := range orgNames {
+		clientContext := sdk.Context(user, fabsdk.WithOrg(orgName))
+
+		resMgmt, err := resmgmt.New(clientContext)
+		if err != nil {
+			return nil, errors.WithMessage(err, "Creating resource management client failed")
+		}
+
+		expectedPeers, ok := orgExpectedPeers[orgName]
+		if !ok {
+			return nil, errors.WithMessage(err, "unknown org name")
+		}
+		peers, err := DiscoverLocalPeers(clientContext, expectedPeers)
+		if err != nil {
+			return nil, errors.WithMessage(err, "local peers could not be determined")
+		}
+
+		orgCtx := OrgContext{
+			OrgID:       orgName,
+			CtxProvider: clientContext,
+			ResMgmt:     resMgmt,
+			Peers:       peers,
+		}
+		orgContexts[i] = &orgCtx
+	}
+	return orgContexts, nil
+}
+
+func prepareOneOrgPolicy(sdk *fabsdk.FabricSDK, orgName string) (string, error) {
+	mspID, err := orgMSPID(sdk, orgName)
+	if err != nil {
+		return "", errors.WithMessage(err, "MSP ID could not be determined")
+	}
+
+	return fmt.Sprintf("AND('%s.member')", mspID), nil
+}
+
+func orgMSPID(sdk *fabsdk.FabricSDK, orgName string) (string, error) {
+	configBackend, err := sdk.Config()
+	if err != nil {
+		return "", errors.WithMessage(err, "failed to get config backend")
+	}
+
+	endpointConfig, err := fab.ConfigFromBackend(configBackend)
+	if err != nil {
+		return "", errors.WithMessage(err, "failed to get endpoint config")
+	}
+
+	mspID, ok := comm.MSPID(endpointConfig, orgName)
+	if !ok {
+		return "", errors.New("looking up MSP ID failed")
+	}
+
+	return mspID, nil
+}
+
+func queryInstantiatedCCWithSDK(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, channelID, ccName, ccVersion string, transientRetry bool) (bool, error) {
 	clientContext := sdk.Context(user, fabsdk.WithOrg(orgName))
 
 	resMgmt, err := resmgmt.New(clientContext)
 	if err != nil {
 		return false, errors.WithMessage(err, "Creating resource management client failed")
 	}
+
+	return queryInstantiatedCC(resMgmt, orgName, channelID, ccName, ccVersion, transientRetry)
+}
+
+func queryInstantiatedCC(resMgmt *resmgmt.Client, orgName string, channelID, ccName, ccVersion string, transientRetry bool) (bool, error) {
 
 	instantiated, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 		func() (interface{}, error) {
