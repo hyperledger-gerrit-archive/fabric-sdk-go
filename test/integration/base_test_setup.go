@@ -23,9 +23,6 @@ import (
 	fabAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
@@ -177,47 +174,6 @@ func goPath() string {
 	return gps[0]
 }
 
-// InstallAndInstantiateCC install and instantiate using resource management client
-func InstallAndInstantiateCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, ccName, ccPath, ccVersion, goPath string, ccArgs [][]byte) (resmgmt.InstantiateCCResponse, error) {
-
-	ccPkg, err := packager.NewCCPackage(ccPath, goPath)
-	if err != nil {
-		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "creating chaincode package failed")
-	}
-
-	configBackend, err := sdk.Config()
-	if err != nil {
-		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get config backend")
-	}
-
-	endpointConfig, err := fab.ConfigFromBackend(configBackend)
-	if err != nil {
-		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "failed to get endpoint config")
-	}
-
-	mspID, ok := comm.MSPID(endpointConfig, orgName)
-	if !ok {
-		return resmgmt.InstantiateCCResponse{}, errors.New("looking up MSP ID failed")
-	}
-
-	//prepare context
-	clientContext := sdk.Context(user, fabsdk.WithOrg(orgName))
-
-	// Resource management client is responsible for managing resources (joining channels, install/instantiate/upgrade chaincodes)
-	resMgmtClient, err := resmgmt.New(clientContext)
-	if err != nil {
-		return resmgmt.InstantiateCCResponse{}, errors.WithMessage(err, "Failed to create new resource management client")
-	}
-
-	_, err = resMgmtClient.InstallCC(resmgmt.InstallCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Package: ccPkg}, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		return resmgmt.InstantiateCCResponse{}, err
-	}
-
-	ccPolicy := cauthdsl.SignedByMspMember(mspID)
-	return resMgmtClient.InstantiateCC("mychannel", resmgmt.InstantiateCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: ccArgs, Policy: ccPolicy}, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-}
-
 // OrgContext provides SDK client context for a given org
 type OrgContext struct {
 	OrgID                string
@@ -295,7 +251,7 @@ func InstallAndInstantiateChaincode(channelID string, ccPkg *resource.CCPackage,
 			return errors.Wrapf(err, "failed to install chaincode to peers in org [%s]", orgCtx.OrgID)
 		}
 	}
-	_, err := InstantiateChaincode(orgs[0].ResMgmt, channelID, ccID, ccVersion, ccPolicy, collConfigs...)
+	_, err := InstantiateChaincode(orgs[0].ResMgmt, channelID, ccID, ccPath, ccVersion, ccPolicy, collConfigs...)
 	return err
 }
 
@@ -303,11 +259,19 @@ func InstallAndInstantiateChaincode(channelID string, ccPkg *resource.CCPackage,
 func InstallChaincode(resMgmt *resmgmt.Client, ctxProvider contextAPI.ClientProvider, ccPkg *resource.CCPackage, ccPath, ccName, ccVersion string, localPeers []fabAPI.Peer) error {
 	installCCReq := resmgmt.InstallCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Package: ccPkg}
 	_, err := resMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	return err
+	if err != nil {
+		return err
+	}
+
+	if !queryInstalledCC(resMgmt, ccName, ccVersion, localPeers) {
+		return errors.New("chaincode was not installed on all peers")
+	}
+
+	return nil
 }
 
 // InstantiateChaincode instantiates the given chaincode to the given channel
-func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccVersion string, ccPolicyStr string, collConfigs ...*cb.CollectionConfig) (resmgmt.InstantiateCCResponse, error) {
+func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, collConfigs ...*cb.CollectionConfig) (resmgmt.InstantiateCCResponse, error) {
 	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
@@ -317,7 +281,7 @@ func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccVersion 
 		channelID,
 		resmgmt.InstantiateCCRequest{
 			Name:       ccName,
-			Path:       "github.com/example_cc",
+			Path:       ccPath,
 			Version:    ccVersion,
 			Args:       ExampleCCInitArgs(),
 			Policy:     ccPolicy,
@@ -395,4 +359,44 @@ func WaitForOrdererConfigUpdate(t *testing.T, client *resmgmt.Client, channelID 
 
 	require.NoError(t, err)
 	return *blockNum.(*uint64)
+}
+
+func queryInstalledCC(resMgmt *resmgmt.Client, ccName, ccVersion string, peers []fabAPI.Peer) bool {
+	installed, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			ok := isCCInstalled(resMgmt, ccName, ccVersion, peers)
+			if !ok {
+				return &ok, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Chaincode [%s:%s] is not installed on all peers in Org1", ccName, ccVersion), nil)
+			}
+			return &ok, nil
+		},
+	)
+
+	if err != nil {
+		return false
+	}
+
+	return *(installed).(*bool)
+}
+
+func isCCInstalled(resMgmt *resmgmt.Client, ccName, ccVersion string, peers []fabAPI.Peer) bool {
+	installedOnAllPeers := true
+	for _, peer := range peers {
+		resp, err := resMgmt.QueryInstalledChaincodes(resmgmt.WithTargets(peer))
+		if err != nil {
+			return false
+		}
+
+		found := false
+		for _, ccInfo := range resp.Chaincodes {
+			if ccInfo.Name == ccName && ccInfo.Version == ccVersion {
+				found = true
+				break
+			}
+		}
+		if !found {
+			installedOnAllPeers = false
+		}
+	}
+	return installedOnAllPeers
 }
