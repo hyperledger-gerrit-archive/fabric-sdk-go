@@ -71,6 +71,35 @@ BenchmarkExecuteTxParallel-8   	  500000	    501436 ns/op	  218011 B/op	    3008
 PASS
 ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	529.397s
 
+#Benchmark data in Tally (using Prometheus report)
+The Channel Client's Execute and Query functions have been amended to collect tally counts and time spent executing these functions.
+
+In order to support collecting the data, make sure to start the data collector server found in:
+fabric-sdk-go/test/performance/metrics/server.go
+
+example of starting a data collector server is found in this benchmark (reference initAndStartMetricsServer() call)
+
+then start the Prometheus Docker container (an example docker compose config file is found at:
+fabric-sdk-go/test/performance/prometheus
+)
+
+finally run your sdk client and the perf data will be collected by the prometheus server. Navigate to 
+127.0.0.1:9095
+to view the report. 
+
+Make sure the Go client is running and some channel communication activity has occured with a peer in order 
+to see collected performance data.
+
+
+for the purpose of this channel client benchmark, once the Prometheus docker container is started, run the benchmark with long enough
+run times and navigate to the address above to see data being collected 
+(run with -benchtime=300s will show this data on the report as an example)
+
+If you would like to collect perf data into your version of Prometheus server (example dedicated performance environment),
+make sure to add metrics calls using the 'metrics' packgage in this sdk
+ie: "github.com/hyperledger/fabric-sdk-go/test/performance/metrics"
+
+for an example usage on how to setup data collection in your client application, see: fabric-sdk-go/pkg/client/channel/chclient.go
 
 #Benchmark CPU & Memory performance analysis
     In order to generate profiling data for the chClient benchmark, the go test command can be extended to generate these.

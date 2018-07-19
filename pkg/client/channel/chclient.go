@@ -27,8 +27,20 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/test/performance/metrics"
 	"github.com/pkg/errors"
+	"github.com/uber-go/tally"
 )
+
+type clientTally struct {
+	queryCount     tally.Counter
+	queryFailCount tally.Counter
+	queryTimer     tally.Timer
+
+	executeCount     tally.Counter
+	executeFailCount tally.Counter
+	executeTimer     tally.Timer
+}
 
 // Client enables access to a channel on a Fabric network.
 //
@@ -40,6 +52,7 @@ type Client struct {
 	membership   fab.ChannelMembership
 	eventService fab.EventService
 	greylist     *greylist.Filter
+	tally        *clientTally
 }
 
 // ClientOption describes a functional parameter for the New constructor
@@ -69,11 +82,22 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, errors.WithMessage(err, "membership creation failed")
 	}
 
+	ct := &clientTally{
+		queryCount:     metrics.RootScope.SubScope(channelContext.ChannelID()).Counter("ch_client_query_calls"),
+		queryFailCount: metrics.RootScope.SubScope(channelContext.ChannelID()).Counter("ch_client_query_errors"),
+		queryTimer:     metrics.RootScope.SubScope(channelContext.ChannelID()).Timer("ch_client_query_processing_time_seconds"),
+
+		executeCount:     metrics.RootScope.SubScope(channelContext.ChannelID()).Counter("ch_client_execute_calls"),
+		executeFailCount: metrics.RootScope.SubScope(channelContext.ChannelID()).Counter("ch_client_execute_errors"),
+		executeTimer:     metrics.RootScope.SubScope(channelContext.ChannelID()).Timer("ch_client_execute_processing_time_seconds"),
+	}
+
 	channelClient := Client{
 		membership:   membership,
 		eventService: eventService,
 		greylist:     greylistProvider,
 		context:      channelContext,
+		tally:        ct,
 	}
 
 	for _, param := range opts {
@@ -98,7 +122,15 @@ func (cc *Client) Query(request Request, options ...RequestOption) (Response, er
 	options = append(options, addDefaultTimeout(fab.Query))
 	options = append(options, addDefaultTargetFilter(cc.context, filter.ChaincodeQuery))
 
-	return cc.InvokeHandler(invoke.NewQueryHandler(), request, options...)
+	cc.tally.executeCount.Inc(1)
+	stopWatch := cc.tally.queryTimer.Start()
+	defer stopWatch.Stop()
+
+	r, err := cc.InvokeHandler(invoke.NewQueryHandler(), request, options...)
+	if err != nil {
+		cc.tally.queryFailCount.Inc(1)
+	}
+	return r, err
 }
 
 // Execute prepares and executes transaction using request and optional request options
@@ -112,7 +144,16 @@ func (cc *Client) Execute(request Request, options ...RequestOption) (Response, 
 	options = append(options, addDefaultTimeout(fab.Execute))
 	options = append(options, addDefaultTargetFilter(cc.context, filter.EndorsingPeer))
 
-	return cc.InvokeHandler(invoke.NewExecuteHandler(), request, options...)
+	cc.tally.executeCount.Inc(1)
+	stopWatch := cc.tally.executeTimer.Start()
+	defer stopWatch.Stop()
+
+	r, err := cc.InvokeHandler(invoke.NewExecuteHandler(), request, options...)
+	if err != nil {
+		cc.tally.executeFailCount.Inc(1)
+	}
+
+	return r, err
 }
 
 // addDefaultTargetFilter adds default target filter if target filter is not specified
