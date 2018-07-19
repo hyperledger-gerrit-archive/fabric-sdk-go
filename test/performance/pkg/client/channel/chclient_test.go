@@ -20,10 +20,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/hyperledger/fabric-sdk-go/test/performance/metrics"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/testdata"
 )
@@ -45,12 +47,15 @@ const (
 var sdkClient *fabsdk.FabricSDK
 var chClient *channel.Client
 
-var fixture *testFixture
-var ordererMockSrv *fcmocks.MockBroadcastServer
-var mockEndorserServer *MockEndorserServer
-var chRq = channel.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("b")}}
-var endorserURL = fmt.Sprintf("%s:%d", testhost, testport)
-var ordererURL = fmt.Sprintf("%s:%d", testBrodcasthost, testBroadcastport)
+var (
+	fixture            *testFixture
+	ordererMockSrv     *fcmocks.MockBroadcastServer
+	mockEndorserServer *MockEndorserServer
+	chRq               = channel.Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("b")}}
+	endorserURL        = fmt.Sprintf("%s:%d", testhost, testport)
+	ordererURL         = fmt.Sprintf("%s:%d", testBrodcasthost, testBroadcastport)
+	metricsConfig      *viper.Viper
+)
 
 func BenchmarkExecuteTx(b *testing.B) {
 	// report memory allocations for this benchmark
@@ -84,10 +89,33 @@ func BenchmarkExecuteTxParallel(b *testing.B) {
 }
 
 func TestMain(m *testing.M) {
+	initAndStartMetricsServer()
+
 	setUp(m)
 	r := m.Run()
 	teardown()
 	os.Exit(r)
+}
+
+func initAndStartMetricsServer() bool {
+	metricsConfig = viper.New()
+	metricsConfig.SetConfigFile(testdata.Path(pathvar.Subst(configPath)))
+	err := metricsConfig.ReadInConfig()
+	if err != nil {
+		panic(fmt.Sprintf("perf metrics configs missing: %s", err))
+	}
+
+	opts := metrics.NewOpts(metricsConfig)
+	err = metrics.Start(opts)
+	if err != nil {
+		fmt.Println("******** Metrics server err **********: ", err)
+		if err.Error() == "Unable to start metrics server because it is disabled" {
+			return false
+		}
+		panic(fmt.Sprintf("failed to start metrics server: %s", err))
+	}
+	fmt.Println("******** Metrics server started **********")
+	return true
 }
 
 func setUp(m *testing.M) {
