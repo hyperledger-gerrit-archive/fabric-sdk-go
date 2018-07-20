@@ -90,6 +90,24 @@ function isForceMode {
     fi
 }
 
+#####
+# TODO: Should think about extracting generateCryptoConfig and generateChannelConfig
+#####
+function generateCryptoConfig {
+    echo "Generating crypto config ..."
+    make crypto-gen
+}
+
+#####
+# TODO: Need to handle different fabric levels better
+#####
+function generateChannelConfig {
+    echo "Generating channel config ..."
+    make channel-config-devstable-gen
+    make channel-config-stable-gen
+    make channel-config-prev-gen
+}
+
 function populateVendor {
     echo "Populating vendor ..."
 	${GO_DEP_CMD} ensure -vendor-only
@@ -106,6 +124,8 @@ setCachePath
 
 if ! isPopulateCurrent || isForceMode; then
     populateVendor
+    generateCryptoConfig
+    generateChannelConfig
 else
     echo "No need to populate vendor"
 fi
