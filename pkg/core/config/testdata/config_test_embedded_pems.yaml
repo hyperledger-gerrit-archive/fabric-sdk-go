@@ -317,9 +317,9 @@ organizations:
       - ca-org2
 
   # Orderer Org name
-  ordererorg:
+  orderer:
       # Membership Service Provider ID for this organization
-      mspID: "OrdererOrg"
+      mspID: OrdererMSP
 
       users:
         Admin:

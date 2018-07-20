@@ -250,7 +250,7 @@ organizations:
   # Orderer Org name
   ordererorg:
       # Membership Service Provider ID for this organization
-      mspID: "OrdererOrg"
+      mspID: OrdererMSP
 
       users:
         Admin:
