@@ -205,7 +205,7 @@ organizations:
   # Orderer Org name
   ordererorg:
       # Membership Service Provider ID for this organization
-      mspID: "OrdererOrg"
+      mspID: OrdererMSP
 
       # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
       cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
