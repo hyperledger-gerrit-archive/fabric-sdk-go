@@ -31,11 +31,11 @@ const (
 	org1             = "Org1"
 	org2             = "Org2"
 	ordererAdminUser = "Admin"
-	ordererOrgName   = "ordererorg"
+	ordererOrgName   = "OrdererOrg"
 	org1AdminUser    = "Admin"
 	org2AdminUser    = "Admin"
 	configFilename   = "config_test.yaml"
-	expiredCertPath  = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/expiredtlsca/expired.pem"
+	expiredCertPath  = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/integration/negative/testdata/peerOrganizations/org1.example.com/expiredtlsca/expired.pem"
 )
 
 // TestExpiredPeersCert - peer0.org1.example.com was configured with expired certificate
