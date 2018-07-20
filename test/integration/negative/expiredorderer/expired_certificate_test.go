@@ -30,7 +30,7 @@ const (
 	org1             = "Org1"
 	org2             = "Org2"
 	ordererAdminUser = "Admin"
-	ordererOrgName   = "ordererorg"
+	ordererOrgName   = "OrdererOrg"
 	org1AdminUser    = "Admin"
 	org2AdminUser    = "Admin"
 	configFilename   = "config_test.yaml"

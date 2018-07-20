@@ -149,7 +149,7 @@ var (
 			CertificateAuthorities: []string{"ca.org2.example.com"},
 		},
 		"ordererorg": {
-			MSPID:      "OrdererOrg",
+			MSPID:      "OrdererMSP",
 			CryptoPath: "ordererOrganizations/example.com/users/{username}@example.com/msp",
 		},
 	}

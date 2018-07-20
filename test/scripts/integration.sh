@@ -80,6 +80,8 @@ if [ "${TEST_RACE_CONDITIONS}" = true ]; then
     fi
 fi
 
+PKGS=("github.com/hyperledger/fabric-sdk-go/test/integration/pkg/client/msp")
+
 if [ ${#PKGS[@]} -eq 0 ]; then
     echo "Skipping integration tests since no packages were changed"
     exit 0
