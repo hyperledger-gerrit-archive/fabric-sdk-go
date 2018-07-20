@@ -417,7 +417,14 @@ mock-gen:
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' -package mocksdkapi github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api CoreProviderFactory,MSPProviderFactory,ServiceProviderFactory | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/fabsdk/test/mocksdkapi/mocksdkapi.gen.go
 	mockgen -build_flags '$(GO_LDFLAGS_ARG)' -package mockmspapi github.com/hyperledger/fabric-sdk-go/pkg/msp/api CAClient | sed "s/github.com\/hyperledger\/fabric-sdk-go\/vendor\///g" | goimports > pkg/msp/test/mockmspapi/mockmspapi.gen.go
 
-# TODO - Add cryptogen
+.PHONY: crypto-gen
+crypto-gen:
+	@echo "Generating crypto directory ..."
+	@$(DOCKER_CMD) run -i \
+		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) \
+		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_TAG) \
+		/bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_CRYPTOCONFIG_VER) /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_crypto.sh"
+
 .PHONY: channel-config-gen
 channel-config-gen:
 	@echo "Generating test channel configuration transactions and blocks ..."
