@@ -22,9 +22,8 @@ var logger = logging.NewLogger("fabsdk/core")
 type certPool struct {
 	useSystemCertPool bool
 	certs             []*x509.Certificate
-	certPool          *x509.CertPool
 	certsByName       map[string][]int
-	lock              sync.RWMutex
+	lock              sync.Mutex
 }
 
 // NewCertPool new CertPool implementation
@@ -32,38 +31,33 @@ func NewCertPool(useSystemCertPool bool) fab.CertPool {
 	return &certPool{
 		useSystemCertPool: useSystemCertPool,
 		certsByName:       make(map[string][]int),
-		certPool:          x509.NewCertPool(),
 	}
 }
 
 func (c *certPool) Get(certs ...*x509.Certificate) (*x509.CertPool, error) {
-	c.lock.RLock()
-	if len(certs) == 0 || c.containsCerts(certs...) {
-		defer c.lock.RUnlock()
-		return c.certPool, nil
-	}
-	c.lock.RUnlock()
 
-	// We have a cert we have not encountered before, recreate the cert pool
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if len(certs) > 0 && !c.containsCerts(certs...) {
+		//add certs to SDK cert list
+		for _, newCert := range certs {
+			c.addCert(newCert)
+		}
+	}
+
+	// create the cert pool
 	certPool, err := c.loadSystemCertPool()
 	if err != nil {
 		return nil, err
 	}
 
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	//add certs to SDK cert list
-	for _, newCert := range certs {
-		c.addCert(newCert)
-	}
 	//add all certs to cert pool
 	for _, cert := range c.certs {
 		certPool.AddCert(cert)
 	}
-	c.certPool = certPool
 
-	return c.certPool, nil
+	return certPool, nil
 }
 
 func (c *certPool) addCert(newCert *x509.Certificate) {
