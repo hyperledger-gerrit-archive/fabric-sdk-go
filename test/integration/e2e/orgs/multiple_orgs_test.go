@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -35,6 +36,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 )
 
@@ -152,6 +154,62 @@ func TestOrgsEndToEnd(t *testing.T) {
 	expectedValue := testWithOrg1(t, sdk, &mc)
 	expectedValue = testWithOrg2(t, expectedValue, mc.ccName)
 	verifyWithOrg1(t, sdk, expectedValue, mc.ccName)
+
+	//if fabric fixture supports dynamic discovery then run additional tests on dynamic discovery
+	if integration.IsDynamicDiscoverySupported() {
+		runMultiOrgTestWithSingleOrgConfig(t)
+	}
+}
+
+//runMultiOrgTestWithSingleOrgConfig uses new sdk instance with new config which only has entries for org1.
+// this function tests,
+// 			if discovered peer has MSP ID found by dynamic discovery service.
+// 			if it is able to get endorsement from peers not mentioned in config
+//			if tlscacerts are being used by channel block anchor peers if not found in config
+func runMultiOrgTestWithSingleOrgConfig(t *testing.T) {
+
+	peerToBeDisovered := "peer0.org2.example.com:8051"
+	//Config containing references to org1 only
+	configProvider := config.FromFile(pathvar.Subst(integration.ConfigPathSingleOrg))
+	//if local test, add entity matchers to override URLs to localhost
+	if integration.IsLocal() {
+		configProvider = integration.AddLocalEntityMapping(configProvider)
+		peerToBeDisovered = "localhost:8051"
+	}
+
+	org1sdk, err := fabsdk.New(configProvider)
+	if err != nil {
+		t.Fatal("failed to created SDK,", err)
+	}
+
+	//prepare context
+	org1ChannelClientContext := org1sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
+
+	// Org1 user connects to 'orgchannel'
+	chClientOrg1User, err := channel.New(org1ChannelClientContext)
+	if err != nil {
+		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
+	}
+
+	req := channel.Request{
+		ChaincodeID: exampleCC,
+		Fcn:         "invoke",
+		Args:        integration.ExampleCCQueryArgs(),
+	}
+	resp, err := chClientOrg1User.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
+
+	require.NoError(t, err, "query funds failed")
+
+	foundOrg2Endorser := false
+	for _, v := range resp.Responses {
+		//check if response endorser is org2 peer and MSP ID 'Org2MSP' is found
+		if peerToBeDisovered == v.Endorser && strings.Contains(string(v.Endorsement.Endorser), "Org2MSP") {
+			foundOrg2Endorser = true
+			break
+		}
+	}
+
+	require.True(t, foundOrg2Endorser, "couldnt not find org2 endorser and MSPID")
 }
 
 func createAndJoinChannel(t *testing.T, mc *multiorgContext) {
@@ -657,4 +715,5 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 }
