@@ -1017,7 +1017,11 @@ func (c *EndpointConfig) loadChannelOrderers() error {
 
 func (c *EndpointConfig) loadTLSCertPool() error {
 
-	c.tlsCertPool = commtls.NewCertPool(c.backend.GetBool("client.tlsCerts.systemCertPool"))
+	var err error
+	c.tlsCertPool, err = commtls.NewCertPool(c.backend.GetBool("client.tlsCerts.systemCertPool"))
+	if err != nil {
+		return errors.WithMessage(err, "failed to create cert pool")
+	}
 
 	// preemptively add all TLS certs to cert pool as adding them at request time
 	// is expensive
