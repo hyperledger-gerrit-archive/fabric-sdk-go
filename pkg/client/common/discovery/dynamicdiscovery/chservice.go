@@ -72,17 +72,18 @@ func (s *ChannelService) queryPeers() ([]fab.Peer, error) {
 }
 
 func (s *ChannelService) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, error) {
-	// TODO: The number of peers to query should be retrieved from the channel policy.
-	// This will done in a future patch.
-	chpeers, ok := ctx.EndpointConfig().ChannelPeers(s.channelID)
+	chPeers, ok := ctx.EndpointConfig().ChannelPeers(s.channelID)
 	if !ok {
-		return nil, errors.Errorf("failed to get peer configs for channel [%s]", s.channelID)
+		return nil, errors.Errorf("failed to get channel peer configs for channel [%s]", s.channelID)
 	}
-	targets := make([]fab.PeerConfig, len(chpeers))
-	for i := 0; i < len(targets); i++ {
-		targets[i] = chpeers[i].NetworkPeer.PeerConfig
+
+	chConfig, ok := ctx.EndpointConfig().ChannelConfig(s.channelID)
+	if !ok {
+		return nil, errors.Errorf("failed to get channel endpoint configs for channel [%s]", s.channelID)
 	}
-	return targets, nil
+
+	//pick number of peers given in channel policy
+	return pickRandomNPeerConfigs(chPeers, chConfig.Policies.QueryChannelConfig.QueryDiscovery), nil
 }
 
 // evaluate validates the responses and returns the peers
@@ -130,4 +131,27 @@ type peerEndpoint struct {
 
 func (p *peerEndpoint) BlockHeight() uint64 {
 	return p.blockHeight
+}
+
+//pickRandomNPeerConfigs picks N random  unique peer configs from given channel peer list
+func pickRandomNPeerConfigs(chPeers []fab.ChannelPeer, n int) []fab.PeerConfig {
+
+	if len(chPeers) <= n {
+		n = len(chPeers)
+	}
+
+	allChPeers := make(map[int]fab.ChannelPeer)
+	for i, v := range chPeers {
+		allChPeers[i] = v
+	}
+
+	var result []fab.PeerConfig
+	for _, v := range allChPeers {
+		result = append(result, v.PeerConfig)
+		if len(result) == n {
+			return result
+		}
+	}
+
+	return result
 }
