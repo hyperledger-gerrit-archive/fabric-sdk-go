@@ -144,6 +144,12 @@ func asPeer(ctx contextAPI.Client, endpoint *discclient.Peer) (fab.Peer, bool) {
 		return nil, false
 	}
 
+	//check if cache is updated with tlscert if this is a new org joined
+	if peerConfig.TLSCACert == nil && !ctx.EndpointConfig().TLSCACertPool().IsOrgAdded(endpoint.MSPID) {
+		logger.Debugf("TLS cert pool entry not found for MSP [%s], URL [%s]", endpoint.MSPID, url)
+		return nil, false
+	}
+
 	peer, err := ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: *peerConfig, MSPID: endpoint.MSPID})
 	if err != nil {
 		logger.Warnf("Unable to create peer config for [%s]: %s", url, err)

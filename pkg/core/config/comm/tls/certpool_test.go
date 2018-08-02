@@ -339,6 +339,18 @@ func TestConcurrent(t *testing.T) {
 	assert.Len(t, certPool.Subjects(), concurrency+systemCerts)
 }
 
+func TestOrgAdded(t *testing.T) {
+	fabCertPool, err := NewCertPool(true)
+	assert.Nil(t, err)
+	assert.NotNil(t, fabCertPool)
+
+	fabCertPool.AddOrg("X")
+	fabCertPool.AddOrg("Y")
+	assert.True(t, fabCertPool.IsOrgAdded("X"))
+	assert.True(t, fabCertPool.IsOrgAdded("Y"))
+	assert.False(t, fabCertPool.IsOrgAdded("Z"))
+}
+
 func createNCerts(n int) []*x509.Certificate {
 	var certs []*x509.Certificate
 	for i := 0; i < n; i++ {

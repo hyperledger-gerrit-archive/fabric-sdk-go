@@ -16,6 +16,7 @@ import (
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -120,6 +121,133 @@ func TestDiscoveryService(t *testing.T) {
 	peers, err = filteredService.GetPeers()
 	require.NoError(t, err)
 	require.Equalf(t, 1, len(peers), "expecting discovery filter to return only one peer")
+}
+
+func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
+
+	fabCertPool, err := tls.NewCertPool(false)
+	fabCertPool.AddOrg(mspID1)
+	assert.Nil(t, err)
+	endpointConfig := &mocks.MockConfig{CustomTLSCACertPool: fabCertPool}
+
+	ctx := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", mspID1))
+	config := &config{
+		EndpointConfig: endpointConfig,
+		peers: []pfab.ChannelPeer{
+			{
+				NetworkPeer: pfab.NetworkPeer{
+					PeerConfig: pfab.PeerConfig{
+						URL: peer1MSP1,
+					},
+					MSPID: mspID1,
+				},
+			},
+			{
+				NetworkPeer: pfab.NetworkPeer{
+					PeerConfig: pfab.PeerConfig{
+						URL: peer1MSP2,
+					},
+					MSPID: mspID2,
+				},
+			},
+		},
+	}
+	ctx.SetEndpointConfig(config)
+
+	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+		},
+	)
+
+	clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
+		return discClient, nil
+	}
+
+	service, err := NewChannelService(
+		ctx, ch,
+		WithRefreshInterval(500*time.Millisecond),
+		WithResponseTimeout(2*time.Second),
+	)
+	require.NoError(t, err)
+	defer service.Close()
+
+	peers, err := service.GetPeers()
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(peers))
+
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+				{
+					MSPID:        mspID1,
+					Endpoint:     peer1MSP1,
+					LedgerHeight: 5,
+				},
+			},
+		},
+	)
+
+	time.Sleep(1 * time.Second)
+
+	peers, err = service.GetPeers()
+	assert.NoError(t, err)
+	assert.Equalf(t, 1, len(peers), "Expected 1 peer")
+
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+				{
+					MSPID:        mspID1,
+					Endpoint:     peer1MSP1,
+					LedgerHeight: 5,
+				},
+				{
+					MSPID:        mspID2,
+					Endpoint:     peer1MSP2,
+					LedgerHeight: 15,
+				},
+			},
+		},
+	)
+
+	time.Sleep(1 * time.Second)
+
+	peers, err = service.GetPeers()
+	assert.NoError(t, err)
+	assert.Equalf(t, 1, len(peers), "Expected 1 peer among 2 been discovered, since one of them belong to new org with pending tls entry")
+
+	filteredService := discovery.NewDiscoveryFilterService(service, &blockHeightFilter{minBlockHeight: 10})
+	peers, err = filteredService.GetPeers()
+	require.NoError(t, err)
+	require.Equalf(t, 0, len(peers), "expecting discovery filter to return only one peer")
+
+	ctx.EndpointConfig().TLSCACertPool().AddOrg(mspID2)
+
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+				{
+					MSPID:        mspID1,
+					Endpoint:     peer1MSP1,
+					LedgerHeight: 5,
+				},
+				{
+					MSPID:        mspID2,
+					Endpoint:     peer1MSP2,
+					LedgerHeight: 15,
+				},
+			},
+		},
+	)
+
+	time.Sleep(1 * time.Second)
+
+	peers, err = service.GetPeers()
+	assert.NoError(t, err)
+	assert.Equalf(t, 2, len(peers), "Expected 2 peers")
+
 }
 
 func TestPickRandomNPeerConfigs(t *testing.T) {

@@ -81,3 +81,13 @@ func (c *MockCertPool) Get() (*x509.CertPool, error) {
 func (c *MockCertPool) Add(certs ...*x509.Certificate) {
 
 }
+
+//IsOrgAdded mock implementation of certpool IsOrgAdded
+func (c *MockCertPool) IsOrgAdded(mspID string) bool {
+	return true
+}
+
+//AddOrg mock implementation of certpool AddOrg
+func (c *MockCertPool) AddOrg(mspID string) {
+
+}

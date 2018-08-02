@@ -24,6 +24,7 @@ import (
 	"encoding/pem"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	"github.com/stretchr/testify/assert"
@@ -37,9 +38,14 @@ func TestCertSignedWithUnknownAuthority(t *testing.T) {
 	cfg := mocks.NewMockChannelCfg("")
 	// Test good config input
 	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(validRootCA))}
-	m, err := New(Context{Providers: ctx}, cfg)
+	fabCertPool, err := tls.NewCertPool(false)
+	assert.Nil(t, err)
+	endpointConfig := &mocks.MockConfig{CustomTLSCACertPool: fabCertPool}
+
+	m, err := New(Context{Providers: ctx, EndpointConfig: endpointConfig}, cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
+	assert.True(t, fabCertPool.IsOrgAdded(goodMSPID), "certpool was supposed to get updated with new MSP ID")
 
 	invalidSignatureCrt := []byte(invalidSignaturePem)
 
@@ -51,6 +57,7 @@ func TestCertSignedWithUnknownAuthority(t *testing.T) {
 	if !strings.Contains(err.Error(), "certificate signed by unknown authority") {
 		t.Fatal("Expected error:'supplied identity is not valid: x509: certificate signed by unknown authority'")
 	}
+
 }
 
 //TestRevokedCertificate
@@ -64,7 +71,7 @@ func TestRevokedCertificate(t *testing.T) {
 	}
 	// Test good config input
 	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(orgTwoCA))}
-	m, err := New(Context{Providers: ctx}, cfg)
+	m, err := New(Context{Providers: ctx, EndpointConfig: mocks.NewMockEndpointConfig()}, cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
 
@@ -91,11 +98,16 @@ func TestCertificateDates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error %s", err)
 	}
+	fabCertPool, err := tls.NewCertPool(false)
+	assert.Nil(t, err)
+	endpointConfig := &mocks.MockConfig{CustomTLSCACertPool: fabCertPool}
+
 	// Test good config input
 	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(orgTwoCA))}
-	m, err := New(Context{Providers: ctx}, cfg)
+	m, err := New(Context{Providers: ctx, EndpointConfig: endpointConfig}, cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
+	assert.True(t, fabCertPool.IsOrgAdded(goodMSPID), "certpool was supposed to get updated with new MSP ID")
 
 	// Certificate is in the future
 	cert := generateSelfSignedCert(t, time.Now().Add(24*time.Hour))
@@ -125,17 +137,23 @@ func TestNewMembership(t *testing.T) {
 	ctx := mocks.NewMockProviderContext()
 	cfg := mocks.NewMockChannelCfg("")
 
+	fabCertPool, err := tls.NewCertPool(false)
+	assert.Nil(t, err)
+	endpointConfig := &mocks.MockConfig{CustomTLSCACertPool: fabCertPool}
+
 	// Test bad config input
 	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte("invalid"))}
-	m, err := New(Context{Providers: ctx}, cfg)
+	m, err := New(Context{Providers: ctx, EndpointConfig: endpointConfig}, cfg)
 	assert.NotNil(t, err)
 	assert.Nil(t, m)
+	assert.False(t, fabCertPool.IsOrgAdded(goodMSPID), "certpool is not supposed to get updated with new MSP ID in case of MSP error")
 
 	// Test good config input
 	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(validRootCA))}
-	m, err = New(Context{Providers: ctx}, cfg)
+	m, err = New(Context{Providers: ctx, EndpointConfig: endpointConfig}, cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, m)
+	assert.True(t, fabCertPool.IsOrgAdded(goodMSPID), "certpool was supposed to get updated with new MSP ID")
 
 	// We serialize identities by prepending the MSPID and appending the ASN.1 DER content of the cert
 	sID := &mb.SerializedIdentity{Mspid: goodMSPID, IdBytes: []byte(certPem)}

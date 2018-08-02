@@ -158,11 +158,17 @@ type Providers interface {
 }
 
 // CertPool is a thread safe wrapper around the x509 standard library
-// cert pool implementation.
+// cert pool implementation with custom SDK features.
 type CertPool interface {
 	// Get returns the cert pool, optionally adding the provided certs
 	Get() (*x509.CertPool, error)
 	//Add allows adding certificates to CertPool
 	//Call Get() after Add() to get the updated certpool
 	Add(certs ...*x509.Certificate)
+
+	//IsOrgAdded returns true if given org has already joined org pool maintained by certpool
+	IsOrgAdded(mspID string) bool
+
+	//AddOrg adds given org to org pool maintained by certpool
+	AddOrg(mspID string)
 }

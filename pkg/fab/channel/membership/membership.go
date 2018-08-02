@@ -100,13 +100,18 @@ func createMSPManager(ctx Context, cfg fab.ChannelCfg) (msp.MSPManager, error) {
 		if err := mspManager.Setup(msps); err != nil {
 			return nil, errors.WithMessage(err, "MSPManager Setup failed")
 		}
-		var certs [][]byte
+
+		certsByMsp := make(map[string][][]byte)
 		for _, msp := range msps {
-			certs = append(certs, msp.GetTLSRootCerts()...)
-			certs = append(certs, msp.GetTLSIntermediateCerts()...)
+			mspName, err := msp.GetIdentifier()
+			if err != nil {
+				return nil, errors.WithMessage(err, "MSPManager certpool setup failed")
+			}
+			certsByMsp[mspName] = append(msp.GetTLSRootCerts(), msp.GetTLSIntermediateCerts()...)
 		}
-		if len(certs) > 0 {
-			addCertsToConfig(ctx.EndpointConfig, certs)
+
+		for mspName, certs := range certsByMsp {
+			addCertsToConfig(ctx.EndpointConfig, mspName, certs)
 		}
 	}
 
@@ -184,7 +189,14 @@ func getFabricConfig(config *mb.MSPConfig) (*mb.FabricMSPConfig, error) {
 }
 
 //addCertsToConfig adds cert bytes to config TLSCACertPool
-func addCertsToConfig(config fab.EndpointConfig, pemCertsList [][]byte) {
+func addCertsToConfig(config fab.EndpointConfig, mspName string, pemCertsList [][]byte) {
+
+	config.TLSCACertPool().AddOrg(mspName)
+
+	if len(pemCertsList) == 0 {
+		return
+	}
+
 	var certs []*x509.Certificate
 	for _, pemCerts := range pemCertsList {
 		for len(pemCerts) > 0 {

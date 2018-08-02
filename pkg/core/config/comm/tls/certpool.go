@@ -28,6 +28,8 @@ type certPool struct {
 	lock        sync.Mutex
 	dirty       int32
 	certQueue   []*x509.Certificate
+	orgsInPool  map[string]bool
+	rwlock      sync.RWMutex
 }
 
 // NewCertPool new CertPool implementation
@@ -41,6 +43,7 @@ func NewCertPool(useSystemCertPool bool) (fab.CertPool, error) {
 	newCertPool := &certPool{
 		certsByName: make(map[string][]int),
 		certPool:    c,
+		orgsInPool:  make(map[string]bool),
 	}
 
 	return newCertPool, nil
@@ -91,6 +94,18 @@ func (c *certPool) Add(certs ...*x509.Certificate) {
 
 		atomic.CompareAndSwapInt32(&c.dirty, 0, 1)
 	}
+}
+
+func (c *certPool) IsOrgAdded(mspID string) bool {
+	c.rwlock.RLock()
+	defer c.rwlock.RUnlock()
+	return c.orgsInPool[mspID]
+}
+
+func (c *certPool) AddOrg(mspID string) {
+	c.rwlock.Lock()
+	defer c.rwlock.Unlock()
+	c.orgsInPool[mspID] = true
 }
 
 //filterCerts remove certs from list if they already exist in pool or duplicate
