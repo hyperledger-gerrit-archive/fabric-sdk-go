@@ -12,6 +12,8 @@ import (
 
 	"sync/atomic"
 
+	"unsafe"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
@@ -22,12 +24,12 @@ var logger = logging.NewLogger("fabsdk/core")
 // cert pool implementation.
 // It optionally allows loading the system trust store.
 type certPool struct {
-	certPool    *x509.CertPool
-	certs       []*x509.Certificate
-	certsByName map[string][]int
-	lock        sync.RWMutex
-	dirty       int32
-	certQueue   []*x509.Certificate
+	certPool       *x509.CertPool
+	certs          []*x509.Certificate
+	certsByName    map[string][]int
+	lock           sync.RWMutex
+	dirty          int32
+	systemCertPool bool
 }
 
 // NewCertPool new CertPool implementation
@@ -39,8 +41,9 @@ func NewCertPool(useSystemCertPool bool) (fab.CertPool, error) {
 	}
 
 	newCertPool := &certPool{
-		certsByName: make(map[string][]int),
-		certPool:    c,
+		certsByName:    make(map[string][]int),
+		certPool:       c,
+		systemCertPool: useSystemCertPool,
 	}
 
 	return newCertPool, nil
@@ -52,15 +55,11 @@ func (c *certPool) Get() (*x509.CertPool, error) {
 
 	//if dirty then add certs from queue to cert pool
 	if atomic.CompareAndSwapInt32(&c.dirty, 1, 0) {
-		c.lock.Lock()
-
-		//add all new certs in queue to cert pool
-		for _, cert := range c.certQueue {
-			c.certPool.AddCert(cert)
+		//swap certpool if queue is dirty
+		err := c.swapCertPool()
+		if err != nil {
+			return nil, err
 		}
-		c.certQueue = []*x509.Certificate{}
-
-		c.lock.Unlock()
 	}
 
 	c.lock.RLock()
@@ -84,7 +83,6 @@ func (c *certPool) Add(certs ...*x509.Certificate) {
 	if len(certsToBeAdded) > 0 {
 
 		for _, newCert := range certsToBeAdded {
-			c.certQueue = append(c.certQueue, newCert)
 			// Store cert name index
 			name := string(newCert.RawSubject)
 			c.certsByName[name] = append(c.certsByName[name], len(c.certs))
@@ -94,6 +92,26 @@ func (c *certPool) Add(certs ...*x509.Certificate) {
 
 		atomic.CompareAndSwapInt32(&c.dirty, 0, 1)
 	}
+}
+
+func (c *certPool) swapCertPool() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	newCertPool, err := loadSystemCertPool(c.systemCertPool)
+	if err != nil {
+		return err
+	}
+	//add all new certs in queue to new cert pool
+	for _, cert := range c.certs {
+		newCertPool.AddCert(cert)
+	}
+
+	//swap old certpool with new one
+	old := (*unsafe.Pointer)(unsafe.Pointer(&c.certPool))
+	atomic.SwapPointer(old, unsafe.Pointer(newCertPool))
+
+	return nil
 }
 
 //filterCerts remove certs from list if they already exist in pool or duplicate
