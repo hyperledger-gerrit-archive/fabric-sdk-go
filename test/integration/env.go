@@ -54,9 +54,17 @@ func IsLocal() bool {
 	return false
 }
 
+func emptyConfigProvider() ([]core.ConfigBackend, error) {
+	return []core.ConfigBackend{}, nil
+}
+
 //AddLocalEntityMapping adds local test entity mapping to config backend
 // and returns updated config provider
 func AddLocalEntityMapping(configProvider core.ConfigProvider) core.ConfigProvider {
+	if configProvider == nil {
+		configProvider = emptyConfigProvider
+	}
+
 	return func() ([]core.ConfigBackend, error) {
 		return appendLocalEntityMappingBackend(configProvider, entityMatcherLocal)
 	}
