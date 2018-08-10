@@ -144,7 +144,7 @@ FABRIC_TOOLS_PRERELEASE_TAG = $(FABRIC_ARCH)-$(FABRIC_PRERELEASE_VERSION)
 FABRIC_TOOLS_DEVSTABLE_TAG  := stable
 
 # The version of dep that will be installed by depend (or in the CI)
-GO_DEP_COMMIT := v0.4.1
+GO_DEP_COMMIT := v0.5.0
 
 # Detect CI
 # TODO introduce nightly and adjust verify
