@@ -40,7 +40,7 @@ type Client struct {
 	membership   fab.ChannelMembership
 	eventService fab.EventService
 	greylist     *greylist.Filter
-	clientTally  // nolint
+	clientTally
 }
 
 // ClientOption describes a functional parameter for the New constructor

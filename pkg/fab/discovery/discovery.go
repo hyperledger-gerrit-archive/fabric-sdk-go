@@ -99,6 +99,7 @@ func (c *Client) send(reqCtx context.Context, req *discclient.Request, target fa
 		func(msg []byte) ([]byte, error) {
 			return c.ctx.SigningManager().Sign(msg, c.ctx.PrivateKey())
 		},
+		1000, // TODO!!
 	)
 	return discClient.Send(reqCtx, req, c.authInfo)
 }
