@@ -1451,8 +1451,6 @@ type EventServiceConfig struct {
 func (c *EventServiceConfig) Type() fab.EventServiceType {
 	etype := c.backend.GetString("client.eventService.type")
 	switch etype {
-	case "eventhub":
-		return fab.EventHubEventServiceType
 	case "deliver":
 		return fab.DeliverEventServiceType
 	default:

@@ -169,8 +169,6 @@ const (
 	AutoDetectEventServiceType EventServiceType = iota
 	// DeliverEventServiceType uses the Deliver Service for block and filtered-block events
 	DeliverEventServiceType
-	// EventHubEventServiceType uses the Event Hub for block events
-	EventHubEventServiceType
 )
 
 // Providers represents the SDK configured service providers context.
