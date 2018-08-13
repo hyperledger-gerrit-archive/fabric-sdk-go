@@ -9,16 +9,13 @@ package configless
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
-
-	"encoding/pem"
-
-	"io/ioutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -305,7 +302,7 @@ var (
 type exampleTimeout struct{}
 
 var defaultTypes = map[fab.TimeoutType]time.Duration{
-	fab.EndorserConnection:       time.Second * 10,
+	fab.PeerConnection:           time.Second * 10,
 	fab.PeerResponse:             time.Minute * 3,
 	fab.DiscoveryGreylistExpiry:  time.Second * 10,
 	fab.EventHubConnection:       time.Second * 15,
@@ -722,13 +719,7 @@ type eventServiceConfig struct {
 }
 
 func (c *eventServiceConfig) Type() fab.EventServiceType {
-	// if this test is run for the previous release (1.0) then update the config with EVENT_HUB as it doesn't support deliveryService
-	if os.Getenv("FABRIC_SDK_CLIENT_EVENTSERVICE_TYPE") == "eventhub" {
-		return fab.EventHubEventServiceType
-	}
 	return fab.DeliverEventServiceType
-	//or for EventHub service type, but most configs use Delivery Service starting release 1.1
-	//return fab.EventHubEventServiceType
 }
 
 func (c *eventServiceConfig) BlockHeightLagThreshold() int {

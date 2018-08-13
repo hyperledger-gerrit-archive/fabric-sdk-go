@@ -279,8 +279,6 @@ func testWithDeliverEvents(t *testing.T, chContext context.Channel) bool {
 	switch config.EventServiceConfig().Type() {
 	case fab.DeliverEventServiceType:
 		return true
-	case fab.EventHubEventServiceType:
-		return false
 	case fab.AutoDetectEventServiceType:
 		return chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_1Capability)
 	default:
