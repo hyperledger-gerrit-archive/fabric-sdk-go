@@ -11,8 +11,8 @@ import (
 
 	"crypto/x509"
 
-	cutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 )
 
 // TLSConfig returns the appropriate config for TLS including the root CAs,
@@ -31,17 +31,20 @@ func TLSConfig(cert *x509.Certificate, serverName string, config fab.EndpointCon
 }
 
 // TLSCertHash is a utility method to calculate the SHA256 hash of the configured certificate (for usage in channel headers)
-func TLSCertHash(config fab.EndpointConfig) []byte {
+func TLSCertHash(config fab.EndpointConfig) ([]byte, bool, error) {
 	certs := config.TLSClientCerts()
 	if len(certs) == 0 {
-		return nil
+		return nil, true, nil
 	}
 
 	cert := certs[0]
 	if len(cert.Certificate) == 0 {
-		return nil
+		return nil, true, nil
 	}
 
-	h := cutil.ComputeSHA256(cert.Certificate[0])
-	return h
+	h, err := cryptosuite.GetDefault().Hash(cert.Certificate[0], cryptosuite.GetSHA256Opts())
+	if err != nil {
+		return nil, false, nil
+	}
+	return h, true, nil
 }
