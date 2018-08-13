@@ -56,7 +56,7 @@ func (c *fabricCAAdapter) Enroll(enrollmentID string, enrollmentSecret string) (
 	}
 	caresp, err := c.caClient.Enroll(careq)
 	if err != nil {
-		return nil, errors.WithMessage(err, "enroll failed")
+		return nil, errors.WithMessage(err, "enroll failed XXXXX")
 	}
 	return caresp.Identity.GetECert().Cert(), nil
 }
@@ -391,6 +391,8 @@ func createFabricCAClient(org string, cryptoSuite core.CryptoSuite, config msp.I
 	c.Config.CAName = conf.CAName
 	//set server URL
 	c.Config.URL = endpoint.ToAddress(conf.URL)
+	//ser server name
+	c.Config.ServerName, _ = conf.GRPCOptions["ssl-target-name-override"].(string)
 	//certs file list
 	c.Config.TLS.CertFiles, ok = config.CAServerCerts(org)
 	if !ok {
