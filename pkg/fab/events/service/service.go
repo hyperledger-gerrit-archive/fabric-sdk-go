@@ -44,6 +44,9 @@ type Dispatcher interface {
 
 	// LastBlockNum returns the block number of the last block for which an event was received.
 	LastBlockNum() uint64
+
+	//SetDiscardNextEvent discards next BlockEvent/FilteredBlockEvent in dispatcher
+	SetDiscardNextEvent(bool)
 }
 
 // Service allows clients to register for channel events, such as filtered block, chaincode, and transaction status events.

@@ -69,6 +69,9 @@ func New(context fabcontext.Client, chConfig fab.ChannelCfg, discoveryService fa
 		),
 		params: *params,
 	}
+	if client.seekType == seek.Newest {
+		client.Dispatcher().SetDiscardNextEvent(true)
+	}
 	client.SetAfterConnectHandler(client.seek)
 	client.SetBeforeReconnectHandler(client.setSeekFromLastBlockReceived)
 

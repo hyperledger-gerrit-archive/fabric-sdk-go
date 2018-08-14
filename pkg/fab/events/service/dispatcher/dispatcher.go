@@ -52,6 +52,7 @@ type Dispatcher struct {
 	ccRegistrations            map[string]*ChaincodeReg
 	state                      int32
 	lastBlockNum               uint64
+	discardNextEvent           bool
 }
 
 // New creates a new Dispatcher.
@@ -306,6 +307,11 @@ func (ed *Dispatcher) HandleBlock(block *cb.Block, sourceURL string) {
 		return
 	}
 
+	if ed.DiscardNextEvent() {
+		ed.SetDiscardNextEvent(false)
+		return
+	}
+
 	ed.publishBlockEvents(block, sourceURL)
 	ed.publishFilteredBlockEvents(toFilteredBlock(block), sourceURL)
 }
@@ -316,6 +322,11 @@ func (ed *Dispatcher) HandleFilteredBlock(fblock *pb.FilteredBlock, sourceURL st
 
 	if err := ed.updateLastBlockNum(fblock.Number); err != nil {
 		logger.Error(err.Error())
+		return
+	}
+
+	if ed.DiscardNextEvent() {
+		ed.SetDiscardNextEvent(false)
 		return
 	}
 
@@ -504,6 +515,16 @@ func (ed *Dispatcher) RegisterHandler(t interface{}, h Handler) {
 	} else {
 		logger.Debugf("Cannot register handler %s on dispatcher %T since it's already registered", htype, ed)
 	}
+}
+
+//DiscardNextEvent returns if next event needs to be published or not
+func (ed *Dispatcher) DiscardNextEvent() bool {
+	return ed.discardNextEvent
+}
+
+//SetDiscardNextEvent sets if next event needs to be published or not
+func (ed *Dispatcher) SetDiscardNextEvent(discard bool) {
+	ed.discardNextEvent = discard
 }
 
 func getCCKey(ccID, eventFilter string) string {

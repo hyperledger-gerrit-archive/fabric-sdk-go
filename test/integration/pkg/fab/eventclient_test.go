@@ -20,7 +20,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/stretchr/testify/assert"
 )
 
 const eventTimeWindow = 30 * time.Second // the maximum amount of time to watch for events.
@@ -258,4 +261,53 @@ func createAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionPr
 	}
 
 	return transactionResponse, nil
+}
+
+//TestMultipleEventClient tests if CCEvents for chaincode events are in sync when new channel client are created
+// for each transaction
+func TestMultipleEventClient(t *testing.T) {
+
+	channelID := mainTestSetup.ChannelID
+	chainCodeID := mainChaincodeID
+	eventID := "([a-zA-Z]+)"
+
+	for i := 0; i < 10; i++ {
+
+		sdk, err := fabsdk.New(integration.ConfigBackend)
+		if err != nil {
+			t.Fatalf("Failed to create new SDK: %s", err)
+		}
+
+		chContextProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+
+		chClient, err := channel.New(chContextProvider)
+		if err != nil {
+			t.Fatalf("Failed to create new channel client: %s", err)
+		}
+
+		// Register chaincode event (pass in channel which receives event details when the event is complete)
+		reg, notifier, err := chClient.RegisterChaincodeEvent(chainCodeID, eventID)
+		if err != nil {
+			t.Fatalf("Failed to register cc event: %s", err)
+		}
+		defer chClient.UnregisterChaincodeEvent(reg)
+
+		// Move funds
+		resp, err := chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke",
+			Args: integration.ExampleCCTxArgs()}, channel.WithRetry(retry.DefaultChannelOpts))
+		if err != nil {
+			t.Fatalf("Failed to move funds: %s", err)
+		}
+
+		txID := resp.TransactionID
+
+		var ccEvent *fab.CCEvent
+		select {
+		case ccEvent = <-notifier:
+			t.Logf("Received CC eventID: %#v\n", ccEvent.TxID)
+		case <-time.After(time.Second * 20):
+			t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
+		}
+		assert.Equal(t, string(txID), ccEvent.TxID, "mismatched ccEvent.TxID")
+	}
 }
