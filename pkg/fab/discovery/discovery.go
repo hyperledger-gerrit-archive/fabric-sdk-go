@@ -119,8 +119,13 @@ func newAuthInfo(ctx fabcontext.Client) (*discovery.AuthInfo, error) {
 		return nil, err
 	}
 
+	hash, _, err := corecomm.TLSCertHash(ctx.EndpointConfig())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get tls cert hash")
+	}
+
 	return &discovery.AuthInfo{
 		ClientIdentity:    identity,
-		ClientTlsCertHash: corecomm.TLSCertHash(ctx.EndpointConfig()),
+		ClientTlsCertHash: hash,
 	}, nil
 }
