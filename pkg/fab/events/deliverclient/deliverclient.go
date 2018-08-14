@@ -62,13 +62,18 @@ func New(context fabcontext.Client, chConfig fab.ChannelCfg, discoveryService fa
 		return nil, err
 	}
 
+	dispatcher := dispatcher.New(context, chConfig, discoveryWrapper, params.connProvider, opts...)
+	if params.seekType == seek.Newest {
+		//discard next BlockEvent/FilteredBlockEvent in dispatcher, since seektype 'newest' is
+		// only needed for block height calculations
+		dispatcher.DiscardNextEvent()
+	}
+
 	client := &Client{
-		Client: *client.New(
-			dispatcher.New(context, chConfig, discoveryWrapper, params.connProvider, opts...),
-			opts...,
-		),
+		Client: *client.New(dispatcher, opts...),
 		params: *params,
 	}
+
 	client.SetAfterConnectHandler(client.seek)
 	client.SetBeforeReconnectHandler(client.setSeekFromLastBlockReceived)
 
