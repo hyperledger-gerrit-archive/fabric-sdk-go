@@ -15,11 +15,14 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
@@ -258,4 +261,123 @@ func createAndSendTransaction(transactor fab.Sender, proposal *fab.TransactionPr
 	}
 
 	return transactionResponse, nil
+}
+
+func TestMultipleEventsBySeekTypes(t *testing.T) {
+
+	chainCodeID := mainChaincodeID
+	testSetup := mainTestSetup
+
+	//Run with seek type default and test behaviour
+	t.Run("Testing event service with seek option 'default'", func(t *testing.T) {
+		for i := 0; i < 4; i++ {
+			//create new sdk
+			sdk, err := fabsdk.New(integration.ConfigBackend)
+			if err != nil {
+				t.Fatal("failed to get new sdk instance:", err)
+			}
+
+			//create new channel context
+			chContextProvider := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+			chContext, err := chContextProvider()
+			if err != nil {
+				t.Fatalf("error getting channel context: %s", err)
+			}
+
+			//create new event service with default opts
+			eventService, err := chContext.ChannelService().EventService()
+			if err != nil {
+				t.Fatalf("error getting event service: %s", err)
+			}
+
+			testChannelEventsSeekOptions(t, testSetup, sdk, chContext, chainCodeID, false, eventService, "")
+		}
+	})
+
+	//Run with seek type newest and test behaviour
+	t.Run("Testing event service with seek option 'newest'", func(t *testing.T) {
+
+		for i := 0; i < 4; i++ {
+			//create new sdk
+			sdk, err := fabsdk.New(integration.ConfigBackend)
+			if err != nil {
+				t.Fatal("failed to get new sdk instance:", err)
+			}
+
+			//create new channel context
+			chContextProvider := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+			chContext, err := chContextProvider()
+			if err != nil {
+				t.Fatalf("error getting channel context: %s", err)
+			}
+
+			//create new event service with deliver client opts
+			eventService, err := chContext.ChannelService().EventService(deliverclient.WithSeekType(seek.Newest))
+			if err != nil {
+				t.Fatalf("error getting event service: %s", err)
+			}
+
+			testChannelEventsSeekOptions(t, testSetup, sdk, chContext, chainCodeID, false, eventService, seek.Newest)
+		}
+
+	})
+
+}
+
+func testChannelEventsSeekOptions(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *fabsdk.FabricSDK, chContext context.Channel, chainCodeID string, blockEvents bool, eventService fab.EventService, seekType seek.Type) {
+
+	defer sdk.Close()
+
+	//get transactor
+	_, cancel, transactor, err := getTransactor(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)
+	require.Nil(t, err, "Failed to get channel transactor: %s", err)
+	defer cancel()
+
+	//prepare transaction proposal responses
+	tpResponses, prop, txID := sendTxProposal(sdk, testSetup, t, transactor, chainCodeID)
+
+	//register chanicode event
+	ccreg, cceventch, err := eventService.RegisterChaincodeEvent(chainCodeID, ".*")
+	require.Nil(t, err, "Error registering for filtered block events: %s", err)
+	defer eventService.Unregister(ccreg)
+
+	// commit the transaction to generate events
+	_, err = createAndSendTransaction(transactor, prop, tpResponses)
+	require.Nil(t, err, "First invoke failed err: %s", err)
+
+	var event *fab.CCEvent
+	var ok bool
+	select {
+	case event, ok = <-cceventch:
+		if !ok {
+			test.Failf(t, "unexpected closed channel while waiting for Tx Status event")
+		}
+		if event.ChaincodeID != chainCodeID {
+			test.Failf(t, "Expecting event for CC ID [%s] but got event for CC ID [%s]", chainCodeID, event.ChaincodeID)
+		}
+		if blockEvents {
+			expectedPayload := []byte("Test Payload")
+			if !bytes.Equal(event.Payload, expectedPayload) {
+				test.Failf(t, "Expecting payload [%s] but got [%s]", []byte("Test Payload"), event.Payload)
+			}
+		} else if event.Payload != nil {
+			test.Failf(t, "Expecting nil payload for filtered events but got [%s]", event.Payload)
+		}
+		if event.SourceURL == "" {
+			test.Failf(t, "Expecting event source URL but got none")
+		}
+		if event.BlockNumber == 0 {
+			test.Failf(t, "Expecting non-zero block number")
+		}
+	case <-time.After(eventTimeWindow):
+		return
+	}
+
+	//If seek type is newest then the first event we get from event channel is not related to the first transaction happened after registration, it is
+	//actually latest block from the chain
+	require.Equal(t, seekType == seek.Newest, txID != event.TxID)
+
+	//If seek type is default, then event dispatcher uses first block only for block height calculations, it doesn't publish anything
+	//to event channel, and first event we get from event channel actually belongs to first transaction after registration.
+	require.Equal(t, seekType == "", txID == event.TxID)
 }
