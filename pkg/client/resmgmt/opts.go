@@ -7,13 +7,17 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	"bytes"
 	reqContext "context"
+	"io"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 
@@ -68,7 +72,7 @@ func WithTargetFilter(targetFilter fab.TargetFilter) RequestOption {
 	}
 }
 
-//WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
+// WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
 //if not provided, default timeout configuration from config will be used
 func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
@@ -105,6 +109,66 @@ func WithOrdererEndpoint(key string) RequestOption {
 func WithOrderer(orderer fab.Orderer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Orderer = orderer
+		return nil
+	}
+}
+
+// WithSignatures allows to provide pre defined signatures for resmgmt client's SaveChannel call
+func WithSignatures(signatures []*common.ConfigSignature) RequestOption {
+	return func(ctx context.Client, opts *requestOptions) error {
+		opts.Signatures = signatures
+		return nil
+	}
+}
+
+// WithSignaturesReader allows to provide pre defined signatures reader for resmgmt client's SaveChannel call
+func WithSignaturesReader(r io.Reader) RequestOption {
+	return func(ctx context.Client, opts *requestOptions) error {
+		var signatures []*common.ConfigSignature
+		arr := []byte{}
+		for {
+			tempArr := make([]byte, 1024)
+
+			i, err := r.Read(tempArr)
+
+			if err != nil && err != io.EOF {
+				logger.Warnf("Failed to read signatures from reader: %s", err)
+				return errors.WithMessage(err, "Failed to read signatures from reader")
+			}
+
+			if i == 0 {
+				break
+			} else if i < 1024 {
+				arr = append(arr, tempArr[:i]...)
+			} else {
+				arr = append(arr, tempArr...)
+			}
+
+		}
+
+		logger.Debugf("bytes read: %v", len(arr))
+		var singleSig common.ConfigSignature
+
+		for len(arr) > 0 {
+			// find the first delimiter
+			if i := bytes.Index(arr, []byte(SigSeparator)); i > 0 {
+				s := arr[:i]
+				logger.Debugf("signature bytes length: %v", len(s))
+				err := proto.Unmarshal(s, &singleSig)
+				if err != nil {
+					logger.Warnf("Failed to unmarshal signatures from bytes array: %s", err)
+				}
+				signatures = append(signatures, &singleSig)
+				// trim the bytes of the unmarshaled signature plus the delimiter from arr to move to the next one
+				arr = arr[i+1:]
+				logger.Warnf("bytes remaining: %v", len(arr))
+				continue
+			}
+			break
+		}
+
+		logger.Debugf("Number of signatures are: %v", len(signatures))
+		opts.Signatures = signatures
 		return nil
 	}
 }
