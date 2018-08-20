@@ -8,12 +8,15 @@ package resmgmt
 
 import (
 	reqContext "context"
+	"io"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 
@@ -68,7 +71,7 @@ func WithTargetFilter(targetFilter fab.TargetFilter) RequestOption {
 	}
 }
 
-//WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
+// WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
 //if not provided, default timeout configuration from config will be used
 func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
@@ -105,6 +108,43 @@ func WithOrdererEndpoint(key string) RequestOption {
 func WithOrderer(orderer fab.Orderer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Orderer = orderer
+		return nil
+	}
+}
+
+// WithCfgSignatures allows to provide pre defined signatures for resmgmt client's SaveChannel call
+func WithCfgSignatures(signatures []*common.ConfigSignature) RequestOption {
+	return func(ctx context.Client, opts *requestOptions) error {
+		opts.Signatures = signatures
+		return nil
+	}
+}
+
+// WithCfgSignaturesReader allows to provide a pre defined signature reader for resmgmt client's SaveChannel call
+//  The r reader must provide marshaled ConfigSignature contents built using either one of the following calls:
+// * CreateCfgSignature call for a signature created internally by the SDK
+// * PrepCfgForExternalSigning call with signingBytes used for creating a signature by external tool (ex: Openssl)
+//
+// Note: call this function for as many times as there are signatures required for the channel update. This option
+// append 1 signature read from r.
+func WithCfgSignaturesReader(r io.Reader) RequestOption {
+	return func(ctx context.Client, opts *requestOptions) error {
+		arr, err := readCfgSigArray(r)
+		if err != nil {
+			logger.Warnf("Failed to read channel config signature from bytes array: %s .. ignoring", err)
+			return err
+		}
+
+		singleSig := &common.ConfigSignature{}
+
+		err = proto.Unmarshal(arr, singleSig)
+		if err != nil {
+			logger.Warnf("Failed to unmarshal channel config signature from bytes array: %s .. ignoring signature", err)
+			return err
+		}
+
+		opts.Signatures = append(opts.Signatures, singleSig)
+
 		return nil
 	}
 }
