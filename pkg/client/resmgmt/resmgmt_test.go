@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	"bufio"
 	"fmt"
 	"net/http"
 	"os"
@@ -1187,6 +1188,164 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to read opts in resmgmt: orderer not found for url")
 }
 
+func TestSaveChannelWithSignatureOpt(t *testing.T) {
+	mb := fcmocks.MockBroadcastServer{}
+	addr := mb.Start("127.0.0.1:0")
+	defer mb.Stop()
+
+	ctx := setupTestContext("test", "Org1MSP")
+
+	mockConfig := &fcmocks.MockConfig{}
+	grpcOpts := make(map[string]interface{})
+	grpcOpts["allow-insecure"] = true
+
+	oConfig := &fab.OrdererConfig{
+		URL:         addr,
+		GRPCOptions: grpcOpts,
+	}
+	mockConfig.SetCustomOrdererCfg(oConfig)
+	mockConfig.SetCustomRandomOrdererCfg(oConfig)
+	ctx.SetEndpointConfig(mockConfig)
+
+	cc := setupResMgmtClient(t, ctx)
+
+	// fetch config reader for request
+	r1, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r1.Close()
+
+	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1}
+
+	// get a valid signature for user "test" and mspID "Org1MSP"
+	signatures, err := cc.CreateSignatures([]msp.SigningIdentity{ctx.SigningIdentity}, channelConfig)
+	assert.NoError(t, err, "Failed to get channel config signature")
+
+	opts := WithSignatures(signatures)
+	_, err = cc.SaveChannel(req, opts)
+	assert.NoError(t, err, "Save channel failed")
+
+	// test with multiple users from different orgs
+	user1Msp1 := mspmocks.NewMockSigningIdentity("user1", "Org1MSP")
+	user2Msp1 := mspmocks.NewMockSigningIdentity("user2", "Org1MSP")
+	user1Msp2 := mspmocks.NewMockSigningIdentity("user1", "Org2MSP")
+	user2Msp2 := mspmocks.NewMockSigningIdentity("user2", "Org2MSP")
+	signatures, err = cc.CreateSignatures([]msp.SigningIdentity{user1Msp1, user2Msp1, user1Msp2, user2Msp2}, channelConfig)
+	assert.NoError(t, err, "Failed to get channel config signature")
+
+	// get a new reader for the new request
+	r2, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r2.Close()
+
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2}
+
+	opts = WithSignatures(signatures)
+	_, err = cc.SaveChannel(req, opts)
+	assert.NoError(t, err, "Save channel failed")
+}
+
+func TestSaveChannelWithSignatureOptFromSeparateClients(t *testing.T) {
+	mb := fcmocks.MockBroadcastServer{}
+	addr := mb.Start("127.0.0.1:0")
+	defer mb.Stop()
+
+	ctx := setupTestContext("test", "Org1MSP")
+
+	mockConfig := &fcmocks.MockConfig{}
+	grpcOpts := make(map[string]interface{})
+	grpcOpts["allow-insecure"] = true
+
+	oConfig := &fab.OrdererConfig{
+		URL:         addr,
+		GRPCOptions: grpcOpts,
+	}
+	mockConfig.SetCustomOrdererCfg(oConfig)
+	mockConfig.SetCustomRandomOrdererCfg(oConfig)
+	ctx.SetEndpointConfig(mockConfig)
+
+	cc := setupResMgmtClient(t, ctx)
+	mockConfig = &fcmocks.MockConfig{}
+	oConfig = &fab.OrdererConfig{
+		URL:         addr,
+		GRPCOptions: grpcOpts,
+	}
+	mockConfig.SetCustomOrdererCfg(oConfig)
+	mockConfig.SetCustomRandomOrdererCfg(oConfig)
+	ctx2 := setupTestContext("test", "Org2MSP")
+	ctx2.SetEndpointConfig(mockConfig)
+	cc2 := setupResMgmtClient(t, ctx2)
+
+	// get a valid signatures for all users of mspID "Org1MSP"
+	user1Msp1 := mspmocks.NewMockSigningIdentity("user1", "Org1MSP")
+	user2Msp1 := mspmocks.NewMockSigningIdentity("user2", "Org1MSP")
+
+	sBytesMsp1, err := cc.CreateSignaturesAsBytes([]msp.SigningIdentity{ctx.SigningIdentity, user1Msp1, user2Msp1}, channelConfig)
+	// serialize then de-serialize signatures to imitate a real world use case of serializing data between orgs
+	assert.NoError(t, err, "failed to create channel config signatures for Org1MSP as []byte")
+	assert.NotEmpty(t, sBytesMsp1, "channel config signature as []byte must not be empty")
+
+	// simulate sending signatures over the wire (using writer/reader)
+	file, err := os.Create("multi-signatures-test.txt")
+	if err != nil {
+		assert.NoError(t, err, "failed to create new temp file")
+	}
+	defer file.Close()
+
+	bufferedWriter := bufio.NewWriter(file)
+	byteCount := 0
+	n := 0
+	// write "Org1Msp" bytes
+	for _, s := range sBytesMsp1 {
+		n, err = bufferedWriter.Write(s)
+		assert.NoError(t, err, "must be able to write Org1MSP signatures to buf")
+		byteCount += n
+		bufferedWriter.Flush()
+	}
+
+	// now get signatures for "Org2Msp" and do the same (using cc2 and ctx2 this time)
+	user1Msp2 := mspmocks.NewMockSigningIdentity("user1", "Org2MSP")
+	user2Msp2 := mspmocks.NewMockSigningIdentity("user2", "Org2MSP")
+
+	sBytesMsp2, err := cc2.CreateSignaturesAsBytes([]msp.SigningIdentity{ctx2.SigningIdentity, user1Msp2, user2Msp2}, channelConfig)
+	assert.NoError(t, err, "failed to create Signatures for Org2MSP")
+
+	// write "Org2Msp" bytes
+	for _, s := range sBytesMsp2 {
+		n, err = bufferedWriter.Write(s)
+		assert.NoError(t, err, "must be able to write Org2MSP signatures to buf")
+		byteCount += n
+		bufferedWriter.Flush()
+	}
+
+	logger.Infof("total bytes written: %v", byteCount)
+
+	file.Close()
+
+	// now that receiving signatures over the wire was created, call SaveChannel WithSignaturesReader Option
+	file, err = os.Open("multi-signatures-test.txt")
+	assert.NoError(t, err, "opening multi signatures file failed")
+	defer file.Close()
+	defer os.Remove("multi-signatures-test.txt")
+
+	sigReader := bufio.NewReader(file)
+
+	r, err := os.Open(channelConfig)
+	assert.NoError(t, err, "opening channel config file failed")
+	defer r.Close()
+
+	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}
+	opts := WithSignaturesReader(sigReader)
+
+	// let's create a third client and call SaveChannel
+	ctx3 := setupTestContext("admin", "Org1MSP")
+	mockConfig = &fcmocks.MockConfig{}
+	ctx3.SetEndpointConfig(mockConfig)
+
+	cc3 := setupResMgmtClient(t, ctx3)
+	_, err = cc3.SaveChannel(req, opts)
+	assert.NoError(t, err, "Save channel failed")
+}
+
 func TestJoinChannelWithInvalidOpts(t *testing.T) {
 
 	cc := setupDefaultResMgmtClient(t)
@@ -1237,6 +1396,22 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	resp, err = cc.SaveChannel(req, WithOrdererEndpoint(""))
 	assert.Nil(t, err, "Failed to save channel with multiple signing identities: %s", err)
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
+}
+
+func TestGetConfigSignaturesFromIdentities(t *testing.T) {
+	ctx := setupTestContext("test", "Org1MSP")
+	cc := setupResMgmtClient(t, ctx)
+	signatures, err := cc.CreateSignatures([]msp.SigningIdentity{ctx.SigningIdentity}, channelConfig)
+	assert.NoError(t, err, "CreateSignaturesFromCfgPath failed")
+	//t.Logf("Signatures: %s", signatures)
+	assert.NotNil(t, signatures, "signatures must not be empty")
+	assert.Len(t, signatures, 1, "There must be only one signature for 1 identity received.")
+
+	// test with 2 identities
+	ctx2 := setupTestContext("test2", "Org1MSP")
+	signatures, err = cc.CreateSignatures([]msp.SigningIdentity{ctx.SigningIdentity, ctx2.SigningIdentity}, channelConfig)
+	assert.NoError(t, err, "CreateSignaturesFromCfgPath failed")
+	assert.Len(t, signatures, 2, "There must be only one signature for 2 identities received.")
 }
 
 func createClientContext(fabCtx context.Client) context.ClientProvider {

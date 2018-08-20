@@ -27,6 +27,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
@@ -47,6 +48,9 @@ import (
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
+
+// SigSeparator serves as a delimiter of signatures created by "CreateSignaturesAsBytes" and saved into a file. It will help in unmarshaling the signatures using "WithSignaturesReader" option.
+const SigSeparator = "`"
 
 // InstallCCRequest contains install chaincode request parameters
 type InstallCCRequest struct {
@@ -101,6 +105,8 @@ type requestOptions struct {
 	Timeouts      map[fab.TimeoutType]time.Duration //timeout options for resmgmt operations
 	ParentContext reqContext.Context                //parent grpc context for resmgmt operations
 	Retry         retry.Opts
+	// signatures for channel configurations, if set, this option will take precedence over signatures of SaveChannelRequest.SigningIdentities
+	Signatures []*common.ConfigSignature
 }
 
 //SaveChannelRequest holds parameters for save channel request
@@ -109,7 +115,6 @@ type SaveChannelRequest struct {
 	ChannelConfig     io.Reader             // ChannelConfig data source
 	ChannelConfigPath string                // Convenience option to use the named file as ChannelConfig reader
 	SigningIdentities []msp.SigningIdentity // Users that sign channel configuration
-	// TODO: support pre-signed signature blocks
 }
 
 // SaveChannelResponse contains response parameters for save channel
@@ -832,6 +837,9 @@ func peersToTxnProcessors(peers []fab.Peer) []fab.ProposalProcessor {
 //  Parameters:
 //  req holds info about mandatory channel name and configuration
 //  options holds optional request options
+//  if options has signatures (opts.WithSignatures()), then SaveChannel will
+//     use these signatures as opposed to using signatures by loading the client's identities
+//	   Make sure that req.ChannelConfigPath/req.ChannelConfig have the channel config matching these signatures.
 //
 //  Returns:
 //  save channel response with transaction ID
@@ -858,14 +866,9 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 
 	logger.Debugf("saving channel: %s", req.ChannelID)
 
-	configTx, err := ioutil.ReadAll(req.ChannelConfig)
+	chConfig, err := extractChConfigData(req.ChannelConfig)
 	if err != nil {
-		return SaveChannelResponse{}, errors.WithMessage(err, "reading channel config file failed")
-	}
-
-	chConfig, err := resource.ExtractChannelConfig(configTx)
-	if err != nil {
-		return SaveChannelResponse{}, errors.WithMessage(err, "extracting channel config failed")
+		return SaveChannelResponse{}, errors.WithMessage(err, "extracting channel config from ConfigTx failed")
 	}
 
 	orderer, err := rc.requestOrderer(&opts, req.ChannelID)
@@ -873,9 +876,14 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return SaveChannelResponse{}, errors.WithMessage(err, "failed to find orderer for request")
 	}
 
-	configSignatures, err := rc.getConfigSignatures(req, chConfig)
-	if err != nil {
-		return SaveChannelResponse{}, err
+	var configSignatures []*common.ConfigSignature
+	if opts.Signatures != nil {
+		configSignatures = opts.Signatures
+	} else {
+		configSignatures, err = rc.getConfigSignatures(req, chConfig)
+		if err != nil {
+			return SaveChannelResponse{}, err
+		}
 	}
 
 	request := resource.CreateChannelRequest{
@@ -905,7 +913,6 @@ func (rc *Client) validateSaveChannelRequest(req SaveChannelRequest) error {
 }
 
 func (rc *Client) getConfigSignatures(req SaveChannelRequest, chConfig []byte) ([]*common.ConfigSignature, error) {
-
 	// Signing user has to belong to one of configured channel organisations
 	// In case that order org is one of channel orgs we can use context user
 	var signers []msp.SigningIdentity
@@ -922,6 +929,65 @@ func (rc *Client) getConfigSignatures(req SaveChannelRequest, chConfig []byte) (
 		return nil, errors.New("must provide signing user")
 	}
 
+	return rc.createCfgSigFromIDs(signers, chConfig)
+}
+
+func extractChConfigData(channelConfigReader io.Reader) ([]byte, error) {
+	if channelConfigReader == nil {
+		return nil, errors.New("must provide a non empty channel config file")
+	}
+	configTx, err := ioutil.ReadAll(channelConfigReader)
+	if err != nil {
+		return nil, errors.WithMessage(err, "reading channel config file failed")
+	}
+
+	chConfig, err := resource.ExtractChannelConfig(configTx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "extracting channel config from ConfigTx failed")
+	}
+
+	return chConfig, nil
+}
+
+// CreateSignatures creates signatures for the given client, custom signers and chConfig from channelConfigPath argument
+func (rc *Client) CreateSignatures(signers []msp.SigningIdentity, channelConfigPath string) ([]*common.ConfigSignature, error) {
+	if channelConfigPath == "" {
+		return nil, errors.New("must provide a channel config path")
+	}
+
+	configReader, err := os.Open(channelConfigPath) // nolint
+	if err != nil {
+		return nil, errors.Wrapf(err, "opening channel config file failed")
+	}
+	defer loggedClose(configReader)
+
+	chConfig, err := extractChConfigData(configReader)
+	if err != nil {
+		return nil, errors.WithMessage(err, "extracting channel config from channel config reader of channelConfigPath failed")
+	}
+
+	return rc.createCfgSigFromIDs(signers, chConfig)
+}
+
+// CreateSignaturesAsBytes creates signatures for the given client concatenated as []byte
+func (rc *Client) CreateSignaturesAsBytes(signers []msp.SigningIdentity, channelConfigPath string) ([][]byte, error) {
+	sigs, err := rc.CreateSignatures(signers, channelConfigPath)
+	if err != nil {
+		return nil, err
+	}
+	sigsByte := make([][]byte, len(sigs))
+	for i, s := range sigs {
+		mSig, err := proto.Marshal(s)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to marshal signature")
+		}
+		// add the marshaled signature appended by a delimiter
+		sigsByte[i] = append(mSig, []byte(SigSeparator)...)
+	}
+	return sigsByte, nil
+}
+
+func (rc *Client) createCfgSigFromIDs(signers []msp.SigningIdentity, chConfig []byte) ([]*common.ConfigSignature, error) {
 	var configSignatures []*common.ConfigSignature
 	for _, signer := range signers {
 
@@ -938,7 +1004,6 @@ func (rc *Client) getConfigSignatures(req SaveChannelRequest, chConfig []byte) (
 	}
 
 	return configSignatures, nil
-
 }
 
 func loggedClose(c io.Closer) {
