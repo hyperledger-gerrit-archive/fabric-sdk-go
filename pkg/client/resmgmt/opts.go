@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 
@@ -68,7 +69,7 @@ func WithTargetFilter(targetFilter fab.TargetFilter) RequestOption {
 	}
 }
 
-//WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
+// WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
 //if not provided, default timeout configuration from config will be used
 func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
@@ -105,6 +106,14 @@ func WithOrdererEndpoint(key string) RequestOption {
 func WithOrderer(orderer fab.Orderer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Orderer = orderer
+		return nil
+	}
+}
+
+// WithSignatures allows to provide pre defined signatures for resmgmt client's SaveChannel call
+func WithSignatures(signatures []*common.ConfigSignature) RequestOption {
+	return func(ctx context.Client, opts *requestOptions) error {
+		opts.Signatures = signatures
 		return nil
 	}
 }

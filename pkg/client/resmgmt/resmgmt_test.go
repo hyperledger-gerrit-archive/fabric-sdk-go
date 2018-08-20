@@ -1187,6 +1187,62 @@ func TestSaveChannelWithOpts(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to read opts in resmgmt: orderer not found for url")
 }
 
+func TestSaveChannelWithSignatureOpt(t *testing.T) {
+	mb := fcmocks.MockBroadcastServer{}
+	addr := mb.Start("127.0.0.1:0")
+	defer mb.Stop()
+
+	ctx := setupTestContext("test", "Org1MSP")
+
+	mockConfig := &fcmocks.MockConfig{}
+	grpcOpts := make(map[string]interface{})
+	grpcOpts["allow-insecure"] = true
+
+	oConfig := &fab.OrdererConfig{
+		URL:         addr,
+		GRPCOptions: grpcOpts,
+	}
+	mockConfig.SetCustomOrdererCfg(oConfig)
+	mockConfig.SetCustomRandomOrdererCfg(oConfig)
+	ctx.SetEndpointConfig(mockConfig)
+
+	cc := setupResMgmtClient(t, ctx)
+
+	// fetch config reader for request
+	r1, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r1.Close()
+
+	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1}
+
+	// get a valid signature for user "test" and mspID "Org1MSP"
+	signatures, err := GetConfigSignaturesFromIdentitiesAndChConfigPath(cc, []msp.SigningIdentity{ctx.SigningIdentity}, channelConfig)
+	assert.NoError(t, err, "Failed to get channel config signature")
+
+	opts := WithSignatures(signatures)
+	_, err = cc.SaveChannel(req, opts)
+	assert.NoError(t, err, "Save channel failed")
+
+	// test with multiple users from different orgs
+	user1Msp1 := mspmocks.NewMockSigningIdentity("user1", "Org1MSP")
+	user2Msp1 := mspmocks.NewMockSigningIdentity("user2", "Org1MSP")
+	user1Msp2 := mspmocks.NewMockSigningIdentity("user1", "Org2MSP")
+	user2Msp2 := mspmocks.NewMockSigningIdentity("user2", "Org2MSP")
+	signatures, err = GetConfigSignaturesFromIdentitiesAndChConfigPath(cc, []msp.SigningIdentity{user1Msp1, user2Msp1, user1Msp2, user2Msp2}, channelConfig)
+	assert.NoError(t, err, "Failed to get channel config signature")
+
+	// get a new reader for the new request
+	r2, err := os.Open(channelConfig)
+	assert.Nil(t, err, "opening channel config file failed")
+	defer r2.Close()
+
+	req = SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r2}
+
+	opts = WithSignatures(signatures)
+	_, err = cc.SaveChannel(req, opts)
+	assert.NoError(t, err, "Save channel failed")
+}
+
 func TestJoinChannelWithInvalidOpts(t *testing.T) {
 
 	cc := setupDefaultResMgmtClient(t)
@@ -1237,6 +1293,32 @@ func TestSaveChannelWithMultipleSigningIdenities(t *testing.T) {
 	resp, err = cc.SaveChannel(req, WithOrdererEndpoint(""))
 	assert.Nil(t, err, "Failed to save channel with multiple signing identities: %s", err)
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
+}
+
+func TestGetConfigSignaturesFromIdentities(t *testing.T) {
+	ctx := setupTestContext("test", "Org1MSP")
+	cc := setupResMgmtClient(t, ctx)
+	signatures, err := GetConfigSignaturesFromIdentitiesAndChConfigPath(cc, []msp.SigningIdentity{ctx.SigningIdentity}, channelConfig)
+	assert.NoError(t, err, "GetConfigSignaturesFromIdentitiesAndChConfigPath failed")
+	//t.Logf("Signatures: %s", signatures)
+	assert.NotNil(t, signatures, "signatures must not be empty")
+	assert.Len(t, signatures, 1, "There must be only one signature for 1 identity received.")
+
+	// test with 2 identities
+	ctx2 := setupTestContext("test2", "Org1MSP")
+	signatures, err = GetConfigSignaturesFromIdentitiesAndChConfigPath(cc, []msp.SigningIdentity{ctx.SigningIdentity, ctx2.SigningIdentity}, channelConfig)
+	assert.NoError(t, err, "GetConfigSignaturesFromIdentitiesAndChConfigPath failed")
+	assert.Len(t, signatures, 2, "There must be only one signature for 2 identities received.")
+
+	// test with reader
+	configReader, err := os.Open(channelConfig)
+	assert.NoError(t, err, "opening channel config file failed")
+
+	defer loggedClose(configReader)
+	signatures, err = GetConfigSignaturesFromIdentitiesAndChConfig(cc, []msp.SigningIdentity{ctx.SigningIdentity}, configReader)
+	assert.NoError(t, err, "GetConfigSignaturesFromIdentitiesAndChConfig failed")
+	assert.NotNil(t, signatures, "signatures must not be empty")
+	assert.Len(t, signatures, 1, "There must be only one signature for 1 identity received.")
 }
 
 func createClientContext(fabCtx context.Client) context.ClientProvider {
