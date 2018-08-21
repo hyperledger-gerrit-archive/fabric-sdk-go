@@ -412,9 +412,9 @@ func (c *Client) Revoke(request *RevocationRequest) (*RevocationResponse, error)
 //
 //  Returns:
 //  signing identity
-func (c *Client) GetSigningIdentity(id string) (mspctx.SigningIdentity, error) {
+func (c *Client) GetSigningIdentity(id string, opts ...mspctx.SigningIdentityOption) (mspctx.SigningIdentity, error) {
 	im, _ := c.ctx.IdentityManager(c.orgName)
-	si, err := im.GetSigningIdentity(id)
+	si, err := im.GetSigningIdentity(id, opts...)
 	if err != nil {
 		if err == mspctx.ErrUserNotFound {
 			return nil, ErrUserNotFound

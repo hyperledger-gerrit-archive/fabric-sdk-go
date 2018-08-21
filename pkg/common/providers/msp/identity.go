@@ -16,9 +16,34 @@ var (
 	ErrUserNotFound = errors.New("user not found")
 )
 
+// IdentityOption ...
+type IdentityOption struct {
+	Cert       []byte
+	PrivateKey []byte
+}
+
+// SigningIdentityOption describes a functional parameter for the New constructor
+type SigningIdentityOption func(*IdentityOption) error
+
+// WithPrivateKey ..
+func WithPrivateKey(key []byte) SigningIdentityOption {
+	return func(o *IdentityOption) error {
+		o.PrivateKey = key
+		return nil
+	}
+}
+
+// WithCert ..
+func WithCert(cert []byte) SigningIdentityOption {
+	return func(o *IdentityOption) error {
+		o.Cert = cert
+		return nil
+	}
+}
+
 // IdentityManager provides management of identities in Fabric network
 type IdentityManager interface {
-	GetSigningIdentity(name string) (SigningIdentity, error)
+	GetSigningIdentity(name string, ops ...SigningIdentityOption) (SigningIdentity, error)
 }
 
 // Identity represents a Fabric client identity

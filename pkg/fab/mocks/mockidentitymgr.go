@@ -73,7 +73,7 @@ func NewMockIdentityManager(opts ...UsersOption) msp.IdentityManager {
 }
 
 // GetSigningIdentity will return an identity that can be used to cryptographically sign an object
-func (mgr *MockIdentityManager) GetSigningIdentity(id string) (msp.SigningIdentity, error) {
+func (mgr *MockIdentityManager) GetSigningIdentity(id string, opts ...msp.SigningIdentityOption) (msp.SigningIdentity, error) {
 	si, ok := mgr.users[id]
 	if !ok {
 		return nil, msp.ErrUserNotFound
