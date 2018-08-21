@@ -15,6 +15,7 @@ import (
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/pkg/errors"
 )
@@ -59,12 +60,67 @@ func (mgr *IdentityManager) loadUserFromStore(username string) (*User, error) {
 }
 
 // GetSigningIdentity returns a signing identity for the given id
-func (mgr *IdentityManager) GetSigningIdentity(id string) (msp.SigningIdentity, error) {
+func (mgr *IdentityManager) GetSigningIdentity(id string, opts ...msp.SigningIdentityOption) (msp.SigningIdentity, error) {
+	opt := msp.IdentityOption{}
+	for _, param := range opts {
+		err := param(&opt)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create identity")
+		}
+	}
+	if opt.Cert != nil && opt.PrivateKey != nil {
+		return mgr.newSigningIdentity(id, opt.Cert, opt.PrivateKey)
+	}
+	uid := strings.ToLower(id)
+	var old *fab.CertKeyPair
+	if opt.Cert != nil {
+		o := mgr.embeddedUsers[uid]
+		old = &o
+		mgr.embeddedUsers[uid] = fab.CertKeyPair{
+			Cert: opt.Cert,
+			Key:  old.Key,
+		}
+	} else if opt.PrivateKey != nil {
+		o := mgr.embeddedUsers[uid]
+		old = &o
+		mgr.embeddedUsers[uid] = fab.CertKeyPair{
+			Cert: old.Cert,
+			Key:  opt.PrivateKey,
+		}
+	}
+	if old != nil {
+		defer func() {
+			mgr.embeddedUsers[uid] = *old
+		}()
+	}
 	user, err := mgr.GetUser(id)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
+}
+
+// newSigningIdentity returns a signing identity with the given certificate and private key
+func (mgr *IdentityManager) newSigningIdentity(id string, crt, key []byte) (msp.SigningIdentity, error) {
+	uid := strings.ToLower(id)
+	_, exists := mgr.embeddedUsers[uid]
+	tmp := exists || id == ""
+	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEMBytes(key, mgr.cryptoSuite, tmp)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to import key")
+	}
+	if !tmp {
+		mgr.embeddedUsers[uid] = fab.CertKeyPair{
+			Cert: crt,
+			Key:  key,
+		}
+	}
+	return &User{
+		id:    id,
+		mspID: mgr.orgMSPID,
+		enrollmentCertificate: crt,
+		privateKey:            privateKey,
+	}, nil
 }
 
 // GetUser returns a user for the given user name
