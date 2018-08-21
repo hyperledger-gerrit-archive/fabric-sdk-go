@@ -67,6 +67,29 @@ func (mgr *IdentityManager) GetSigningIdentity(id string) (msp.SigningIdentity, 
 	return user, nil
 }
 
+// CreateSigningIdentity creates a signing identity with the given options
+func (mgr *IdentityManager) CreateSigningIdentity(opts ...msp.SigningIdentityOption) (msp.SigningIdentity, error) {
+	opt := msp.IdentityOption{}
+	for _, param := range opts {
+		err := param(&opt)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create identity")
+		}
+	}
+	if opt.Cert == nil || opt.PrivateKey == nil {
+		return nil, errors.New("certificate and private key need to be provided")
+	}
+	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEMBytes(opt.PrivateKey, mgr.cryptoSuite, true)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to import key")
+	}
+	return &User{
+		mspID: mgr.orgMSPID,
+		enrollmentCertificate: opt.Cert,
+		privateKey:            privateKey,
+	}, nil
+}
+
 // GetUser returns a user for the given user name
 func (mgr *IdentityManager) GetUser(username string) (*User, error) { //nolint
 
