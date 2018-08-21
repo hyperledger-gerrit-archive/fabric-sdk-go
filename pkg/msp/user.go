@@ -23,6 +23,16 @@ type User struct {
 	privateKey            core.Key
 }
 
+// NewUser creates a user instance
+func NewUser(userData *msp.UserData, privateKey core.Key) *User {
+	return &User{
+		id: userData.ID,
+		mspID: userData.MSPID,
+		enrollmentCertificate: userData.EnrollmentCertificate,
+		privateKey: privateKey,
+	}
+}
+
 // Identifier returns user identifier
 func (u *User) Identifier() *msp.IdentityIdentifier {
 	return &msp.IdentityIdentifier{MSPID: u.mspID, ID: u.id}
