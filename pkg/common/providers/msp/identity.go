@@ -19,6 +19,7 @@ var (
 // IdentityManager provides management of identities in Fabric network
 type IdentityManager interface {
 	GetSigningIdentity(name string) (SigningIdentity, error)
+	NewSigningIdentity(id string, crt, key []byte) (SigningIdentity, error)
 }
 
 // Identity represents a Fabric client identity

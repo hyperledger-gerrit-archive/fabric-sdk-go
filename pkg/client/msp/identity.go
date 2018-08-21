@@ -19,4 +19,5 @@ var (
 // IdentityManager provides management of identities in a Fabric network
 type IdentityManager interface {
 	GetSigningIdentity(name string) (msp.SigningIdentity, error)
+	NewSigningIdentity(id string, crt, key []byte) (msp.SigningIdentity, error)
 }
