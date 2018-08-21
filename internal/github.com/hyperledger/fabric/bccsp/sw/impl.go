@@ -23,6 +23,8 @@ import (
 	"hash"
 	"reflect"
 
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
 	"github.com/pkg/errors"
@@ -159,6 +161,7 @@ func (csp *CSP) KeyImport(raw interface{}, opts bccsp.KeyImportOpts) (k bccsp.Ke
 		// Store the key
 		err = csp.ks.StoreKey(k)
 		if err != nil {
+			panic(fmt.Sprintf("Failed storing imported key with opts: %s", err))
 			return nil, errors.Wrapf(err, "Failed storing imported key with opts [%v]", opts)
 		}
 	}
