@@ -9,6 +9,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,9 +18,13 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"regexp"
 	"strings"
+	"sync"
+	"syscall"
+	"time"
 )
 
 const (
@@ -37,6 +42,8 @@ var peerEndpoints map[string]string
 
 type chaincoded struct {
 	proxy *httputil.ReverseProxy
+	wg    *sync.WaitGroup
+	done  chan struct{}
 }
 
 type chaincodeParams struct {
@@ -46,7 +53,7 @@ type chaincodeParams struct {
 	ccVersion string
 }
 
-func newChaincoded() *chaincoded {
+func newChaincoded(wg *sync.WaitGroup, done chan struct{}) *chaincoded {
 	docker_host, ok := os.LookupEnv("DOCKER_HOST")
 	if !ok {
 		docker_host = defaultDockerHost
@@ -54,25 +61,62 @@ func newChaincoded() *chaincoded {
 
 	url, err := url.Parse(docker_host)
 	if err != nil {
-		log.Fatalf("invalid URL for docker host: %s", err)
+		logFatalf("invalid URL for docker host: %s", err)
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(url)
 
 	d := chaincoded{
 		proxy: proxy,
+		wg:    wg,
+		done:  done,
 	}
 
 	return &d
 }
 
-func launchChaincode(ccParams *chaincodeParams, tlsPath string) error {
+func launchChaincode(ccParams *chaincodeParams, tlsPath string, done chan struct{}) {
+	const (
+		relaunchWaitTime = time.Second
+	)
+
+	for {
+		logDebugf("Starting chaincode [%s, %s]", ccParams.chaincodeBinary(), ccParams.ccID)
+		cmd := createChaincodeCmd(ccParams, tlsPath)
+
+		cmdDone := make(chan struct{})
+
+		go func() {
+			defer close(cmdDone)
+
+			err := cmd.Run()
+			if v, ok := err.(*exec.ExitError); ok {
+				logWarningf("Chaincode had an exit error - will relaunch [%s, %s]", ccParams.ccID, v)
+			} else {
+				logFatalf("Chaincode had a non-exit error [%s, %s]", ccParams.ccID, err)
+			}
+		}()
+
+		select {
+		case <-done:
+			logDebugf("Stopping chaincode [%s, %s, %d]", ccParams.chaincodeBinary(), ccParams.ccID, cmd.Process.Pid)
+			err := cmd.Process.Kill()
+			if err != nil {
+				logWarningf("Killing process failed [%s, %s]", ccParams.ccID, err)
+			}
+			return
+		case <-cmdDone:
+			time.Sleep(relaunchWaitTime)
+		}
+	}
+}
+
+func createChaincodeCmd(ccParams *chaincodeParams, tlsPath string) *exec.Cmd {
 	rootCertFile := path.Join(tlsPath, "peer.crt")
 	keyPath := path.Join(tlsPath, "client.key")
 	certPath := path.Join(tlsPath, "client.crt")
 
 	cmd := exec.Command(ccParams.chaincodeBinary(), tlsPath)
-	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
 		"CORE_PEER_ADDRESS="+ccParams.peerAddr(),
@@ -81,13 +125,16 @@ func launchChaincode(ccParams *chaincodeParams, tlsPath string) error {
 		"CORE_PEER_TLS_ROOTCERT_FILE="+rootCertFile,
 		"CORE_TLS_CLIENT_KEY_PATH="+keyPath,
 		"CORE_TLS_CLIENT_CERT_PATH="+certPath,
+		"CORE_CHAINCODE_LOGGING_LEVEL="+getChaincodeLoggingLevel(),
 	)
 
-	if err := cmd.Start(); err != nil {
-		return err
+	// Chaincode and shim logs are output through Stderr.
+	// Some chaincodes also print messages to Stdout.
+	if isVerbose() {
+		cmd.Stdout = os.Stdout
 	}
 
-	return nil
+	return cmd
 }
 
 func extractChaincodeParams(containerName string) (*chaincodeParams, bool) {
@@ -137,34 +184,33 @@ func (d *chaincoded) handleUploadToContainerRequest(w http.ResponseWriter, r *ht
 		return
 	}
 
-	log.Printf("Handling upload to container request [%s]", containerName)
+	logDebugf("Handling upload to container request [%s]", containerName)
 	tmpDir, err := ioutil.TempDir("", "chaincoded")
 	if err != nil {
-		log.Printf("creation of temporary directory failed: %s", err)
+		logWarningf("creation of temporary directory failed: %s", err)
 		w.WriteHeader(500)
 		return
 	}
 
 	err = extractArchive(r.Body, tmpDir)
 	if err != nil {
-		log.Printf("extracting archive failed: %s", err)
+		logWarningf("extracting archive failed: %s", err)
 		w.WriteHeader(500)
 		return
 	}
 
 	tlsPath := path.Join(tmpDir, "etc", "hyperledger", "fabric")
-	err = launchChaincode(ccParams, tlsPath)
-	if err != nil {
-		log.Printf("launching chaincode failed: %s", err)
-		w.WriteHeader(500)
-		return
-	}
+	d.wg.Add(1)
+	go func() {
+		defer d.wg.Done()
+		launchChaincode(ccParams, tlsPath, d.done)
+	}()
 
 	w.WriteHeader(200)
 }
 
 func (d *chaincoded) handleStartContainerRequest(w http.ResponseWriter, r *http.Request, containerName string) {
-	log.Printf("Handling start container request [%s]", containerName)
+	logDebugf("Handling start container request [%s]", containerName)
 	w.WriteHeader(204)
 }
 
@@ -220,6 +266,7 @@ func (d *chaincoded) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	startMatches := containerStartRegEx.FindStringSubmatch(r.URL.Path)
 	uploadMatches := containerUploadRegEx.FindStringSubmatch(r.URL.Path)
 
+	logDebugf("Handling HTTP request [%s]", r.URL)
 	if startMatches != nil {
 		d.handleStartContainerRequest(w, r, startMatches[1])
 	} else if uploadMatches != nil {
@@ -227,6 +274,34 @@ func (d *chaincoded) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		d.proxy.ServeHTTP(w, r)
 	}
+}
+
+func runHTTPServer(addr string, dh *chaincoded, wg *sync.WaitGroup, done chan struct{}) {
+	srv := &http.Server{Addr: addr, Handler: dh}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := srv.ListenAndServe()
+
+		if err != nil && err != http.ErrServerClosed {
+			logFatalf("HTTP server failed [%s]", err)
+		}
+		logDebugf("HTTP server stopped [%s]", addr)
+	}()
+
+	// wait for signal to exit and then gracefully shutdown
+	<-done
+	srv.Shutdown(context.Background())
+}
+
+func waitForTermination() {
+	s := make(chan os.Signal, 1)
+	signal.Notify(s,
+		syscall.SIGINT,
+		syscall.SIGTERM)
+
+	<-s
 }
 
 func main() {
@@ -239,7 +314,7 @@ func main() {
 	}
 
 	addr := os.Args[1]
-	log.Printf("Chaincoded starting on %s ...", addr)
+	logInfof("Chaincoded starting [%s] ...", addr)
 
 	for _, endpoint := range os.Args[2:] {
 		s := strings.Split(endpoint, ":")
@@ -249,10 +324,15 @@ func main() {
 		peerEndpoints[s[0]] = endpoint
 	}
 
-	dh := newChaincoded()
-	err := http.ListenAndServe(addr, dh)
+	var wg sync.WaitGroup
+	done := make(chan struct{})
 
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
+	dh := newChaincoded(&wg, done)
+	go runHTTPServer(addr, dh, &wg, done)
+
+	waitForTermination()
+	logInfof("Chaincoded stopping [%s] ...", addr)
+	close(done)
+	wg.Wait()
+	logInfof("Chaincoded stopped [%s]", addr)
 }
