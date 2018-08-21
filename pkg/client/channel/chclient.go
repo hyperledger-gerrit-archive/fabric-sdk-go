@@ -175,7 +175,7 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 
 	complete := make(chan bool, 1)
 	go func() {
-		_, _ = invoker.Invoke( // nolint: gas
+		_, _ = invoker.Invoke(
 			func() (interface{}, error) {
 				handler.Handle(requestContext, clientContext)
 				return nil, requestContext.Error

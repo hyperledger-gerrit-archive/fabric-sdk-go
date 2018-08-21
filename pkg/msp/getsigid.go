@@ -67,6 +67,20 @@ func (mgr *IdentityManager) GetSigningIdentity(id string) (msp.SigningIdentity, 
 	return user, nil
 }
 
+// NewSigningIdentity returns a signing identity with the given certificate and private key
+func (mgr *IdentityManager) NewSigningIdentity(id string, crt, key []byte) (msp.SigningIdentity, error) {
+	privateKey, err := fabricCaUtil.ImportBCCSPKeyFromPEMBytes(key, mgr.cryptoSuite, true)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to import key")
+	}
+	return &User{
+		id:    id,
+		mspID: mgr.orgMSPID,
+		enrollmentCertificate: crt,
+		privateKey:            privateKey,
+	}, nil
+}
+
 // GetUser returns a user for the given user name
 func (mgr *IdentityManager) GetUser(username string) (*User, error) { //nolint
 

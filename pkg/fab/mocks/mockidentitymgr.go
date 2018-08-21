@@ -80,3 +80,8 @@ func (mgr *MockIdentityManager) GetSigningIdentity(id string) (msp.SigningIdenti
 	}
 	return si, nil
 }
+
+// NewSigningIdentity returns a signing identity with the given certificate and private key
+func (mgr *MockIdentityManager) NewSigningIdentity(id string, crt, key []byte) (msp.SigningIdentity, error) {
+	return nil, errors.New("not implemented")
+}
