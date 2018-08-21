@@ -16,6 +16,7 @@ ln -s ${GOPATH}/src/chaincoded/vendor/github.com/hyperledger/fabric ${GOPATH}/sr
 echo "Installing chaincodes ..."
 go install github.com/example_cc
 go install github.com/example_pvt_cc
+go get -u github.com/felixge/httpsnoop
 go install chaincoded/cmd/chaincoded
 
 PEERS=(
@@ -28,7 +29,7 @@ PEERS=(
 # Chaincode logs are controlled via the CORE_CHAINCODE_LOGGING_LEVEL environment variable.
 #export CORE_CHAINCODE_LOGGING_LEVEL=debug
 # You can set CHAINCODED_VERBOSE environment variable to see additional chaincoded logs.
-#export CHAINCODED_VERBOSE=true
+export CHAINCODED_VERBOSE=true
 
 echo "Running chaincoded ..."
 chaincoded ":9375" ${PEERS[@]}

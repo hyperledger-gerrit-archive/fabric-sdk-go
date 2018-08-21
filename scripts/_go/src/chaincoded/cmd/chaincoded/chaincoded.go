@@ -25,6 +25,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/felixge/httpsnoop"
 )
 
 var (
@@ -366,7 +368,19 @@ func main() {
 	done := make(chan struct{})
 
 	dh := newChaincoded(&wg, done)
-	go runHTTPServer(addr, dh, &wg, done)
+	// wrappedDH wraps myH in order to log every request.
+	wrappedH := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		m := httpsnoop.CaptureMetrics(dh, w, r)
+		log.Printf(
+			"%s %s (code=%d dt=%s written=%d)",
+			r.Method,
+			r.URL,
+			m.Code,
+			m.Duration,
+			m.Written,
+		)
+	})
+	go runHTTPServer(addr, wrappedH, &wg, done)
 
 	waitForTermination()
 	logInfof("Chaincoded stopping [%s] ...", addr)
