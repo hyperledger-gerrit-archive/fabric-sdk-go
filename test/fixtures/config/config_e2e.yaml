@@ -142,6 +142,8 @@ channels:
     # [Optional]. The application can use these options to perform channel operations like retrieving channel
     # config etc.
     policies:
+
+
       #[Optional] options for retrieving channel configuration blocks
       queryChannelConfig:
         #[Optional] min number of success responses (from targets/peers)
