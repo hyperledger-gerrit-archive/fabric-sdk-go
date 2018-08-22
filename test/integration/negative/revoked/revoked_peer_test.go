@@ -9,6 +9,8 @@ SPDX-License-Identifier: Apache-2.0
 package revoked
 
 import (
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 
