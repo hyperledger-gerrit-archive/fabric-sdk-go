@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package revoked
 
 import (
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -23,15 +25,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
-	"os"
-
-	"runtime"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -63,13 +62,12 @@ var orgTestPeer1 fab.Peer
 
 func TestMain(m *testing.M) {
 	err := setup()
-	defer teardown()
-	var r int
-	if err == nil {
-		r = m.Run()
+	if err != nil {
+		panic(fmt.Sprintf("unable to setup [%s]", err))
 	}
-	defer os.Exit(r)
-	runtime.Goexit()
+	r := m.Run()
+	teardown()
+	os.Exit(r)
 }
 
 func setup() error {
@@ -82,12 +80,12 @@ func setup() error {
 
 	org1MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
 	if err != nil {
-		return errors.Wrap(err, "failed to create org1MspClient, err")
+		return errors.Wrap(err, "failed to create org1MspClient")
 	}
 
 	org2MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
 	if err != nil {
-		return errors.Wrap(err, "failed to create org2MspClient, err")
+		return errors.Wrap(err, "failed to create org2MspClient")
 	}
 
 	return nil
@@ -254,6 +252,15 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 
 }
 
+//configOverride to override existing config backend
+type configOverride struct {
+	Client        fabImpl.ClientConfig
+	Channels      map[string]fabImpl.ChannelEndpointConfig
+	Organizations map[string]fabImpl.OrganizationConfig
+	Orderers      map[string]fabImpl.OrdererConfig
+	Peers         map[string]fabImpl.PeerConfig
+}
+
 func getConfigBackend() core.ConfigProvider {
 
 	return func() ([]core.ConfigBackend, error) {
@@ -263,7 +270,7 @@ func getConfigBackend() core.ConfigProvider {
 		}
 		backendMap := make(map[string]interface{})
 
-		networkConfig := fab.NetworkConfig{}
+		networkConfig := configOverride{}
 		//get valid peer config
 		err = lookup.New(configBackends...).UnmarshalKey("peers", &networkConfig.Peers)
 		if err != nil {
@@ -301,7 +308,7 @@ func getConfigBackend() core.ConfigProvider {
 
 		orgChannel := networkConfig.Channels[channelID]
 		delete(orgChannel.Peers, "peer0.org2.example.com")
-		orgChannel.Peers["peer1.org2.example.com"] = fab.PeerChannelConfig{
+		orgChannel.Peers["peer1.org2.example.com"] = fabImpl.PeerChannelConfig{
 			EndorsingPeer:  true,
 			ChaincodeQuery: true,
 			LedgerQuery:    true,
