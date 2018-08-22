@@ -27,22 +27,22 @@ client:
   logging:
     level: info
 
-  # Needed to load users crypto keys and certs.
+# Needed to load users crypto keys and certs.
 #  cryptoconfig:
 #    path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
-  credentialStore:
+  #credentialStore:
     # [Optional]. Used by user store. Not needed if all credentials are embedded in configuration
     # and enrollments are performed elswhere.
-    path: "/tmp/hfc-kvs"
+    #path: "/tmp/hfc-kvs"
 
     # [Optional]. Specific to the CryptoSuite implementation used by GO SDK. Software-based implementations
     # requiring a key store. PKCS#11 based implementations does not.
-    cryptoStore:
+    #cryptoStore:
       # Specific to the underlying KeyValueStore that backs the crypto key store.
-      path: /tmp/msp
+      #path: /tmp/msp
 
    # BCCSP config for the client. Used by GO SDK.
   BCCSP:

@@ -262,7 +262,11 @@ func (c *EndpointConfig) loadPrivateKeyFromConfig(clientConfig *ClientConfig, cl
 
 // CryptoConfigPath ...
 func (c *EndpointConfig) CryptoConfigPath() string {
-	return pathvar.Subst(c.backend.GetString("client.cryptoconfig.path"))
+	path := c.backend.GetString("client.cryptoconfig.path")
+	if path == "" {
+		return ""
+	}
+	return pathvar.Subst(path)
 }
 
 func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nolint
