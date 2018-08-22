@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package revoked
 
 import (
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -14,7 +16,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -23,15 +24,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 
-	"os"
-
-	"runtime"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -39,15 +37,13 @@ import (
 )
 
 const (
-	org1             = "Org1"
-	org2             = "Org2"
-	ordererAdminUser = "Admin"
-	ordererOrgName   = "OrdererOrg"
-	org1AdminUser    = "Admin"
-	org2AdminUser    = "Admin"
-	org1User         = "User1"
-	channelID        = "orgchannel"
-	configFilename   = "config_test.yaml"
+	org1           = "Org1"
+	org2           = "Org2"
+	org1AdminUser  = "Admin"
+	org2AdminUser  = "Admin"
+	org1User       = "User1"
+	channelID      = "orgchannel"
+	configFilename = "config_test.yaml"
 )
 
 // SDK
@@ -63,13 +59,12 @@ var orgTestPeer1 fab.Peer
 
 func TestMain(m *testing.M) {
 	err := setup()
-	defer teardown()
-	var r int
-	if err == nil {
-		r = m.Run()
+	if err != nil {
+		panic(fmt.Sprintf("unable to setup [%s]", err))
 	}
-	defer os.Exit(r)
-	runtime.Goexit()
+	r := m.Run()
+	teardown()
+	os.Exit(r)
 }
 
 func setup() error {
@@ -82,12 +77,12 @@ func setup() error {
 
 	org1MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
 	if err != nil {
-		return errors.Wrap(err, "failed to create org1MspClient, err")
+		return errors.Wrap(err, "failed to create org1MspClient")
 	}
 
 	org2MspClient, err = mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
 	if err != nil {
-		return errors.Wrap(err, "failed to create org2MspClient, err")
+		return errors.Wrap(err, "failed to create org2MspClient")
 	}
 
 	return nil
@@ -108,29 +103,9 @@ func TestRevokedPeer(t *testing.T) {
 	defer integration.CleanupUserData(t, sdk)
 
 	//prepare contexts
-	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
 	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 	org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
 	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
-
-	// Channel management client is responsible for managing channels (create/update channel)
-	chMgmtClient, err := resmgmt.New(ordererClientContext)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Get signing identity that is used to sign create channel request
-	org1AdminUser, err := org1MspClient.GetSigningIdentity(org1AdminUser)
-	if err != nil {
-		t.Fatalf("failed to get org1AdminUser, err : %s", err)
-	}
-
-	org2AdminUser, err := org2MspClient.GetSigningIdentity(org2AdminUser)
-	if err != nil {
-		t.Fatalf("failed to get org2AdminUser, err : %s", err)
-	}
-
-	createChannel(org1AdminUser, org2AdminUser, chMgmtClient, t)
 
 	// Org1 resource management client (Org1 is default org)
 	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
@@ -212,21 +187,13 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 			Args:    integration.ExampleCCInitArgs(),
 			Policy:  ccPolicy,
 		},
+		resmgmt.WithTargetEndpoints("peer1.org2.example.com"),
 	)
 	require.Errorf(t, err, "Expecting error instantiating CC on peer with revoked certificate")
 	stat, ok := status.FromError(err)
 	require.Truef(t, ok, "Expecting error to be a status error")
 	require.Equalf(t, stat.Code, int32(status.SignatureVerificationFailed), "Expecting signature verification error due to revoked cert")
 	require.Truef(t, strings.Contains(err.Error(), "the creator certificate is not valid"), "Expecting error message to contain 'the creator certificate is not valid'")
-}
-
-func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningIdentity, chMgmtClient *resmgmt.Client, t *testing.T) {
-	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
-		ChannelConfigPath: integration.GetChannelConfigPath("orgchannel.tx"),
-		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
-	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
-	require.Nil(t, err, "error should be nil")
-	require.NotEmpty(t, txID, "transaction ID should be populated")
 }
 
 func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
@@ -254,6 +221,15 @@ func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
 
 }
 
+//configOverride to override existing config backend
+type configOverride struct {
+	Client        fabImpl.ClientConfig
+	Channels      map[string]fabImpl.ChannelEndpointConfig
+	Organizations map[string]fabImpl.OrganizationConfig
+	Orderers      map[string]fabImpl.OrdererConfig
+	Peers         map[string]fabImpl.PeerConfig
+}
+
 func getConfigBackend() core.ConfigProvider {
 
 	return func() ([]core.ConfigBackend, error) {
@@ -263,7 +239,7 @@ func getConfigBackend() core.ConfigProvider {
 		}
 		backendMap := make(map[string]interface{})
 
-		networkConfig := fab.NetworkConfig{}
+		networkConfig := configOverride{}
 		//get valid peer config
 		err = lookup.New(configBackends...).UnmarshalKey("peers", &networkConfig.Peers)
 		if err != nil {
@@ -301,7 +277,7 @@ func getConfigBackend() core.ConfigProvider {
 
 		orgChannel := networkConfig.Channels[channelID]
 		delete(orgChannel.Peers, "peer0.org2.example.com")
-		orgChannel.Peers["peer1.org2.example.com"] = fab.PeerChannelConfig{
+		orgChannel.Peers["peer1.org2.example.com"] = fabImpl.PeerChannelConfig{
 			EndorsingPeer:  true,
 			ChaincodeQuery: true,
 			LedgerQuery:    true,
