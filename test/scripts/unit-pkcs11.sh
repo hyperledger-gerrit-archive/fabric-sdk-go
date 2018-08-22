@@ -36,6 +36,7 @@ echo "Running" $(basename "$0")
 declare -a PKGS=(
     "${REPO}/pkg/core/cryptosuite/bccsp/pkcs11"
     "${REPO}/pkg/core/cryptosuite/bccsp/multisuite"
+    "{REPO}/pkg/core/cryptosuite/bccsp/pkcs11/handle"
 )
 
 # Reduce unit tests to changed packages.
