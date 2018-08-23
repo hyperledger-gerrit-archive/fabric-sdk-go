@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package config
 
 import (
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -39,7 +41,7 @@ func (c *defConfigBackend) loadTemplateConfig() error {
 	c.configViper.AddConfigPath(pathvar.Subst(templatePath))
 	err := c.configViper.ReadInConfig() // Find and read the config file
 	if err != nil {                     // Handle errors reading the config file
-		return errors.Wrap(err, "loading config file failed")
+		return errors.Wrap(err, fmt.Sprintf("loading config from template failed: %s", templatePath))
 	}
 	return nil
 }

@@ -8,6 +8,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 
@@ -60,7 +61,7 @@ func FromFile(name string, opts ...Option) core.ConfigProvider {
 		// If a config file is found, read it in.
 		err = backend.configViper.MergeInConfig()
 		if err != nil {
-			return nil, errors.Wrap(err, "loading config file failed")
+			return nil, errors.Wrap(err, fmt.Sprintf("loading config file failed: %s", name))
 		}
 
 		setLogLevel(backend)
