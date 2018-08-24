@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/filter"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
@@ -111,7 +112,9 @@ func ExampleClient_InvokeHandler() {
 		fmt.Println("failed to create client")
 	}
 
-	response, err := c.InvokeHandler(&exampleHandler{}, Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("data")}})
+	ro := WithTargetFilter(filter.NewEndpointFilter(c.Context, filter.ChaincodeQuery))
+
+	response, err := c.InvokeHandler(&exampleHandler{}, Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("data")}}, ro)
 	if err != nil {
 		fmt.Printf("failed to query chaincode: %s\n", err)
 	}

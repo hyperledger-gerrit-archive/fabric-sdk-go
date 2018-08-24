@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/filter"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/staticselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -243,7 +244,9 @@ func TestInvokeHandler(t *testing.T) {
 	expectedPayload := "somepayload"
 	handler := &customHandler{expectedPayload: []byte(expectedPayload)}
 
-	response, err := chClient.InvokeHandler(handler, Request{ChaincodeID: "testCC", Fcn: "move", Args: [][]byte{[]byte("a"), []byte("b"), []byte("1")}})
+	ro := WithTargetFilter(filter.NewEndpointFilter(chClient.Context, filter.ChaincodeQuery))
+
+	response, err := chClient.InvokeHandler(handler, Request{ChaincodeID: "testCC", Fcn: "move", Args: [][]byte{[]byte("a"), []byte("b"), []byte("1")}}, ro)
 	if err != nil {
 		t.Fatalf("Should have succeeded but got error %s", err)
 	}
@@ -500,7 +503,7 @@ func TestDiscoveryGreylist(t *testing.T) {
 	assert.EqualValues(t, status.NoPeersFound.ToInt32(), s.Code, "expected No Peers Found status on greylist")
 	assert.Equal(t, 1, testPeer1.ProcessProposalCalls, "expected peer 1 to be greylisted")
 	// Wait for greylist expiry
-	time.Sleep(chClient.context.EndpointConfig().Timeout(fab.DiscoveryGreylistExpiry))
+	time.Sleep(chClient.Context.EndpointConfig().Timeout(fab.DiscoveryGreylistExpiry))
 	testPeer1.ProcessProposalCalls = 0
 	testPeer1.Error = status.New(status.EndorserServerStatus, int32(common.Status_SERVICE_UNAVAILABLE), "test", nil)
 	// Try again
