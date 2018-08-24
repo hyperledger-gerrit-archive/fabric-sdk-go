@@ -129,9 +129,6 @@ services:
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
-    # TEMPORARY workaround for peer becoming unresponsive
-      - CORE_PEER_GOSSIP_ORGLEADER=true
-      - CORE_PEER_GOSSIP_USELEADERELECTION=false
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none
@@ -253,9 +250,6 @@ services:
       # # https://docs.docker.com/compose/networking/
       - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
       - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
-    # TEMPORARY workaround for peer becoming unresponsive
-      - CORE_PEER_GOSSIP_ORGLEADER=true
-      - CORE_PEER_GOSSIP_USELEADERELECTION=false
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none
@@ -315,9 +309,6 @@ services:
     # # https://docs.docker.com/compose/networking/
     - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
     - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${CORE_PEER_NETWORKID}_default
-    # TEMPORARY workaround for peer becoming unresponsive
-    - CORE_PEER_GOSSIP_ORGLEADER=true
-    - CORE_PEER_GOSSIP_USELEADERELECTION=false
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none

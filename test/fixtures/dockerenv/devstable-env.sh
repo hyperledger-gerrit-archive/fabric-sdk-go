@@ -9,17 +9,17 @@
 # against the latest dev-stable target.
 
 # Uses nexus registry (see https://nexus3.hyperledger.org/#browse/browse/components:docker.snapshot)
-export FABRIC_ARCH=""
-export FABRIC_ARCH_SEP=""
+#export FABRIC_ARCH=""
+#export FABRIC_ARCH_SEP=""
 
-export FABRIC_FIXTURE_VERSION="v1.3"
+export FABRIC_FIXTURE_VERSION="v1.2"
 export FABRIC_CRYPTOCONFIG_VERSION="v1"
 
-export FABRIC_CA_FIXTURE_TAG="stable"
-export FABRIC_ORDERER_FIXTURE_TAG="stable"
-export FABRIC_PEER_FIXTURE_TAG="stable"
-export FABRIC_COUCHDB_FIXTURE_TAG="stable"
-export FABRIC_BUILDER_FIXTURE_TAG="stable"
+export FABRIC_CA_FIXTURE_TAG="1.2.1-stable"
+export FABRIC_ORDERER_FIXTURE_TAG="1.2.1-stable"
+export FABRIC_PEER_FIXTURE_TAG="1.2.1-stable"
+export FABRIC_COUCHDB_FIXTURE_TAG="1.2.1-stable"
+export FABRIC_BUILDER_FIXTURE_TAG="1.2.1-stable"
 
 # override SDK configuration that loads crypto-config
 export FABRIC_SDK_CLIENT_CRYPTOCONFIG_PATH='${GOPATH}'"/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
