@@ -36,7 +36,7 @@ import (
 // An application that requires interaction with multiple channels should create a separate
 // instance of the channel client for each channel. Channel client supports non-admin functions only.
 type Client struct {
-	context      context.Channel
+	Context      context.Channel
 	membership   fab.ChannelMembership
 	eventService fab.EventService
 	greylist     *greylist.Filter
@@ -92,7 +92,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 func (cc *Client) Query(request Request, options ...RequestOption) (Response, error) {
 
 	options = append(options, addDefaultTimeout(fab.Query))
-	options = append(options, addDefaultTargetFilter(cc.context, filter.ChaincodeQuery))
+	options = append(options, addDefaultTargetFilter(cc.Context, filter.ChaincodeQuery))
 
 	return callQuery(cc, request, options...)
 }
@@ -106,7 +106,7 @@ func (cc *Client) Query(request Request, options ...RequestOption) (Response, er
 //  the proposal responses from peer(s)
 func (cc *Client) Execute(request Request, options ...RequestOption) (Response, error) {
 	options = append(options, addDefaultTimeout(fab.Execute))
-	options = append(options, addDefaultTargetFilter(cc.context, filter.EndorsingPeer))
+	options = append(options, addDefaultTargetFilter(cc.Context, filter.EndorsingPeer))
 
 	return callExecute(cc, request, options...)
 }
@@ -141,7 +141,7 @@ func addDefaultTimeout(tt fab.TimeoutType) RequestOption {
 //  the proposal responses from peer(s)
 func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options ...RequestOption) (Response, error) {
 	//Read execute tx options
-	txnOpts, err := cc.prepareOptsFromOptions(cc.context, options...)
+	txnOpts, err := cc.prepareOptsFromOptions(cc.Context, options...)
 	if err != nil {
 		return Response{}, err
 	}
@@ -200,10 +200,10 @@ func (cc *Client) createReqContext(txnOpts *requestOptions) (reqContext.Context,
 
 	//setting default timeouts when not provided
 	if txnOpts.Timeouts[fab.Execute] == 0 {
-		txnOpts.Timeouts[fab.Execute] = cc.context.EndpointConfig().Timeout(fab.Execute)
+		txnOpts.Timeouts[fab.Execute] = cc.Context.EndpointConfig().Timeout(fab.Execute)
 	}
 
-	reqCtx, cancel := contextImpl.NewRequest(cc.context, contextImpl.WithTimeout(txnOpts.Timeouts[fab.Execute]),
+	reqCtx, cancel := contextImpl.NewRequest(cc.Context, contextImpl.WithTimeout(txnOpts.Timeouts[fab.Execute]),
 		contextImpl.WithParent(txnOpts.ParentContext))
 	//Add timeout overrides here as a value so that it can be used by immediate child contexts (in handlers/transactors)
 	reqCtx = reqContext.WithValue(reqCtx, contextImpl.ReqContextTimeoutOverrides, txnOpts.Timeouts)
@@ -218,17 +218,17 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 		return nil, nil, errors.New("ChaincodeID and Fcn are required")
 	}
 
-	transactor, err := cc.context.ChannelService().Transactor(reqCtx)
+	transactor, err := cc.Context.ChannelService().Transactor(reqCtx)
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "failed to create transactor")
 	}
 
-	selection, err := cc.context.ChannelService().Selection()
+	selection, err := cc.Context.ChannelService().Selection()
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "failed to create selection service")
 	}
 
-	discovery, err := cc.context.ChannelService().Discovery()
+	discovery, err := cc.Context.ChannelService().Discovery()
 	if err != nil {
 		return nil, nil, errors.WithMessage(err, "failed to create discovery service")
 	}
