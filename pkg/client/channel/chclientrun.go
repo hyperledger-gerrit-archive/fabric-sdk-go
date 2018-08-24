@@ -22,7 +22,7 @@ func newClient(channelContext context.Channel, membership fab.ChannelMembership,
 		membership:   membership,
 		eventService: eventService,
 		greylist:     greylistProvider,
-		context:      channelContext,
+		Context:      channelContext,
 	}
 	return channelClient
 }
