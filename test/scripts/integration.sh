@@ -39,34 +39,7 @@ source ${SCRIPT_DIR}/lib/docker.sh
 echo "Running" $(basename "$0")
 
 # Packages to include in test run
-PKGS=($(${GO_CMD} list ${REPO}/test/integration/... 2> /dev/null | \
-      grep -v ^${REPO}/test/integration/e2e/pkcs11 | \
-      grep -v ^${REPO}/test/integration/negative | \
-      grep -v ^${REPO}/test/integration\$ | \
-      tr '\n' ' '))
-
-if [ "$E2E_ONLY" == "true" ]; then
-    echo "Including E2E tests only"
-    PKGS=($(echo ${PKGS[@]} | tr ' ' '\n' | grep ^${REPO}/test/integration/e2e | tr '\n' ' '))
-fi
-
-# Reduce tests to changed packages.
-if [ "${TEST_CHANGED_ONLY}" = true ]; then
-    # findChangedFiles assumes that the working directory contains the repo; so change to the repo directory.
-    PWD=$(pwd)
-    cd "${GOPATH}/src/${REPO}"
-    findChangedFiles
-    cd ${PWD}
-
-    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|ci.properties( |$)) ]]; then
-        echo "Test scripts, fixtures or metadata changed - running all tests"
-    else
-        findChangedPackages
-        filterExcludedPackages
-        appendDepPackages
-        PKGS=(${DEP_PKGS[@]})
-    fi
-fi
+PKGS=("${REPO}/test/integration/pkg/fab" "${REPO}/test/integration/pkg/client/channel")
 
 RACEFLAG=""
 if [ "${TEST_RACE_CONDITIONS}" = true ]; then
