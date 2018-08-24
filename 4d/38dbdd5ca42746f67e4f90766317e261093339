@@ -1,0 +1,8 @@
+Code-Review+2: Firas Qutishat <firas.qutishat@securekey.com>
+Code-Review+1: Sudesh Shetty <sudesh.shetty@securekey.com>
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Submitted-by: Troy Ronda <troy@troyronda.com>
+Submitted-at: Fri, 24 Aug 2018 20:54:26 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/25875
+Project: fabric-sdk-go
+Branch: refs/heads/master
