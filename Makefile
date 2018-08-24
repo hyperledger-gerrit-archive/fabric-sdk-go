@@ -114,7 +114,7 @@ FIXTURE_PROJECT_NAME   := fabsdkgo
 MAKEFILE_THIS          := $(lastword $(MAKEFILE_LIST))
 THIS_PATH              := $(patsubst %/,%,$(dir $(abspath $(MAKEFILE_THIS))))
 TEST_SCRIPTS_PATH      := test/scripts
-SOCAT_DOCKER_IMG       := $(shell docker images -q fabsdkgo-socat 2> /dev/null)
+#SOCAT_DOCKER_IMG       := $(shell docker images -q fabsdkgo-socat 2> /dev/null)
 
 # Test fixture paths
 FIXTURE_SCRIPTS_PATH      := $(THIS_PATH)/test/scripts
@@ -164,10 +164,10 @@ endif
 
 # Determine if use mock chaincode daemon should be used
 FABRIC_SDK_ENABLE_CHAINCODED := false
-ifneq ($(SOCAT_DOCKER_IMG),)
+#ifneq ($(SOCAT_DOCKER_IMG),)
 ifeq ($(FABRIC_SDK_CHAINCODED),true)
 FABRIC_SDK_ENABLE_CHAINCODED := true
-endif
+#endif
 endif
 
 # Setup Go Tags
