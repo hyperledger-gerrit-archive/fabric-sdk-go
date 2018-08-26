@@ -212,11 +212,6 @@ func TestConnectionEvent(t *testing.T) {
 	if err1 := <-stopResp; err1 != nil {
 		t.Fatalf("Error stopping dispatcher: %s", err1)
 	}
-
-	err = <-errch
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 }
 
 func TestFilterByBlockHeight(t *testing.T) {
