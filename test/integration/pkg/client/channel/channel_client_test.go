@@ -7,7 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -106,6 +108,69 @@ func TestChannelClient(t *testing.T) {
 	//test if CCEvents for chaincode events are in sync when new channel client are created
 	// for each transaction
 	testMultipleClientChaincodeEventLoop(t, chaincodeID)
+
+	testChannelClientMvccReadConflictWithRetry(t, chaincodeID, chClient)
+
+	testChannelClientMvccReadConflict(t, chaincodeID, chClient)
+
+}
+
+func testChannelClientMvccReadConflictWithRetry(t *testing.T, chaincodeID string, chClient *channel.Client) {
+
+	var wg sync.WaitGroup
+
+	maxAttempts := 2
+	for i := 0; i < maxAttempts; i++ {
+		wg.Add(1)
+		go func(attempt int) {
+			defer wg.Done()
+			response, err := chClient.Execute(
+				channel.Request{
+					ChaincodeID: chaincodeID,
+					Fcn:         "invoke",
+					Args:        integration.ExampleCCTxArgs(),
+				},
+				channel.WithRetry(retry.DefaultChannelOpts),
+			)
+
+			require.NoError(t, err, "Failed to move funds for request #%d", attempt)
+			assert.Equal(t, pb.TxValidationCode_VALID, response.TxValidationCode, "Expecting TxValidationCode to be TxValidationCode_VALID")
+		}(i)
+	}
+	wg.Wait()
+
+}
+
+func testChannelClientMvccReadConflict(t *testing.T, chaincodeID string, chClient *channel.Client) {
+
+	var errMtx sync.Mutex
+	var wg sync.WaitGroup
+	errs := multi.Errors{}
+
+	maxAttempts := 3
+	for i := 0; i < maxAttempts; i++ {
+		wg.Add(1)
+		go func(attempt int) {
+			defer wg.Done()
+			_, err := chClient.Execute(
+				channel.Request{
+					ChaincodeID: chaincodeID,
+					Fcn:         "invoke",
+					Args:        integration.ExampleCCTxArgs(),
+				},
+			)
+			if err != nil {
+				errMtx.Lock()
+				errs = append(errs, err)
+				errMtx.Unlock()
+				return
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	assert.True(t, len(errs) > 0)
+	assert.True(t, strings.Contains(errs[0].Error(), "MVCC_READ_CONFLICT"))
 }
 
 func testDuplicateTargets(t *testing.T, chaincodeID string, chClient *channel.Client) {
