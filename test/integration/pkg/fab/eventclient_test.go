@@ -24,9 +24,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
-const eventTimeWindow = 120 * time.Second // the maximum amount of time to watch for events.
+const eventTimeWindow = 20 * time.Second // the maximum amount of time to watch for events.
 
 func TestEventClient(t *testing.T) {
 	chainCodeID := mainChaincodeID
@@ -95,7 +96,7 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 	numExpected++
 	wg.Add(1)
 
-	tpResponses, prop, txID := sendTxProposal(sdk, testSetup, t, transactor, chainCodeID)
+	tpResponses, prop, txID := sendTxProposal(sdk, testSetup, t, transactor, chainCodeID, integration.ExampleCCTxRandomSetArgs())
 	txReg, txstatusch, err := eventService.RegisterTxStatusEvent(txID)
 	if err != nil {
 		t.Fatalf("Error registering for Tx Status event: %s", err)
@@ -127,14 +128,14 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 	}
 }
 
-func sendTxProposal(sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl, t *testing.T, transactor fab.Transactor, chainCodeID string) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, string) {
+func sendTxProposal(sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl, t *testing.T, transactor fab.Transactor, chainCodeID string, args [][]byte) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, string) {
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
 	require.Nil(t, err, "creating peers failed")
 	tpResponses, prop, err := createAndSendTransactionProposal(
 		transactor,
 		chainCodeID,
 		"invoke",
-		[][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("10")},
+		args,
 		peers,
 		nil,
 	)
@@ -161,6 +162,9 @@ func checkTxStatusEvent(wg *sync.WaitGroup, txstatusch <-chan *fab.TxStatusEvent
 		}
 		if txStatus.BlockNumber == 0 {
 			test.Failf(t, "Expecting non-zero block number")
+		}
+		if txStatus.TxValidationCode != pb.TxValidationCode_VALID {
+			test.Failf(t, "expected transaction validation code to be valid")
 		}
 		atomic.AddUint32(numReceived, 1)
 	case <-time.After(eventTimeWindow):
@@ -328,7 +332,7 @@ func testChannelEventsSeekOptions(t *testing.T, testSetup *integration.BaseSetup
 	defer eventService.Unregister(ccreg)
 
 	// prepare and commit the transaction to generate events
-	tpResponses, prop, txID := sendTxProposal(sdk, testSetup, t, transactor, chainCodeID)
+	tpResponses, prop, txID := sendTxProposal(sdk, testSetup, t, transactor, chainCodeID, integration.ExampleCCTxRandomSetArgs())
 	_, err = createAndSendTransaction(transactor, prop, tpResponses)
 	require.NoError(t, err, "First invoke failed err")
 
@@ -365,4 +369,70 @@ func testChannelEventsSeekOptions(t *testing.T, testSetup *integration.BaseSetup
 	//If seek type is default, then event dispatcher uses first block only for block height calculations, it doesn't publish anything
 	//to event channel, and first event we get from event channel actually belongs to first transaction after registration.
 	require.Equal(t, seekType == "", txID == event.TxID, "for seek type[%s], txID [%s], event.txID[%s] ,condition didn't match", seekType, txID, event.TxID)
+}
+
+//TestEventClientWithMVCCReadConflicts tests behavior of chaincode events when MVCC_READ_CONFLICT happens
+//Chaincode events with Txn Validation Code = MVCC_READ_CONFLICT are not getting published
+func TestEventClientWithMVCCReadConflicts(t *testing.T) {
+	chainCodeID := mainChaincodeID
+	sdk := mainSDK
+	testSetup := mainTestSetup
+
+	chContextProvider := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+	chContext, err := chContextProvider()
+	if err != nil {
+		t.Fatalf("error getting channel context: %s", err)
+	}
+	eventService, err := chContext.ChannelService().EventService()
+	if err != nil {
+		t.Fatalf("error getting event service: %s", err)
+	}
+
+	testEventServiceWithConflicts(t, testSetup, sdk, chainCodeID, eventService)
+}
+
+func testEventServiceWithConflicts(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *fabsdk.FabricSDK, chainCodeID string, eventService fab.EventService) {
+	_, cancel, transactor, err := getTransactor(sdk, testSetup.ChannelID, "Admin", testSetup.OrgID)
+	if err != nil {
+		t.Fatalf("Failed to get channel transactor: %s", err)
+	}
+	defer cancel()
+
+	ccreg, cceventch, err := eventService.RegisterChaincodeEvent(chainCodeID, ".*")
+	if err != nil {
+		t.Fatalf("Error registering for filtered block events: %s", err)
+	}
+	defer eventService.Unregister(ccreg)
+
+	numOfTxns := 4
+	// Commit multiple transactions to generate events
+	for i := 0; i < numOfTxns; i++ {
+		tpResponse, prop, _ := sendTxProposal(sdk, testSetup, t, transactor, chainCodeID, [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("5")})
+		_, err = createAndSendTransaction(transactor, prop, tpResponse)
+		if err != nil {
+			t.Fatalf("First invoke failed err: %s", err)
+		}
+	}
+
+	var numReceived int
+test:
+	for {
+		select {
+		case event, ok := <-cceventch:
+			if !ok {
+				test.Failf(t, "unexpected closed channel while waiting for CC Status event")
+			}
+			t.Logf("Received chaincode event: %#v", event)
+			if event.ChaincodeID != chainCodeID {
+				test.Failf(t, "Expecting event for CC ID [%s] but got event for CC ID [%s]", chainCodeID, event.ChaincodeID)
+			}
+			numReceived++
+			continue
+		case <-time.After(5 * time.Second):
+			break test
+		}
+	}
+
+	require.True(t, numReceived < numOfTxns, "Expected number of transactions to be greater than number of events")
+
 }
