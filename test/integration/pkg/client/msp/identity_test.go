@@ -12,8 +12,10 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIdentity(t *testing.T) {
@@ -297,4 +299,35 @@ func containsAttribute(att msp.Attribute, attributes []msp.Attribute) bool {
 		}
 	}
 	return false
+}
+
+type emptyCredentialStorePathBackend struct {
+}
+
+func (c *emptyCredentialStorePathBackend) Lookup(key string) (interface{}, bool) {
+	if key == "client.credentialStore.path" {
+		return "", true
+	}
+	return nil, false
+}
+
+func TestCreateSDKWithoutCredentialStorePath(t *testing.T) {
+
+	integrationConfigProvider, err := integration.ConfigBackend()
+	assert.Nil(t, err)
+
+	emptyCredentialStorePathConfigProvider := func() ([]core.ConfigBackend, error) {
+		emptyCredentialStorePathBackendSlice := []core.ConfigBackend{
+			&emptyCredentialStorePathBackend{},
+		}
+		return append(emptyCredentialStorePathBackendSlice, integrationConfigProvider...), nil
+	}
+
+	// Instantiate the SDK
+	sdk, err := fabsdk.New(emptyCredentialStorePathConfigProvider)
+	if err != nil {
+		t.Fatalf("SDK init failed: %s", err)
+	}
+	defer sdk.Close()
+
 }
