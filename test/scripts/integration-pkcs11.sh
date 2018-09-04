@@ -78,7 +78,7 @@ if [ ${#PKGS[@]} -eq 0 ]; then
     exit 0
 fi
 
-workingDir=$(pwd)
+workingDir=${GOPATH}/src/${REPO}
 declare -a PRIVATE_KEYS=($(find ${workingDir}/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION} | grep '/users/' | grep '_sk$' | tr '\n' ' '))
 PRIVATE_KEYS+=($(find ${workingDir}/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION} | grep 'User1@tls.example.com' | grep '.key$' | tr '\n' ' '))
 
