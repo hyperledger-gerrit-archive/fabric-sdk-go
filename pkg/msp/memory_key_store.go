@@ -12,17 +12,18 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
 )
 
 // MemoryKeyStore is in-memory implementation of BCCSP key store
 type MemoryKeyStore struct {
-	store    map[string]bccsp.Key
+	store    map[string][]byte
 	password []byte
 }
 
 // NewMemoryKeyStore creates a new MemoryKeyStore instance
 func NewMemoryKeyStore(password []byte) *MemoryKeyStore {
-	store := make(map[string]bccsp.Key)
+	store := make(map[string][]byte)
 	return &MemoryKeyStore{store: store, password: password}
 }
 
@@ -33,9 +34,13 @@ func (s *MemoryKeyStore) ReadOnly() bool {
 
 // GetKey returns a key for the provided SKI
 func (s *MemoryKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
-	key, ok := s.store[hex.EncodeToString(ski)]
+	b, ok := s.store[hex.EncodeToString(ski)]
 	if !ok {
 		return nil, fmt.Errorf("Key not found [%s]", ski)
+	}
+	key, err := sw.UnmarshalPrivateKey(b, s.password)
+	if err != nil {
+		return nil, fmt.Errorf("Error unmarshalling key [%s]: [%s]", ski, err)
 	}
 	return key, nil
 }
@@ -43,6 +48,10 @@ func (s *MemoryKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 // StoreKey stores a key
 func (s *MemoryKeyStore) StoreKey(key bccsp.Key) error {
 	ski := hex.EncodeToString(key.SKI())
-	s.store[ski] = key
+	b, err := sw.MarshalKey(key, s.password)
+	if err != nil {
+		return fmt.Errorf("Error marshalling key [%s]: [%s]", ski, err)
+	}
+	s.store[ski] = b
 	return nil
 }
