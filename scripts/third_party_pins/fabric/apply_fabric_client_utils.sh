@@ -78,6 +78,7 @@ declare -a FILES=(
     "bccsp/sw/ecdsa.go"
     "bccsp/sw/ecdsakey.go"
     "bccsp/sw/fileks.go"
+    "bccsp/sw/keymarshal.go"
     "bccsp/sw/hash.go"
     "bccsp/sw/impl.go"
     "bccsp/sw/internals.go"
