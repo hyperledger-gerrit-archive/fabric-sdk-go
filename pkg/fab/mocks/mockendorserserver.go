@@ -24,10 +24,10 @@ import (
 // MockEndorserServer mock endoreser server to process endorsement proposals
 type MockEndorserServer struct {
 	ProposalError error
-	AddkvWrite    bool
 	srv           *grpc.Server
 	Creds         credentials.TransportCredentials
 	wg            sync.WaitGroup
+	AddkvWrite    bool
 }
 
 // ProcessProposal mock implementation that returns success if error is not set

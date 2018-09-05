@@ -37,7 +37,7 @@ var broadcastResponseSuccess = &po.BroadcastResponse{Status: common.Status_SUCCE
 var broadcastResponseError = &po.BroadcastResponse{Status: common.Status_INTERNAL_SERVER_ERROR}
 
 // MockBroadcastServer mock broadcast server
-type MockBroadcastServer struct {
+type MockBroadcastServer struct { // nolint: maligned
 	DeliverError                 error
 	BroadcastInternalServerError bool
 	DeliverResponse              *po.DeliverResponse

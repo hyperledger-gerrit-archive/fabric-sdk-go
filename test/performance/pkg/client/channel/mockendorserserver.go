@@ -35,7 +35,7 @@ import (
 )
 
 // MockEndorserServer mock endorser server to process endorsement proposals
-type MockEndorserServer struct {
+type MockEndorserServer struct { // nolint: maligned
 	mockPeer            *MockPeer
 	ProposalError       error
 	AddkvWrite          bool
