@@ -71,7 +71,7 @@ const (
 // An optional Finalizer function may be provided to be invoked whenever the Reference
 // is closed (via a call to Close) or if it expires. (Note: The Finalizer function
 // is not called every time the value is refreshed with the periodic refresh feature.)
-type Reference struct {
+type Reference struct { // nolint: maligned
 	params
 	wg                sync.WaitGroup
 	expirationHandler expirationHandler

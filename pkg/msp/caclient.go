@@ -112,8 +112,8 @@ func (c *CAClientImpl) Enroll(enrollmentID string, enrollmentSecret string) erro
 		return errors.Wrap(err, "enroll failed")
 	}
 	userData := &msp.UserData{
-		MSPID: c.orgMSPID,
-		ID:    enrollmentID,
+		MSPID:                 c.orgMSPID,
+		ID:                    enrollmentID,
 		EnrollmentCertificate: cert,
 	}
 	err = c.userStore.Store(userData)
@@ -276,8 +276,8 @@ func (c *CAClientImpl) Reenroll(enrollmentID string) error {
 		return errors.Wrap(err, "reenroll failed")
 	}
 	userData := &msp.UserData{
-		MSPID: c.orgMSPID,
-		ID:    user.Identifier().ID,
+		MSPID:                 c.orgMSPID,
+		ID:                    user.Identifier().ID,
 		EnrollmentCertificate: cert,
 	}
 	err = c.userStore.Store(userData)
