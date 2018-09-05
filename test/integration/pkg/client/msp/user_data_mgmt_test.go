@@ -55,14 +55,6 @@ func TestWithCustomStores(t *testing.T) {
 	// Here we are replacing default key store with a simple
 	// in-memory implementation.
 
-	//
-	// NOTE: BCCSP SW implementation currently doesn't allow
-	// writing private keys out. The file store used internally
-	// by BCCSP has access to provate parts that are not available
-	// outside of BCCSP at the moment. Fot this reason, our
-	// example custom kay store will just hold the keys in memory.
-	//
-
 	customKeyStore := mspimpl.NewMemoryKeyStore([]byte("password"))
 	customCryptoSuite, err := sw.GetSuite(cryptoConfig.SecurityLevel(), cryptoConfig.SecurityAlgorithm(), customKeyStore)
 	if err != nil {
