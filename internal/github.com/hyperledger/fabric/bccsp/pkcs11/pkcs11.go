@@ -285,7 +285,6 @@ func timeTrack(start time.Time, msg string) {
 	elapsed := time.Since(start)
 	logger.Debugf("%s took %s", msg, elapsed)
 }
-
 func (csp *impl) findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
 	return cachebridge.GetKeyPairFromSessionSKI(&cachebridge.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType})
 }

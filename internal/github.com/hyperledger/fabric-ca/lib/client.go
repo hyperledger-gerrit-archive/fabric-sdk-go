@@ -150,7 +150,6 @@ func (c *Client) initHTTPClient(serverName string) error {
 		tlsConfig.CipherSuites = tls.DefaultCipherSuites
 		//set the host name override
 		tlsConfig.ServerName = serverName
-
 		tr.TLSClientConfig = tlsConfig
 	}
 	c.httpClient = &http.Client{Transport: tr}
