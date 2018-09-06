@@ -123,9 +123,18 @@ func (s *ChannelService) asPeers(ctx contextAPI.Client, endpoints []*discclient.
 
 		//check if cache is updated with tlscert if this is a new org joined and membership is not done yet updating cache
 		if s.membership.ContainsMSP(peer.MSPID()) {
+			properties := endpoint.StateInfoMessage.GetStateInfo().GetProperties()
+			chaincodes := make([]fab.ChaincodeInfo, 0, len(properties.Chaincodes))
+			for _, c := range properties.Chaincodes {
+				chaincodes = append(chaincodes, chaincodeInfo{
+					name:    c.Name,
+					version: c.Version,
+				})
+			}
 			peers = append(peers, &peerEndpoint{
 				Peer:        peer,
-				blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
+				blockHeight: properties.LedgerHeight,
+				chaincodes:  chaincodes,
 			})
 		}
 	}
@@ -135,8 +144,26 @@ func (s *ChannelService) asPeers(ctx contextAPI.Client, endpoints []*discclient.
 type peerEndpoint struct {
 	fab.Peer
 	blockHeight uint64
+	chaincodes  []fab.ChaincodeInfo
 }
 
 func (p *peerEndpoint) BlockHeight() uint64 {
 	return p.blockHeight
+}
+
+func (p *peerEndpoint) Chaincodes() []fab.ChaincodeInfo {
+	return p.chaincodes
+}
+
+type chaincodeInfo struct {
+	name    string
+	version string
+}
+
+func (c chaincodeInfo) Name() string {
+	return c.name
+}
+
+func (c chaincodeInfo) Version() string {
+	return c.version
 }

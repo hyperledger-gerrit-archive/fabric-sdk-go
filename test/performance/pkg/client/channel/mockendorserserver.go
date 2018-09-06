@@ -38,10 +38,10 @@ import (
 type MockEndorserServer struct {
 	mockPeer            *MockPeer
 	ProposalError       error
-	AddkvWrite          bool
 	Creds               credentials.TransportCredentials
-	srv                 *grpc.Server
+	AddkvWrite          bool
 	wg                  sync.WaitGroup
+	srv                 *grpc.Server
 	DeliveriesListener  chan *cb.Block
 	FilteredDelListener chan *pb.FilteredBlock
 }
