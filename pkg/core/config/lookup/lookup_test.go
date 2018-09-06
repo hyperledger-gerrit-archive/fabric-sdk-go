@@ -219,6 +219,9 @@ func TestUnmarshal(t *testing.T) {
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String(), (500 * time.Millisecond).String())
 	assert.Equal(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor, 2.0)
 
+	assert.Equal(t, fab.Balanced, networkConfig.Channels["mychannel"].Policies.Selection.SortingStrategy)
+	assert.Equal(t, fab.Random, networkConfig.Channels["mychannel"].Policies.Selection.Balancer)
+	assert.Equal(t, 6, networkConfig.Channels["mychannel"].Policies.Selection.BlockHeightLagThreshold)
 }
 
 func TestUnmarshalWithMultipleBackend(t *testing.T) {
