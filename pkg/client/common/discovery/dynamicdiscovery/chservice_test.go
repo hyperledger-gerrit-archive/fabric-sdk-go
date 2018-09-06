@@ -98,11 +98,27 @@ func TestDiscoveryService(t *testing.T) {
 					MSPID:        mspID1,
 					Endpoint:     peer1MSP1,
 					LedgerHeight: 5,
+					Chaincodes: []*discmocks.MockChaincodeInfo{
+						&discmocks.MockChaincodeInfo{
+							Name:    "test",
+							Version: "0",
+						},
+					},
 				},
 				{
 					MSPID:        mspID2,
 					Endpoint:     peer1MSP2,
 					LedgerHeight: 15,
+					Chaincodes: []*discmocks.MockChaincodeInfo{
+						&discmocks.MockChaincodeInfo{
+							Name:    "testcc",
+							Version: "0",
+						},
+						&discmocks.MockChaincodeInfo{
+							Name:    "testcc",
+							Version: "1",
+						},
+					},
 				},
 			},
 		},
@@ -115,6 +131,11 @@ func TestDiscoveryService(t *testing.T) {
 	assert.Equalf(t, 2, len(peers), "Expected 2 peers")
 
 	filteredService := discovery.NewDiscoveryFilterService(service, &blockHeightFilter{minBlockHeight: 10})
+	peers, err = filteredService.GetPeers()
+	require.NoError(t, err)
+	require.Equalf(t, 1, len(peers), "expecting discovery filter to return only one peer")
+
+	filteredService = discovery.NewDiscoveryFilterService(service, chaincodeFilter{name: "testcc", version: "1"})
 	peers, err = filteredService.GetPeers()
 	require.NoError(t, err)
 	require.Equalf(t, 1, len(peers), "expecting discovery filter to return only one peer")
@@ -217,7 +238,7 @@ func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
 	filteredService := discovery.NewDiscoveryFilterService(service, &blockHeightFilter{minBlockHeight: 10})
 	peers, err = filteredService.GetPeers()
 	require.NoError(t, err)
-	require.Equalf(t, 0, len(peers), "expecting discovery filter to return only one peer")
+	require.Equalf(t, 0, len(peers), "expecting discovery filter to return zero peer")
 
 }
 
@@ -228,6 +249,26 @@ type blockHeightFilter struct {
 func (f *blockHeightFilter) Accept(peer pfab.Peer) bool {
 	if p, ok := peer.(pfab.PeerState); ok {
 		return p.BlockHeight() >= f.minBlockHeight
+	}
+	panic("expecting peer to have state")
+}
+
+type chaincodeFilter struct {
+	name    string
+	version string
+}
+
+func (f chaincodeFilter) Accept(peer pfab.Peer) bool {
+	if p, ok := peer.(pfab.PeerState); ok {
+		ccs := p.Chaincodes()
+		if len(ccs) > 0 {
+			for _, cc := range ccs {
+				if cc.Name() == f.name && cc.Version() == f.version {
+					return true
+				}
+			}
+		}
+		return false
 	}
 	panic("expecting peer to have state")
 }
