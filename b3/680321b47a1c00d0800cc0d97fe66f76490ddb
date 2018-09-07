@@ -1,0 +1,7 @@
+Code-Review+2: Aleksandar Likic <aleksandar.likic@securekey.com>
+Verified+1: Firas Qutishat <firas.qutishat@securekey.com>
+Submitted-by: Firas Qutishat <firas.qutishat@securekey.com>
+Submitted-at: Fri, 07 Sep 2018 06:07:04 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/26158
+Project: fabric-sdk-go
+Branch: refs/heads/master
