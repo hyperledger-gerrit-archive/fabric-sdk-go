@@ -23,15 +23,16 @@ import (
 
 // MockConfig ...
 type MockConfig struct {
-	tlsEnabled             bool
-	mutualTLSEnabled       bool
-	errorCase              bool
-	customNetworkPeerCfg   []fab.NetworkPeer
-	customPeerCfg          *fab.PeerConfig
-	customOrdererCfg       *fab.OrdererConfig
-	customRandomOrdererCfg *fab.OrdererConfig
-	EvtServiceConfig       fab.EventServiceConfig
-	CustomTLSCACertPool    fab.CertPool
+	tlsEnabled                bool
+	mutualTLSEnabled          bool
+	errorCase                 bool
+	customNetworkPeerCfg      []fab.NetworkPeer
+	customPeerCfg             *fab.PeerConfig
+	customOrdererCfg          *fab.OrdererConfig
+	customRandomOrdererCfg    *fab.OrdererConfig
+	EvtServiceConfig          fab.EventServiceConfig
+	CustomTLSCACertPool       fab.CertPool
+	CustomCryptosuiteProvider string
 }
 
 // NewMockCryptoConfig ...
@@ -279,6 +280,9 @@ func (c *MockConfig) NetworkPeers() []fab.NetworkPeer {
 
 // SecurityProvider ...
 func (c *MockConfig) SecurityProvider() string {
+	if c.CustomCryptosuiteProvider != "" {
+		return c.CustomCryptosuiteProvider
+	}
 	return "sw"
 }
 
