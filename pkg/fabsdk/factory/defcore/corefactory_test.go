@@ -9,6 +9,8 @@ package defcore
 import (
 	"testing"
 
+	"strings"
+
 	cryptosuitewrapper "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/wrapper"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/modlog"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -18,7 +20,7 @@ import (
 
 func TestCreateCryptoSuiteProvider(t *testing.T) {
 	factory := NewProviderFactory()
-	config := mocks.NewMockCryptoConfig()
+	config := &mocks.MockConfig{}
 
 	cryptosuite, err := factory.CreateCryptoSuiteProvider(config)
 	if err != nil {
@@ -29,6 +31,24 @@ func TestCreateCryptoSuiteProvider(t *testing.T) {
 	if !ok {
 		t.Fatal("Unexpected cryptosuite provider created")
 	}
+
+	config.CustomCryptosuiteProvider = "sw"
+	cryptosuite, err = factory.CreateCryptoSuiteProvider(config)
+	if err != nil {
+		t.Fatalf("Unexpected error creating cryptosuite provider %s", err)
+	}
+
+	_, ok = cryptosuite.(*cryptosuitewrapper.CryptoSuite)
+	if !ok {
+		t.Fatal("Unexpected cryptosuite provider created")
+	}
+
+	config.CustomCryptosuiteProvider = "pkcs11"
+	_, err = factory.CreateCryptoSuiteProvider(config)
+	if err == nil || !strings.Contains(err.Error(), "Could not initialize BCCSP PKCS11") {
+		t.Fatalf("Expected to get PKCS11 crypto provider, but got err : %s", err)
+	}
+
 }
 
 func TestCreateSigningManager(t *testing.T) {
