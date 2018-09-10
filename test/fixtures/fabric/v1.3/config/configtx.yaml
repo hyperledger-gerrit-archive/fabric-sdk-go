@@ -449,3 +449,11 @@ Profiles:
             Organizations:
             - *Org1
             - *Org2
+
+    DsChannel:
+        Consortium: SampleConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+            - *Org1
+            - *Org2
