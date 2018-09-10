@@ -1127,6 +1127,41 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 
 }
 
+func (rc *Client) GetLatestConfig(channelID string, options ...RequestOption) (*common.Block, error) {
+
+	if channelID == "" {
+		return nil, errors.New("must provide channel ID")
+	}
+
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get opts for JoinChannel")
+	}
+
+	//resolve timeouts
+	rc.resolveTimeouts(&opts)
+
+	//set parent request context for overall timeout
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[fab.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
+	parentReqCtx = reqContext.WithValue(parentReqCtx, contextImpl.ReqContextTimeoutOverrides, opts.Timeouts)
+	defer parentReqCancel()
+
+	orderer, err := rc.requestOrderer(&opts, channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to find orderer for request")
+	}
+
+	ordrReqCtx, ordrReqCtxCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.OrdererResponse), contextImpl.WithParent(parentReqCtx))
+	defer ordrReqCtxCancel()
+
+	block, err := resource.LastConfigFromOrderer(ordrReqCtx, channelID, orderer, resource.WithRetry(opts.Retry))
+	if err != nil {
+		return nil, errors.WithMessage(err, "genesis block retrieval failed")
+	}
+
+	return block, nil
+}
+
 func (rc *Client) requestOrderer(opts *requestOptions, channelID string) (fab.Orderer, error) {
 	if opts.Orderer != nil {
 		return opts.Orderer, nil
