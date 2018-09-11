@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"time"
 
+	"strings"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -269,8 +271,9 @@ func queryInstantiatedCC(resMgmt *resmgmt.Client, orgName string, channelID, ccN
 
 func isCCInstantiated(resMgmt *resmgmt.Client, channelID, ccName, ccVersion string) (bool, error) {
 	chaincodeQueryResponse, err := resMgmt.QueryInstantiatedChaincodes(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		return false, errors.WithMessage(err, "Query for instantiated chaincodes failed")
+	e := warmUp(err)
+	if e != nil {
+		return false, e
 	}
 
 	for _, chaincode := range chaincodeQueryResponse.Chaincodes {
@@ -279,4 +282,13 @@ func isCCInstantiated(resMgmt *resmgmt.Client, channelID, ccName, ccVersion stri
 		}
 	}
 	return false, nil
+}
+func warmUp(err error) error {
+	if err != nil && strings.Contains(err.Error(), "premature execution - chaincode") {
+		// Wait until we can successfully invoke the chain code
+		time.Sleep(5 * time.Second)
+		return errors.Errorf("Error warming up chaincode [%s]: %s. Retrying in 5 seconds...", err)
+	}
+	return errors.WithMessage(err, "Query for instantiated chaincodes failed")
+
 }
