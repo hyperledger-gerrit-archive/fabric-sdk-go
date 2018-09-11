@@ -15,6 +15,7 @@ import (
 
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/discovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/random"
 	soptions "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
@@ -158,7 +159,7 @@ func (s *Service) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts
 		return nil, err
 	}
 
-	return asPeers(s.ctx, endpoints.(discclient.Endorsers)), nil
+	return endpoint.PeersFromDiscoveryClient(s.ctx, endpoints.(discclient.Endorsers)), nil
 }
 
 // Close closes all resources associated with the service
@@ -301,47 +302,6 @@ func asInvocationChain(chaincodes []*fab.ChaincodeCall) discclient.InvocationCha
 		})
 	}
 	return invocChain
-}
-
-func asPeers(ctx contextAPI.Client, endpoints []*discclient.Peer) []fab.Peer {
-	var peers []fab.Peer
-	for _, endpoint := range endpoints {
-		peer, err := asPeer(ctx, endpoint)
-		if err != nil {
-			logger.Debugf(err.Error())
-			continue
-		}
-		peers = append(peers, peer)
-	}
-	return peers
-}
-
-func asPeer(ctx contextAPI.Client, endpoint *discclient.Peer) (fab.Peer, error) {
-	url := endpoint.AliveMessage.GetAliveMsg().Membership.Endpoint
-
-	peerConfig, found := ctx.EndpointConfig().PeerConfig(url)
-	if !found {
-		return nil, errors.Errorf("peer config not found for [%s]", url)
-	}
-
-	peer, err := ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: *peerConfig, MSPID: endpoint.MSPID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create peer config for [%s]", url)
-	}
-
-	return &peerEndpoint{
-		Peer:        peer,
-		blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
-	}, nil
-}
-
-type peerEndpoint struct {
-	fab.Peer
-	blockHeight uint64
-}
-
-func (p *peerEndpoint) BlockHeight() uint64 {
-	return p.blockHeight
 }
 
 type discoveryError string

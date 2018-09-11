@@ -8,6 +8,7 @@ package dynamicdiscovery
 
 import (
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/random"
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -108,35 +109,18 @@ func (s *ChannelService) evaluate(ctx contextAPI.Client, responses []fabdiscover
 			logger.Warn(lastErr.Error())
 			continue
 		}
-		return s.asPeers(ctx, endpoints), nil
+		peers := endpoint.PeersFromDiscoveryClient(ctx, endpoints)
+		return s.filterChannelMSP(peers), nil
 	}
 	return nil, lastErr
 }
 
-func (s *ChannelService) asPeers(ctx contextAPI.Client, endpoints []*discclient.Peer) []fab.Peer {
-	var peers []fab.Peer
-	for _, endpoint := range endpoints {
-		peer, ok := asPeer(ctx, endpoint)
-		if !ok {
-			continue
-		}
-
-		//check if cache is updated with tlscert if this is a new org joined and membership is not done yet updating cache
-		if s.membership.ContainsMSP(peer.MSPID()) {
-			peers = append(peers, &peerEndpoint{
-				Peer:        peer,
-				blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
-			})
+func (s *ChannelService) filterChannelMSP(peers []fab.Peer) []fab.Peer {
+	var filteredPeers []fab.Peer
+	for _, p := range peers {
+		if s.membership.ContainsMSP(p.MSPID()) {
+			filteredPeers = append(filteredPeers, p)
 		}
 	}
-	return peers
-}
-
-type peerEndpoint struct {
-	fab.Peer
-	blockHeight uint64
-}
-
-func (p *peerEndpoint) BlockHeight() uint64 {
-	return p.blockHeight
+	return filteredPeers
 }
