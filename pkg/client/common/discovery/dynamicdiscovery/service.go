@@ -120,35 +120,3 @@ func (s *service) discoveryClient() discoveryClient {
 	defer s.lock.RUnlock()
 	return s.discClient
 }
-
-func asPeers(ctx contextAPI.Client, endpoints []*discclient.Peer) []fab.Peer {
-	var peers []fab.Peer
-	for _, endpoint := range endpoints {
-		peer, ok := asPeer(ctx, endpoint)
-		if !ok {
-			continue
-		}
-		peers = append(peers, peer)
-	}
-	return peers
-}
-
-func asPeer(ctx contextAPI.Client, endpoint *discclient.Peer) (fab.Peer, bool) {
-	url := endpoint.AliveMessage.GetAliveMsg().Membership.Endpoint
-
-	logger.Debugf("Adding endpoint [%s]", url)
-
-	peerConfig, found := ctx.EndpointConfig().PeerConfig(url)
-	if !found {
-		logger.Debugf("Peer config not found for url [%s]", url)
-		return nil, false
-	}
-
-	peer, err := ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: *peerConfig, MSPID: endpoint.MSPID})
-	if err != nil {
-		logger.Warnf("Unable to create peer config for [%s]: %s", url, err)
-		return nil, false
-	}
-
-	return peer, true
-}

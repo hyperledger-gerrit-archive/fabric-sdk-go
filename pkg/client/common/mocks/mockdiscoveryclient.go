@@ -158,12 +158,20 @@ func newAliveMessage(endpoint *discmocks.MockDiscoveryPeerEndpoint) *gossip.Sign
 }
 
 func newStateInfoMessage(endpoint *discmocks.MockDiscoveryPeerEndpoint) *gossip.SignedGossipMessage {
+	ccs := make([]*gossip.Chaincode, 0, len(endpoint.Chaincodes))
+	for _, c := range endpoint.Chaincodes {
+		ccs = append(ccs, &gossip.Chaincode{
+			Name:    c.Name,
+			Version: c.Version,
+		})
+	}
 	return &gossip.SignedGossipMessage{
 		GossipMessage: &gossip.GossipMessage{
 			Content: &gossip.GossipMessage_StateInfo{
 				StateInfo: &gossip.StateInfo{
 					Properties: &gossip.Properties{
 						LedgerHeight: endpoint.LedgerHeight,
+						Chaincodes:   ccs,
 					},
 				},
 			},
