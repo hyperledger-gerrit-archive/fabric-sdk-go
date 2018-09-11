@@ -8,6 +8,7 @@ package dynamicdiscovery
 
 import (
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/endpoint"
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -80,7 +81,8 @@ func (s *LocalService) queryPeers() ([]fab.Peer, error) {
 		return nil, errors.Wrap(err, "error getting peers from discovery response")
 	}
 
-	return s.filterLocalMSP(asPeers(ctx, endpoints)), nil
+	peers := endpoint.PeersFromDiscoveryClient(ctx, endpoints)
+	return s.filterLocalMSP(peers), nil
 }
 
 func (s *LocalService) getTarget(ctx contextAPI.Client) (*fab.PeerConfig, error) {
