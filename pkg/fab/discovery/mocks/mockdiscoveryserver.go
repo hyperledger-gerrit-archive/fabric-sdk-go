@@ -174,11 +174,18 @@ func asDiscoveryPeer(p *MockDiscoveryPeerEndpoint) *discovery.Peer {
 		panic(err.Error())
 	}
 
+	ccs := make([]*gossip.Chaincode, 0, len(p.Chaincodes))
+	for _, c := range p.Chaincodes {
+		ccs = append(ccs, &gossip.Chaincode{
+			Name:    c.Name,
+			Version: c.Version,
+		})
+	}
 	stateInfoMsg := &gossip.GossipMessage{
 		Content: &gossip.GossipMessage_StateInfo{
 			StateInfo: &gossip.StateInfo{
 				Properties: &gossip.Properties{
-					Chaincodes:   nil,
+					Chaincodes:   ccs,
 					LedgerHeight: p.LedgerHeight,
 				},
 				Timestamp: &gossip.PeerTime{
@@ -208,6 +215,13 @@ type MockDiscoveryPeerEndpoint struct {
 	MSPID        string
 	Endpoint     string
 	LedgerHeight uint64
+	Chaincodes   []*MockChaincodeInfo
+}
+
+// MockChaincodeInfo contains information about a chaincode
+type MockChaincodeInfo struct {
+	Name    string
+	Version string
 }
 
 func asPeersByOrg(peers []*MockDiscoveryPeerEndpoint) map[string]*discovery.Peers {

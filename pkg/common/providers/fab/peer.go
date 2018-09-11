@@ -22,4 +22,11 @@ type Peer interface {
 // PeerState provides state information about the Peer
 type PeerState interface {
 	BlockHeight() uint64
+	Chaincodes() []ChaincodeInfo
+}
+
+// ChaincodeInfo contains information about a chaincode
+type ChaincodeInfo interface {
+	Name() string
+	Version() string
 }

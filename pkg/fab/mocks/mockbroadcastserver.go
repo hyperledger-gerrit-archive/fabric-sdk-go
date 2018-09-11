@@ -38,14 +38,14 @@ var broadcastResponseError = &po.BroadcastResponse{Status: common.Status_INTERNA
 
 // MockBroadcastServer mock broadcast server
 type MockBroadcastServer struct {
+	Creds                        credentials.TransportCredentials
 	DeliverError                 error
-	BroadcastInternalServerError bool
 	DeliverResponse              *po.DeliverResponse
 	BroadcastError               error
 	BroadcastCustomResponse      *po.BroadcastResponse
-	Creds                        credentials.TransportCredentials
-	srv                          *grpc.Server
+	BroadcastInternalServerError bool
 	wg                           sync.WaitGroup
+	srv                          *grpc.Server
 	// Use the MockBroadCastServer with either a common.Block or a pb.FilteredBlock channel (do not set both)
 	Deliveries         chan *common.Block
 	FilteredDeliveries chan *pb.FilteredBlock

@@ -7,13 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package fabricselection
 
 import (
-	"context"
 	"sort"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/balancedsorter"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/blockheightsorter"
 
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/balancer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -82,7 +82,7 @@ func resolveBalancer(channelID string, channelConfig *fab.ChannelEndpointConfig)
 func (s *selectionFilter) Filter(endorsers discclient.Endorsers) discclient.Endorsers {
 
 	// Convert the endorsers to peers
-	peers := s.asPeerValues(endorsers)
+	peers := s.asPeers(endorsers)
 
 	// Sort the peers in alphabetical order so that they are always presented to the balancer in the same order
 	peers = s.sortByURL(peers)
@@ -96,8 +96,8 @@ func (s *selectionFilter) Filter(endorsers discclient.Endorsers) discclient.Endo
 	// Apply the peer sorter (if any)
 	sortedPeers := s.sortPeers(filteredPeers)
 
-	// Convert the filtered peers to endorsers
-	return s.asEndorsers(endorsers, sortedPeers)
+	// Select endorsers based on filtered peers
+	return s.selectEndorsers(endorsers, sortedPeers)
 }
 
 func (s *selectionFilter) sortPeers(peers []fab.Peer) []fab.Peer {
@@ -143,34 +143,9 @@ func (s *selectionFilter) filterDiscovered(peers []fab.Peer) []fab.Peer {
 	return discoveryPeers
 }
 
-// asPeerValue converts the discovery endpoint into a light-weight peer value (i.e. without the GRPC config)
-// so that it may used by a peer filter
-func (s *selectionFilter) asPeerValue(endpoint *discclient.Peer) fab.Peer {
-	url := endpoint.AliveMessage.GetAliveMsg().GetMembership().Endpoint
-
-	// Get the mapped URL of the peer
-	peerConfig, found := s.ctx.EndpointConfig().PeerConfig(url)
-	if found {
-		url = peerConfig.URL
-	} else {
-		logger.Debugf("Peer config not found for url [%s]", url)
-	}
-
-	return &peerEndpointValue{
-		mspID:       endpoint.MSPID,
-		url:         url,
-		blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
-	}
-}
-
-func (s *selectionFilter) asPeerValues(endorsers discclient.Endorsers) []fab.Peer {
-	var peers []fab.Peer
-	for _, endorser := range endorsers {
-		peer := s.asPeerValue(endorser)
-		logger.Debugf("Adding peer [%s]", peer.URL())
-		peers = append(peers, peer)
-	}
-	return peers
+// asPeers convert to fab.Peer which implements fab.PeerState
+func (s *selectionFilter) asPeers(endosers discclient.Endorsers) []fab.Peer {
+	return endpoint.PeersFromDiscoveryClient(s.ctx, ([]*discclient.Peer)(endosers))
 }
 
 func (s *selectionFilter) sortByURL(peers []fab.Peer) []fab.Peer {
@@ -180,29 +155,22 @@ func (s *selectionFilter) sortByURL(peers []fab.Peer) []fab.Peer {
 	return peers
 }
 
-func (s *selectionFilter) asEndorsers(allEndorsers discclient.Endorsers, filteredPeers []fab.Peer) discclient.Endorsers {
+func (s *selectionFilter) selectEndorsers(allEndorsers discclient.Endorsers, filteredPeers []fab.Peer) discclient.Endorsers {
 	var filteredEndorsers discclient.Endorsers
+	peers := s.asPeers(allEndorsers)
+
+	url2idx := make(map[string]int, len(peers))
+	for idx, peer := range peers {
+		url2idx[peer.URL()] = idx
+	}
+
 	for _, peer := range filteredPeers {
-		endorser, found := s.asEndorser(allEndorsers, peer)
-		if !found {
-			// This should never happen since the peer was composed from the initial list of endorsers
-			logger.Warnf("Endorser [%s] not found. Endorser will be excluded.", peer.URL())
-			continue
-		}
+		url := peer.URL()
 		logger.Debugf("Adding endorser [%s]", peer.URL())
+		endorser := allEndorsers[url2idx[url]]
 		filteredEndorsers = append(filteredEndorsers, endorser)
 	}
 	return filteredEndorsers
-}
-
-func (s *selectionFilter) asEndorser(endorsers discclient.Endorsers, peer fab.Peer) (*discclient.Peer, bool) {
-	for _, endorser := range endorsers {
-		url := s.asPeerValue(endorser).URL()
-		if peer.URL() == url {
-			return endorser, true
-		}
-	}
-	return nil, false
 }
 
 func containsPeer(peers []fab.Peer, peer fab.Peer) bool {
@@ -212,28 +180,6 @@ func containsPeer(peers []fab.Peer, peer fab.Peer) bool {
 		}
 	}
 	return false
-}
-
-type peerEndpointValue struct {
-	mspID       string
-	url         string
-	blockHeight uint64
-}
-
-func (p *peerEndpointValue) MSPID() string {
-	return p.mspID
-}
-
-func (p *peerEndpointValue) URL() string {
-	return p.url
-}
-
-func (p *peerEndpointValue) BlockHeight() uint64 {
-	return p.blockHeight
-}
-
-func (p *peerEndpointValue) ProcessTransactionProposal(context.Context, fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
-	panic("not implemented")
 }
 
 type peers []fab.Peer
