@@ -53,6 +53,8 @@ const (
 	defaultSelectionRefreshInterval       = time.Second * 5
 	defaultCacheSweepInterval             = time.Second * 15
 
+	defaultPeerResolverStrategy    = fab.PreferOrgStrategy
+	defaultPeerBalancer            = fab.Random
 	defaultBlockHeightLagThreshold = 5
 
 	//default grpc opts
@@ -1654,6 +1656,25 @@ func (c *EndpointConfig) regexMatchAndReplace(regex *regexp.Regexp, src, repl st
 // EventServiceConfig contains config options for the event service
 type EventServiceConfig struct {
 	backend *lookup.ConfigLookup
+}
+
+// PeerResolverStrategy returns the peer resolver strategy to use when connecting to a peer
+// Default: MinBlockHeightPeerResolver
+func (c *EventServiceConfig) PeerResolverStrategy() fab.PeerResolverStrategy {
+	strategy := fab.PeerResolverStrategy(c.backend.GetString("client.eventService.peerResolverStrategy"))
+	if strategy == "" {
+		return defaultPeerResolverStrategy
+	}
+	return strategy
+}
+
+// PeerBalancer is the balancer to use when choosing a peer to connect to
+func (c *EventServiceConfig) PeerBalancer() fab.BalancerType {
+	balancer := fab.BalancerType(c.backend.GetString("client.eventService.peerBalancer"))
+	if balancer == "" {
+		return defaultPeerBalancer
+	}
+	return balancer
 }
 
 // BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer

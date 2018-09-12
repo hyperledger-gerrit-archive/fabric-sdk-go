@@ -712,6 +712,14 @@ func (m *exampleEventServiceConfig) EventServiceConfig() fab.EventServiceConfig 
 type eventServiceConfig struct {
 }
 
+func (c *eventServiceConfig) PeerResolverStrategy() fab.PeerResolverStrategy {
+	return fab.BalancedStrategy
+}
+
+func (c *eventServiceConfig) PeerBalancer() fab.BalancerType {
+	return fab.Random
+}
+
 func (c *eventServiceConfig) BlockHeightLagThreshold() int {
 	return 5
 }
