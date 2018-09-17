@@ -11,7 +11,6 @@ import (
 	"crypto/x509"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -52,9 +51,11 @@ const (
 	defaultSelectionRefreshInterval       = time.Second * 5
 	defaultCacheSweepInterval             = time.Second * 15
 
-	defaultResolverStrategy        = fab.PreferOrgStrategy
-	defaultBalancer                = fab.Random
-	defaultBlockHeightLagThreshold = 5
+	defaultResolverStrategy                 = fab.PreferOrgStrategy
+	defaultBalancer                         = fab.Random
+	defaultBlockHeightLagThreshold          = 5
+	defaultReconnectBlockHeightLagThreshold = 0 // Disabled
+	defaultPeerMonitorPeriod                = 0 // Disabled
 
 	//default grpc opts
 	defaultKeepAliveTime    = 0
@@ -85,6 +86,13 @@ var (
 			SortingStrategy:         fab.BlockHeightPriority,
 			Balancer:                fab.Random,
 			BlockHeightLagThreshold: defaultBlockHeightLagThreshold,
+		},
+		EventService: fab.EventServicePolicy{
+			ResolverStrategy:                 fab.PreferOrgStrategy,
+			Balancer:                         fab.Random,
+			PeerMonitorPeriod:                defaultPeerMonitorPeriod,
+			BlockHeightLagThreshold:          defaultBlockHeightLagThreshold,
+			ReconnectBlockHeightLagThreshold: defaultReconnectBlockHeightLagThreshold,
 		},
 	}
 )
@@ -254,11 +262,6 @@ func (c *EndpointConfig) ChannelOrderers(name string) []fab.OrdererConfig {
 // is provided, the certificate is added to the pool
 func (c *EndpointConfig) TLSCACertPool() fab.CertPool {
 	return c.tlsCertPool
-}
-
-// EventServiceConfig returns the event service config
-func (c *EndpointConfig) EventServiceConfig() fab.EventServiceConfig {
-	return &EventServiceConfig{backend: c.backend}
 }
 
 // TLSClientCerts loads the client's certs for mutual TLS
@@ -501,6 +504,7 @@ func (c *EndpointConfig) loadDefaultChannel() {
 }
 
 func (c *EndpointConfig) loadDefaultConfigItems(configEntity *endpointConfigEntity) error {
+	logger.Infof("loadDefaultConfigItems...")
 	//default orderer config
 	err := c.loadDefaultOrderer(configEntity)
 	if err != nil {
@@ -665,6 +669,7 @@ func (c *EndpointConfig) addMissingChannelPoliciesItems(chNwCfg ChannelEndpointC
 	policies.Discovery = c.addMissingDiscoveryPolicyInfo(policies.Discovery)
 	policies.Selection = c.addMissingSelectionPolicyInfo(policies.Selection)
 	policies.QueryChannelConfig = c.addMissingQueryChannelConfigPolicyInfo(policies.QueryChannelConfig)
+	policies.EventService = c.addMissingEventServicePolicyInfo(policies.EventService)
 
 	return policies
 }
@@ -719,6 +724,33 @@ func (c *EndpointConfig) addMissingQueryChannelConfigPolicyInfo(policy fab.Query
 		policy.RetryOpts = c.defaultChannelPolicies.QueryChannelConfig.RetryOpts
 	} else {
 		policy.RetryOpts = addMissingRetryOpts(policy.RetryOpts, c.defaultChannelPolicies.QueryChannelConfig.RetryOpts)
+	}
+
+	return policy
+}
+
+func (c *EndpointConfig) addMissingEventServicePolicyInfo(policy fab.EventServicePolicy) fab.EventServicePolicy {
+
+	if policy.ResolverStrategy == "" {
+		policy.ResolverStrategy = c.defaultChannelPolicies.EventService.ResolverStrategy
+	}
+
+	if policy.Balancer == "" {
+		policy.Balancer = c.defaultChannelPolicies.EventService.Balancer
+	}
+
+	// FIXME: 0 is a valid value - need to initialize to -1 (or something)
+	if policy.BlockHeightLagThreshold == 0 {
+		policy.BlockHeightLagThreshold = c.defaultChannelPolicies.EventService.BlockHeightLagThreshold
+	}
+
+	if policy.ReconnectBlockHeightLagThreshold == 0 {
+		policy.ReconnectBlockHeightLagThreshold = c.defaultChannelPolicies.EventService.ReconnectBlockHeightLagThreshold
+	}
+
+	// FIXME: 0 is a valid value - need to initialize to -1 (or something)
+	if policy.PeerMonitorPeriod == 0 {
+		policy.PeerMonitorPeriod = c.defaultChannelPolicies.EventService.PeerMonitorPeriod
 	}
 
 	return policy
@@ -927,6 +959,7 @@ func (c *EndpointConfig) loadDefaultChannelPolicies(configEntity *endpointConfig
 	c.loadDefaultDiscoveryPolicy(&defaultChPolicies.Discovery)
 	c.loadDefaultSelectionPolicy(&defaultChPolicies.Selection)
 	c.loadDefaultQueryChannelPolicy(&defaultChPolicies.QueryChannelConfig)
+	c.loadDefaultEventServicePolicy(&defaultChPolicies.EventService)
 
 	c.defaultChannelPolicies = defaultChPolicies
 
@@ -964,6 +997,28 @@ func (c *EndpointConfig) loadDefaultQueryChannelPolicy(policy *fab.QueryChannelC
 
 	if policy.MinResponses == 0 {
 		policy.MinResponses = defaultMinResponses
+	}
+}
+
+func (c *EndpointConfig) loadDefaultEventServicePolicy(policy *fab.EventServicePolicy) {
+	if policy.ResolverStrategy == "" {
+		policy.ResolverStrategy = defaultResolverStrategy
+	}
+
+	if policy.Balancer == "" {
+		policy.Balancer = defaultBalancer
+	}
+
+	if policy.BlockHeightLagThreshold == 0 {
+		policy.BlockHeightLagThreshold = defaultBlockHeightLagThreshold
+	}
+
+	if policy.ReconnectBlockHeightLagThreshold == 0 {
+		policy.ReconnectBlockHeightLagThreshold = defaultReconnectBlockHeightLagThreshold
+	}
+
+	if policy.PeerMonitorPeriod == 0 {
+		policy.PeerMonitorPeriod = defaultPeerMonitorPeriod
 	}
 }
 
@@ -1664,64 +1719,6 @@ func (c *EndpointConfig) regexMatchAndReplace(regex *regexp.Regexp, src, repl st
 		return regex.ReplaceAllString(src, repl)
 	}
 	return repl
-}
-
-// EventServiceConfig contains config options for the event service
-type EventServiceConfig struct {
-	backend *lookup.ConfigLookup
-}
-
-// ResolverStrategy returns the peer resolver strategy to use when connecting to a peer
-// Default: MinBlockHeightPeerResolver
-func (c *EventServiceConfig) ResolverStrategy() fab.ResolverStrategy {
-	strategy := fab.ResolverStrategy(c.backend.GetString("client.eventService.resolverStrategy"))
-	if strategy == "" {
-		return defaultResolverStrategy
-	}
-	return strategy
-}
-
-// Balancer is the balancer to use when choosing a peer to connect to
-func (c *EventServiceConfig) Balancer() fab.BalancerType {
-	balancer := fab.BalancerType(c.backend.GetString("client.eventService.balancer"))
-	if balancer == "" {
-		return defaultBalancer
-	}
-	return balancer
-}
-
-// BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer
-// to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
-// blocks then it will be excluded from selection.
-// If set to 0 then only the most up-to-date peers are considered.
-// If set to -1 then all peers (regardless of block height) are considered for selection.
-func (c *EventServiceConfig) BlockHeightLagThreshold() int {
-	lagThresholdStr := c.backend.GetString("client.eventService.blockHeightLagThreshold")
-	if lagThresholdStr == "" {
-		return defaultBlockHeightLagThreshold
-	}
-	lagThreshold, err := strconv.Atoi(lagThresholdStr)
-	if err != nil {
-		logger.Warnf("Invalid numeric value for client.eventService.blockHeightLagThreshold. Setting to default value of %d", defaultBlockHeightLagThreshold)
-		return defaultBlockHeightLagThreshold
-	}
-	return lagThreshold
-}
-
-// ReconnectBlockHeightLagThreshold - if >0 then the event client will disconnect from the peer if the peer's
-// block height falls behind the specified number of blocks and will reconnect to a better performing peer.
-// If set to 0 then this feature is disabled.
-// NOTE: Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
-// affecting performance.
-func (c *EventServiceConfig) ReconnectBlockHeightLagThreshold() int {
-	return c.backend.GetInt("client.eventService.reconnectBlockHeightLagThreshold")
-}
-
-// PeerMonitorPeriod is the period in which the connected peer is monitored to see if
-// the event client should disconnect from it and reconnect to another peer.
-// A value of 0 (default) means that the peer will not be monitored.
-func (c *EventServiceConfig) PeerMonitorPeriod() time.Duration {
-	return c.backend.GetDuration("client.eventService.peerMonitorPeriod")
 }
 
 //peerChannelConfigHookFunc returns hook function for unmarshalling 'fab.PeerChannelConfig'
