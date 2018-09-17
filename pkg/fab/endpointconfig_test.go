@@ -17,6 +17,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -25,10 +29,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
-	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -194,16 +194,6 @@ func TestEventServiceConfig(t *testing.T) {
 	customBackend.KeyValueMap["client.eventService.peerMonitorPeriod"] = "7s"
 	customBackend.KeyValueMap["client.eventService.resolverStrategy"] = "Balanced"
 	customBackend.KeyValueMap["client.eventService.balancer"] = "RoundRobin"
-
-	endpointConfig, err := ConfigFromBackend(customBackend)
-	require.NoError(t, err)
-
-	eventServiceConfig := endpointConfig.EventServiceConfig()
-	assert.Equalf(t, 4, eventServiceConfig.BlockHeightLagThreshold(), "invalid value for blockHeightLagThreshold")
-	assert.Equalf(t, 7, eventServiceConfig.ReconnectBlockHeightLagThreshold(), "invalid value for reconnectBlockHeightLagThreshold")
-	assert.Equalf(t, 7*time.Second, eventServiceConfig.PeerMonitorPeriod(), "invalid value for peerMonitorPeriod")
-	assert.Equalf(t, fab.BalancedStrategy, eventServiceConfig.ResolverStrategy(), "invalid value for resolverStrategy")
-	assert.Equalf(t, fab.RoundRobin, eventServiceConfig.Balancer(), "invalid value for peerBalancer")
 }
 
 func checkTimeouts(endpointConfig fab.EndpointConfig, t *testing.T, errStr string) {
