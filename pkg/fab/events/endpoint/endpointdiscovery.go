@@ -9,6 +9,8 @@ package endpoint
 import (
 	"github.com/pkg/errors"
 
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -71,6 +73,7 @@ func (s *DiscoveryWrapper) GetPeers() ([]fab.Peer, error) {
 		return nil, err
 	}
 
+	fmt.Printf("got [%d] peers from s.DiscoveryService.GetPeers()", len(peers))
 	for _, peer := range peers {
 
 		var peerConfig *fab.PeerConfig
@@ -87,10 +90,11 @@ func (s *DiscoveryWrapper) GetPeers() ([]fab.Peer, error) {
 			chPeer = s.getChannelPeer(peerConfig.URL)
 		}
 
-		logger.Debugf("Channel peer config for [%s]: %#v", peer.URL(), chPeer)
+		fmt.Printf("Channel peer config for [%s]: %#v \n", peer.URL(), chPeer)
+		logger.Debugf("Channel peer config for [%s]: %#v \n", peer.URL(), chPeer)
 
 		if chPeer != nil && !chPeer.EventSource {
-			logger.Debugf("Excluding peer [%s] since it is not configured as an event source", peer.URL())
+			fmt.Printf("Excluding peer [%s] since it is not configured as an event source \n", peer.URL())
 			continue
 		}
 

@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -367,6 +369,7 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nol
 		if timeout == 0 {
 			timeout = defaultDiscoveryRefreshInterval
 		}
+		fmt.Println("###################### DISCOVERY TIMEOUT", timeout)
 	case fab.SelectionServiceRefresh:
 		timeout = c.backend.GetDuration("client.global.cache.selection")
 		if timeout == 0 {
