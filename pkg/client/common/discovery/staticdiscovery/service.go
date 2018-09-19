@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package staticdiscovery
 
 import (
+	"fmt"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
 )
@@ -45,5 +47,6 @@ func NewService(config fab.EndpointConfig, peerCreator peerCreator, channelID st
 
 // GetPeers is used to get peers
 func (ds *DiscoveryService) GetPeers() ([]fab.Peer, error) {
+	fmt.Println("ds GetPeers() static", len(ds.peers))
 	return ds.peers, nil
 }

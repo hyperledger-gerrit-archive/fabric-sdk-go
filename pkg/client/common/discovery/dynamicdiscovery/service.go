@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"fmt"
+
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -54,8 +56,8 @@ func newService(config fab.EndpointConfig, query queryPeers, opts ...coptions.Op
 		options.responseTimeout = config.Timeout(fab.DiscoveryResponse)
 	}
 
-	logger.Debugf("Cache refresh interval: %s", options.refreshInterval)
-	logger.Debugf("Deliver service response timeout: %s", options.responseTimeout)
+	fmt.Printf("Cache refresh interval: %s \n", options.refreshInterval)
+	fmt.Printf("Deliver service response timeout: %s \n", options.responseTimeout)
 
 	return &service{
 		responseTimeout: options.responseTimeout,
@@ -98,6 +100,7 @@ func (s *service) Close() {
 
 // GetPeers returns the available peers
 func (s *service) GetPeers() ([]fab.Peer, error) {
+	fmt.Println("dynamic service GetPeers()")
 	refValue, err := s.peersRef.Get()
 	if err != nil {
 		return nil, err
@@ -106,6 +109,7 @@ func (s *service) GetPeers() ([]fab.Peer, error) {
 	if !ok {
 		return nil, errors.New("get peersRef didn't return Peer type")
 	}
+	fmt.Println("dynamic service GetPeers(), returned ", len(peers))
 	return peers, nil
 }
 

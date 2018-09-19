@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicdiscovery
 
 import (
+	"fmt"
+
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/random"
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
@@ -28,7 +30,7 @@ type ChannelService struct {
 
 // NewChannelService creates a Discovery Service to query the list of member peers on a given channel.
 func NewChannelService(ctx contextAPI.Client, membership fab.ChannelMembership, channelID string, opts ...coptions.Opt) (*ChannelService, error) {
-	logger.Debug("Creating new dynamic discovery service")
+	fmt.Println("Creating new dynamic discovery service")
 	s := &ChannelService{
 		channelID:  channelID,
 		membership: membership,
@@ -49,7 +51,7 @@ func (s *ChannelService) Close() {
 }
 
 func (s *ChannelService) queryPeers() ([]fab.Peer, error) {
-	logger.Debugf("Refreshing peers of channel [%s] from discovery service...", s.channelID)
+	fmt.Printf("Refreshing peers of channel [%s] from discovery service...\n", s.channelID)
 
 	ctx := s.context()
 
@@ -70,7 +72,7 @@ func (s *ChannelService) queryPeers() ([]fab.Peer, error) {
 		if len(responses) == 0 {
 			return nil, errors.Wrapf(err, "error calling discover service send")
 		}
-		logger.Warnf("Received %d response(s) and one or more errors from discovery client: %s", len(responses), err)
+		fmt.Printf("Received %d response(s) and one or more errors from discovery client: %s\n", len(responses), err)
 	}
 	return s.evaluate(ctx, responses)
 }
@@ -93,6 +95,7 @@ func (s *ChannelService) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, er
 // evaluate validates the responses and returns the peers
 func (s *ChannelService) evaluate(ctx contextAPI.Client, responses []fabdiscovery.Response) ([]fab.Peer, error) {
 	if len(responses) == 0 {
+		fmt.Println("len of responses s zero")
 		return nil, errors.New("no successful response received from any peer")
 	}
 
@@ -127,8 +130,11 @@ func (s *ChannelService) asPeers(ctx contextAPI.Client, endpoints []*discclient.
 				Peer:        peer,
 				blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
 			})
+		} else {
+			fmt.Println("tls cert pool is not yet updated so skipping", peer.URL())
 		}
 	}
+	fmt.Printf("Refreshing [%d] peers of channel [%s] from discovery service...\n", len(peers), s.channelID)
 	return peers
 }
 
