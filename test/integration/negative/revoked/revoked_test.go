@@ -52,23 +52,25 @@ import (
 )
 
 const (
-	org1AdminUser      = "Admin"
-	org2AdminUser      = "Admin"
-	org1User           = "User1"
-	org1               = "Org1"
-	org2               = "Org2"
-	channelID          = "orgchannel"
-	configFilename     = "config_test.yaml"
-	pathRevokeCaRoot   = "peerOrganizations/org1.example.com/ca/"
-	pathParentCert     = "peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem"
-	pathCertToBeRevokd = "peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/peer0.org1.example.com-cert.pem"
+	org1AdminUser       = "Admin"
+	org2AdminUser       = "Admin"
+	org1User            = "User1"
+	org2User            = "User1"
+	org1                = "Org1"
+	org2                = "Org2"
+	channelID           = "orgchannel"
+	configFilename      = "config_test.yaml"
+	pathRevokeCaRoot    = "peerOrganizations/org1.example.com/ca/"
+	pathParentCert      = "peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem"
+	peerCertToBeRevoked = "peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/peer0.org1.example.com-cert.pem"
+	userCertToBeRevoked = "peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem"
 )
 
 var CRLTestRetryOpts = retry.Opts{
 	Attempts:       20,
 	InitialBackoff: 1 * time.Second,
-	MaxBackoff:     10 * time.Second,
-	BackoffFactor:  2.0,
+	MaxBackoff:     15 * time.Second,
+	BackoffFactor:  1.5,
 	RetryableCodes: retry.TestRetryableCodes,
 }
 
@@ -82,11 +84,17 @@ var msps = []string{"Org1MSP", "Org2MSP"}
 // step 1: generate CRL
 // step 2: update MSP revocation_list in channel config
 // step 3: perform revoke peer test
-func TestPeerRevoke(t *testing.T) {
+func TestPeerAndUserRevoke(t *testing.T) {
 
-	//generate CRL
-	crlBytes, err := generateCRL()
-	require.NoError(t, err, "failed to generate CRL")
+	var err error
+	//generate CRLs for Peer & User
+	crlBytes := make([][]byte, 2)
+	crlBytes[0], err = generateCRL(peerCertToBeRevoked)
+	require.NoError(t, err, "failed to generate CRL for", peerCertToBeRevoked)
+	require.NotEmpty(t, crlBytes, "CRL is empty")
+
+	crlBytes[1], err = generateCRL(userCertToBeRevoked)
+	require.NoError(t, err, "failed to generate CRL for", userCertToBeRevoked)
 	require.NotEmpty(t, crlBytes, "CRL is empty")
 
 	//update revocation list in channel config
@@ -98,12 +106,15 @@ func TestPeerRevoke(t *testing.T) {
 	//test if peer has been revoked
 	testRevokedPeer(t)
 
+	//test if user1 has been revoked
+	testRevokedUser(t)
+
 	//reset revocation list in channel config for other tests
 	updateRevocationList(t, nil, false)
 }
 
 //updateRevocationList update MSP revocation_list in channel config
-func updateRevocationList(t *testing.T, crlBytes []byte, joinCh bool) {
+func updateRevocationList(t *testing.T, crlBytes [][]byte, joinCh bool) {
 
 	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
 	require.NoError(t, err)
@@ -193,8 +204,32 @@ func testRevokedPeer(t *testing.T) {
 	queryCC(t, org1ChannelClientContext)
 }
 
+//testRevokedPeer performs revoke peer test
+func testRevokedUser(t *testing.T) {
+
+	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
+	require.NoError(t, err)
+	defer sdk.Close()
+
+	//Try User2 whose certs are not revoked, should be able to query channel config
+	user2ChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
+	ledgerClient, err := ledger.New(user2ChannelContext)
+	require.NoError(t, err)
+	cfg, err := ledgerClient.QueryConfig(ledger.WithTargetEndpoints("peer1.org2.example.com"))
+	require.NoError(t, err)
+	require.NotEmpty(t, cfg)
+
+	//Try User1 whose certs are revoked, shouldn't be able to query channel config
+	user1ChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
+	ledgerClient, err = ledger.New(user1ChannelContext)
+	require.NoError(t, err)
+	cfg, err = ledgerClient.QueryConfig(ledger.WithTargetEndpoints("peer1.org2.example.com"))
+	require.Error(t, err)
+	require.Empty(t, cfg)
+}
+
 //prepareReadWriteSets prepares read write sets for channel config update
-func prepareReadWriteSets(t *testing.T, crlBytes []byte, ledgerClient *ledger.Client) (*common.ConfigGroup, *common.ConfigGroup) {
+func prepareReadWriteSets(t *testing.T, crlBytes [][]byte, ledgerClient *ledger.Client) (*common.ConfigGroup, *common.ConfigGroup) {
 
 	var readSet, writeSet *common.ConfigGroup
 
@@ -233,7 +268,7 @@ func prepareReadWriteSets(t *testing.T, crlBytes []byte, ledgerClient *ledger.Cl
 
 		if len(crlBytes) > 0 {
 			//append valid crl bytes to existing revocation list
-			fabMspCfg.RevocationList = append(fabMspCfg.RevocationList, crlBytes)
+			fabMspCfg.RevocationList = append(fabMspCfg.RevocationList, crlBytes...)
 		} else {
 			//reset
 			fabMspCfg.RevocationList = nil
@@ -349,9 +384,13 @@ func queryCC(t *testing.T, org1ChannelClientContext contextAPI.ChannelProvider) 
 	// Could not validate identity against certification chain, err The certificate has been revoked
 	_, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
-	if err == nil {
+	if err == nil || !strings.Contains(err.Error(), "access denied") {
 		t.Fatal("Expected error: '....Description: could not find chaincode with name 'exampleCC',,, ")
 	}
+	statusError, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
+	assert.EqualValues(t, status.MultipleErrors, status.ToSDKStatusCode(statusError.Code))
+	assert.Equal(t, status.ClientStatus, statusError.Group)
 }
 
 func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Client) {
@@ -385,6 +424,7 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 		},
 		resmgmt.WithTargetEndpoints("peer0.org1.example.com", "peer0.org2.example.com"),
 	)
+
 	require.Errorf(t, err, "Expecting error instantiating CC on peer with revoked certificate")
 	stat, ok := status.FromError(err)
 	require.Truef(t, ok, "Expecting error to be a status error, but got ", err)
@@ -452,14 +492,14 @@ func isChannelConfigUpdated(t *testing.T, client *ledger.Client, config fab.Endp
 				continue
 			}
 			t.Logf("length of revocation list found in peer[%s] is %d", chPeer.URL, len(fabMspCfg.RevocationList))
-			updated = updated && len(fabMspCfg.RevocationList) > 0
+			updated = updated && len(fabMspCfg.RevocationList) > 1
 		}
 	}
 	t.Logf("check result :%v \n\n", updated)
 	return updated
 }
 
-func generateCRL() ([]byte, error) {
+func generateCRL(cerPath string) ([]byte, error) {
 
 	root := integration.GetCryptoConfigPath(pathRevokeCaRoot)
 	var parentKey string
@@ -483,7 +523,7 @@ func generateCRL() ([]byte, error) {
 		return nil, errors.WithMessage(err, "Failed to load cert")
 	}
 
-	certToBeRevoked, err := loadCert(integration.GetCryptoConfigPath(pathCertToBeRevokd))
+	certToBeRevoked, err := loadCert(integration.GetCryptoConfigPath(cerPath))
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to load cert")
 	}
