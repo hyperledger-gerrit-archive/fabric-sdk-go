@@ -50,7 +50,7 @@ function recordCryptoCacheResult {
 
 function isScriptCurrent {
     declare filesModified=$(git diff --name-only --diff-filter=ACMRTUXBD HEAD | tr '\n' ' ' | xargs)
-    if [[ "${filesModified}" =~ ( |^)(test/scripts/populate-fixtures.sh)( |$) ]]; then
+    if [[ "${filesModified}" =~ "( |^)(test/scripts/populate-fixtures.sh)( |$)" ]]; then
         echo "Fixtures script modified - will need to repopulate fixtures"
         return 1
     fi
