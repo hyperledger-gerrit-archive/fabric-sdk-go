@@ -40,8 +40,8 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 
 ### Current Compatibility
 The SDK's integration tests run against three tagged Fabric versions:
-- prev (currently v1.1.1)
-- stable (currently v1.2.1)
+- prev (currently v1.2.1)
+- stable (currently v1.3.0)
 - prerelease (currently disabled)
 
 Additionally for development purposes integration tests also run against the devstable Fabric version as needed.
