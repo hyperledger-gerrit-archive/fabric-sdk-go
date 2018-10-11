@@ -53,6 +53,15 @@ const (
 	keyExp            = "key-%s-%s"
 )
 
+//TestChannelRetryOpts channel retry opts for integration tests
+var TestChannelRetryOpts = retry.Opts{
+	Attempts:       retry.TestAttempts,
+	InitialBackoff: retry.DefaultInitialBackoff,
+	MaxBackoff:     retry.DefaultMaxBackoff,
+	BackoffFactor:  retry.DefaultBackoffFactor,
+	RetryableCodes: retry.ChannelClientRetryableCodes,
+}
+
 // ExampleCC query and transaction arguments
 var defaultQueryArgs = [][]byte{[]byte("query"), []byte("b")}
 var defaultTxArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
