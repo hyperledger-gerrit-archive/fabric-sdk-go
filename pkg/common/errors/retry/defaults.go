@@ -178,7 +178,7 @@ const (
 	// TestInitialBackoff default initial backoff
 	TestInitialBackoff = 200 * time.Millisecond
 	// TestMaxBackoff default maximum backoff
-	TestMaxBackoff = 5 * time.Second
+	TestMaxBackoff = 50 * time.Second
 	// TestBackoffFactor default backoff factor
 	TestBackoffFactor = 1.75
 )
