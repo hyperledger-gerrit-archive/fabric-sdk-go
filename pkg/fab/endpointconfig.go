@@ -9,6 +9,7 @@ package fab
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
@@ -1409,6 +1410,7 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL
 }
 
 func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) (*fab.PeerConfig, bool) {
+	fmt.Println("Found matcher", matcher, "for key", peerSearchKey)
 
 	if matcher.matchConfig.IgnoreEndpoint {
 		logger.Debugf(" Ignoring peer `%s` since entity matcher IgnoreEndpoint flag is on", peerSearchKey)
@@ -1425,7 +1427,11 @@ func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) (
 
 	//URLSubstitutionExp if found use from entity matcher otherwise use from mapped host
 	if matcher.matchConfig.URLSubstitutionExp != "" {
+		fmt.Println("__________________________________________________________")
+		fmt.Println("URL MATCH N REPLACE", peerSearchKey, matcher)
 		matchedPeer.URL = c.regexMatchAndReplace(matcher.regex, peerSearchKey, matcher.matchConfig.URLSubstitutionExp)
+		fmt.Println("URL MATCH N REPLACE RESULT", matchedPeer.URL)
+		fmt.Println("__________________________________________________________")
 	}
 
 	//SSLTargetOverrideURLSubstitutionExp if found use from entity matcher otherwise use from mapped host
