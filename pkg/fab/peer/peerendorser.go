@@ -101,14 +101,10 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 // ProcessTransactionProposal sends the transaction proposal to a peer and returns the response.
 func (p *peerEndorser) ProcessTransactionProposal(ctx reqContext.Context, request fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
 	logger.Debugf("Processing proposal using endorser: %s", p.target)
-
-	proposalResponse, err := p.sendProposal(ctx, request)
-	if err != nil {
-		tpr := fab.TransactionProposalResponse{Endorser: p.target}
-		return &tpr, errors.Wrapf(err, "Transaction processing for endorser [%s]", p.target)
-	}
+	proposalResponse, proposalErr := p.sendProposal(ctx, request)
 
 	chaincodeStatus, err := getChaincodeResponseStatus(proposalResponse)
+
 	if err != nil {
 		return nil, errors.WithMessage(err, "chaincode response status parsing failed")
 	}
@@ -119,6 +115,11 @@ func (p *peerEndorser) ProcessTransactionProposal(ctx reqContext.Context, reques
 		ChaincodeStatus:  chaincodeStatus,
 		Status:           proposalResponse.GetResponse().Status,
 	}
+
+	if proposalErr != nil {
+		return &tpr, errors.Wrapf(err, "Transaction processing for endorser [%s]", p.target)
+	}
+
 	return &tpr, nil
 }
 
