@@ -27,6 +27,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -88,6 +90,62 @@ func TestMSP(t *testing.T) {
 	// Try with a non-default org
 	testWithOrg2(t, ctxProvider)
 
+}
+
+func TestMSPWithProfile(t *testing.T) {
+	f := testFixture{}
+	sdk := f.setup()
+	defer sdk.Close()
+
+	ctxProvider := sdk.Context()
+	msp, err := New(ctxProvider)
+	require.NoError(t, err)
+
+	enrollUsername := randomUsername()
+	_, err = msp.GetSigningIdentity(enrollUsername)
+	if err != ErrUserNotFound {
+		t.Fatal("Expected to not find user")
+	}
+
+	err = msp.Enroll(enrollUsername, WithSecret("enrollmentSecret"), WithProfile("tls"))
+	require.NoError(t, err)
+
+	enrolledUser, err := msp.GetSigningIdentity(enrollUsername)
+	require.NoError(t, err)
+
+	assert.Equal(t, enrollUsername, enrolledUser.Identifier().ID)
+	assert.Equal(t, "Org1MSP", enrolledUser.Identifier().MSPID)
+
+	err = msp.Reenroll(enrolledUser.Identifier().ID, WithProfile("tls"))
+	if err != nil {
+		t.Fatalf("Reenroll return error %s", err)
+	}
+}
+
+func TestMSPWithType(t *testing.T) {
+	f := testFixture{}
+	sdk := f.setup()
+	defer sdk.Close()
+
+	ctxProvider := sdk.Context()
+	msp, err := New(ctxProvider)
+	require.NoError(t, err)
+
+	enrollUsername := randomUsername()
+	_, err = msp.GetSigningIdentity(enrollUsername)
+	if err != ErrUserNotFound {
+		t.Fatal("Expected to not find user")
+	}
+
+	err = msp.Enroll(enrollUsername, WithSecret("enrollmentSecret"), WithType("idemix"))
+	if err == nil {
+		t.Fatal("idemix enroll not supported")
+	}
+
+	err = msp.Reenroll(enrollUsername, WithType("idemix"))
+	if err == nil {
+		t.Fatal("idemix enroll not supported")
+	}
 }
 
 func TestWithNonExistentOrganization(t *testing.T) {
