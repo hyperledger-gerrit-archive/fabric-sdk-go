@@ -43,6 +43,58 @@ func newFabricCAAdapter(orgName string, cryptoSuite core.CryptoSuite, config msp
 	return a, nil
 }
 
+//EnrollmentRequestOption configures the EnrollmentRequest
+type EnrollmentRequestOption func(er *cappi.EnrollmentRequest)
+
+//WithProfile return an function to set EnrollmentRequest's Profile
+func WithProfile(profile string) EnrollmentRequestOption {
+	return func(er *caapi.EnrollmentRequest) {
+		er.Profile = profile
+	}
+}
+
+//WithType return an function to set EnrollmentRequest's  Type
+func WithType(tpe string) EnrollmentRequestOption {
+	return func(er *caapi.EnrollmentRequest) {
+		er.Type = tpe
+	}
+}
+
+//WithAttrReqs return a function to modify EnrollmentRequest's AttrReqs
+func WithAttrReqs(attrs map[string]bool) EnrollmentRequestOption {
+	return func(er *caapi.EnrollmentRequest) {
+		attrs := make([]*caapi.AttributeRequest, 0, 0)
+		for name, optional := range attrs {
+			attrs = append(attrs, &caapi.AttributeRequest{
+				Name:     name,
+				Optional: optional,
+			})
+		}
+		er.AttrReqs = attrs
+	}
+}
+
+// Enroll handles enrollment.
+func (c *fabricCAAdapter) EnrollWithOptions(enrollmentID string, enrollmentSecret string, opts ...EnrollmentRequestOption) ([]byte, error) {
+
+	logger.Debugf("Enrolling user [%s]", enrollmentID)
+
+	careq := &caapi.EnrollmentRequest{
+		CAName: c.caClient.Config.CAName,
+		Name:   enrollmentID,
+		Secret: enrollmentSecret,
+	}
+	for _, opt := range opts {
+		opt(careq)
+	}
+
+	caresp, err := c.caClient.Enroll(careq)
+	if err != nil {
+		return nil, errors.WithMessage(err, "enroll failed")
+	}
+	return caresp.Identity.GetECert().Cert(), nil
+}
+
 // Enroll handles enrollment.
 func (c *fabricCAAdapter) Enroll(enrollmentID string, enrollmentSecret string) ([]byte, error) {
 
