@@ -61,10 +61,10 @@ func WithType(tpe string) EnrollmentRequestOption {
 }
 
 //WithAttrReqs return a function to modify EnrollmentRequest's AttrReqs
-func WithAttrReqs(attrs map[string]bool) EnrollmentRequestOption {
+func WithAttrReqs(attrMap map[string]bool) EnrollmentRequestOption {
 	return func(er *caapi.EnrollmentRequest) {
 		attrs := make([]*caapi.AttributeRequest, 0, 0)
-		for name, optional := range attrs {
+		for name, optional := range attrMap {
 			attrs = append(attrs, &caapi.AttributeRequest{
 				Name:     name,
 				Optional: optional,
