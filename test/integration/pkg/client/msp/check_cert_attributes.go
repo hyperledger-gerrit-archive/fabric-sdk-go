@@ -42,3 +42,24 @@ func checkCertAttributes(t *testing.T, certBytes []byte, expected []msp.Attribut
 		require.True(t, v == a.Value, "incorrect value for '%s'; expected '%s' but found '%s'", a.Name, a.Value, v)
 	}
 }
+
+func getCertAttributes(t *testing.T, certBytes []byte) *attrmgr.Attributes {
+	decoded, _ := pem.Decode(certBytes)
+	if decoded == nil {
+		t.Fatal("Failed cert decoding")
+	}
+	cert, err := x509.ParseCertificate(decoded.Bytes)
+	if err != nil {
+		t.Fatalf("failed to parse certificate: %s", err)
+	}
+	if cert == nil {
+		t.Fatalf("failed to parse certificate: %s", err)
+	}
+	mgr := attrmgr.New()
+	attrs, err := mgr.GetAttributesFromCert(cert)
+	if err != nil {
+		t.Fatalf("Failed to GetAttributesFromCert: %s", err)
+	}
+
+	return attrs
+}
