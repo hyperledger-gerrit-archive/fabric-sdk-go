@@ -44,7 +44,7 @@ func newFabricCAAdapter(orgName string, cryptoSuite core.CryptoSuite, config msp
 }
 
 //EnrollmentRequestOption configures the EnrollmentRequest
-type EnrollmentRequestOption func(er *cappi.EnrollmentRequest)
+type EnrollmentRequestOption func(er *caapi.EnrollmentRequest)
 
 //WithProfile return an function to set EnrollmentRequest's Profile
 func WithProfile(profile string) EnrollmentRequestOption {
