@@ -103,6 +103,88 @@ func ExampleWithSecret() {
 
 }
 
+func ExampleWithProfile() {
+	ctx := mockClientProvider()
+
+	// Create msp client
+	c, err := New(ctx)
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	err = c.Enroll(randomUsername(), WithSecret("enrollmentSecret"), WithProfile("tls"))
+	if err != nil {
+		fmt.Printf("failed to enroll user: %s\n", err)
+		return
+	}
+	fmt.Println("enroll user is completed")
+
+	// Output: enroll user is completed
+}
+
+func ExampleWithType() {
+	ctx := mockClientProvider()
+
+	// Create msp client
+	c, err := New(ctx)
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	err = c.Enroll(randomUsername(), WithSecret("enrollmentSecret"), WithType("x509") /*or idemix, which is not support now*/)
+	if err != nil {
+		fmt.Printf("failed to enroll user: %s\n", err)
+		return
+	}
+	fmt.Println("enroll user is completed")
+
+	// Output: enroll user is completed
+}
+
+func ExampleWithLabel() {
+	ctx := mockClientProvider()
+
+	// Create msp client
+	c, err := New(ctx)
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	err = c.Enroll(randomUsername(), WithSecret("enrollmentSecret"), WithLabel("ForFabric"))
+	if err != nil {
+		fmt.Printf("failed to enroll user: %s\n", err)
+		return
+	}
+	fmt.Println("enroll user is completed")
+
+	// Output: enroll user is completed
+}
+
+func ExampleWithAttrReqs() {
+	ctx := mockClientProvider()
+
+	// Create msp client
+	c, err := New(ctx)
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	err = c.Enroll(randomUsername(), WithSecret("enrollmentSecret"), WithAttrReqs(map[string]bool{
+		"attr1": true, "attr2": true,
+	}))
+	if err != nil {
+		fmt.Printf("failed to enroll user: %s\n", err)
+		return
+	}
+	fmt.Println("enroll user is completed")
+
+	// Output: enroll user is completed
+}
+
 func ExampleClient_Register() {
 
 	ctx := mockClientProvider()
