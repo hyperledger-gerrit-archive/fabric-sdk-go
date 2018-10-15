@@ -279,6 +279,7 @@ func TestCCToCC(t *testing.T) {
 		require.Errorf(t, err, "expecting transaction to fail due to endorsement policy not being satisfied")
 		stat, ok := status.FromError(err)
 		assert.Truef(t, ok, "Expecting a status error")
+		t.Logf("************* error expected received: '%+v', error stat: '%+v'", err, stat)
 		assert.Equal(t, int32(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE), stat.Code)
 	})
 
