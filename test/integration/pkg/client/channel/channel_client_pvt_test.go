@@ -320,7 +320,7 @@ func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
 	require.NoErrorf(t, err, "error attempting to read private data")
 
 	actual, err := strconv.Atoi(string(resp.Payload))
-	require.NoError(t, err)
+	require.NoErrorf(t, err, "error converting response payload '%v' to int in response [%+v]", resp.Payload, resp)
 
 	assert.Truef(t, actual == expected, "Private data not rolled back during MVCC_READ_CONFLICT")
 }
