@@ -144,7 +144,7 @@ func TestFabricSelection(t *testing.T) {
 		err = integration.InstallExampleChaincode(orgsContext, ccID)
 		require.NoError(t, err)
 		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID, "AND('Org1MSP.member','Org2MSP.member')")
-		require.NoError(t, err)
+		require.NoErrorf(t, err, "failed to instantiateExampleChaincode for ccID '%s' and ccPolicy \"AND('Org1MSP.member','Org2MSP.member')\"")
 
 		testEndorsers(
 			t, selectionService,
