@@ -441,3 +441,156 @@ func (c *Client) prepareOptsFromOptions(ctx context.Client, options ...RequestOp
 	}
 	return opts, nil
 }
+
+// GetAffiliation returns information about the requested affiliation
+func (c *Client) GetAffiliation(affiliation string, options ...RequestOption) (*AffiliationResponse, error) {
+	// Read request options
+	opts, err := c.prepareOptsFromOptions(c.ctx, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := ca.GetAffiliation(affiliation, opts.CA)
+	if err != nil {
+		return nil, err
+	}
+
+	return getAffiliationResponse(response), nil
+}
+
+// GetAllAffiliations returns all affiliations that the caller is authorized to see
+func (c *Client) GetAllAffiliations(options ...RequestOption) (*AffiliationResponse, error) {
+	// Read request options
+	opts, err := c.prepareOptsFromOptions(c.ctx, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := ca.GetAllAffiliations(opts.CA)
+	if err != nil {
+		return nil, err
+	}
+
+	return getAffiliationResponse(response), nil
+}
+
+// AddAffiliation adds a new affiliation to the server
+func (c *Client) AddAffiliation(request *AffiliationRequest) (*AffiliationResponse, error) {
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &mspapi.AffiliationRequest{
+		Name:   request.Name,
+		Force:  request.Force,
+		CAName: request.CAName,
+	}
+
+	response, err := ca.AddAffiliation(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return getAffiliationResponse(response), nil
+}
+
+// ModifyAffiliation renames an existing affiliation on the server
+func (c *Client) ModifyAffiliation(request *ModifyAffiliationRequest) (*AffiliationResponse, error) {
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &mspapi.ModifyAffiliationRequest{
+		NewName: request.NewName,
+		AffiliationRequest: mspapi.AffiliationRequest{
+			Name:   request.Name,
+			Force:  request.Force,
+			CAName: request.CAName,
+		},
+	}
+
+	response, err := ca.ModifyAffiliation(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return getAffiliationResponse(response), nil
+}
+
+// RemoveAffiliation removes an existing affiliation from the server
+func (c *Client) RemoveAffiliation(request *AffiliationRequest) (*AffiliationResponse, error) {
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &mspapi.AffiliationRequest{
+		Name:   request.Name,
+		Force:  request.Force,
+		CAName: request.CAName,
+	}
+
+	response, err := ca.RemoveAffiliation(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return getAffiliationResponse(response), nil
+}
+
+func getAffiliationResponse(response *mspapi.AffiliationResponse) *AffiliationResponse {
+	ret := &AffiliationResponse{
+		CAName: response.CAName,
+		AffiliationInfo: AffiliationInfo{
+			Name: response.Name,
+		},
+	}
+
+	ret.AffiliationInfo.Identities = getAffiliationIdentities(response.Identities)
+	ret.AffiliationInfo.Affiliations = getAffiliationInfos(response.Affiliations)
+
+	return ret
+}
+
+func getAffiliationInfos(infos []mspapi.AffiliationInfo) []AffiliationInfo {
+	var affiliations []AffiliationInfo
+	for i := range infos {
+		affiliation := AffiliationInfo{
+			Name:         infos[i].Name,
+			Identities:   getAffiliationIdentities(infos[i].Identities),
+			Affiliations: getAffiliationInfos(infos[i].Affiliations),
+		}
+
+		affiliations = append(affiliations, affiliation)
+	}
+
+	return affiliations
+}
+
+func getAffiliationIdentities(response []mspapi.IdentityInfo) []IdentityInfo {
+	var identities []IdentityInfo
+	for i := range response {
+		sourceAttrs := response[i].Attributes
+
+		var attributes []Attribute
+		for j := range sourceAttrs {
+			attributes = append(attributes, Attribute{Name: sourceAttrs[j].Name, Value: sourceAttrs[j].Value, ECert: sourceAttrs[j].ECert})
+		}
+
+		identities = append(identities, IdentityInfo{ID: response[i].ID, Type: response[i].Type, Affiliation: response[i].Affiliation, MaxEnrollments: response[i].MaxEnrollments, Attributes: attributes})
+	}
+
+	return identities
+}
