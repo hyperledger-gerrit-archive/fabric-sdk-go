@@ -329,13 +329,13 @@ func TestCCToCC(t *testing.T) {
 func testQuery(t *testing.T, chClient *channel.Client, expected string, ccID, key string) {
 	const (
 		maxRetries = 10
-		retrySleep = 500 * time.Millisecond
+		retrySleep = 1000 * time.Millisecond
 	)
 
 	for r := 0; r < 10; r++ {
 		response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs(key)},
 			channel.WithRetry(retry.DefaultChannelOpts))
-		require.NoError(t, err, "failed to invoke example cc")
+		require.NoErrorf(t, err, "failed to invoke example cc '%s' with Args:[%+v]", ccID, integration.ExampleCCQueryArgs(key))
 
 		actual := string(response.Payload)
 		if actual == expected {

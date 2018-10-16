@@ -9,10 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 
@@ -305,6 +307,10 @@ func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
 	go changePvtData(expected)
 	wg.Wait()
 
+	if runtime.GOARCH == `s390x` { // add delayfor s390x
+		time.Sleep(5 * time.Second)
+	}
+
 	// ensure the MVCC_READ_CONFLICT was reproduced
 	require.Truef(t, len(errs) > 0 && strings.Contains(errs[0].Error(), "MVCC_READ_CONFLICT"), "could not reproduce MVCC_READ_CONFLICT")
 
@@ -318,6 +324,7 @@ func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
 		channel.WithRetry(retry.TestRetryOpts),
 	)
 	require.NoErrorf(t, err, "error attempting to read private data")
+	require.NotEmptyf(t, resp.Payload, "reading private data returned empty response")
 
 	actual, err := strconv.Atoi(string(resp.Payload))
 	require.NoError(t, err)
