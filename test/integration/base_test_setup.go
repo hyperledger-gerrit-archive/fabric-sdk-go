@@ -12,7 +12,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
@@ -450,20 +452,20 @@ func GetKeyName(t *testing.T) string {
 //ResetKeys resets given set of keys in example cc to given value
 func ResetKeys(t *testing.T, ctx contextAPI.ChannelProvider, chaincodeID, value string, keys ...string) {
 	chClient, err := channel.New(ctx)
-	if err != nil {
-		t.Fatalf("Failed to create new channel client for reseting keys: %s", err)
-	}
+	require.NoError(t, err, "Failed to create new channel client for resetting keys")
 	for _, key := range keys {
 		// Synchronous transaction
-		_, err := chClient.Execute(
+		_, e := chClient.Execute(
 			channel.Request{
 				ChaincodeID: chaincodeID,
 				Fcn:         "invoke",
 				Args:        ExampleCCTxSetArgs(key, value),
 			},
 			channel.WithRetry(retry.DefaultChannelOpts))
-		if err != nil {
-			t.Fatalf("Failed to reset keys: %s", err)
-		}
+		require.NoError(t, e, "Failed to reset keys")
+	}
+	// introduce small delay for z build
+	if runtime.GOARCH == `s390x` { // add delay for s390x
+		time.Sleep(5 * time.Second)
 	}
 }
