@@ -7,18 +7,16 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
 	"testing"
 
-	"fmt"
-
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	providersFab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
@@ -132,8 +130,8 @@ func enrollUser1(cryptoSuite core.CryptoSuite, t *testing.T, mspID string, testU
 		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
 	}
 	user1 := &msp.UserData{
-		MSPID: mspID,
-		ID:    testUsername,
+		MSPID:                 mspID,
+		ID:                    testUsername,
 		EnrollmentCertificate: []byte(testCert),
 	}
 	err = userStore.Store(user1)
