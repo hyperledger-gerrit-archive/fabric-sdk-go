@@ -13,15 +13,13 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"encoding/pem"
+	"fmt"
 	"log"
 	"math/big"
 	"strings"
 	"testing"
 	"time"
-
-	"fmt"
-
-	"encoding/pem"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
@@ -359,7 +357,7 @@ func generateSelfSignedCert(t *testing.T, now time.Time) string {
 		ExtKeyUsage:           testExtKeyUsage,
 		UnknownExtKeyUsage:    testUnknownExtKeyUsage,
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
 	certRaw, err := x509.CreateCertificate(rand.Reader, &template, &template, &k.PublicKey, k)
 	assert.NoError(t, err)
