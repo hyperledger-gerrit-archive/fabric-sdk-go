@@ -88,6 +88,8 @@ func (s *MockFabricCAServer) Start(lis net.Listener, cryptoSuite core.CryptoSuit
 	http.HandleFunc("/revoke", s.revoke)
 	http.HandleFunc("/identities", s.identities)
 	http.HandleFunc("/identities/123", s.identity)
+	http.HandleFunc("/affiliations", s.affiliations)
+	http.HandleFunc("/affiliations/123", s.affiliation)
 
 	server := &http.Server{
 		Addr:      addr,
@@ -203,4 +205,53 @@ func (s *MockFabricCAServer) identities(w http.ResponseWriter, req *http.Request
 		logger.Error("Request method not supported ")
 	}
 
+}
+
+func (s *MockFabricCAServer) affiliations(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case "POST":
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "test1.com"}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+
+	case "GET":
+		affs := []api.AffiliationInfo{
+			api.AffiliationInfo{
+				Name: "com",
+				Affiliations: []api.AffiliationInfo{
+					api.AffiliationInfo{
+						Name: "test1.com",
+					},
+				},
+			},
+		}
+
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "", Affiliations: affs}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+	}
+}
+
+func (s *MockFabricCAServer) affiliation(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case "GET":
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "test1.com"}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+
+	case "PUT":
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "test1new.com"}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+
+	case "DELETE":
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "test1.com"}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+	}
 }
