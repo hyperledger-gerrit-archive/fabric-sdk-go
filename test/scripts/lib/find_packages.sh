@@ -60,7 +60,7 @@ function findChangedPackages {
 #            also git list currently prints out packages including the vendor/ prefix.
 #            elif [[ "${DIR}" =~ ^vendor/(.*)$ ]]; then
 #                CHANGED_PKGS+=("${BASH_REMATCH[1]}")
-            elif [[ "${DIR}" =~ ^(.*)/testdata(.*)$ ]]; then
+            elif [[ "${DIR}" =~ '^(.*)/testdata(.*)$' ]]; then
                 CHANGED_PKGS+=("${REPO}/${BASH_REMATCH[1]}")
             else
                 CHANGED_PKGS+=("${REPO}/${DIR}")
