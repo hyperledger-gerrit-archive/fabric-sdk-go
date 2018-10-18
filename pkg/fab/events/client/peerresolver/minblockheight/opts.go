@@ -24,6 +24,18 @@ type params struct {
 func defaultParams(context context.Client, channelID string) *params {
 	policy := context.EndpointConfig().ChannelConfig(channelID).Policies.EventService
 
+	blockHeightLagThreshold := policy.BlockHeightLagThreshold
+	if blockHeightLagThreshold < -1 {
+		logger.Infof("blockHeightLagThreshold=%d - Setting to 0 to choose only most updated peers", blockHeightLagThreshold)
+		blockHeightLagThreshold = 0
+	}
+
+	reconnectBlockHeightLagThreshold := policy.ReconnectBlockHeightLagThreshold
+	if reconnectBlockHeightLagThreshold < 0 {
+		logger.Infof("reconnectBlockHeightLagThreshold=%d - Setting to 0 to disable reconnect", reconnectBlockHeightLagThreshold)
+		reconnectBlockHeightLagThreshold = 0
+	}
+
 	return &params{
 		blockHeightLagThreshold:          policy.BlockHeightLagThreshold,
 		reconnectBlockHeightLagThreshold: policy.ReconnectBlockHeightLagThreshold,

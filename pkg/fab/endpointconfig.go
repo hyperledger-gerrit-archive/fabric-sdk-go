@@ -401,7 +401,6 @@ func (c *EndpointConfig) loadEndpointConfiguration() error {
 	err = c.backend.UnmarshalKey(
 		"channels", &endpointConfigEntity.Channels,
 		lookup.WithUnmarshalHookFunction(peerChannelConfigHookFunc()),
-		lookup.WithUnmarshalHookFunction(eventChannelConfigHookFunc()),
 	)
 	logger.Debugf("channels are: %+v", endpointConfigEntity.Channels)
 	if err != nil {
@@ -681,6 +680,7 @@ func (c *EndpointConfig) addMissingChannelPoliciesItems(chNwCfg ChannelEndpointC
 	policies.Discovery = c.addMissingDiscoveryPolicyInfo(policies.Discovery)
 	policies.Selection = c.addMissingSelectionPolicyInfo(policies.Selection)
 	policies.QueryChannelConfig = c.addMissingQueryChannelConfigPolicyInfo(policies.QueryChannelConfig)
+	policies.EventService = c.addMissingEventServicePolicyInfo(policies.EventService)
 
 	return policies
 }
@@ -735,6 +735,27 @@ func (c *EndpointConfig) addMissingQueryChannelConfigPolicyInfo(policy fab.Query
 		policy.RetryOpts = c.defaultChannelPolicies.QueryChannelConfig.RetryOpts
 	} else {
 		policy.RetryOpts = addMissingRetryOpts(policy.RetryOpts, c.defaultChannelPolicies.QueryChannelConfig.RetryOpts)
+	}
+
+	return policy
+}
+
+func (c *EndpointConfig) addMissingEventServicePolicyInfo(policy fab.EventServicePolicy) fab.EventServicePolicy {
+
+	if policy.Balancer == "" {
+		policy.Balancer = c.defaultChannelPolicies.EventService.Balancer
+	}
+	if policy.BlockHeightLagThreshold == 0 {
+		policy.BlockHeightLagThreshold = c.defaultChannelPolicies.EventService.BlockHeightLagThreshold
+	}
+	if policy.ReconnectBlockHeightLagThreshold == 0 {
+		policy.ReconnectBlockHeightLagThreshold = c.defaultChannelPolicies.EventService.ReconnectBlockHeightLagThreshold
+	}
+	if policy.ResolverStrategy == "" {
+		policy.ResolverStrategy = c.defaultChannelPolicies.EventService.ResolverStrategy
+	}
+	if policy.PeerMonitorPeriod == 0 {
+		policy.PeerMonitorPeriod = c.defaultChannelPolicies.EventService.PeerMonitorPeriod
 	}
 
 	return policy
@@ -1726,23 +1747,6 @@ func peerChannelConfigHookFunc() mapstructure.DecodeHookFunc {
 			}
 		}
 
-		return data, nil
-	}
-}
-
-func eventChannelConfigHookFunc() mapstructure.DecodeHookFunc {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-		if t == reflect.TypeOf(EventServicePolicy{}) {
-			dataMap, ok := data.(map[string]interface{})
-			if ok {
-				setDefault(dataMap, "blockheightlagthreshold", defaultBlockHeightLagThreshold)
-				setDefault(dataMap, "reconnectblockheightlagthreshold", defaultReconnectBlockHeightLagThreshold)
-				setDefault(dataMap, "peermonitorperiod", defaultPeerMonitorPeriod)
-				setDefault(dataMap, "resolverstrategy", string(fab.PreferOrgStrategy))
-				setDefault(dataMap, "balancer", Random)
-				return dataMap, nil
-			}
-		}
 		return data, nil
 	}
 }
