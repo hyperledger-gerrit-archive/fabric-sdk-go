@@ -140,7 +140,8 @@ func (cc *ExampleCC) getPrivate(stub shim.ChaincodeStubInterface, args []string)
 
 	value, err := stub.GetPrivateData(coll, key)
 	if err != nil {
-		return shim.Error(fmt.Sprintf("Error getting private data for collection [%s] and key [%s]: %s", coll, key, err))
+		//return shim.Error(fmt.Sprintf("Error getting private data for collection [%s] and key [%s]: %s", coll, key, err))
+		return pb.Response{Status: shim.ERROR, Message: fmt.Sprintf("Error getting private data for collection [%s] and key [%s]: %s - premature execution", coll, key, err)}
 	}
 
 	return shim.Success([]byte(value))
@@ -308,7 +309,8 @@ func (cc *ExampleCC) invokeCC(stub shim.ChaincodeStubInterface, args []string) p
 	}
 
 	if err := stub.PutState(stub.GetTxID()+"_invokedcc", []byte(ccName)); err != nil {
-		return shim.Error(fmt.Sprintf("Error putting state: %s", err))
+		//return shim.Error(fmt.Sprintf("Error putting state: %s", err))
+		return pb.Response{Status: shim.ERROR, Message: fmt.Sprintf("Error putting state: %s - premature execution", err)}
 	}
 
 	return stub.InvokeChaincode(ccName, asBytes(argStruct.Args), "")

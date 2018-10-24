@@ -128,8 +128,9 @@ func (t *SimpleChaincode) set(stub shim.ChaincodeStubInterface, args []string) p
 	// Write the state to the ledger
 	err = stub.PutState(key, []byte(value))
 	if err != nil {
-		logger.Errorf("Failed to set value for key[%s] : ", key, err)
-		return shim.Error(err.Error())
+		logger.Errorf("Failed to set value for key[%s] : %s", key, err)
+		//return shim.Error(err.Error())
+		return pb.Response{Status: shim.ERROR, Message: fmt.Sprintf("Failed to set value for key[%s] : %s - premature execution", key, err)}
 	}
 
 	err = stub.SetEvent(eventID, []byte("Test Payload"))
@@ -285,13 +286,17 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 	// Get the state from the ledger
 	Avalbytes, err := stub.GetState(A)
 	if err != nil {
-		jsonResp := "{\"Error\":\"Failed to get state for " + A + "\"}"
-		return shim.Error(jsonResp)
+		jsonResp := "{\"Error\":\"Failed to get state for " + A + " - premature execution\"}"
+		//return shim.Error(jsonResp)
+		// if error found when reading from ledger, then assume CC ledger not available, this will force a retry
+		return pb.Response{Status: shim.ERROR, Message: jsonResp}
 	}
 
 	if Avalbytes == nil {
-		jsonResp := "{\"Error\":\"Nil amount for " + A + "\"}"
-		return shim.Error(jsonResp)
+		jsonResp := "{\"Error\":\"Nil amount for " + A + " - premature execution\"}"
+		//return shim.Error(jsonResp)
+		// if nil amount received from ledger, then assume CC ledger not available, this will force a retry
+		return pb.Response{Status: shim.ERROR, Message: jsonResp}
 	}
 
 	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
@@ -328,7 +333,8 @@ func (t *SimpleChaincode) invokeCC(stub shim.ChaincodeStubInterface, args []stri
 	}
 
 	if err := stub.PutState(stub.GetTxID()+"_invokedcc", []byte(ccID)); err != nil {
-		return shim.Error(fmt.Sprintf("Error putting state: %s", err))
+		//return shim.Error(fmt.Sprintf("Error putting state: %s", err))
+		return pb.Response{Status: shim.ERROR, Message: fmt.Sprintf("Error putting state: %s - premature execution", err)}
 	}
 
 	return stub.InvokeChaincode(ccID, asBytes(argStruct.Args), "")
