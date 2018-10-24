@@ -45,7 +45,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 	err := t.reset(stub, txID, args)
 	if err != nil {
-		return shim.Error(err.Error())
+		return shim.Error(getErrorMsg("Failed to reset keys during Init CC", err))
 	}
 
 	if transientMap, err := stub.GetTransient(); err == nil {
@@ -61,7 +61,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 func (t *SimpleChaincode) resetCC(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// Deletes an entity from its state
 	if err := t.reset(stub, stub.GetTxID(), args); err != nil {
-		return shim.Error(err.Error())
+		return shim.Error(getErrorMsg("Failed to reset keys during Reset CC", err))
 	}
 	return shim.Success(nil)
 }
@@ -128,14 +128,14 @@ func (t *SimpleChaincode) set(stub shim.ChaincodeStubInterface, args []string) p
 	// Write the state to the ledger
 	err = stub.PutState(key, []byte(value))
 	if err != nil {
-		logger.Errorf("Failed to set value for key[%s] : ", key, err)
-		return shim.Error(err.Error())
+		logger.Errorf("Failed to set value for key[%s] : %s", key, err)
+		return shim.Error(getErrorMsg(fmt.Sprintf("Failed to set value for key[%s]", key), err))
 	}
 
 	err = stub.SetEvent(eventID, []byte("Test Payload"))
 	if err != nil {
 		logger.Errorf("Failed to set event for key[%s] : ", key, err)
-		return shim.Error(err.Error())
+		return shim.Error(getErrorMsg(fmt.Sprintf("Error setting event for key[%s]", key), err))
 	}
 
 	return shim.Success(nil)
@@ -184,7 +184,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 			eventID = args[4]
 		}
 		if err := stub.SetEvent(eventID, []byte("Test Payload")); err != nil {
-			return shim.Error("Unable to set CC event: testEvent. Aborting transaction ...")
+			return shim.Error(getErrorMsg("Unable to set CC event: testEvent. Aborting transaction ...", err))
 		}
 		return t.move(stub, args)
 	}
@@ -209,7 +209,7 @@ func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) 
 	// TODO: will be nice to have a GetAllState call to ledger
 	Avalbytes, err := stub.GetState(A)
 	if err != nil {
-		return shim.Error("Failed to get state")
+		return shim.Error(getErrorMsg(fmt.Sprintf("Failed to get state for A:[%s]", A), err))
 	}
 	if Avalbytes == nil {
 		return shim.Error("Entity not found")
@@ -218,7 +218,7 @@ func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) 
 
 	Bvalbytes, err := stub.GetState(B)
 	if err != nil {
-		return shim.Error("Failed to get state")
+		return shim.Error(getErrorMsg(fmt.Sprintf("Failed to get state for B:[%s]", B), err))
 	}
 	if Bvalbytes == nil {
 		return shim.Error("Entity not found")
@@ -237,12 +237,12 @@ func (t *SimpleChaincode) move(stub shim.ChaincodeStubInterface, args []string) 
 	// Write the state back to the ledger
 	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
 	if err != nil {
-		return shim.Error(err.Error())
+		return shim.Error(getErrorMsg(fmt.Sprintf("Failed to put state for A:[%s]", A), err))
 	}
 
 	err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
 	if err != nil {
-		return shim.Error(err.Error())
+		return shim.Error(getErrorMsg(fmt.Sprintf("Failed to put state for B:[%s]", B), err))
 	}
 
 	if transientMap, err := stub.GetTransient(); err == nil {
@@ -265,7 +265,7 @@ func (t *SimpleChaincode) delete(stub shim.ChaincodeStubInterface, args []string
 	// Delete the key from the state in ledger
 	err := stub.DelState(A)
 	if err != nil {
-		return shim.Error("Failed to delete state")
+		return shim.Error(getErrorMsg("Failed to delete state", err))
 	}
 
 	return shim.Success(nil)
@@ -286,12 +286,12 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 	Avalbytes, err := stub.GetState(A)
 	if err != nil {
 		jsonResp := "{\"Error\":\"Failed to get state for " + A + "\"}"
-		return shim.Error(jsonResp)
+		return shim.Error(getErrorMsg(jsonResp, err))
 	}
 
 	if Avalbytes == nil {
 		jsonResp := "{\"Error\":\"Nil amount for " + A + "\"}"
-		return shim.Error(jsonResp)
+		return shim.Error(getErrorMsg(jsonResp, nil))
 	}
 
 	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
@@ -324,11 +324,11 @@ func (t *SimpleChaincode) invokeCC(stub shim.ChaincodeStubInterface, args []stri
 
 	argStruct := argStruct{}
 	if err := json.Unmarshal([]byte(invokeArgsJSON), &argStruct); err != nil {
-		return shim.Error(fmt.Sprintf("Invalid invoke args: %s", err))
+		return shim.Error(getErrorMsg("Invalid invoke args: %s", err))
 	}
 
 	if err := stub.PutState(stub.GetTxID()+"_invokedcc", []byte(ccID)); err != nil {
-		return shim.Error(fmt.Sprintf("Error putting state: %s", err))
+		return shim.Error(getErrorMsg("Error putting state", err))
 	}
 
 	return stub.InvokeChaincode(ccID, asBytes(argStruct.Args), "")
@@ -339,4 +339,9 @@ func main() {
 	if err != nil {
 		logger.Errorf("Error starting Simple chaincode: %s", err)
 	}
+}
+
+func getErrorMsg(msg string, err error) string {
+	// set default cc ledger error string in the error message to force a retry
+	return fmt.Sprintf("%s: %+v - cc ledger error", msg, err)
 }
