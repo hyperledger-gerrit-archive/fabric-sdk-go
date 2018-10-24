@@ -8,6 +8,7 @@ package invoke
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
@@ -56,7 +57,14 @@ func (e *EndorsementHandler) Handle(requestContext *RequestContext, clientContex
 	requestContext.Response.TransactionID = proposal.TxnID // TODO: still needed?
 
 	if err != nil {
-		requestContext.Error = err
+		if _, ok := status.FromError(err); ok {
+			requestContext.Error = err
+			return
+		}
+
+		// force a retryable error status.. if the returned error is not of type *Status
+		requestContext.Error = status.New(status.ChaincodeStatus, status.PrematureChaincodeExecution.ToInt32(),
+			fmt.Sprintf("Tx error received [%+v] - returning error status[%v:%v] to execute retries (if option is set)", err, status.ChaincodeStatus, status.PrematureChaincodeExecution), nil)
 		return
 	}
 
