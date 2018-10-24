@@ -101,7 +101,9 @@ func (i *impl) backoffPeriod() time.Duration {
 
 // isRetryable determines if the given status is configured to be retryable
 func (i *impl) isRetryable(g status.Group, c int32) bool {
+	logger.Infof("isRetryable call - group:[%+v], code: [%d]", g, c)
 	for group, codes := range i.opts.RetryableCodes {
+		logger.Infof("isRetryable call checking against - group:[%+v], code: [%+v]", group, codes)
 		if g != group {
 			continue
 		}
