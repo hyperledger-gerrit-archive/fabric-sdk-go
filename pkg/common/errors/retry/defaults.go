@@ -68,15 +68,24 @@ var DefaultResMgmtOpts = Opts{
 // DefaultRetryableCodes these are the error codes, grouped by source of error,
 // that are considered to be transient error conditions by default
 var DefaultRetryableCodes = map[status.Group][]status.Code{
+	status.DiscoveryServerStatus: {
+		status.QueryEndorsers,
+		status.ChaincodeLedgerError,
+		status.PrematureChaincodeExecution,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
+		status.GenericTransient,
+	},
 	status.EndorserClientStatus: {
 		status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
 		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
+		status.ChaincodeLedgerError,
 	},
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.ChaincodeLedgerError,
 	},
 	status.OrdererServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
@@ -87,6 +96,14 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
+		status.ChaincodeLedgerError,
+	},
+	status.ChaincodeStatus: {
+		status.ChaincodeLedgerError,
+		status.PrematureChaincodeExecution,
+		status.ConnectionFailed,
+		status.NoPeersFound,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available
@@ -98,15 +115,24 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 // ResMgmtDefaultRetryableCodes are the suggested codes that should be treated as
 // transient by fabric-sdk-go/pkg/client/resmgmt.Client
 var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
+	status.DiscoveryServerStatus: {
+		status.QueryEndorsers,
+		status.ChaincodeLedgerError,
+		status.PrematureChaincodeExecution,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
+		status.GenericTransient,
+	},
 	status.EndorserClientStatus: {
 		status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
 		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
+		status.ChaincodeLedgerError,
 	},
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.ChaincodeLedgerError,
 	},
 	status.OrdererServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
@@ -119,6 +145,14 @@ var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
+		status.ChaincodeLedgerError,
+	},
+	status.ChaincodeStatus: {
+		status.ChaincodeLedgerError,
+		status.PrematureChaincodeExecution,
+		status.ConnectionFailed,
+		status.NoPeersFound,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available
@@ -130,15 +164,26 @@ var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 // ChannelClientRetryableCodes are the suggested codes that should be treated as
 // transient by fabric-sdk-go/pkg/client/channel.Client
 var ChannelClientRetryableCodes = map[status.Group][]status.Code{
+	status.DiscoveryServerStatus: {
+		status.QueryEndorsers,
+		status.ChaincodeLedgerError,
+		status.PrematureChaincodeExecution,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
+		status.GenericTransient,
+	},
 	status.EndorserClientStatus: {
 		status.ConnectionFailed, status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
+		status.ChaincodeLedgerError,
 	},
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.ChaincodeLedgerError,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	status.OrdererClientStatus: {
 		status.ConnectionFailed,
@@ -152,6 +197,14 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
+		status.ChaincodeLedgerError,
+	},
+	status.ChaincodeStatus: {
+		status.ChaincodeLedgerError,
+		status.PrematureChaincodeExecution,
+		status.ConnectionFailed,
+		status.NoPeersFound,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available
@@ -172,7 +225,10 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 	},
 	status.DiscoveryServerStatus: {
 		status.QueryEndorsers,
+		status.ChaincodeLedgerError,
+		status.PrematureChaincodeExecution,
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
+		status.GenericTransient,
 	},
 	status.EndorserClientStatus: {
 		status.ConnectionFailed, status.EndorsementMismatch,
@@ -180,8 +236,10 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
+		status.ChaincodeLedgerError,
 	},
 	status.EndorserServerStatus: {
+		status.ChaincodeLedgerError,
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
@@ -195,9 +253,17 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 	},
 	status.EventServerStatus: {
 		status.Code(pb.TxValidationCode_DUPLICATE_TXID),
+		status.ChaincodeLedgerError,
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
+	},
+	status.ChaincodeStatus: {
+		status.ChaincodeLedgerError,
+		status.PrematureChaincodeExecution,
+		status.ConnectionFailed,
+		status.NoPeersFound,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available

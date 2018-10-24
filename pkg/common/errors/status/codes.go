@@ -64,6 +64,9 @@ const (
 
 	// ChaincodeNameNotFound indicates that an that an attempt was made to invoke a chaincode that's not yet initialized
 	ChaincodeNameNotFound Code = 23
+
+	// ChaincodeLedgerError indicates that an attempt to query/update the ledger from the chaincode failed
+	ChaincodeLedgerError Code = 24
 )
 
 // CodeName maps the codes in this packages to human-readable strings
@@ -83,6 +86,7 @@ var CodeName = map[int32]string{
 	21: "PREMATURE_CHAINCODE_EXECUTION",
 	22: "CHAINCODE_ALREADY_LAUNCHING",
 	23: "CHAINCODE_NAME_NOT_FOUND",
+	24: "CHAINCODE_LEDGER_ERROR",
 }
 
 // ToInt32 cast to int32
