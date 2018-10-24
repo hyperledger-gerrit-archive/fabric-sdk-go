@@ -236,6 +236,10 @@ func extractChaincodeErrorFromResponse(resp *pb.ProposalResponse) error {
 			return status.New(status.EndorserClientStatus, int32(status.ChaincodeNameNotFound), resp.Response.Message, details)
 		} else if strings.Contains(resp.Response.Message, "cannot get package for chaincode") {
 			return status.New(status.EndorserClientStatus, int32(status.ChaincodeNameNotFound), resp.Response.Message, details)
+		} else if strings.Contains(resp.Response.Message, "failed constructing descriptor") {
+			return status.New(status.DiscoveryServerStatus, int32(status.GenericTransient), resp.Response.Message, details)
+		} else if strings.Contains(resp.Response.Message, "cc ledger error") {
+			return status.New(status.ChaincodeStatus, int32(status.ChaincodeLedgerError), resp.Response.Message, details)
 		}
 		return status.New(status.ChaincodeStatus, resp.Response.Status, resp.Response.Message, details)
 	}
