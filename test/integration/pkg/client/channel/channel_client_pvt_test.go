@@ -318,7 +318,7 @@ func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
 		channel.WithRetry(retry.TestRetryOpts),
 	)
 	require.NoErrorf(t, err, "error attempting to read private data")
-	require.NotEmptyf(t, resp.Payload, "reading private data returned empty response")
+	require.NotEmptyf(t, strings.TrimSpace(string(resp.Payload)), "reading private data returned empty response")
 
 	actual, err := strconv.Atoi(string(resp.Payload))
 	require.NoError(t, err)
