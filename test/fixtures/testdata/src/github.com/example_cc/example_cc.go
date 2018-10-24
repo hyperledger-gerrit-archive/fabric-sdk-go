@@ -33,6 +33,10 @@ import (
 
 var logger = shim.NewLogger("examplecc")
 
+// PrematureChaincodeExecution indicates that an attempt was made to invoke a chaincode that's
+// in the process of being launched.
+var prematureChaincodeExecution int32 = 21
+
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
 }
@@ -286,12 +290,16 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface, args []string)
 	Avalbytes, err := stub.GetState(A)
 	if err != nil {
 		jsonResp := "{\"Error\":\"Failed to get state for " + A + "\"}"
-		return shim.Error(jsonResp)
+		//return shim.Error(jsonResp)
+		// if error found when reading from ledger, then assume CC ledger not available, this will force a retry
+		return pb.Response{Status: prematureChaincodeExecution, Message: jsonResp}
 	}
 
 	if Avalbytes == nil {
 		jsonResp := "{\"Error\":\"Nil amount for " + A + "\"}"
-		return shim.Error(jsonResp)
+		//return shim.Error(jsonResp)
+		// if nil amount received from ledger, then assume CC ledger not available, this will force a retry
+		return pb.Response{Status: prematureChaincodeExecution, Message: jsonResp}
 	}
 
 	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
