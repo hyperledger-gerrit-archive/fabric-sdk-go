@@ -68,16 +68,16 @@ func (ri *RetryableInvoker) Invoke(invocation Invocation) (interface{}, error) {
 			return retval, nil
 		}
 
-		logger.Debugf("Failed with err [%s] on attempt #%d. Checking if retry is warranted...", err, attemptNum)
+		logger.Warnf("Failed with err [%s] on attempt #%d. Checking if retry is warranted...", err, attemptNum)
 		if !ri.resolveRetry(err) {
 			if lastErr != nil && lastErr.Error() != err.Error() {
-				logger.Debugf("... retry for err [%s] is NOT warranted after %d attempt(s). Previous error [%s]", err, attemptNum, lastErr)
+				logger.Warnf("... retry for err [%s] is NOT warranted after %d attempt(s). Previous error [%s]", err, attemptNum, lastErr)
 			} else {
-				logger.Debugf("... retry for err [%s] is NOT warranted after %d attempt(s).", err, attemptNum)
+				logger.Warnf("... retry for err [%s] is NOT warranted after %d attempt(s).", err, attemptNum)
 			}
 			return nil, err
 		}
-		logger.Debugf("... retry for err [%s] is warranted", err)
+		logger.Warnf("... retry for err [%s] is warranted", err)
 		lastErr = err
 	}
 }
