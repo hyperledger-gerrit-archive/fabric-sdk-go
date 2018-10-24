@@ -77,6 +77,7 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.PrematureChaincodeExecution,
 	},
 	status.OrdererServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
@@ -87,6 +88,7 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
+		status.PrematureChaincodeExecution,
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available
@@ -107,6 +109,7 @@ var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.PrematureChaincodeExecution,
 	},
 	status.OrdererServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
@@ -119,6 +122,7 @@ var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
+		status.PrematureChaincodeExecution,
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available
@@ -139,6 +143,7 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.PrematureChaincodeExecution,
 	},
 	status.OrdererClientStatus: {
 		status.ConnectionFailed,
@@ -152,6 +157,7 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
+		status.PrematureChaincodeExecution,
 	},
 	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
 	// gRPC fail fast option, once available
@@ -172,6 +178,7 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 	},
 	status.DiscoveryServerStatus: {
 		status.QueryEndorsers,
+		status.PrematureChaincodeExecution,
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	status.EndorserClientStatus: {
@@ -182,6 +189,7 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	status.EndorserServerStatus: {
+		status.PrematureChaincodeExecution,
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
@@ -195,6 +203,7 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 	},
 	status.EventServerStatus: {
 		status.Code(pb.TxValidationCode_DUPLICATE_TXID),
+		status.PrematureChaincodeExecution,
 		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
