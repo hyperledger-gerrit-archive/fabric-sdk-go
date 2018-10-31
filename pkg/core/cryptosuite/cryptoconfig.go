@@ -16,6 +16,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 )
 
+const (
+	defEnabled       = false
+	defHashAlgorithm = "SHA2"
+	defLevel         = 256
+	defProvider      = "sw" // lower case
+	defSoftVerify    = true
+)
+
 //ConfigFromBackend returns CryptoSuite config implementation for given backend
 func ConfigFromBackend(coreBackend ...core.ConfigBackend) core.CryptoSuiteConfig {
 	return &Config{backend: lookup.New(coreBackend...)}
@@ -26,28 +34,43 @@ type Config struct {
 	backend *lookup.ConfigLookup
 }
 
-// IsSecurityEnabled config used enable and diable security in cryptosuite
+// IsSecurityEnabled config used enable and disable security in cryptosuite
 func (c *Config) IsSecurityEnabled() bool {
+	if _, ok := c.backend.Lookup("client.BCCSP.security.enabled"); !ok {
+		return defEnabled
+	}
 	return c.backend.GetBool("client.BCCSP.security.enabled")
 }
 
 // SecurityAlgorithm returns cryptoSuite config hash algorithm
 func (c *Config) SecurityAlgorithm() string {
+	if _, ok := c.backend.Lookup("client.BCCSP.security.hashAlgorithm"); !ok {
+		return defHashAlgorithm
+	}
 	return c.backend.GetString("client.BCCSP.security.hashAlgorithm")
 }
 
 // SecurityLevel returns cryptSuite config security level
 func (c *Config) SecurityLevel() int {
+	if _, ok := c.backend.Lookup("client.BCCSP.security.level"); !ok {
+		return defLevel
+	}
 	return c.backend.GetInt("client.BCCSP.security.level")
 }
 
 //SecurityProvider provider SW or PKCS11
 func (c *Config) SecurityProvider() string {
+	if _, ok := c.backend.Lookup("client.BCCSP.security.default.provider"); !ok {
+		return defProvider
+	}
 	return c.backend.GetLowerString("client.BCCSP.security.default.provider")
 }
 
 //SoftVerify flag
 func (c *Config) SoftVerify() bool {
+	if _, ok := c.backend.Lookup("client.BCCSP.security.softVerify"); !ok {
+		return defSoftVerify
+	}
 	return c.backend.GetBool("client.BCCSP.security.softVerify")
 }
 
