@@ -1753,10 +1753,10 @@ func peerChannelConfigHookFunc() mapstructure.DecodeHookFunc {
 		if t == reflect.TypeOf(PeerChannelConfig{}) {
 			dataMap, ok := data.(map[string]interface{})
 			if ok {
-				setDefault(dataMap, "endorsingpeer", true)
-				setDefault(dataMap, "chaincodequery", true)
-				setDefault(dataMap, "ledgerquery", true)
-				setDefault(dataMap, "eventsource", true)
+				setDefault(dataMap, "endorsingPeer", true)
+				setDefault(dataMap, "chaincodeQuery", true)
+				setDefault(dataMap, "ledgerQuery", true)
+				setDefault(dataMap, "eventSource", true)
 
 				return dataMap, nil
 			}
