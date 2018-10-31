@@ -266,10 +266,10 @@ func TestWithConfigFailure(t *testing.T) {
 	}
 }
 
-func TestBadConfigFile(t *testing.T) {
+func TestEmptyConfigFile(t *testing.T) {
 	_, err := New(configImpl.FromFile("../../pkg/core/config/testdata/viper-test.yaml"))
-	if err == nil {
-		t.Fatal("Expected error from New with bad config file")
+	if err != nil {
+		t.Fatal("Got error from New with empty config file: ", err)
 	}
 }
 
