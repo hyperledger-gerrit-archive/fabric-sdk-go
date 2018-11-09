@@ -86,12 +86,13 @@ func (handle *ContextHandle) OpenSession() (pkcs11.SessionHandle, error) {
 	for i := 0; i < handle.opts.openSessionRetry; i++ {
 		session, err = handle.ctx.OpenSession(handle.slot, pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
 		if err != nil {
-			logger.Warnf("OpenSession failed, retrying [%s]\n", err)
+			logger.Warnf("Failed to OpenSession, retrying [%s]\n", err)
 		} else {
 			logger.Debug("OpenSession succeeded")
-			break
+			return session, nil
 		}
 	}
+
 	return session, err
 }
 
@@ -154,8 +155,15 @@ func (handle *ContextHandle) GetSession() (session pkcs11.SessionHandle) {
 		// cache is empty (or completely in use), create a new session
 		s, err := handle.OpenSession()
 		if err != nil {
-			handle.lock.RUnlock()
-			panic(fmt.Errorf("OpenSession failed [%s]", err))
+			if err == pkcs11.Error(pkcs11.CKR_TOKEN_NOT_PRESENT) {
+				logger.Debugf("Recreating session and re-logging in for error, %s", err)
+				handle.lock.RUnlock()
+				s = handle.reLogin()
+				handle.lock.RLock()
+			} else {
+				handle.lock.RUnlock()
+				panic(fmt.Errorf("OpenSession failed [%s]", err))
+			}
 		}
 		logger.Debugf("Created new pkcs11 session %+v on slot %d\n", s, handle.slot)
 		session = s
@@ -356,51 +364,9 @@ func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle
 		pkcs11.Error(pkcs11.CKR_USER_NOT_LOGGED_IN):
 
 		logger.Warnf("Found error condition [%s], attempting to recreate pkcs11 context and re-login....", e)
-
 		handle.lock.RUnlock()
-		handle.lock.Lock()
-		defer handle.lock.Unlock()
 
-		handle.disposePKCS11Ctx()
-
-		//create new context
-		newCtx := handle.createNewPKCS11Ctx()
-		if newCtx == nil {
-			logger.Warn("Failed to recreate new pkcs11 context for given library")
-			return 0
-		}
-
-		//find slot
-		slot, found := handle.findSlot(newCtx)
-		if !found {
-			logger.Warnf("Unable to find slot for label :%s", handle.label)
-			return 0
-		}
-		logger.Debug("got the slot ", slot)
-
-		//open new session for given slot
-		newSession, err := createNewSession(newCtx, slot)
-		if err != nil {
-			logger.Fatalf("OpenSession [%s]\n", err)
-			return 0
-		}
-		logger.Debugf("Recreated new pkcs11 session %+v on slot %d\n", newSession, slot)
-
-		//login with new session
-		err = newCtx.Login(newSession, pkcs11.CKU_USER, handle.pin)
-		if err != nil && err != pkcs11.Error(pkcs11.CKR_USER_ALREADY_LOGGED_IN) {
-			logger.Warnf("Unable to login with new session :%s", newSession)
-			return 0
-		}
-
-		handle.sendNotification()
-
-		handle.ctx = newCtx
-		handle.slot = slot
-		handle.sessions = make(chan pkcs11.SessionHandle, handle.opts.sessionCacheSize)
-
-		logger.Infof("Able to login with recreated session successfully")
-		return newSession
+		return handle.reLogin()
 
 	case pkcs11.Error(pkcs11.CKR_DEVICE_MEMORY),
 		pkcs11.Error(pkcs11.CKR_DEVICE_REMOVED):
@@ -412,6 +378,54 @@ func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle
 		// default should be a valid session or valid error, return session as it is
 		return currentSession
 	}
+}
+
+//reLogin creates new context, opens new session and re-logins
+func (handle *ContextHandle) reLogin() pkcs11.SessionHandle {
+
+	handle.lock.Lock()
+	defer handle.lock.Unlock()
+
+	handle.disposePKCS11Ctx()
+
+	//create new context
+	newCtx := handle.createNewPKCS11Ctx()
+	if newCtx == nil {
+		logger.Warn("Failed to recreate new pkcs11 context for given library")
+		return 0
+	}
+
+	//find slot
+	slot, found := handle.findSlot(newCtx)
+	if !found {
+		logger.Warnf("Unable to find slot for label :%s", handle.label)
+		return 0
+	}
+	logger.Debug("got the slot ", slot)
+
+	//open new session for given slot
+	newSession, err := createNewSession(newCtx, slot)
+	if err != nil {
+		logger.Fatalf("OpenSession [%s]\n", err)
+		return 0
+	}
+	logger.Debugf("Recreated new pkcs11 session %+v on slot %d\n", newSession, slot)
+
+	//login with new session
+	err = newCtx.Login(newSession, pkcs11.CKU_USER, handle.pin)
+	if err != nil && err != pkcs11.Error(pkcs11.CKR_USER_ALREADY_LOGGED_IN) {
+		logger.Warnf("Unable to login with new session :%s", newSession)
+		return 0
+	}
+
+	handle.sendNotification()
+
+	handle.ctx = newCtx
+	handle.slot = slot
+	handle.sessions = make(chan pkcs11.SessionHandle, handle.opts.sessionCacheSize)
+
+	logger.Infof("Able to login with recreated session successfully")
+	return newSession
 }
 
 //detectErrorCondition checks if given session handle has errors
