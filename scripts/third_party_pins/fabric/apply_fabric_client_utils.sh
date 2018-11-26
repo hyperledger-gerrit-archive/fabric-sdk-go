@@ -130,6 +130,7 @@ declare -a FILES=(
     "msp/mspimplsetup.go"
     "msp/mspimplvalidate.go"
     "msp/cache/cache.go"
+    "msp/cache/second_chance.go"
 
     "discovery/client/api.go"
     "discovery/client/client.go"
