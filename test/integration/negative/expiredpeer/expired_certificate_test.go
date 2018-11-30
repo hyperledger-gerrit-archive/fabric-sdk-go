@@ -120,6 +120,11 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		peer1 := networkConfig.Peers["peer0.org1.example.com"]
 		peer1.TLSCACerts.Path = expiredCertPath
 		networkConfig.Peers["peer0.org1.example.com"] = peer1
+
+		peer2 := networkConfig.Peers["peer1.org1.example.com"]
+		peer2.TLSCACerts.Path = expiredCertPath
+		networkConfig.Peers["peer1.org1.example.com"] = peer2
+
 		backendMap["peers"] = networkConfig.Peers
 
 		backends := append([]core.ConfigBackend{}, &mocks.MockConfigBackend{KeyValueMap: backendMap})
