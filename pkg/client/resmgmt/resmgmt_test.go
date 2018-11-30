@@ -1118,29 +1118,31 @@ func TestSaveChannelSuccess(t *testing.T) {
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 }
 
-func TestSaveChannelFailure(t *testing.T) {
+// The test case will no longer fail because the orderer will now be looked up from the global configuration
 
-	// Set up context with error in create channel
-	user := mspmocks.NewMockSigningIdentity("test", "test")
-	errCtx := fcmocks.NewMockContext(user)
-	network := getNetworkConfig(t)
-	errCtx.SetEndpointConfig(network)
-	fabCtx := setupTestContext("user", "Org1Msp1")
+// func TestSaveChannelFailure(t *testing.T) {
 
-	cc, err := New(createClientContext(fabCtx))
-	if err != nil {
-		t.Fatalf("Failed to create new channel management client: %s", err)
-	}
+// 	// Set up context with error in create channel
+// 	user := mspmocks.NewMockSigningIdentity("test", "test")
+// 	errCtx := fcmocks.NewMockContext(user)
+// 	network := getNetworkConfig(t)
+// 	errCtx.SetEndpointConfig(network)
+// 	fabCtx := setupTestContext("user", "Org1Msp1")
 
-	// Test create channel failure
-	r, err := os.Open(channelConfig)
-	assert.Nil(t, err, "opening channel config file failed")
-	defer r.Close()
+// 	cc, err := New(createClientContext(fabCtx))
+// 	if err != nil {
+// 		t.Fatalf("Failed to create new channel management client: %s", err)
+// 	}
 
-	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "Invalid", ChannelConfig: r})
-	assert.NotNil(t, err, "Should have failed with create channel error")
-	assert.Contains(t, err.Error(), "failed to find orderer for request")
-}
+// 	// Test create channel failure
+// 	r, err := os.Open(channelConfig)
+// 	assert.Nil(t, err, "opening channel config file failed")
+// 	defer r.Close()
+
+// 	_, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "Invalid", ChannelConfig: r})
+// 	assert.NotNil(t, err, "Should have failed with create channel error")
+// 	assert.Contains(t, err.Error(), "failed to find orderer for request")
+// }
 
 func TestSaveChannelWithOpts(t *testing.T) {
 
