@@ -39,6 +39,7 @@ declare -a PKGS=(
     "sdkpatch/cryptosuitebridge"
     "sdkpatch/cachebridge"
 
+    "core/common/privdata"
     "core/ledger/kvledger/txmgmt/version"
     "core/ledger/util"
 
@@ -79,6 +80,7 @@ declare -a FILES=(
     "bccsp/sw/fileks.go"
     "bccsp/sw/hash.go"
     "bccsp/sw/impl.go"
+    "bccsp/sw/inmemoryks.go"
     "bccsp/sw/internals.go"
     "bccsp/sw/keyderiv.go"
     "bccsp/sw/keygen.go"
@@ -108,14 +110,13 @@ declare -a FILES=(
 
     "common/ledger/ledger_interface.go"
 
-    "common/metrics/server.go"
-    "common/metrics/tally_provider.go"
-    "common/metrics/types.go"
+    "common/metrics/provider.go"
 
     "sdkpatch/logbridge/logbridge.go"
     "sdkpatch/cryptosuitebridge/cryptosuitebridge.go"
     "sdkpatch/cachebridge/cache.go"
 
+    "core/common/privdata/collection.go"
     "core/ledger/ledger_interface.go"
     "core/ledger/kvledger/txmgmt/version/version.go"
 
