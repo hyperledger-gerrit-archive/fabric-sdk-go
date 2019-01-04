@@ -108,9 +108,9 @@ declare -a FILES=(
 
     "common/ledger/ledger_interface.go"
 
-    "common/metrics/server.go"
-    "common/metrics/tally_provider.go"
-    "common/metrics/types.go"
+    #"common/metrics/server.go"
+    #"common/metrics/tally_provider.go"
+    #"common/metrics/types.go"
 
     "sdkpatch/logbridge/logbridge.go"
     "sdkpatch/cryptosuitebridge/cryptosuitebridge.go"

@@ -32,9 +32,6 @@ import (
 	"math/big"
 	mrand "math/rand"
 
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/cryptosuitebridge"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-
 	"net/http"
 	"os"
 	"path"
@@ -44,8 +41,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/pkg/errors"
-
 	"golang.org/x/crypto/ocsp"
 )
 
@@ -136,8 +133,10 @@ func Marshal(from interface{}, what string) ([]byte, error) {
 //    which is the body of an HTTP request, though could be any arbitrary bytes.
 // @param cert The pem-encoded certificate
 // @param key The pem-encoded key
+// @param method http method of the request
+// @param uri URI of the request
 // @param body The body of an HTTP request
-func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, body []byte) (string, error) {
+func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte) (string, error) {
 	x509Cert, err := GetX509CertificateFromPEM(cert)
 	if err != nil {
 		return "", err
@@ -156,7 +155,7 @@ func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, body []byte) (
 			}
 	*/
 	case *ecdsa.PublicKey:
-		token, err = GenECDSAToken(csp, cert, key, body)
+		token, err = GenECDSAToken(csp, cert, key, method, uri, body)
 		if err != nil {
 			return "", err
 		}
@@ -190,29 +189,13 @@ func GenRSAToken(csp core.CryptoSuite, cert []byte, key []byte, body []byte) (st
 */
 
 //GenECDSAToken signs the http body and cert with ECDSA using EC private key
-func GenECDSAToken(csp core.CryptoSuite, cert []byte, key core.Key, body []byte) (string, error) {
+func GenECDSAToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte) (string, error) {
 	b64body := B64Encode(body)
 	b64cert := B64Encode(cert)
-	bodyAndcert := b64body + "." + b64cert
+	b64uri := B64Encode([]byte(uri))
+	payload := method + "." + b64uri + "." + b64body + "." + b64cert
 
-	digest, digestError := csp.Hash([]byte(bodyAndcert), factory.GetSHAOpts())
-	if digestError != nil {
-		return "", errors.WithMessage(digestError, fmt.Sprintf("Hash failed on '%s'", bodyAndcert))
-	}
-
-	ecSignature, err := csp.Sign(key, digest, nil)
-	if err != nil {
-		return "", errors.WithMessage(err, "BCCSP signature generation failure")
-	}
-	if len(ecSignature) == 0 {
-		return "", errors.New("BCCSP signature creation failed. Signature must be different than nil")
-	}
-
-	b64sig := B64Encode(ecSignature)
-	token := b64cert + "." + b64sig
-
-	return token, nil
-
+	return genECDSAToken(csp, key, b64cert, payload)
 }
 
 // B64Encode base64 encodes bytes
