@@ -45,7 +45,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 		},
 	)
 
-	clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
+	ClientProvider = func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
 	}
 
