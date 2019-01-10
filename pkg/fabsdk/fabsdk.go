@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/metrics"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
@@ -34,6 +35,7 @@ type FabricSDK struct {
 	opts        options
 	provider    *context.Provider
 	cryptoSuite core.CryptoSuite
+	cfgLookup   *lookup.ConfigLookup
 }
 
 type configs struct {
@@ -278,7 +280,12 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 			return errors.WithMessage(err, "failed to initialize channel provider")
 		}
 	}
+	_, err = sdk.Config()
+	if err != nil {
+		logger.Warnf("Fetching sdk config returned error: %s", err)
+	}
 
+	metrics.InitMetrics(sdk.cfgLookup)
 	logger.Debug("SDK initialized successfully")
 	return nil
 }
@@ -300,7 +307,10 @@ func (sdk *FabricSDK) Config() (core.ConfigBackend, error) {
 	if sdk.opts.ConfigBackend == nil {
 		return nil, errors.New("unable to find config backend")
 	}
-	return lookup.New(sdk.opts.ConfigBackend...), nil
+	if sdk.cfgLookup == nil {
+		sdk.cfgLookup = lookup.New(sdk.opts.ConfigBackend...)
+	}
+	return sdk.cfgLookup, nil
 }
 
 //Context creates and returns context client which has all the necessary providers
