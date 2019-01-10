@@ -17,8 +17,12 @@ package channel
 
 import (
 	reqContext "context"
+	"fmt"
+	"sync"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/operations"
+	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/filter"
@@ -29,7 +33,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
+
+var system *operations.System
+var ms *ClientMetrics
+var once sync.Once
 
 // Client enables access to a channel on a Fabric network.
 //
@@ -41,7 +50,7 @@ type Client struct {
 	membership   fab.ChannelMembership
 	eventService fab.EventService
 	greylist     *greylist.Filter
-	clientTally  // nolint
+	metrics      *ClientMetrics
 }
 
 // ClientOption describes a functional parameter for the New constructor
@@ -71,7 +80,13 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, errors.WithMessage(err, "membership creation failed")
 	}
 
-	channelClient := newClient(channelContext, membership, eventService, greylistProvider)
+	once.Do(func() {
+		system = newOperationsSystem()
+
+		ms = NewClientMetrics(system.Provider)
+	})
+
+	channelClient := newClient(channelContext, membership, eventService, greylistProvider, ms)
 
 	for _, param := range opts {
 		err := param(&channelClient)
@@ -301,4 +316,40 @@ func (cc *Client) RegisterChaincodeEvent(chainCodeID string, eventFilter string)
 //  registration is the registration handle that was returned from RegisterChaincodeEvent method
 func (cc *Client) UnregisterChaincodeEvent(registration fab.Registration) {
 	cc.eventService.Unregister(registration)
+}
+
+func (cc *Client) StartOperationsSystem() error {
+	if system != nil {
+		return system.Start()
+	}
+	return errors.New("Operations system is empty, nothing to start")
+}
+
+// for now, since metrics are only used in channel client, creating the system operations
+// instance (the same way as in Fabric) is done here only.
+// For additional metrics elsewhere in the SDK, expose and move this function at a higher level
+// this assumes the same peer configs are available in the SDK (code copied from fabric/peer/node/start.go)
+func newOperationsSystem() *operations.System {
+	fmt.Println("viper.GetString(\"operations.listenAddress\"): ", viper.GetString("operations.listenAddress"))
+	return operations.NewSystem(operations.Options{
+		Logger:        flogging.MustGetLogger("peer.sdk.operations"),
+		ListenAddress: viper.GetString("operations.listenAddress"),
+		Metrics: operations.MetricsOptions{
+			Provider: viper.GetString("metrics.provider"),
+			Statsd: &operations.Statsd{
+				Network:       viper.GetString("metrics.statsd.network"),
+				Address:       viper.GetString("metrics.statsd.address"),
+				WriteInterval: viper.GetDuration("metrics.statsd.writeInterval"),
+				Prefix:        viper.GetString("metrics.statsd.prefix"),
+			},
+		},
+		TLS: operations.TLS{
+			Enabled:            viper.GetBool("operations.tls.enabled"),
+			CertFile:           viper.GetString("operations.tls.cert.file"),
+			KeyFile:            viper.GetString("operations.tls.key.file"),
+			ClientCertRequired: viper.GetBool("operations.tls.clientAuthRequired"),
+			ClientCACertFiles:  viper.GetStringSlice("operations.tls.clientRootCAs.files"),
+		},
+		Version: "latest",
+	})
 }

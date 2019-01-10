@@ -36,6 +36,7 @@ const (
 )
 
 func TestTxProposalResponseFilter(t *testing.T) {
+	setSystemSettings()
 	testErrorResponse := "internal error"
 	// failed if status not 200
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
@@ -72,7 +73,7 @@ func TestTxProposalResponseFilter(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
-
+	setSystemSettings()
 	chClient := setupChannelClient(nil, t)
 
 	_, err := chClient.Query(Request{})
@@ -116,6 +117,7 @@ func TestQuery(t *testing.T) {
 }
 
 func TestQuerySelectionError(t *testing.T) {
+	setSystemSettings()
 	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), nil, t)
 
 	_, err := chClient.Query(Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
@@ -125,6 +127,7 @@ func TestQuerySelectionError(t *testing.T) {
 }
 
 func TestQueryWithOptSync(t *testing.T) {
+	setSystemSettings()
 	chClient := setupChannelClient(nil, t)
 
 	response, err := chClient.Query(Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}})
@@ -139,6 +142,7 @@ func TestQueryWithOptSync(t *testing.T) {
 
 // TestQueryWithOptAsync demonstrates an example of an asynchronous query call
 func TestQueryWithOptAsync(t *testing.T) {
+	setSystemSettings()
 	chClient := setupChannelClient(nil, t)
 	type responseAndError struct {
 		Response Response
@@ -159,6 +163,7 @@ func TestQueryWithOptAsync(t *testing.T) {
 }
 
 func TestQueryWithOptTarget(t *testing.T) {
+	setSystemSettings()
 	chClient := setupChannelClient(nil, t)
 
 	testPeer := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
@@ -177,6 +182,7 @@ func TestQueryWithOptTarget(t *testing.T) {
 }
 
 func TestQueryWithNilTargets(t *testing.T) {
+	setSystemSettings()
 	chClient := setupChannelClient(nil, t)
 
 	_, err := chClient.Query(Request{ChaincodeID: "testCC", Fcn: "invoke",
@@ -194,6 +200,7 @@ func TestQueryWithNilTargets(t *testing.T) {
 }
 
 func TestExecuteTx(t *testing.T) {
+	setSystemSettings()
 	chClient := setupChannelClient(nil, t)
 
 	_, err := chClient.Execute(Request{})
@@ -238,6 +245,7 @@ func (c *customHandler) Handle(requestContext *invoke.RequestContext, clientCont
 }
 
 func TestInvokeHandler(t *testing.T) {
+	setSystemSettings()
 	chClient := setupChannelClient(nil, t)
 
 	expectedPayload := "somepayload"
@@ -311,6 +319,7 @@ func TestQueryWithCustomEndorser(t *testing.T) {
 }
 
 func TestExecuteTxSelectionError(t *testing.T) {
+	setSystemSettings()
 	chClient := setupChannelClientWithError(nil, errors.New("Test Error"), nil, t)
 
 	_, err := chClient.Execute(Request{ChaincodeID: "testCC", Fcn: "invoke",
@@ -324,6 +333,7 @@ func TestExecuteTxSelectionError(t *testing.T) {
 // the lower level APIs to the high level channel client API
 // This ensures that the status is not swallowed by calling error.Error()
 func TestRPCStatusErrorPropagation(t *testing.T) {
+	setSystemSettings()
 	testErrMessage := "Test RPC Error"
 	testStatus := status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), testErrMessage, nil)
 
@@ -345,6 +355,7 @@ func TestRPCStatusErrorPropagation(t *testing.T) {
 // TestOrdererStatusError ensures that status errors are propagated through
 // the code execution paths from the low-level orderer broadcast APIs
 func TestOrdererStatusError(t *testing.T) {
+	setSystemSettings()
 	testErrorMessage := "test error"
 
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
@@ -367,6 +378,7 @@ func TestOrdererStatusError(t *testing.T) {
 }
 
 func TestTransactionValidationError(t *testing.T) {
+	setSystemSettings()
 	validationCode := pb.TxValidationCode_BAD_RWSET
 	mockEventService := fcmocks.NewMockEventService()
 	mockEventService.TxValidationCode = validationCode
@@ -385,7 +397,7 @@ func TestTransactionValidationError(t *testing.T) {
 }
 
 func TestTransactionTimeout(t *testing.T) {
-
+	setSystemSettings()
 	mockEventService := fcmocks.NewMockEventService()
 	mockEventService.Timeout = true
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
@@ -404,6 +416,7 @@ func TestTransactionTimeout(t *testing.T) {
 }
 
 func TestExecuteTxWithRetries(t *testing.T) {
+	setSystemSettings()
 	testStatus := status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), "test", nil)
 	testResp := []byte("test")
 	retryInterval := 2 * time.Second
@@ -434,6 +447,7 @@ func TestExecuteTxWithRetries(t *testing.T) {
 }
 
 func TestBeforeRetryOption(t *testing.T) {
+	setSystemSettings()
 	testStatus := status.New(status.EndorserClientStatus, status.ConnectionFailed.ToInt32(), "test", nil)
 
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
@@ -448,6 +462,7 @@ func TestBeforeRetryOption(t *testing.T) {
 }
 
 func TestMultiErrorPropogation(t *testing.T) {
+	setSystemSettings()
 	testErr := fmt.Errorf("Test Error")
 
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
@@ -468,7 +483,7 @@ func TestMultiErrorPropogation(t *testing.T) {
 }
 
 func TestDiscoveryGreylist(t *testing.T) {
-
+	setSystemSettings()
 	testPeer1 := fcmocks.NewMockPeer("Peer1", "http://peer1.com")
 	testPeer1.Error = status.New(status.EndorserClientStatus,
 		status.ConnectionFailed.ToInt32(), "test", []interface{}{testPeer1.URL()})

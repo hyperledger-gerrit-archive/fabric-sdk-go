@@ -3,7 +3,6 @@
     
     Under the directory where this file resides, the test commands are run as shown under the below comments: 
 	(
-	    * on a Macbook Pro, warning messages are stripped out below for conciseness
 	    * Benchmark is using Go's test command with -bench=ExecuteTx
 	    * the -run=notest flag means execute a non-existant 'notest' in the current folder
 	        This will avoid running normal unit tests along with the benchmarks
@@ -77,10 +76,8 @@ ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	52
 #Benchmark data in Tally (using Prometheus report)
 The Channel Client's Execute and Query functions have been amended to collect tally counts and time spent executing these functions.
 
-In order to support collecting the data, make sure to start the data collector server found in:
-fabric-sdk-go/test/performance/metrics/server.go
-
-example of starting a data collector server is found in this benchmark (reference initAndStartMetricsServer() call)
+In order to support collecting the data, make sure to start the data collector server. An example of starting a data collector server is found 
+in this benchmark (reference chClient.StartOperationsSystem() call)
 
 then start the Prometheus Docker container (an example docker compose config file is found at:
 fabric-sdk-go/test/performance/prometheus
@@ -98,11 +95,16 @@ for the purpose of this channel client benchmark, once the Prometheus docker con
 run times and navigate to the address above to see data being collected 
 (run with -benchtime=300s will show this data on the report as an example)
 
-If you would like to collect perf data into your version of Prometheus server (example dedicated performance environment),
-make sure to add metrics calls using the 'metrics' packgage in this sdk
-ie: "github.com/hyperledger/fabric-sdk-go/test/performance/metrics"
+If you would like to collect perf data into your version of Prometheus server (example dedicated performance environment).
+make sure to create new metrics instances and register them as done in the channel client package.
+ie look at: "github.com/hyperledger/fabric-sdk-go/pkg/client/channel/chclientrun.go" to see how ClientMetrics is created and 
+metrics added in the code. 
+"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/metrics.go" creates metrics structures to be used in the file above.
 
-for an example usage on how to setup data collection in your client application, see: fabric-sdk-go/pkg/client/channel/chclient.go
+currently, only channel client is configured with a metrics(and operations system like Fabric) to setup data collection in your client application, 
+see: fabric-sdk-go/pkg/client/channel/chclient.go for more details.
+
+The file fabric-sdk-go/test/performance/pkg/client/channel/chclient_fixture_test.go is loading metrics configs from the file referenced in `configPath` variable.
 
 #Benchmark CPU & Memory performance analysis
     In order to generate profiling data for the chClient benchmark, the go test command can be extended to generate these.
