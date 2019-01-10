@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/testdata"
 )
 
@@ -85,6 +86,7 @@ func (f *testFixture) setup() (*fabsdk.FabricSDK, context.Client) {
 		panic(fmt.Sprintf("Failed to init context: %s", err))
 	}
 
+	setMetricsConfigs(configBackend)
 	return sdk, ctx
 }
 
@@ -97,5 +99,28 @@ func cleanup(storePath string) {
 	err := os.RemoveAll(storePath)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to remove dir %s: %s\n", storePath, err))
+	}
+}
+
+// setup metrics configs into generic viper to be loaded by the channel client's systems operations
+// TODO this could be removed if/when systems operations is moved above channel client to be managed at a higher level in the SDK
+// TODO for now, channel client is the only place where systems operations instance is used.
+func setMetricsConfigs(config core.ConfigBackend) {
+	setViperKey("operations.listenAddress", config)
+	setViperKey("metrics.provider", config)
+	setViperKey("metrics.statsd.network", config)
+	setViperKey("metrics.statsd.address", config)
+	setViperKey("metrics.statsd.writeInterval", config)
+	setViperKey("metrics.statsd.prefix", config)
+	setViperKey("operations.tls.enabled", config)
+	setViperKey("operations.tls.cert.file", config)
+	setViperKey("operations.tls.key.file", config)
+	setViperKey("operations.tls.clientAuthRequired", config)
+	setViperKey("operations.tls.clientRootCAs.files", config)
+}
+
+func setViperKey(key string, config core.ConfigBackend) {
+	if v, ok := config.Lookup(key); ok {
+		viper.Set(key, v)
 	}
 }
