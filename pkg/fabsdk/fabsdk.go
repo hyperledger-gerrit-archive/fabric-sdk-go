@@ -19,7 +19,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
@@ -28,13 +27,6 @@ import (
 )
 
 var logger = logging.NewLogger("fabsdk")
-
-// FabricSDK provides access (and context) to clients being managed by the SDK.
-type FabricSDK struct {
-	opts        options
-	provider    *context.Provider
-	cryptoSuite core.CryptoSuite
-}
 
 type configs struct {
 	cryptoSuiteConfig core.CryptoSuiteConfig
@@ -245,17 +237,10 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		return errors.WithMessage(err, "failed to create channel provider")
 	}
 
-	//update sdk providers list since all required providers are initialized
-	sdk.provider = context.NewProvider(context.WithCryptoSuiteConfig(cfg.cryptoSuiteConfig),
-		context.WithEndpointConfig(cfg.endpointConfig),
-		context.WithIdentityConfig(cfg.identityConfig),
-		context.WithCryptoSuite(sdk.cryptoSuite),
-		context.WithSigningManager(signingManager),
-		context.WithUserStore(userStore),
-		context.WithLocalDiscoveryProvider(localDiscoveryProvider),
-		context.WithIdentityManagerProvider(identityManagerProvider),
-		context.WithInfraProvider(infraProvider),
-		context.WithChannelProvider(channelProvider))
+	_, err = sdk.extraInit(cfg, userStore, signingManager, identityManagerProvider, infraProvider, localDiscoveryProvider, channelProvider)
+	if err != nil {
+		return errors.WithMessage(err, "failed to initialize additional SDK info")
+	}
 
 	//initialize
 	if pi, ok := infraProvider.(providerInit); ok {
@@ -293,14 +278,6 @@ func (sdk *FabricSDK) Close() {
 		pvdr.Close()
 	}
 	sdk.provider.InfraProvider().Close()
-}
-
-//Config returns config backend used by all SDK config types
-func (sdk *FabricSDK) Config() (core.ConfigBackend, error) {
-	if sdk.opts.ConfigBackend == nil {
-		return nil, errors.New("unable to find config backend")
-	}
-	return lookup.New(sdk.opts.ConfigBackend...), nil
 }
 
 //Context creates and returns context client which has all the necessary providers

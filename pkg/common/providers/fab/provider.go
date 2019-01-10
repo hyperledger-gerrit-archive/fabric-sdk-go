@@ -10,11 +10,9 @@ import (
 	reqContext "context"
 	"crypto/tls"
 	"crypto/x509"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"google.golang.org/grpc"
@@ -148,14 +146,6 @@ const (
 	// SelectionServiceRefresh selection service refresh interval
 	SelectionServiceRefresh
 )
-
-// Providers represents the SDK configured service providers context.
-type Providers interface {
-	LocalDiscoveryProvider() LocalDiscoveryProvider
-	ChannelProvider() ChannelProvider
-	InfraProvider() InfraProvider
-	EndpointConfig() EndpointConfig
-}
 
 // CertPool is a thread safe wrapper around the x509 standard library
 // cert pool implementation.

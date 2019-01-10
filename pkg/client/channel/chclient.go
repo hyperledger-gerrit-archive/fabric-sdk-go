@@ -31,19 +31,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Client enables access to a channel on a Fabric network.
-//
-// A channel client instance provides a handler to interact with peers on specified channel.
-// An application that requires interaction with multiple channels should create a separate
-// instance of the channel client for each channel. Channel client supports non-admin functions only.
-type Client struct {
-	context      context.Channel
-	membership   fab.ChannelMembership
-	eventService fab.EventService
-	greylist     *greylist.Filter
-	clientTally  // nolint
-}
-
 // ClientOption describes a functional parameter for the New constructor
 type ClientOption func(*Client) error
 

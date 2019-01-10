@@ -38,13 +38,6 @@ func (c *Local) LocalDiscoveryService() fab.DiscoveryService {
 	return c.localDiscovery
 }
 
-//Channel supplies the configuration for channel context client
-type Channel struct {
-	context.Client
-	channelService fab.ChannelService
-	channelID      string
-}
-
 //Providers returns core providers
 func (c *Channel) Providers() context.Client {
 	return c
@@ -58,20 +51,6 @@ func (c *Channel) ChannelService() fab.ChannelService {
 //ChannelID returns channel id
 func (c *Channel) ChannelID() string {
 	return c.channelID
-}
-
-//Provider implementation of Providers interface
-type Provider struct {
-	cryptoSuiteConfig      core.CryptoSuiteConfig
-	endpointConfig         fab.EndpointConfig
-	identityConfig         msp.IdentityConfig
-	userStore              msp.UserStore
-	cryptoSuite            core.CryptoSuite
-	localDiscoveryProvider fab.LocalDiscoveryProvider
-	signingManager         core.SigningManager
-	idMgmtProvider         msp.IdentityManagerProvider
-	infraProvider          fab.InfraProvider
-	channelProvider        fab.ChannelProvider
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
@@ -254,11 +233,7 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		return nil, errors.WithMessage(err, "failed to get channel service to create channel client")
 	}
 
-	channel := &Channel{
-		Client:         client,
-		channelService: channelService,
-		channelID:      channelID,
-	}
+	channel := createChannel(client, channelService, channelID)
 	if pi, ok := channelService.(serviceInit); ok {
 		if err := pi.Initialize(channel); err != nil {
 			return nil, err
