@@ -11,10 +11,26 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/spf13/viper"
 )
 
-func Example() {
+func setSystemSettings() {
+	viper.Set("operations.listenAddress", "127.0.0.1:9443")
+	viper.Set("metrics.provider", "disabled")
+	viper.Set("metrics.statsd.network", "udp")
+	viper.Set("metrics.statsd.address", "127.0.0.1:8125")
+	viper.Set("metrics.statsd.writeInterval", "10s")
+	viper.Set("metrics.statsd.prefix", "")
 
+	viper.Set("operations.tls.enabled", false)
+	viper.Set("operations.tls.cert.file", "")
+	viper.Set("operations.tls.key.file", "")
+	viper.Set("operations.tls.clientAuthRequired", false)
+	viper.Set("operations.tls.clientRootCAs.files", "")
+}
+
+func Example() {
+	setSystemSettings()
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")
@@ -31,7 +47,7 @@ func Example() {
 }
 
 func ExampleNew() {
-
+	setSystemSettings()
 	ctx := mockChannelProvider("mychannel")
 
 	c, err := New(ctx)
@@ -50,7 +66,7 @@ func ExampleNew() {
 }
 
 func ExampleClient_Query() {
-
+	setSystemSettings()
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")
@@ -69,7 +85,7 @@ func ExampleClient_Query() {
 }
 
 func ExampleClient_Execute() {
-
+	setSystemSettings()
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")
@@ -86,7 +102,7 @@ func ExampleClient_Execute() {
 }
 
 func ExampleClient_RegisterChaincodeEvent() {
-
+	setSystemSettings()
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")
@@ -105,7 +121,7 @@ func ExampleClient_RegisterChaincodeEvent() {
 }
 
 func ExampleClient_InvokeHandler() {
-
+	setSystemSettings()
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")
