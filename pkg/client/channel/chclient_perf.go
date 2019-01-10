@@ -1,4 +1,4 @@
-// +build !pprof
+// +build pprof
 
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
@@ -30,6 +30,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 	"github.com/pkg/errors"
 )
 
@@ -43,6 +44,7 @@ type Client struct {
 	membership   fab.ChannelMembership
 	eventService fab.EventService
 	greylist     *greylist.Filter
+	metrics      *metrics.ClientMetrics
 }
 
 // ClientOption describes a functional parameter for the New constructor
@@ -177,7 +179,7 @@ func (cc *Client) InvokeHandler(handler invoke.Handler, request Request, options
 
 	complete := make(chan bool, 1)
 	go func() {
-		_, _ = invoker.Invoke( // nolint: gas
+		_, _ = invoker.Invoke(
 			func() (interface{}, error) {
 				handler.Handle(requestContext, clientContext)
 				return nil, requestContext.Error

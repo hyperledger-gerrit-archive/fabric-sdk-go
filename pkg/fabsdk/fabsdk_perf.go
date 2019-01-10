@@ -1,4 +1,4 @@
-// +build !pprof
+// +build pprof
 
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
@@ -13,9 +13,11 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/operations"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -33,9 +35,12 @@ var logger = logging.NewLogger("fabsdk")
 
 // FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
-	opts        options
-	provider    *context.Provider
-	cryptoSuite core.CryptoSuite
+	opts          options
+	provider      *context.Provider
+	cryptoSuite   core.CryptoSuite
+	cfgLookup     *lookup.ConfigLookup
+	system        *operations.System
+	clientMetrics *metrics.ClientMetrics
 }
 
 type configs struct {
@@ -246,6 +251,14 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 	if err != nil {
 		return errors.WithMessage(err, "failed to create channel provider")
 	}
+	if sdk.opts.ConfigBackend == nil {
+		return errors.New("unable to find config backend")
+	}
+	if sdk.cfgLookup == nil {
+		sdk.cfgLookup = lookup.New(sdk.opts.ConfigBackend...)
+	}
+
+	sdk.initMetrics(sdk.cfgLookup)
 
 	//update sdk providers list since all required providers are initialized
 	sdk.provider = context.NewProvider(context.WithCryptoSuiteConfig(cfg.cryptoSuiteConfig),
@@ -257,7 +270,9 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		context.WithLocalDiscoveryProvider(localDiscoveryProvider),
 		context.WithIdentityManagerProvider(identityManagerProvider),
 		context.WithInfraProvider(infraProvider),
-		context.WithChannelProvider(channelProvider))
+		context.WithChannelProvider(channelProvider),
+		context.WithClientMetrics(sdk.clientMetrics),
+	)
 
 	//initialize
 	if pi, ok := infraProvider.(providerInit); ok {
@@ -299,10 +314,7 @@ func (sdk *FabricSDK) Close() {
 
 //Config returns config backend used by all SDK config types
 func (sdk *FabricSDK) Config() (core.ConfigBackend, error) {
-	if sdk.opts.ConfigBackend == nil {
-		return nil, errors.New("unable to find config backend")
-	}
-	return lookup.New(sdk.opts.ConfigBackend...), nil
+	return sdk.cfgLookup, nil
 }
 
 //Context creates and returns context client which has all the necessary providers

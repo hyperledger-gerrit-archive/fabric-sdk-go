@@ -1,4 +1,4 @@
-// +build !pprof
+// +build pprof
 
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
@@ -11,6 +11,7 @@ package context
 import (
 	reqContext "context"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 	"github.com/pkg/errors"
 
 	"time"
@@ -45,6 +46,7 @@ type Channel struct {
 	context.Client
 	channelService fab.ChannelService
 	channelID      string
+	metrics        *metrics.ClientMetrics
 }
 
 //Providers returns core providers
@@ -62,6 +64,11 @@ func (c *Channel) ChannelID() string {
 	return c.channelID
 }
 
+// GetMetrics returns the client metrics
+func (c *Channel) GetMetrics() *metrics.ClientMetrics {
+	return c.metrics
+}
+
 //Provider implementation of Providers interface
 type Provider struct {
 	cryptoSuiteConfig      core.CryptoSuiteConfig
@@ -74,6 +81,7 @@ type Provider struct {
 	idMgmtProvider         msp.IdentityManagerProvider
 	infraProvider          fab.InfraProvider
 	channelProvider        fab.ChannelProvider
+	clientMetrics          *metrics.ClientMetrics
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
@@ -119,6 +127,11 @@ func (c *Provider) InfraProvider() fab.InfraProvider {
 //EndpointConfig returns end point network config
 func (c *Provider) EndpointConfig() fab.EndpointConfig {
 	return c.endpointConfig
+}
+
+// GetMetrics will return the SDK's metrics instance
+func (c *Provider) GetMetrics() *metrics.ClientMetrics {
+	return c.clientMetrics
 }
 
 //SDKContextParams parameter for creating FabContext
@@ -194,6 +207,13 @@ func WithChannelProvider(channelProvider fab.ChannelProvider) SDKContextParams {
 	}
 }
 
+//WithClientMetrics sets clientMetrics to Context Provider
+func WithClientMetrics(cm *metrics.ClientMetrics) SDKContextParams {
+	return func(ctx *Provider) {
+		ctx.clientMetrics = cm
+	}
+}
+
 //NewProvider creates new context client provider
 // Not be used by end developers, fabsdk package use only
 func NewProvider(params ...SDKContextParams) *Provider {
@@ -260,6 +280,7 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		Client:         client,
 		channelService: channelService,
 		channelID:      channelID,
+		metrics:        client.GetMetrics(),
 	}
 	if pi, ok := channelService.(serviceInit); ok {
 		if err := pi.Initialize(channel); err != nil {
