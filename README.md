@@ -53,6 +53,15 @@ When the 'prev' code level is updated, the last tested fabric-sdk-go commit or t
 - fabric v1.1: f7ae259
 - fabric v1.0: 5ac5226
 
+### Auth Token payload compatibility between Fabric CA v1.4 and earlier releases
+Fabric CA v1.4 introduced a more secure Auth Token payload signing which requires a non compatible update starting this new version.
+In order to maintain compatibility with Fabric CA v1.3, a new environment variable needs to be introduced to use the old payload signing.
+The following environment variable must be set prior to getting a new Go SDK instance to communicate with Fabric CA v1.3:
+FABRIC_CA_SERVER_COMPATIBILITY_MODE="true"
+
+Once v1.3 is retired, the above environment support will be removed.
+
+
 ### Running the test suite
 
 ```bash
