@@ -52,6 +52,10 @@ var (
 	rnd = mrand.NewSource(time.Now().UnixNano())
 	// ErrNotImplemented used to return errors for functions not implemented
 	ErrNotImplemented = errors.New("NOT YET IMPLEMENTED")
+
+	// FabCACompatibilityMode will be used to generate Auth Token payload for a compatible Fabric CA version (v1.3 or lower)
+	// TODO remove this field once Fabric CA v1.3 is not supported by the SDK anymore
+	FabCACompatibilityMode bool
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -194,7 +198,13 @@ func GenRSAToken(csp core.CryptoSuite, cert []byte, key []byte, body []byte) (st
 func GenECDSAToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte) (string, error) {
 	b64body := B64Encode(body)
 	b64cert := B64Encode(cert)
-	payload := b64body + "." + b64cert
+	b64uri := B64Encode([]byte(uri))
+	payload := method + "." + b64uri + "." + b64body + "." + b64cert
+
+	// TODO remove this condition once Fabric CA v1.3 is not supported by the SDK anymore
+	if FabCACompatibilityMode {
+		payload = b64body + "." + b64cert
+	}
 
 	return genECDSAToken(csp, key, b64cert, payload)
 }

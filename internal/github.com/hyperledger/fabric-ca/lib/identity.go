@@ -429,6 +429,11 @@ func (i *Identity) Post(endpoint string, reqBody []byte, result interface{}, que
 }
 
 func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
+	e := i.client.SetFabCAVersion()
+	if e != nil {
+		return errors.WithMessage(e, "Failed to add token authorization header because client is unable to fetch the Fabric CA version")
+	}
+
 	log.Debug("Adding token-based authorization header")
 	var token string
 	var err error
