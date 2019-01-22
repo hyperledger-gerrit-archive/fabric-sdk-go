@@ -339,7 +339,6 @@ peers:
 #
 certificateAuthorities:
   ca.org1.example.com:
-    url: https://ca.org1.example.com:7054
     # [Optional] The optional server name for target override
     grpcOptions:
       ssl-target-name-override: ca.org1.example.com
@@ -361,6 +360,7 @@ certificateAuthorities:
     # [Optional] The optional name of the CA.
     caName: ca.org1.example.com
   ca.org2.example.com:
+    # [Optional] If missing, infer from hostname
     url: https://ca.org2.example.com:8054
     # [Optional] The optional server name for target override
     grpcOptions:
