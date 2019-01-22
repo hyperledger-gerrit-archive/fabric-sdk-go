@@ -403,7 +403,8 @@ orderers:
       allow-insecure: false
 
   local.orderer.example.com:
-    url: orderer.example.com:7050
+    # This should be optional; if it is not specified, derive from the hostname
+    #url: orderer.example.com:7050
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
@@ -437,8 +438,9 @@ peers:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   local.peer0.org1.example.com:
-    # this URL is used to send endorsement and query requests
-    url: peer0.org1.example.com:7051
+    # This URL is used to send endorsement and query requests
+    # This should be optional; if it is not specified, derive from the hostname
+    #url: peer0.org1.example.com:7051
 
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
@@ -462,8 +464,9 @@ peers:
 # Certificate Authority instead of Fabric-CA, in which case this section would not be specified.
 #
 certificateAuthorities:
-  local.ca.org1.example.com:
-    url: https://ca.org1.example.com:7054
+  ca.org1.example.com:
+    # This should be optional; if it is not specified, derive from the hostname
+    #url: https://ca.org1.example.com:7054
     # [Optional] The optional server name for target override
     grpcOptions:
       ssl-target-name-override: ca.org1.example.com
@@ -483,7 +486,7 @@ certificateAuthorities:
       enrollId: admin
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
-    caName: ca.org1.example.com
+    #caName: ca.org1.example.com
   local.ca.org2.example.com:
     url: https://ca.org2.example.com:8054
     # [Optional] The optional server name for target override
