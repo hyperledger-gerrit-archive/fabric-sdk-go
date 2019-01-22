@@ -194,7 +194,13 @@ func GenRSAToken(csp core.CryptoSuite, cert []byte, key []byte, body []byte) (st
 func GenECDSAToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte) (string, error) {
 	b64body := B64Encode(body)
 	b64cert := B64Encode(cert)
-	payload := b64body + "." + b64cert
+	b64uri := B64Encode([]byte(uri))
+	payload := method + "." + b64uri + "." + b64body + "." + b64cert
+
+	// TODO remove this condition once Fabric v1.3 is not supported by the SDK anymore
+	if c := os.Getenv("FABRIC_CA_SERVER_COMPATIBILITY_MODE"); c == "true" {
+		payload = b64body + "." + b64cert
+	}
 
 	return genECDSAToken(csp, key, b64cert, payload)
 }
