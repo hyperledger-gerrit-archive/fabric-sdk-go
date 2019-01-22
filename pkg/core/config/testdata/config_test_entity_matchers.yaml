@@ -80,7 +80,7 @@ channels:
   # Default channel is used if channel configuration is missing or if defined channel configuration is missing info
   # If channel doesn't define peers then peers from default channel will be used
   # If channel doesn't define orderes then orderes from default channel will be used
-  # If channel doesn't define policies then policies from default channel will be used. 
+  # If channel doesn't define policies then policies from default channel will be used.
   # Also, if channel defines policies and some policy info is missing than that missing info will be filled from default channel.
   _default:
 
@@ -105,14 +105,14 @@ channels:
         # produce events but the app typically only needs to connect to one to listen to events.
         # Default: true
         eventSource: true
-    
+
     # [Optional]. Orderer used by this channel
     orderers:
       - orderer.example.com
 
     # [Optional]. The application will use these option when using services such as discovery etc.
     policies:
-      discovery: 
+      discovery:
         #[Optional] Maximum number of random targets
         maxTargets: 3
         #[Optional] retry options
@@ -414,6 +414,19 @@ orderers:
       # Certificate location absolute path
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 
+  orderer1.example.com:
+    # If missing, should derive from hostname
+    #url: orderer1.example.com:7050
+
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    #grpcOptions:
+    #  ssl-target-name-override: orderer1.example.com
+
+    tlsCACerts:
+      # Certificae location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
 #
 # List of peers to send various requests to, including endorsement, query
 # and event listener registration.
@@ -437,7 +450,7 @@ peers:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   local.peer0.org1.example.com:
-    # this URL is used to send endorsement and query requests
+    # This URL is used to send endorsement and query requests
     url: peer0.org1.example.com:7051
 
     grpcOptions:
@@ -455,6 +468,18 @@ peers:
 
     tlsCACerts:
       path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+
+  peer0.org3.example.com:
+    # If missing, should derive from hostname
+    #url: peer0.org3.example.com:7051
+
+    #grpcOptions:
+    #  ssl-target-name-override: peer0.org3.example.com
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+
 
 #
 # Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
