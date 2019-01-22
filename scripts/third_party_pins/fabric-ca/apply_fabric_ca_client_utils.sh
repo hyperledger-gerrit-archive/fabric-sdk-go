@@ -302,9 +302,21 @@ factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledg
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&bccsp.SHAOpts{}/factory.GetSHAOpts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-# TODO: The appropriate token mechanism should be selected based on the CA version.
-sed -i'' -e 's/payload := method + "." + b64uri + "." + b64body + "." + b64cert/payload := b64body + "." + b64cert/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/b64uri :=/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/ErrNotImplemented = errors\.New("NOT YET IMPLEMENTED")/ a\
+\
+    \/\/ FabCACompatibilityMode will be used to generate Auth Token payload for a compatible Fabric CA version (v1.3 or lower)\
+	\/\/ TODO remove this field once Fabric CA v1.3 is not supported by the SDK anymore\
+	FabCACompatibilityMode bool\
+\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/payload := method + "\." + b64uri + "\." + b64body + "\." + b64cert/ a\
+\
+    \/\/ TODO remove this condition once Fabric CA v1.3 is not supported by the SDK anymore\
+    if FabCACompatibilityMode {\
+		payload = b64body + "." + b64cert\
+	}\
+\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/serverrevoke.go"
 FILTER_FN=
