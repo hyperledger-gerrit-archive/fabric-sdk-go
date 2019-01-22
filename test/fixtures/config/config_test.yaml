@@ -112,7 +112,7 @@ channels:
   # Default channel is used if channel configuration is missing or if defined channel configuration is missing info
   # If channel doesn't define peers then peers from default channel will be used
   # If channel doesn't define orderes then orderes from default channel will be used
-  # If channel doesn't define policies then policies from default channel will be used. 
+  # If channel doesn't define policies then policies from default channel will be used.
   # Also, if channel defines policies and some policy info is missing than that missing info will be filled from default channel.
   _default:
 
@@ -183,7 +183,7 @@ channels:
           maxBackoff: 5s
           #[Optional] he factor by which the initial back off period is exponentially incremented
           backoffFactor: 2.0
-          
+
       #[Optional] options for the event service
       eventService:
         # [Optional] resolverStrategy specifies the peer resolver strategy to use when connecting to a peer
@@ -331,6 +331,7 @@ orderers:
       allow-insecure: false
 
   orderer.example.com:
+    # [Optional] Default: Infer from hostname
     url: orderer.example.com:7050
 
     # these are standard properties defined by the gRPC library
@@ -371,6 +372,7 @@ peers:
 
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
+    # [Optional] Default: Infer from hostname
     url: peer0.org1.example.com:7051
 
     #grpcOptions:
@@ -414,6 +416,7 @@ peers:
 #
 certificateAuthorities:
   ca.org1.example.com:
+    # [Optional] Default: Infer from hostname
     url: https://ca.org1.example.com:7054
     # [Optional] The optional server name for target override
     #grpcOptions:
