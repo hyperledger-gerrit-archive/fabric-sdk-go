@@ -288,8 +288,8 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 				continue
 			}
 
-			logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", caName)
-			mspCAConfig, err := c.getMSPCAConfig(matchedCaConfig)
+			logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", orgName, caName)
+			mspCAConfig, err := c.getMSPCAConfig(caName, matchedCaConfig)
 			if err != nil {
 				return err
 			}
@@ -304,18 +304,35 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 	return nil
 }
 
-func (c *IdentityConfig) getMSPCAConfig(caConfig *CAConfig) (*msp.CAConfig, error) {
+func (c *IdentityConfig) getMSPCAConfig(orgName string, caConfig *CAConfig) (*msp.CAConfig, error) {
 
 	serverCerts, err := c.getServerCerts(caConfig)
 	if err != nil {
 		return nil, err
 	}
 
+	var URL string
+	if caConfig.URL == "" {
+		URL = orgName + ":7054"
+	} else {
+		URL = caConfig.URL
+	}
+
+	// Derive CAName from orgName if omitted?
+	/*
+		var CAName string
+		if caConfig.CAName == "" {
+			CAName = orgName
+		} else {
+			CAName = caConfig.CAName
+		}
+	*/
+
 	return &msp.CAConfig{
-		URL:              caConfig.URL,
+		URL:              URL,
 		GRPCOptions:      caConfig.GRPCOptions,
 		Registrar:        caConfig.Registrar,
-		CAName:           caConfig.CAName,
+		CAName:           caConfig.CAName, // or CAName from above?
 		TLSCAClientCert:  caConfig.TLSCACerts.Client.Cert.Bytes(),
 		TLSCAClientKey:   caConfig.TLSCACerts.Client.Key.Bytes(),
 		TLSCAServerCerts: serverCerts,
