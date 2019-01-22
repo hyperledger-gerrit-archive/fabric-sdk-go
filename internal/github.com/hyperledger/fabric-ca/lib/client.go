@@ -53,6 +53,8 @@ type Client struct {
 	csp core.CryptoSuite
 	// HTTP client associated with this Fabric CA client
 	httpClient *http.Client
+	// caVersion represents the version of the Fabric CA this client is connected to
+	caVersion string
 }
 
 // GetCAInfoResponse is the response from the GetCAInfo call
@@ -610,4 +612,14 @@ func NormalizeURL(addr string) (*url.URL, error) {
 		}
 	}
 	return u, nil
+}
+
+// GetFabCAVersion is a utility function to fetch the Fabric CA version for this client
+// TODO remove the two functions below once Fabric CA v1.3 is not supported by the SDK anymore
+func (c *Client) GetFabCAVersion() (string, error) {
+	i, e := c.GetCAInfo(&api.GetCAInfoRequest{CAName: c.Config.CAName})
+	if e != nil {
+		return "", e
+	}
+	return i.Version, nil
 }
