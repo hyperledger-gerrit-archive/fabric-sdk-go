@@ -91,6 +91,14 @@ waitForCoreVMUp
 echo "Code level ${FABRIC_SDKGO_CODELEVEL_TAG} (Fabric ${FABRIC_FIXTURE_VERSION})"
 echo "Running integration tests ..."
 
+# TODO remove below if/else conditions and any reference to FABRIC_CA_SERVER_COMPATIBILITY_MODE in the code when Fabric v1.3
+# TODO is not supported anymore (ie FABRIC_SDKGO_CODELEVEL_TAG = FABRIC_PREV_CODELEVEL_TAG  > v1.3)
+if [ ${FABRIC_FIXTURE_VERSION} = "v1.3" ]; then
+    export FABRIC_CA_SERVER_COMPATIBILITY_MODE="true"
+else
+    export FABRIC_CA_SERVER_COMPATIBILITY_MODE=
+fi
+
 GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel"
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
