@@ -128,14 +128,14 @@ func (f *textFixture) setup(configBackend ...core.ConfigBackend) { //nolint
 		panic(fmt.Sprintf("failed to created context for test setup: %s", err))
 	}
 
+	// Start Http Server if it's not running - has to be started before creating a new CA client as it will invoke the server on startup
+	if !caServer.Running() {
+		caServer.Start(lis, f.cryptoSuite)
+	}
+
 	f.caClient, err = NewCAClient(org1, ctx)
 	if err != nil {
 		panic(fmt.Sprintf("NewCAClient returned error: %s", err))
-	}
-
-	// Start Http Server if it's not running
-	if !caServer.Running() {
-		caServer.Start(lis, f.cryptoSuite)
 	}
 }
 
