@@ -53,6 +53,10 @@ type Client struct {
 	csp core.CryptoSuite
 	// HTTP client associated with this Fabric CA client
 	httpClient *http.Client
+	// caVersion represents the version of the Fabric CA this client is connected to
+	caVersion string
+	// caVersionInitCalled is used to avoid stack overflow panics due to cyclic calls of c.Init()
+	caVersionInitCalled bool
 }
 
 // GetCAInfoResponse is the response from the GetCAInfo call
@@ -130,6 +134,18 @@ func (c *Client) Init() error {
 			return err
 		}
 
+		if !c.caVersionInitCalled {
+			c.caVersionInitCalled = true // this value must be set to true before calling getBareCAInfo to avoid stack overflow panics from c.Init() calls
+			i, e := c.getBareCAInfo(&api.GetCAInfoRequest{CAName: cfg.CAName})
+			if e != nil {
+				return e
+			}
+			c.caVersion = i.Version
+			// setting Fabric CA compatibility mode here to support Auth Token signing for Fabric CA v1.3 or lower
+			// TODO remove this call once Fabric CA v1.3 is not supported by the SDK anymore
+			util.FabCACompatibilityMode = setCompatibleCA(i.Version)
+		}
+
 		// Successfully initialized the client
 		c.initialized = true
 	}
@@ -162,6 +178,11 @@ func (c *Client) GetCAInfo(req *api.GetCAInfoRequest) (*GetCAInfoResponse, error
 	if err != nil {
 		return nil, err
 	}
+	return c.getBareCAInfo(req)
+}
+
+func (c *Client) getBareCAInfo(req *api.GetCAInfoRequest) (*GetCAInfoResponse, error) {
+
 	body, err := util.Marshal(req, "GetCAInfo")
 	if err != nil {
 		return nil, err
@@ -610,4 +631,19 @@ func NormalizeURL(addr string) (*url.URL, error) {
 		}
 	}
 	return u, nil
+}
+
+func setCompatibleCA(caVersion string) bool {
+	versions := strings.Split(caVersion, ".")
+	// 1.0-1.3 -> set Compatible CA to true, otherwise (1.4 and above) set true
+	if len(versions) > 2 {
+		i, e := strconv.Atoi(versions[1])
+		if e != nil {
+			log.Debugf("Fabric CA version retrieval format returned error, will not use Compatible Fabric CA setup in the client: %s", e)
+		}
+		if i < 4 {
+			return true
+		}
+	}
+	return false
 }
