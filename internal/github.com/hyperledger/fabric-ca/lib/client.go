@@ -53,6 +53,10 @@ type Client struct {
 	csp core.CryptoSuite
 	// HTTP client associated with this Fabric CA client
 	httpClient *http.Client
+	// caVersion represents the version of the Fabric CA this client is connected to
+	caVersion string
+	// caVersionInitCalled is used to avoid unnecessary calls to Fabric CA
+	caVersionInitCalled bool
 }
 
 // GetCAInfoResponse is the response from the GetCAInfo call
@@ -610,4 +614,46 @@ func NormalizeURL(addr string) (*url.URL, error) {
 		}
 	}
 	return u, nil
+}
+
+// SetFabCAVersion will fetch the Fabric CA version and set the client caVersion and the util FabCACompatibilityMode
+// to support compatible Auth Token format (CA v1.4+ for new format or CA v1.3 and below for old one)
+// TODO remove the two functions below once Fabric CA v1.3 is not supported by the SDK anymore
+func (c *Client) SetFabCAVersion() error {
+	if !c.caVersionInitCalled {
+		i, e := c.GetCAInfo(&api.GetCAInfoRequest{CAName: c.Config.CAName})
+		if e != nil {
+			return e
+		}
+		c.caVersion = i.Version
+		// setting Fabric CA compatibility mode here to support Auth Token signing for Fabric CA v1.3 or lower
+		util.FabCACompatibilityMode = isCompatibleFabCA(i.Version)
+		c.caVersionInitCalled = true
+	}
+	return nil
+}
+
+func isCompatibleFabCA(caVersion string) bool {
+	versions := strings.Split(caVersion, ".")
+	// 1.0-1.3 -> set Compatible CA to true, otherwise (1.4 and above) set false
+	if len(versions) > 1 {
+		majv, e := strconv.Atoi(versions[0])
+		if e != nil {
+			log.Debugf("Fabric CA version retrieval format returned error, will not use Compatible Fabric CA setup in the client: %s", e)
+			return false
+		}
+		if majv == 0 {
+			return true
+		}
+
+		minv, e := strconv.Atoi(versions[1])
+		if e != nil {
+			log.Debugf("Fabric CA version retrieval format returned error, will not use Compatible Fabric CA setup in the client: %s", e)
+			return false
+		}
+		if majv == 1 && minv < 4 {
+			return true
+		}
+	}
+	return false
 }
