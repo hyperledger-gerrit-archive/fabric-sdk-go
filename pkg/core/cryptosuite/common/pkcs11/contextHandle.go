@@ -8,6 +8,7 @@ package pkcs11
 
 import (
 	"fmt"
+	"hash/fnv"
 
 	"sync"
 
@@ -531,15 +532,27 @@ func createNewSession(ctx *mPkcs11.Ctx, slot uint) (mPkcs11.SessionHandle, error
 
 // pkcs11CtxCacheKey for context handler
 type pkcs11CtxCacheKey struct {
-	lib   string
-	label string
-	pin   string
-	opts  ctxOpts
+	lib      string
+	label    string
+	pin      string
+	opts     ctxOpts
+	pinHash  uint32
+	hashOnce sync.Once
 }
 
 //String return string value for pkcs11CtxCacheKey
 func (key *pkcs11CtxCacheKey) String() string {
-	return fmt.Sprintf("%x_%s_%s_%d_%d", key.lib, key.label, key.pin, key.opts.sessionCacheSize, key.opts.openSessionRetry)
+	key.hashOnce.Do(func() {
+		h := fnv.New32a()
+		_, e := h.Write([]byte(key.pin))
+		if e != nil {
+			logger.Warnf("Unable to generate hash for PKCS11 CTX PIN, cause : %s", e)
+		} else {
+			key.pinHash = h.Sum32()
+		}
+	})
+	//Instead of PIN use hash of PIN in cache key string
+	return fmt.Sprintf("%x_%s_%d_%d_%d", key.lib, key.label, key.pinHash, key.opts.sessionCacheSize, key.opts.openSessionRetry)
 }
 
 //getInstance loads ContextHandle instance from cache
