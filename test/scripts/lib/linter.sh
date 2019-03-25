@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-GO_METALINTER_CMD="${GO_METALINTER_CMD:-gometalinter}"
+GOLANGCI_LINT_CMD="${GOLANGCI_LINT_CMD:-golangci-lint}"
 
 function runLinter {
     packagesToDirs
@@ -13,7 +13,7 @@ function runLinter {
     echo "Directories to lint: ${DIRS[@]}"
 
     echo "Running metalinters..."
-    ${GO_METALINTER_CMD} --config=./gometalinter.json "${DIRS[@]}"
+    ${GOLANGCI_LINT_CMD} run -c "./golangci.yml" "${DIRS[@]}"
     echo "Metalinters finished successfully"
 }
 
