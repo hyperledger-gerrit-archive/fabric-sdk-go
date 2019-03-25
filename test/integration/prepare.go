@@ -71,9 +71,9 @@ func PrepareExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName 
 	}
 
 	if instantiated {
-		err := resetExampleCC(sdk, user, orgName, channelID, chaincodeID, resetArgs)
-		if err != nil {
-			return errors.WithMessage(err, "Resetting example chaincode failed")
+		error := resetExampleCC(sdk, user, orgName, channelID, chaincodeID, resetArgs)
+		if error != nil {
+			return errors.WithMessage(error, "Resetting example chaincode failed")
 		}
 		return nil
 	}
