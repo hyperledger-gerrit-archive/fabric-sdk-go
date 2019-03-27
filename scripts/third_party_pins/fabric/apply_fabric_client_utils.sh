@@ -56,7 +56,12 @@ declare -a PKGS=(
     "msp"
 
     "discovery/client"
+    "discovery/protoext"
+
     "gossip/util"
+    "gossip/protoext"
+
+    "sdkinternal/pkg/identity"
 )
 
 declare -a FILES=(
@@ -109,7 +114,6 @@ declare -a FILES=(
     "core/comm/config.go"
 
     "common/crypto/random.go"
-    "common/crypto/signer.go"
 
     "common/attrmgr/attrmgr.go"
 
@@ -162,8 +166,15 @@ declare -a FILES=(
     "discovery/client/client.go"
     "discovery/client/selection.go"
     "discovery/client/signer.go"
+    "discovery/protoext/response.go"
+    "discovery/protoext/querytype.go"
 
+    "gossip/protoext/signing.go"
+    "gossip/protoext/message.go"
+    "gossip/protoext/stringers.go"
     "gossip/util/misc.go"
+
+    "sdkinternal/pkg/identity/identity.go"
 )
 
 echo 'Removing current upstream project from working directory ...'
@@ -277,20 +288,12 @@ FILTER_FILENAME="common/crypto/random.go"
 FILTER_FN="GetRandomNonce,GetRandomBytes"
 gofilter
 
-FILTER_FILENAME="common/crypto/signer.go"
-FILTER_FN=
-gofilter
-
 FILTER_FILENAME="common/util/utils.go"
 FILTER_FN="CreateUtcTimestamp,ConcatenateBytes,GenerateBytesUUID,GenerateIntUUID,GenerateUUID,idBytesToStr"
 gofilter
 
 FILTER_FILENAME="core/comm/config.go"
 sed -i'' -e 's/flogging\.FabricLogger/flogging.Logger/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/MetricsProvider metrics\.Provider/ a\
-\/\/ HealthCheckEnabled enables the gRPC Health Checking Protocol for the server\
-	HealthCheckEnabled bool\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="common/channelconfig/applicationorg.go"
 FILTER_FN=
