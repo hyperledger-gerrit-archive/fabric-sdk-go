@@ -69,9 +69,9 @@ FABRIC_DEV_REGISTRY_PRE_CMD ?= docker login -u docker -p docker nexus3.hyperledg
 
 # Upstream fabric patching (overridable)
 THIRDPARTY_FABRIC_CA_BRANCH ?= master
-THIRDPARTY_FABRIC_CA_COMMIT ?= v1.4.0
+THIRDPARTY_FABRIC_CA_COMMIT ?= 099f0f8d3fa6f44fcd5ddd6b51ecaaf00fe9664f
 THIRDPARTY_FABRIC_BRANCH    ?= master
-THIRDPARTY_FABRIC_COMMIT    ?= v1.4.0
+THIRDPARTY_FABRIC_COMMIT    ?= 2131fb8388d196689ec7422f3a476ac291133651
 
 # Force removal of images in cleanup (overridable)
 FIXTURE_DOCKER_REMOVE_FORCE ?= false

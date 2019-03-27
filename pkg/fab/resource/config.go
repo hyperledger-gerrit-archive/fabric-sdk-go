@@ -12,6 +12,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	fcutils "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/pkg/identity"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
@@ -48,7 +49,7 @@ type ConfigSignatureData struct {
 
 // GetConfigSignatureData will prepare a ConfigSignatureData comprising:
 // SignatureHeader, its marshaled []byte and the full signing []byte to be used for signing (by an external tool) a Channel Config
-func GetConfigSignatureData(ctx crypto.IdentitySerializer, config []byte) (signatureHeaderData ConfigSignatureData, e error) {
+func GetConfigSignatureData(ctx identity.Serializer, config []byte) (signatureHeaderData ConfigSignatureData, e error) {
 	creator, err := ctx.Serialize()
 	if err != nil {
 		e = errors.WithMessage(err, "failed to get user context's identity")
