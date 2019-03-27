@@ -68,6 +68,9 @@ type ServerConfig struct {
 	MetricsProvider metrics.Provider
 	// HealthCheckEnabled enables the gRPC Health Checking Protocol for the server
 	HealthCheckEnabled bool
+
+	// HealthCheckEnabled enables the gRPC Health Checking Protocol for the server
+	HealthCheckEnabled bool
 }
 
 // ClientConfig defines the parameters for configuring a GRPCClient instance

@@ -208,7 +208,10 @@
 [[projects]]
   digest = "1:4142d94383572e74b42352273652c62afec5b23f325222ed09198f46009022d1"
   name = "github.com/prometheus/client_golang"
-  packages = ["prometheus"]
+  packages = [
+    "prometheus",
+    "prometheus/promhttp",
+  ]
   pruneopts = ""
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
   version = "v0.8.0"
@@ -433,6 +436,7 @@
     "github.com/mitchellh/mapstructure",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
+    "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/spf13/cast",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",

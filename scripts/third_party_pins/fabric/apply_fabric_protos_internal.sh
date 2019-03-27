@@ -26,12 +26,8 @@ declare -a PKGS=(
 
 declare -a FILES=(
     "protos/orderer/ab.pb.go"
-
     "protos/discovery/protocol.pb.go"
-    "protos/discovery/extensions.go"
-
     "protos/gossip/message.pb.go"
-    "protos/gossip/extensions.go"
 )
 
 declare -a NPBFILES=(
@@ -62,19 +58,7 @@ gofilter() {
         > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 }
 
-FILTERS_ENABLED="fn,gen,type"
-
-FILTER_FILENAME="protos/gossip/extensions.go"
-FILTER_FN="ToGossipMessage,InternalEndpoint"
-FILTER_GEN="SignedGossipMessage"
-FILTER_TYPE="IMPORT,CONST"
-gofilter
-
 FILTERS_ENABLED="fn"
-
-FILTER_FILENAME="protos/discovery/extensions.go"
-FILTER_FN="ConfigAt,MembershipAt,EndorsersAt"
-gofilter
 
 # Apply patching
 echo "Patching import paths on upstream project ..."
