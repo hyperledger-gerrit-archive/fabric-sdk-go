@@ -33,9 +33,6 @@ type CCPackage interface {
 	//InitFromBuffer initialize the package from bytes
 	InitFromBuffer(buf []byte) (*ChaincodeData, error)
 
-	// InitFromFS gets the chaincode from the filesystem (includes the raw bytes too)
-	InitFromFS(ccname string, ccversion string) ([]byte, *pb.ChaincodeDeploymentSpec, error)
-
 	// PutChaincodeToFS writes the chaincode to the filesystem
 	PutChaincodeToFS() error
 
@@ -88,6 +85,13 @@ type CCContext struct {
 
 	// Version used to construct the chaincode image and register
 	Version string
+
+	// ID the identifier for this chaincode (for now, the hash of the package)
+	ID []byte
+
+	// InitRequired indicates whether the chaincode must have 'Init' invoked
+	// before other transactions can proceed.
+	InitRequired bool
 }
 
 //-------- ChaincodeDefinition - interface for ChaincodeData ------
@@ -112,6 +116,9 @@ type ChaincodeDefinition interface {
 	// Endorsement returns how to endorse proposals for this chaincode.
 	// The string returns is the name of the endorsement method (usually 'escc').
 	Endorsement() string
+
+	// RequiresInit indicates whether or not we must enforce Init exactly once semantics
+	RequiresInit() bool
 }
 
 //-------- ChaincodeData is stored on the LSCC -------
@@ -159,14 +166,17 @@ func (*ChaincodeData) ProtoMessage() {}
 
 // ChaincodeContainerInfo is yet another synonym for the data required to start/stop a chaincode.
 type ChaincodeContainerInfo struct {
-	Name        string
-	Version     string
-	Path        string
-	Type        string
-	CodePackage []byte
+	PackageID persistence.PackageID
+	Path      string
+	Type      string
 
 	// ContainerType is not a great name, but 'DOCKER' and 'SYSTEM' are the valid types
 	ContainerType string
+
+	// FIXME: Name and Version fields must disappear from this struct
+	// because they are *NOT* a property of the chaincode container (FAB-14561)
+	Name    string
+	Version string
 }
 
 // TransactionParams are parameters which are tied to a particular transaction
@@ -174,6 +184,7 @@ type ChaincodeContainerInfo struct {
 type TransactionParams struct {
 	TxID                 string
 	ChannelID            string
+	NamespaceID          string
 	SignedProp           *pb.SignedProposal
 	Proposal             *pb.Proposal
 	TXSimulator          ledger.TxSimulator
@@ -190,8 +201,6 @@ type TransactionParams struct {
 // chaincode package without importing it; more methods
 // should be added below if necessary
 type ChaincodeProvider interface {
-	// Execute executes a standard chaincode invocation for a chaincode and an input
-	Execute(txParams *TransactionParams, cccid *CCContext, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error)
 	// ExecuteLegacyInit is a special case for executing chaincode deployment specs,
 	// which are not already in the LSCC, needed for old lifecycle
 	ExecuteLegacyInit(txParams *TransactionParams, cccid *CCContext, spec *pb.ChaincodeDeploymentSpec) (*pb.Response, *pb.ChaincodeEvent, error)
