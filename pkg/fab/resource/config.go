@@ -46,9 +46,16 @@ type ConfigSignatureData struct {
 	SigningBytes         []byte
 }
 
+// serializer is an interface which wraps the Serialize function.
+//
+// Serialize converts an identity to bytes.  It returns an error on failure.
+type serializer interface {
+	Serialize() ([]byte, error)
+}
+
 // GetConfigSignatureData will prepare a ConfigSignatureData comprising:
 // SignatureHeader, its marshaled []byte and the full signing []byte to be used for signing (by an external tool) a Channel Config
-func GetConfigSignatureData(ctx crypto.IdentitySerializer, config []byte) (signatureHeaderData ConfigSignatureData, e error) {
+func GetConfigSignatureData(ctx serializer, config []byte) (signatureHeaderData ConfigSignatureData, e error) {
 	creator, err := ctx.Serialize()
 	if err != nil {
 		e = errors.WithMessage(err, "failed to get user context's identity")
