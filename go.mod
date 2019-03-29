@@ -22,7 +22,7 @@ require (
 	github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515
 	github.com/magiconair/properties v1.7.6
 	github.com/matttproud/golang_protobuf_extensions v1.0.1
-	github.com/miekg/pkcs11 v0.0.0-20180208123754-88ac7c418f89
+	github.com/miekg/pkcs11 v0.0.0-20190329070431-55f3fac3af27
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238
 	github.com/pelletier/go-toml v1.1.0
 	github.com/pkg/errors v0.8.0
