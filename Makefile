@@ -151,8 +151,13 @@ FABRIC_TOOLS_PRERELEASE_TAG = $(FABRIC_ARCH)-$(FABRIC_PRERELEASE_VERSION)
 FABRIC_TOOLS_DEVSTABLE_TAG  := stable
 
 # Detect CI
-# TODO introduce nightly and adjust verify
+CI_RUNNING := false
 ifdef JENKINS_URL
+CI_RUNNING := true
+endif
+
+# TODO introduce nightly and adjust verify
+ifeq ($(CI_RUNNING),true)
 export FABRIC_SDKGO_DEPEND_INSTALL=true
 FABRIC_SDK_CHAINCODED            := true
 FABRIC_SDKGO_TEST_CHANGED        := true
@@ -255,6 +260,13 @@ else
 	-@$(TEST_SCRIPTS_PATH)/dependencies.sh -c
 endif
 
+.PHONY: depend-ci
+depend-ci: version depend-noforce
+ifeq ($(CI_RUNNING),true)
+    GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/axw/gocov/...
+    GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/AlekSi/gocov-xml
+endif
+
 .PHONY: checks
 checks: version depend-noforce license lint
 
@@ -300,7 +312,7 @@ endif
 unit-tests: unit-test
 
 .PHONY: unit-tests-pkcs11
-unit-tests-pkcs11: clean-tests depend-noforce populate-noforce license
+unit-tests-pkcs11: clean-tests depend-noforce depend-ci populate-noforce license
 	@TEST_CHANGED_ONLY=$(FABRIC_SDKGO_TEST_CHANGED) TEST_WITH_LINTER=true FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) \
 	GO_TESTFLAGS="$(GO_TESTFLAGS_UNIT)" \
 	GOLANGCI_LINT_VER="$(GOLANGCI_LINT_VER)" \
@@ -386,7 +398,7 @@ integration-tests-devstable-nomutualtls: clean-tests depend-noforce populate-nof
 integration-tests: integration-test
 
 .PHONY: integration-test
-integration-test: clean-tests depend-noforce populate-noforce
+integration-test: clean-tests depend-noforce depend-ci populate-noforce
 ifeq ($(FABRIC_STABLE_INTTEST),true)
 	@$(MAKE) -f $(MAKEFILE_THIS) clean-tests
 	@FABRIC_SDKGO_SUBTARGET=true $(MAKE) -f $(MAKEFILE_THIS) integration-tests-stable
