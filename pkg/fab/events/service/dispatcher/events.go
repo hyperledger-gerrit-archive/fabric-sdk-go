@@ -8,8 +8,8 @@ package dispatcher
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	cb "github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 // Event is an event that's sent to the dispatcher. This includes client registration

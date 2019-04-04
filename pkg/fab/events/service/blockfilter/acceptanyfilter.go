@@ -8,7 +8,7 @@ package blockfilter
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	cb "github.com/hyperledger/fabric/protos/common"
 )
 
 // AcceptAny returns a block filter that accepts any block
