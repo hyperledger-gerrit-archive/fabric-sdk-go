@@ -15,7 +15,6 @@ require (
 	github.com/google/certificate-transparency-go v0.0.0-20180222191210-5ab67e519c93 // indirect
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
 	github.com/hyperledger/fabric-lib-go v1.0.0
-	github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos v0.0.0-20190328182020-93c3fcb272be
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/magiconair/properties v1.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
@@ -37,6 +36,7 @@ require (
 	github.com/stretchr/testify v1.2.2
 	golang.org/x/crypto v0.0.0-20180505025534-4ec37c66abab
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
+	google.golang.org/genproto v0.0.0-20190327125643-d831d65fe17d // indirect
 	google.golang.org/grpc v1.19.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
