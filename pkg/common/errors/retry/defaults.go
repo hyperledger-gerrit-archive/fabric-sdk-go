@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
 	grpcCodes "google.golang.org/grpc/codes"
 )
 

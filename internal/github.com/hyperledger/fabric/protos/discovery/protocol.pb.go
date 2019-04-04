@@ -11,7 +11,7 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import gossip "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/gossip"
-import msp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
+import msp "github.com/hyperledger/fabric/protos/msp"
 
 import (
 	context "golang.org/x/net/context"

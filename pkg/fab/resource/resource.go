@@ -24,8 +24,8 @@ import (
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	ccomm "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
