@@ -234,6 +234,7 @@ export GO_TAGS
 export DOCKER_CMD
 export DOCKER_COMPOSE_CMD
 export FABRIC_SDKGO_TESTRUN_ID
+export GO111MODULE=on
 
 .PHONY: all
 all: version depend-noforce license unit-test integration-test
