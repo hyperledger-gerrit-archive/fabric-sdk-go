@@ -234,6 +234,7 @@ export GO_TAGS
 export DOCKER_CMD
 export DOCKER_COMPOSE_CMD
 export FABRIC_SDKGO_TESTRUN_ID
+export GO111MODULE=on
 
 .PHONY: all
 all: version depend-noforce license unit-test integration-test
@@ -264,7 +265,9 @@ license: version
 
 .PHONY: lint
 lint: version populate-noforce
-	@LINT_CHANGED_ONLY=true GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
+	@MODULE="github.com/hyperledger/fabric-sdk-go" PKG_ROOT="./pkg" LINT_CHANGED_ONLY=true GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
+	@MODULE="github.com/hyperledger/fabric-sdk-go/test/integration" LINT_CHANGED_ONLY=true GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
+	@MODULE="github.com/hyperledger/fabric-sdk-go/test/performance" LINT_CHANGED_ONLY=true GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
 
 .PHONY: lint-all
 lint-all: version populate-noforce
