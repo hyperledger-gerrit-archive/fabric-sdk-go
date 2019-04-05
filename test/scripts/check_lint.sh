@@ -9,22 +9,24 @@
 set -e
 LINT_CHANGED_ONLY="${LINT_CHANGED_ONLY:-false}"
 GO_CMD="${GO_CMD:-go}"
+GOPATH="${GOPATH:-$HOME/go}"
 SCRIPT_DIR="$(dirname "$0")"
+PKG_ROOT="${PKG_ROOT:-./}"
 
-REPO="github.com/hyperledger/fabric-sdk-go"
-
-echo "Running" $(basename "$0")
+echo "Running" $(basename "$0") "(${MODULE} ${PKG_ROOT})"
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
 source ${SCRIPT_DIR}/lib/linter.sh
 
 # Find all packages that should be linted.
+PWD_ORIG=$(pwd)
+cd "${GOPATH}/src/${MODULE}"
 declare -a PKG_SRC=(
-    "./pkg"
-    "./test"
+    "${PKG_ROOT}"
 )
 declare PKG_EXCLUDE=""
 findPackages
+cd ${PWD_ORIG}
 
 # Reduce Linter checks to changed packages.
 if [ "$LINT_CHANGED_ONLY" = true ]; then
