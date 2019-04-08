@@ -37,7 +37,7 @@ declare -a PKGS=(
     "common/errors"
     "common/util"
     "common/channelconfig"
-    "common/attrmgr"
+    "core/chaincode/shim/ext/attrmgr"
     "common/ledger"
     "common/metrics"
     "common/metrics/disabled"
@@ -121,7 +121,7 @@ declare -a FILES=(
 
     "common/crypto/random.go"
 
-    "common/attrmgr/attrmgr.go"
+    "core/chaincode/shim/ext/attrmgr/attrmgr.go"
 
     "common/channelconfig/applicationorg.go"
     "common/channelconfig/channel.go"
@@ -227,6 +227,16 @@ done
 sed -i "$START_LINE i pkcs11Ctx *sdkp11.ContextHandle" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="bccsp/pkcs11/pkcs11.go"
+cat >> ${TMP_PROJECT_PATH}/${FILTER_FILENAME} <<EOF
+// TODO: Refactor using keyType
+const (
+    privateKeyFlag = true
+    publicKeyFlag  = false
+)
+EOF
+sed -i'' -e 's/findKeyPairFromSKI(p11lib, session, ski, privateKeyType)/findKeyPairFromSKI(p11lib, session, ski, privateKeyFlag)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/findKeyPairFromSKI(p11lib, session, ski, publicKeyType)/findKeyPairFromSKI(p11lib, session, ski, publicKeyFlag)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
 sed -i'' -e '/"github.com\/hyperledger"/a "time"/' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/"math\/big"/a "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cachebridge"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/"math\/big"/a sdkp11 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/core\/cryptosuite\/common\/pkcs11"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -239,7 +249,7 @@ for i in {1..27}
 do
     sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 done
-sed -i'' -e '/func (csp \*impl) findKeyPairFromSKI(mod/a return cachebridge.GetKeyPairFromSessionSKI(&cachebridge.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType})' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/func (csp \*impl) findKeyPairFromSKI(mod/a return cachebridge.GetKeyPairFromSessionSKI(&cachebridge.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType == privateKeyType})' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/func (csp \*impl) findKeyPairFromSKI(mod/i \
 func timeTrack(start time.Time, msg string) {\
 	elapsed := time.Since(start)\
