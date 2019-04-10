@@ -12,7 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -44,13 +44,13 @@ import (
 )
 
 var (
-	channelConfig = path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx")
+	channelConfig = filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, "mychannel.tx")
+	configPath    = filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", "config_test.yaml")
 )
 
 const (
-	networkCfg               = "../../../test/fixtures/config/config_test.yaml"
-	networkCfgWithoutOrderer = "../../../test/fixtures/config/config_test_without_orderer.yaml"
-	configPath               = "../../core/config/testdata/config_test.yaml"
+	networkCfg               = "config_test.yaml"
+	networkCfgWithoutOrderer = "config_test_without_orderer.yaml"
 	testAddress              = "127.0.0.1:0"
 )
 
@@ -1027,7 +1027,9 @@ func setupCustomOrderer(ctx *fcmocks.MockContext, mockOrderer fab.Orderer) *fcmo
 }
 
 func getNetworkConfig(t *testing.T) fab.EndpointConfig {
-	configBackend, err := configImpl.FromFile(networkCfg)()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, networkCfg)
+
+	configBackend, err := configImpl.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1041,7 +1043,9 @@ func getNetworkConfig(t *testing.T) fab.EndpointConfig {
 }
 
 func getNetworkConfigWithoutOrderer(t *testing.T) fab.EndpointConfig {
-	configBackend, err := configImpl.FromFile(networkCfgWithoutOrderer)()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, networkCfgWithoutOrderer)
+
+	configBackend, err := configImpl.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1095,7 +1099,7 @@ func TestSaveChannelSuccess(t *testing.T) {
 	assert.Contains(t, err.Error(), "must provide channel ID and channel config")
 
 	// Test extract configuration error
-	r1, err := os.Open("./testdata/extractcherr.tx")
+	r1, err := os.Open(filepath.Join("testdata", "extractcherr.tx"))
 	assert.Nil(t, err, "opening channel config file failed")
 	defer r1.Close()
 
@@ -1104,7 +1108,7 @@ func TestSaveChannelSuccess(t *testing.T) {
 	assert.Contains(t, err.Error(), "unmarshal config envelope failed")
 
 	// Test sign channel error
-	r2, err := os.Open("./testdata/signcherr.tx")
+	r2, err := os.Open(filepath.Join("testdata", "signcherr.tx"))
 	assert.Nil(t, err, "opening channel config file failed")
 	defer r2.Close()
 
@@ -1114,7 +1118,7 @@ func TestSaveChannelSuccess(t *testing.T) {
 	assert.Contains(t, err.Error(), "unmarshal config envelope failed")
 
 	// Test sign channel error
-	r3, err := os.Open("./testdata/non-existent.tx")
+	r3, err := os.Open(filepath.Join("testdata", "non-existent.tx"))
 	assert.NotNil(t, err, "opening channel config should have file failed")
 	defer r3.Close()
 
