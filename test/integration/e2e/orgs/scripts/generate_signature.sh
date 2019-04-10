@@ -7,8 +7,10 @@
 
 set -e
 
-GOPATH="${GOPATH:-$HOME/go}"
-REPO="github.com/hyperledger/fabric-sdk-go"
+SCRIPT_DIR="$(dirname "$0")"
+GOMOD_PATH=$(cd ${SCRIPT_DIR} && ${GO_CMD} env GOMOD)
+PROJECT_MODULE=$(awk -F' ' '$1 == "module" {print $2}' ${GOMOD_PATH})
+PROJECT_DIR=$(dirname ${GOMOD_PATH})
 
 PWD_ORIG=$(pwd)
 # need org in lowercase
@@ -17,7 +19,7 @@ ORG=$(echo $ORG_N | tr '[:upper:]' '[:lower:]')
 USER=$2
 CH_CFG=$3
 echo "CH_CFG is $CH_CFG, ORG is $ORG, USER is $USER"
-KEY_PATH_DIR=${GOPATH}/src/${REPO}/test/fixtures/fabric/v1/crypto-config/peerOrganizations/${ORG}.example.com/users/${USER}\@${ORG}.example.com/msp/keystore
+KEY_PATH_DIR=${PROJECT_DIR}/test/fixtures/fabric/v1/crypto-config/peerOrganizations/${ORG}.example.com/users/${USER}\@${ORG}.example.com/msp/keystore
 SIGNATURE_PATH=$4
 cd $KEY_PATH_DIR
 KEY_NAME=$(ls)
