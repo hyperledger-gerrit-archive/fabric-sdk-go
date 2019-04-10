@@ -20,7 +20,6 @@ set -e
 
 
 GO_CMD="${GO_CMD:-go}"
-GOPATH="${GOPATH:-$HOME/go}"
 FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-stable}"
 FABRIC_SDKGO_TESTRUN_ID="${FABRIC_SDKGO_TESTRUN_ID:-${RANDOM}}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
@@ -32,7 +31,9 @@ TEST_RACE_CONDITIONS="${TEST_RACE_CONDITIONS:-true}"
 SCRIPT_DIR="$(dirname "$0")"
 # TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
-REPO="github.com/hyperledger/fabric-sdk-go"
+PROJECT_MODULE=$(awk -F' ' '$1 == "module" {print $2}' < $(go env GOMOD))
+PROJECT_DIR=$(dirname $(go env GOMOD))
+
 MODULE="github.com/hyperledger/fabric-sdk-go/test/integration"
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
@@ -45,24 +46,24 @@ echo "Running" $(basename "$0")
 
 # Packages to include in test run
 PWD_ORIG=$(pwd)
-cd "${GOPATH}/src/${MODULE}"
-PKGS=($(${GO_CMD} list ${REPO}/test/integration/... 2> /dev/null | \
-      grep -v ^${REPO}/test/integration/e2e/pkcs11 | \
-      grep -v ^${REPO}/test/integration/negative | \
-      grep -v ^${REPO}/test/integration\$ | \
+cd "${PROJECT_DIR}/${MODULE#${PROJECT_MODULE}}"
+PKGS=($(${GO_CMD} list ${PROJECT_MODULE}/test/integration/... 2> /dev/null | \
+      grep -v ^${PROJECT_MODULE}/test/integration/e2e/pkcs11 | \
+      grep -v ^${PROJECT_MODULE}/test/integration/negative | \
+      grep -v ^${PROJECT_MODULE}/test/integration\$ | \
       tr '\n' ' '))
 cd ${PWD_ORIG}
 
 if [ "$E2E_ONLY" == "true" ]; then
     echo "Including E2E tests only"
-    PKGS=($(echo ${PKGS[@]} | tr ' ' '\n' | grep ^${REPO}/test/integration/e2e | tr '\n' ' '))
+    PKGS=($(echo ${PKGS[@]} | tr ' ' '\n' | grep ^${PROJECT_MODULE}/test/integration/e2e | tr '\n' ' '))
 fi
 
 # Reduce tests to changed packages.
 if [ "${TEST_CHANGED_ONLY}" = true ]; then
     # findChangedFiles assumes that the working directory contains the repo; so change to the repo directory.
     PWD_ORIG=$(pwd)
-    cd "${GOPATH}/src/${REPO}"
+    cd "${PROJECT_DIR}"
     findChangedFiles
     cd ${PWD_ORIG}
 
@@ -104,6 +105,6 @@ GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
 
 PWD_ORIG=$(pwd)
-cd "${GOPATH}/src/${MODULE}"
+cd "${PROJECT_DIR}/${MODULE#${PROJECT_MODULE}}"
 ${GO_CMD} test ${RACEFLAG} -tags "${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
 cd ${PWD_ORIG}

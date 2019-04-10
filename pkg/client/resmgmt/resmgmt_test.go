@@ -44,13 +44,13 @@ import (
 )
 
 var (
-	channelConfig = path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx")
+	channelConfig = path.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, "mychannel.tx")
+	configPath    = path.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", "config_test.yaml")
 )
 
 const (
-	networkCfg               = "../../../test/fixtures/config/config_test.yaml"
-	networkCfgWithoutOrderer = "../../../test/fixtures/config/config_test_without_orderer.yaml"
-	configPath               = "../../core/config/testdata/config_test.yaml"
+	networkCfg               = "config_test.yaml"
+	networkCfgWithoutOrderer = "config_test_without_orderer.yaml"
 	testAddress              = "127.0.0.1:0"
 )
 
@@ -1027,7 +1027,9 @@ func setupCustomOrderer(ctx *fcmocks.MockContext, mockOrderer fab.Orderer) *fcmo
 }
 
 func getNetworkConfig(t *testing.T) fab.EndpointConfig {
-	configBackend, err := configImpl.FromFile(networkCfg)()
+	configPath := path.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, networkCfg)
+
+	configBackend, err := configImpl.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1041,7 +1043,9 @@ func getNetworkConfig(t *testing.T) fab.EndpointConfig {
 }
 
 func getNetworkConfigWithoutOrderer(t *testing.T) fab.EndpointConfig {
-	configBackend, err := configImpl.FromFile(networkCfgWithoutOrderer)()
+	configPath := path.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, networkCfgWithoutOrderer)
+
+	configBackend, err := configImpl.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
