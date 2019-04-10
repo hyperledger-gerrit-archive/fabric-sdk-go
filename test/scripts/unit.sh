@@ -28,8 +28,10 @@ TEST_WITH_LINTER="${TEST_WITH_LINTER:-false}"
 SCRIPT_DIR="$(dirname "$0")"
 CONFIG_DIR=$(pwd)
 
-REPO="github.com/hyperledger/fabric-sdk-go"
-MODULE="${MODULE:-${REPO}}"
+PROJECT_MODULE=$(awk -F' ' '$1 == "module" {print $2}' < $(go env GOMOD))
+PROJECT_DIR=$(dirname $(go env GOMOD))
+
+MODULE="${MODULE:-${PROJECT_MODULE}}"
 PKG_ROOT="${PKG_ROOT:-./}"
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
@@ -39,7 +41,7 @@ echo "Running" $(basename "$0") "(${MODULE} ${PKG_ROOT})"
 
 # Find all packages that should be tested.
 PWD_ORIG=$(pwd)
-cd "${GOPATH}/src/${MODULE}"
+cd "${PROJECT_DIR}/${MODULE#${PROJECT_MODULE}}"
 declare -a PKG_SRC=(
     "${PKG_ROOT}"
 )
@@ -84,19 +86,20 @@ fi
 
 # filter out excluded tests
 PKGS=($(echo "${PKGS[@]}" | tr ' ' '\n' | \
-    grep -v ^${REPO}/pkg/core/cryptosuite/bccsp/multisuite | \
-    grep -v ^${REPO}/pkg/core/cryptosuite/bccsp/pkcs11 | \
-    grep -v ^${REPO}/pkg/core/cryptosuite/common/pkcs11 | \
-    grep -v ^${REPO}/pkg/client/channel/benchmark | \
+    grep -v ^${PROJECT_MODULE}/pkg/core/cryptosuite/bccsp/multisuite | \
+    grep -v ^${PROJECT_MODULE}/pkg/core/cryptosuite/bccsp/pkcs11 | \
+    grep -v ^${PROJECT_MODULE}/pkg/core/cryptosuite/common/pkcs11 | \
+    grep -v ^${PROJECT_MODULE}/pkg/client/channel/benchmark | \
     tr ' ' '\n'))
 
 echo "Code level ${FABRIC_SDKGO_CODELEVEL_TAG} (Fabric ${FABRIC_SDKGO_CODELEVEL_VER})"
 echo "Running unit tests..."
 GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
 
-GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel"
-GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
-GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
+GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.ProjectPath=${PROJECT_DIR}"
+GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel"
+GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
+GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
 ${GO_CMD} test ${RACEFLAG} -cover -tags "testing ${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m
 
 echo "Unit tests finished successfully"
