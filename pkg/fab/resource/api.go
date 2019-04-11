@@ -8,8 +8,8 @@ package resource
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	common "github.com/hyperledger/fabric/protos/common"
+	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
 // CreateChannelRequest requests channel creation on the network

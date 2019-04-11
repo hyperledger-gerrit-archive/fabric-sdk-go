@@ -22,11 +22,11 @@ cp -R ${TMP_PROJECT_PATH} ${PATCH_PROJECT_PATH}
 declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
 
 declare -a PKGS=(
-        "internal/protoutil"
+        "protoutil"
 )
 
 declare -a FILES=(
-        "internal/protoutil/commonutils.go"
+        "protoutil/commonutils.go"
 )
 
 # Create directory structure for packages
@@ -47,7 +47,7 @@ gofilter() {
 echo "Filtering Go sources for allowed functions ..."
 FILTERS_ENABLED="fn"
 
-FILTER_FILENAME="internal/protoutil/commonutils.go"
+FILTER_FILENAME="protoutil/commonutils.go"
 FILTER_FN="MarshalOrPanic"
 gofilter
 
