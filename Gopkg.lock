@@ -96,18 +96,19 @@
   revision = "c20582278a829e4b3259747a3ce0eceb1763ee13"
 
 [[projects]]
-  digest = "1:f958a1c137db276e52f0b50efee41a1a389dcdded59a69711f3e872757dab34b"
+  digest = "1:529d738b7976c3848cae5cf3a8036440166835e389c1f617af701eeb12a0518d"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/timestamp",
   ]
   pruneopts = ""
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
+  version = "v1.3.1"
 
 [[projects]]
   digest = "1:cf805776c2f90b69b69df23c8ff3753981b80e365cdfbe1b9d0cef50668c85c8"
@@ -140,6 +141,36 @@
   ]
   pruneopts = ""
   revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
+
+[[projects]]
+  digest = "1:849079ca5e87fa9f4619511eabda0f33e0b1c7d3e3494125404925a50b16ff24"
+  name = "github.com/hyperledger/fabric"
+  packages = [
+    "bccsp",
+    "bccsp/factory",
+    "bccsp/pkcs11",
+    "bccsp/sw",
+    "bccsp/utils",
+    "common/crypto",
+    "common/flogging",
+    "common/flogging/fabenc",
+    "common/metadata",
+    "common/util",
+    "internal/pkg/identity",
+    "protos/common",
+    "protos/discovery",
+    "protos/gossip",
+    "protos/ledger/rwset",
+    "protos/ledger/rwset/kvrwset",
+    "protos/msp",
+    "protos/orderer",
+    "protos/peer",
+    "protos/token",
+    "protoutil",
+  ]
+  pruneopts = ""
+  revision = "be235fd3a236f792a525353d9f9586c8b0d4a61a"
+  version = "v2.0.0-alpha"
 
 [[projects]]
   digest = "1:f4e34f94e4873a32542b96bfd884df686b26c458f27ad719569e048abcc2b350"
@@ -190,6 +221,14 @@
   revision = "b4575eea38cca1123ec2dc90c26529b5c5acfcff"
 
 [[projects]]
+  branch = "master"
+  digest = "1:05299a5fae20b7f12c0f0ccc0281fe5091a2b671f8380084352fda354651e101"
+  name = "github.com/op/go-logging"
+  packages = ["."]
+  pruneopts = ""
+  revision = "970db520ece77730c7e4724c61121037378659d9"
+
+[[projects]]
   digest = "1:d60cfeee185019d4fcd35e8c89c83aff576e4723b6100300bf67b05be961388f"
   name = "github.com/pelletier/go-toml"
   packages = ["."]
@@ -198,12 +237,12 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:7365acd48986e205ccb8652cc746f09c8b7876030d53710ea6ef7d0bd0dcd7ca"
+  digest = "1:1d7e1867c49a6dd9856598ef7c3123604ea3daabf5b83f303ff457bcbc410b1d"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = ""
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:256484dbbcd271f9ecebc6795b2df8cad4c458dd0f5fd82a8c2fa0c29f233411"
@@ -310,6 +349,46 @@
   pruneopts = ""
   revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
   version = "v1.2.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:31e6fa2492a5e97084e17715314283958cb6b7d11ddbc0753c15ba6d1afa028e"
+  name = "github.com/sykesm/zap-logfmt"
+  packages = ["."]
+  pruneopts = ""
+  revision = "ccbdde42f96b57b635a2dfb32b342fe68df8003a"
+
+[[projects]]
+  digest = "1:74f86c458e82e1c4efbab95233e0cf51b7cc02dc03193be9f62cd81224e10401"
+  name = "go.uber.org/atomic"
+  packages = ["."]
+  pruneopts = ""
+  revision = "1ea20fb1cbb1cc08cbd0d913a96dead89aa18289"
+  version = "v1.3.2"
+
+[[projects]]
+  digest = "1:22c7effcb4da0eacb2bb1940ee173fac010e9ef3c691f5de4b524d538bd980f5"
+  name = "go.uber.org/multierr"
+  packages = ["."]
+  pruneopts = ""
+  revision = "3c4937480c32f4c13a875a1829af76c98ca3d40a"
+  version = "v1.1.0"
+
+[[projects]]
+  digest = "1:246f378f80fba6fcf0f191c486b6613265abd2bc0f2fa55a36b928c67352021e"
+  name = "go.uber.org/zap"
+  packages = [
+    ".",
+    "buffer",
+    "internal/bufferpool",
+    "internal/color",
+    "internal/exit",
+    "zapcore",
+    "zapgrpc",
+  ]
+  pruneopts = ""
+  revision = "ff33455a0e382e8a81d14dd7c922020b6b5e7982"
+  version = "v1.9.1"
 
 [[projects]]
   branch = "master"
@@ -448,6 +527,15 @@
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/hyperledger/fabric-lib-go/healthz",
+    "github.com/hyperledger/fabric/protos/common",
+    "github.com/hyperledger/fabric/protos/discovery",
+    "github.com/hyperledger/fabric/protos/gossip",
+    "github.com/hyperledger/fabric/protos/ledger/rwset",
+    "github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset",
+    "github.com/hyperledger/fabric/protos/msp",
+    "github.com/hyperledger/fabric/protos/orderer",
+    "github.com/hyperledger/fabric/protos/peer",
+    "github.com/hyperledger/fabric/protoutil",
     "github.com/miekg/pkcs11",
     "github.com/mitchellh/mapstructure",
     "github.com/pkg/errors",
