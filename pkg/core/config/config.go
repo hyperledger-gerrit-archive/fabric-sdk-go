@@ -71,7 +71,7 @@ func FromFile(name string, opts ...Option) core.ConfigProvider {
 
 // FromRaw will initialize the configs from a byte array.
 //
-// configType parameter should be a "yaml" or "json".
+// configType parameter should be either "yaml" or "json".
 func FromRaw(configBytes []byte, configType string, opts ...Option) core.ConfigProvider {
 	return func() ([]core.ConfigBackend, error) {
 		buf := bytes.NewBuffer(configBytes)
