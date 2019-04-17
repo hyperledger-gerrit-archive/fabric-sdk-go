@@ -47,7 +47,6 @@ func newFabricCAAdapter(orgName string, cryptoSuite core.CryptoSuite, config msp
 func (c *fabricCAAdapter) Enroll(request *api.EnrollmentRequest) ([]byte, error) {
 
 	logger.Debugf("Enrolling user [%s]", request.Name)
-
 	// TODO add attributes
 	careq := &caapi.EnrollmentRequest{
 		CAName:  c.caClient.Config.CAName,
@@ -56,6 +55,9 @@ func (c *fabricCAAdapter) Enroll(request *api.EnrollmentRequest) ([]byte, error)
 		Profile: request.Profile,
 		Type:    request.Type,
 		Label:   request.Label,
+		CSR: &caapi.CSRInfo{
+			Hosts: request.DNSNames,
+		},
 	}
 
 	if len(request.AttrReqs) > 0 {
