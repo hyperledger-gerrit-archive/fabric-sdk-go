@@ -117,6 +117,7 @@ type enrollmentOptions struct {
 	label    string
 	typ      string
 	attrReqs []*AttributeRequest
+	dnsNames []string
 }
 
 // EnrollmentOption describes a functional parameter for Enroll
@@ -158,6 +159,14 @@ func WithLabel(label string) EnrollmentOption {
 func WithAttributeRequests(attrReqs []*AttributeRequest) EnrollmentOption {
 	return func(o *enrollmentOptions) error {
 		o.attrReqs = attrReqs
+		return nil
+	}
+}
+
+// WithDNSNames enrollment option
+func WithDNSNames(dnsNames []string) EnrollmentOption {
+	return func(o *enrollmentOptions) error {
+		o.dnsNames = dnsNames
 		return nil
 	}
 }
@@ -373,11 +382,12 @@ func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 	}
 
 	req := &mspapi.EnrollmentRequest{
-		Name:    enrollmentID,
-		Secret:  eo.secret,
-		Profile: eo.profile,
-		Type:    eo.typ,
-		Label:   eo.label,
+		Name:     enrollmentID,
+		Secret:   eo.secret,
+		Profile:  eo.profile,
+		Type:     eo.typ,
+		Label:    eo.label,
+		DNSNames: eo.dnsNames,
 	}
 
 	if len(eo.attrReqs) > 0 {
