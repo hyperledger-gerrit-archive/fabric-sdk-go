@@ -120,12 +120,12 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 
 	identityConfig := config.(*IdentityConfig)
 	certPem, _ := identityConfig.CAClientCert(org1)
-	certConfig := endpoint.TLSConfig{Pem: string(certPem)}
+	certConfig := endpoint.PEMConfig{Pem: string(certPem)}
 
 	err = certConfig.LoadBytes()
 	assert.Nil(t, err, "TLS CA cert parse failed, reason: %s", err)
 
-	cert, ok, err := certConfig.TLSCert()
+	cert, ok, err := certConfig.Cert()
 	assert.Nil(t, err, "TLS CA cert parse failed, reason: %s", err)
 	assert.True(t, ok, "TLS CA cert parse failed")
 
@@ -134,11 +134,11 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	assert.Nil(t, err, "TLS CA cert pool fetch failed, reason: %s", err)
 	//Test TLSCA Cert Pool (Negative test case)
 
-	badCertConfig := endpoint.TLSConfig{Pem: "some random invalid pem"}
+	badCertConfig := endpoint.PEMConfig{Pem: "some random invalid pem"}
 	err = badCertConfig.LoadBytes()
 	assert.Nil(t, err, "LoadBytes should not fail for bad pemgit g")
 
-	badCert, ok, err := badCertConfig.TLSCert()
+	badCert, ok, err := badCertConfig.Cert()
 	assert.Nil(t, err, "TLS CA cert parse was supposed to fail")
 	assert.False(t, ok, "TLS CA cert parse was supposed to fail")
 
@@ -149,9 +149,9 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	keyPem, ok := identityConfig.CAClientKey(org1)
 	assert.True(t, ok, "CAClientKey supposed to succeed")
 
-	keyConfig := endpoint.TLSConfig{Pem: string(keyPem)}
+	keyConfig := endpoint.PEMConfig{Pem: string(keyPem)}
 
-	_, ok, err = keyConfig.TLSCert()
+	_, ok, err = keyConfig.Cert()
 	assert.Nil(t, err, "TLS CA cert pool was supposed to fail when provided with wrong cert file")
 	assert.False(t, ok, "TLS CA cert pool was supposed to fail when provided with wrong cert file")
 

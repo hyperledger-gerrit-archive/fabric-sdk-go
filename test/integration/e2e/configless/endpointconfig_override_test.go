@@ -73,7 +73,7 @@ var (
 		Logging:         api.LoggingType{Level: "info"},
 		CryptoConfig:    msp.CCType{Path: pathvar.Subst("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}")},
 		CredentialStore: msp.CredentialStoreType{Path: "/tmp/msp"},
-		TLSCerts: endpoint.MutualTLSConfig{Client: endpoint.TLSKeyPair{
+		TLSCerts: endpoint.MutualTLSConfig{Client: endpoint.KeyPairConfig{
 			Key:  newTLSConfig("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.key"),
 			Cert: newTLSConfig("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.crt")}},
 	}
@@ -232,7 +232,7 @@ var (
 			URL: "https://ca.org1.example.com:7054",
 			TLSCACerts: endpoint.MutualTLSConfig{
 				Path: pathvar.Subst("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
-				Client: endpoint.TLSKeyPair{
+				Client: endpoint.KeyPairConfig{
 					Key:  newTLSConfig("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.key"),
 					Cert: newTLSConfig("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.crt"),
 				},
@@ -247,7 +247,7 @@ var (
 			URL: "https://ca.org2.example.com:8054",
 			TLSCACerts: endpoint.MutualTLSConfig{
 				Path: pathvar.Subst("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"),
-				Client: endpoint.TLSKeyPair{
+				Client: endpoint.KeyPairConfig{
 					Key:  newTLSConfig("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.key"),
 					Cert: newTLSConfig("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.crt"),
 				},
@@ -761,8 +761,8 @@ func (m *exampleCryptoConfigPath) CryptoConfigPath() string {
 	return client.CryptoConfig.Path
 }
 
-func newTLSConfig(path string) endpoint.TLSConfig {
-	config := endpoint.TLSConfig{Path: pathvar.Subst(path)}
+func newTLSConfig(path string) endpoint.PEMConfig {
+	config := endpoint.PEMConfig{Path: pathvar.Subst(path)}
 	if err := config.LoadBytes(); err != nil {
 		panic(fmt.Sprintf("error loading bytes: %s", err))
 	}

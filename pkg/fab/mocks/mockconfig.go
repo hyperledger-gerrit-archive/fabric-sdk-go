@@ -79,8 +79,8 @@ func (c *MockConfig) Client() *msp.ClientConfig {
 	}
 
 	if c.mutualTLSEnabled {
-		key := endpoint.TLSConfig{Path: filepath.Join(getConfigPath(), "certs", "client_sdk_go-key.pem")}
-		cert := endpoint.TLSConfig{Path: filepath.Join(getConfigPath(), "certs", "client_sdk_go.pem")}
+		key := endpoint.PEMConfig{Path: filepath.Join(getConfigPath(), "certs", "client_sdk_go-key.pem")}
+		cert := endpoint.PEMConfig{Path: filepath.Join(getConfigPath(), "certs", "client_sdk_go.pem")}
 
 		err := key.LoadBytes()
 		if err != nil {

@@ -60,18 +60,18 @@ type MutualTLSConfig struct {
 	// Certfiles root certificates for TLS validation (Comma separated path list)
 	Path string
 
-	//Client TLS information
-	Client TLSKeyPair
+	// Client TLS information
+	Client KeyPairConfig
 }
 
-// TLSKeyPair contains the private key and certificate for TLS encryption
-type TLSKeyPair struct {
-	Key  TLSConfig
-	Cert TLSConfig
+// KeyPairConfig contains a private key and a certificate
+type KeyPairConfig struct {
+	Key  PEMConfig
+	Cert PEMConfig
 }
 
-// TLSConfig TLS configuration used in the sdk's configs.
-type TLSConfig struct {
+// PEMConfig configuration holds key material in PEM format
+type PEMConfig struct {
 	// the following two fields are interchangeable.
 	// If Path is available, then it will be used to load the cert
 	// if Pem is available, then it has the raw data of the cert it will be used as-is
@@ -85,13 +85,13 @@ type TLSConfig struct {
 }
 
 // Bytes returns the tls certificate as a byte array
-func (cfg *TLSConfig) Bytes() []byte {
+func (cfg *PEMConfig) Bytes() []byte {
 	return cfg.bytes
 }
 
 //LoadBytes preloads bytes from Pem/Path
 //Pem takes precedence over Path
-func (cfg *TLSConfig) LoadBytes() error {
+func (cfg *PEMConfig) LoadBytes() error {
 	var err error
 	if cfg.Pem != "" {
 		cfg.bytes = []byte(cfg.Pem)
@@ -104,8 +104,8 @@ func (cfg *TLSConfig) LoadBytes() error {
 	return nil
 }
 
-// TLSCert returns the tls certificate as a *x509.Certificate by loading it either from the embedded Pem or Path
-func (cfg *TLSConfig) TLSCert() (*x509.Certificate, bool, error) {
+// Cert returns the tls certificate as a *x509.Certificate by loading it either from the embedded Pem or Path
+func (cfg *PEMConfig) Cert() (*x509.Certificate, bool, error) {
 
 	block, _ := pem.Decode(cfg.bytes)
 

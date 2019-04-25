@@ -83,7 +83,7 @@ type ClientConfig struct {
 //ClientTLSConfig defines client TLS configuration in identity config
 type ClientTLSConfig struct {
 	//Client TLS information
-	Client endpoint.TLSKeyPair
+	Client endpoint.KeyPairConfig
 }
 
 // CAConfig defines a CA configuration in identity config

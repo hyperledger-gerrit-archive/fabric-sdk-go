@@ -103,7 +103,7 @@ V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
 eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
 O94CDp7l2k7hMQI0zQ==
 -----END CERTIFICATE-----`
-	tlsConfig := TLSConfig{
+	tlsConfig := PEMConfig{
 		Path: "",
 		Pem:  pPem,
 	}
@@ -145,7 +145,7 @@ O94CDp7l2k7hMQI0zQ==
 }
 
 func TestTLSConfig_TLSCertPostive(t *testing.T) {
-	tlsConfig := &TLSConfig{
+	tlsConfig := &PEMConfig{
 		Path: filepath.Join("..", "testdata", "certs", "client_sdk_go.pem"),
 		Pem:  "",
 	}
@@ -155,12 +155,12 @@ func TestTLSConfig_TLSCertPostive(t *testing.T) {
 		t.Fatalf("error loading certificate for sample cert path %s", e)
 	}
 
-	c, ok, e := tlsConfig.TLSCert()
+	c, ok, e := tlsConfig.Cert()
 	if e != nil || !ok {
 		t.Fatalf("error loading certificate for sample cert path %s", e)
 	}
 	if c == nil {
-		t.Fatal("cert's TLSCert() call returned empty certificate")
+		t.Fatal("cert's Cert() call returned empty certificate")
 	}
 
 	// test with both correct pem and path set
@@ -180,12 +180,12 @@ V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
 eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
 O94CDp7l2k7hMQI0zQ==
 -----END CERTIFICATE-----`
-	c, ok, e = tlsConfig.TLSCert()
+	c, ok, e = tlsConfig.Cert()
 	if e != nil || !ok {
 		t.Fatalf("error loading certificate for sample cert path and pem %s", e)
 	}
 	if c == nil {
-		t.Fatal("cert's TLSCert() call returned empty certificate")
+		t.Fatal("cert's Cert() call returned empty certificate")
 	}
 
 }
@@ -193,26 +193,26 @@ O94CDp7l2k7hMQI0zQ==
 func TestTLSConfig_TLSCertNegative(t *testing.T) {
 
 	// test with wrong path
-	tlsConfig := &TLSConfig{
+	tlsConfig := &PEMConfig{
 		Path: "dummy/path",
 		Pem:  "",
 	}
 	e := tlsConfig.LoadBytes()
 	assert.NotNil(t, e, "expected error loading certificate for wrong cert path")
 
-	c, ok, e := tlsConfig.TLSCert()
+	c, ok, e := tlsConfig.Cert()
 	assert.Nil(t, e, "error supposed to be nil for empty bytes")
 	assert.False(t, ok, "expected error loading certificate for wrong cert path")
-	assert.Nil(t, c, "cert's TLSCert() call returned non empty certificate for wrong cert path")
+	assert.Nil(t, c, "cert's Cert() call returned non empty certificate for wrong cert path")
 
 	// test with empty path and empty pem
 	tlsConfig.Path = ""
 	e = tlsConfig.LoadBytes()
 	assert.Nil(t, e, "not supposed to get error for empty path/pem")
-	c, ok, e = tlsConfig.TLSCert()
+	c, ok, e = tlsConfig.Cert()
 	assert.Nil(t, e, "error supposed to be nil for empty bytes")
 	assert.False(t, ok, "expected error loading certificate for empty cert path and empty pem")
-	assert.Nil(t, c, "cert's TLSCert() call returned non empty certificate for wrong cert path and empty pem")
+	assert.Nil(t, c, "cert's Cert() call returned non empty certificate for wrong cert path and empty pem")
 
 	// test with wrong pem and empty path
 	tlsConfig.Path = ""
@@ -220,17 +220,17 @@ func TestTLSConfig_TLSCertNegative(t *testing.T) {
 	e = tlsConfig.LoadBytes()
 	assert.Nil(t, e, "unexpected error loading certificate with wrong pem")
 
-	c, ok, e = tlsConfig.TLSCert()
-	assert.Nil(t, c, "cert's TLSCert() call returned non empty certificate")
+	c, ok, e = tlsConfig.Cert()
+	assert.Nil(t, c, "cert's Cert() call returned non empty certificate")
 	assert.False(t, ok, "error loading certificate for empty cert path and and wrong pem ")
-	assert.Nil(t, e, "cert's TLSCert() call returned unexpected error")
+	assert.Nil(t, e, "cert's Cert() call returned unexpected error")
 
 }
 
 func TestTLSConfigBytes(t *testing.T) {
 
 	// test with wrong path
-	tlsConfig := &TLSConfig{
+	tlsConfig := &PEMConfig{
 		Path: filepath.Join("..", "testdata", "config_test.yaml"),
 		Pem:  "",
 	}

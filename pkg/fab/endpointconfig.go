@@ -818,7 +818,7 @@ func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, en
 			//filter default and ignored peers
 			continue
 		}
-		tlsCert, _, err := peerConfig.TLSCACerts.TLSCert()
+		tlsCert, _, err := peerConfig.TLSCACerts.Cert()
 		if err != nil {
 			return errors.WithMessage(err, "failed to load peer network config")
 		}
@@ -838,7 +838,7 @@ func (c *EndpointConfig) loadAllOrdererConfigs(networkConfig *fab.NetworkConfig,
 			//filter default and ignored orderers
 			continue
 		}
-		tlsCert, _, err := ordererConfig.TLSCACerts.TLSCert()
+		tlsCert, _, err := ordererConfig.TLSCACerts.Cert()
 		if err != nil {
 			return errors.WithMessage(err, "failed to load orderer network config")
 		}
@@ -962,7 +962,7 @@ func (c *EndpointConfig) loadDefaultOrderer(configEntity *endpointConfigEntity) 
 	}
 
 	var err error
-	c.defaultOrdererConfig.TLSCACert, _, err = defaultEntityOrderer.TLSCACerts.TLSCert()
+	c.defaultOrdererConfig.TLSCACert, _, err = defaultEntityOrderer.TLSCACerts.Cert()
 	if err != nil {
 		return errors.WithMessage(err, "failed to load default orderer network config")
 	}
@@ -1095,7 +1095,7 @@ func (c *EndpointConfig) loadDefaultPeer(configEntity *endpointConfigEntity) err
 	}
 
 	var err error
-	c.defaultPeerConfig.TLSCACert, _, err = defaultEntityPeer.TLSCACerts.TLSCert()
+	c.defaultPeerConfig.TLSCACert, _, err = defaultEntityPeer.TLSCACerts.Cert()
 	if err != nil {
 		return errors.WithMessage(err, "failed to load default peer network config")
 	}
