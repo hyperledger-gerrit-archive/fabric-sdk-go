@@ -824,16 +824,16 @@ func getEmbeddedRegistrarConfigBackend() ([]core.ConfigBackend, error) {
 	}
 	//update with embedded registrar
 	org1 := networkConfig.Organizations["org1"]
-	org1.Users = make(map[string]endpoint.TLSKeyPair)
-	org1.Users[embeddedRegistrarID] = endpoint.TLSKeyPair{
-		Key: endpoint.TLSConfig{
+	org1.Users = make(map[string]endpoint.KeyPairConfig)
+	org1.Users[embeddedRegistrarID] = endpoint.KeyPairConfig{
+		Key: endpoint.PEMConfig{
 			Pem: `-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
 5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
 J3+tMGTG67f+TdCfDxWYMpQYxLlE8VkbEzKWDwCYvDZRMKCQfv2ErNvb
 -----END PRIVATE KEY-----`,
 		},
-		Cert: endpoint.TLSConfig{
+		Cert: endpoint.PEMConfig{
 			Pem: `-----BEGIN CERTIFICATE-----
 MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
 MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG

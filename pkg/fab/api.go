@@ -21,29 +21,29 @@ type ClientConfig struct {
 
 // ClientTLSConfig contains the client TLS configuration
 type ClientTLSConfig struct {
-	//Client TLS information
-	Client endpoint.TLSKeyPair
+	// Client TLS information
+	Client endpoint.KeyPairConfig
 }
 
 // OrdererConfig defines an orderer configuration
 type OrdererConfig struct {
 	URL         string
 	GRPCOptions map[string]interface{}
-	TLSCACerts  endpoint.TLSConfig
+	TLSCACerts  endpoint.PEMConfig
 }
 
 // PeerConfig defines a peer configuration
 type PeerConfig struct {
 	URL         string
 	GRPCOptions map[string]interface{}
-	TLSCACerts  endpoint.TLSConfig
+	TLSCACerts  endpoint.PEMConfig
 }
 
 // OrganizationConfig provides the definition of an organization in the network
 type OrganizationConfig struct {
 	MSPID                  string
 	CryptoPath             string
-	Users                  map[string]endpoint.TLSKeyPair
+	Users                  map[string]endpoint.KeyPairConfig
 	Peers                  []string
 	CertificateAuthorities []string
 }

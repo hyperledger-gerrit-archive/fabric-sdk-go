@@ -103,7 +103,7 @@ V842OVjxCYYQwCjPIY+5e9ORR+8pxVzcMAoGCCqGSM49BAMCA0cAMEQCIGZ+KTfS
 eezqv0ml1VeQEmnAEt5sJ2RJA58+LegUYMd6AiAfEe6BKqdY03qFUgEYmtKG+3Dr
 O94CDp7l2k7hMQI0zQ==
 -----END CERTIFICATE-----`
-	tlsConfig := TLSConfig{
+	tlsConfig := PEMConfig{
 		Path: "",
 		Pem:  pPem,
 	}
@@ -145,7 +145,7 @@ O94CDp7l2k7hMQI0zQ==
 }
 
 func TestTLSConfig_TLSCertPostive(t *testing.T) {
-	tlsConfig := &TLSConfig{
+	tlsConfig := &PEMConfig{
 		Path: filepath.Join("..", "testdata", "certs", "client_sdk_go.pem"),
 		Pem:  "",
 	}
@@ -193,7 +193,7 @@ O94CDp7l2k7hMQI0zQ==
 func TestTLSConfig_TLSCertNegative(t *testing.T) {
 
 	// test with wrong path
-	tlsConfig := &TLSConfig{
+	tlsConfig := &PEMConfig{
 		Path: "dummy/path",
 		Pem:  "",
 	}
@@ -230,7 +230,7 @@ func TestTLSConfig_TLSCertNegative(t *testing.T) {
 func TestTLSConfigBytes(t *testing.T) {
 
 	// test with wrong path
-	tlsConfig := &TLSConfig{
+	tlsConfig := &PEMConfig{
 		Path: filepath.Join("..", "testdata", "config_test.yaml"),
 		Pem:  "",
 	}

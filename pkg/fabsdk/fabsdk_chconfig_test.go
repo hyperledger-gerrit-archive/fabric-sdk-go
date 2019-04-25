@@ -183,5 +183,5 @@ type customClientConfig struct {
 
 type clientTLSConfig struct {
 	//Client TLS information
-	Client endpoint.TLSKeyPair
+	Client endpoint.KeyPairConfig
 }
