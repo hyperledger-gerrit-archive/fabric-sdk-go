@@ -14,6 +14,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -275,11 +276,82 @@ func TestConnectorConcurrentSweep(t *testing.T) {
 	}
 }
 
-func testDial(t *testing.T, wg *sync.WaitGroup, errChan chan error, connector *CachingConnector, addr string, minSleepBeforeRelease int, maxSleepBeforeRelease int) {
-	defer wg.Done()
+func TestConnectorConcurrentSweepWithParentContextAndServerDown(t *testing.T) {
+	const goroutines = 500
+
+	connector := NewCachingConnector(shortSweepTime, shortIdleTime)
+	defer connector.Close()
+
+	failingServerAddr := "127.0.0.1:8888"
+	failingServer := &mocks.MockEndorserServer{}
+	fAddr := failingServer.Start(failingServerAddr)
+	// simulate server down by stopping it
+	failingServer.Stop()
+
+	errChan := make(chan error, goroutines)
 	ctx, cancel := context.WithTimeout(context.Background(), normalTimeout*10)
+	defer cancel()
+	// start 1 DialContext with failing server
+	conn, err := connector.DialContext(ctx, fAddr, grpc.WithInsecure(), grpc.WithBlock())
+	if err == nil {
+		connector.ReleaseConn(conn)
+		t.Fatal("testDial with shutdown server did not fail")
+	}
+	wg := sync.WaitGroup{}
+
+	// execute with running server using same context
+	for j := 0; j < len(endorserAddr); j++ {
+		wg.Add(goroutines)
+		for i := 0; i < goroutines; i++ {
+			go testDialWithContext(ctx, t, &wg, errChan, connector, endorserAddr[0], 0, 0)
+		}
+		wg.Wait()
+		select {
+		case err := <-errChan:
+			t.Fatalf("testDial failed %s", err)
+		default:
+		}
+
+		//Sleeping to wait for sweep
+		time.Sleep(shortIdleTime)
+	}
+
+	// execute with running server using new context
+	for j := 0; j < len(endorserAddr); j++ {
+		wg.Add(goroutines)
+		for i := 0; i < goroutines; i++ {
+			go testDialWithContext(nil, t, &wg, errChan, connector, endorserAddr[0], 0, 0)
+		}
+		wg.Wait()
+		select {
+		case err := <-errChan:
+			t.Fatalf("testDial failed %s", err)
+		default:
+		}
+
+		//Sleeping to wait for sweep
+		time.Sleep(shortIdleTime)
+	}
+}
+
+func testDial(t *testing.T, wg *sync.WaitGroup, errChan chan error, connector *CachingConnector, addr string, minSleepBeforeRelease int, maxSleepBeforeRelease int) {
+	testDialWithContext(nil, t, wg, errChan, connector, addr, minSleepBeforeRelease, maxSleepBeforeRelease)
+}
+
+func testDialWithContext(nctx context.Context, t *testing.T, wg *sync.WaitGroup, errChan chan error, connector *CachingConnector, addr string, minSleepBeforeRelease int, maxSleepBeforeRelease int) {
+	defer wg.Done()
+	var ctx context.Context
+	var cancel context.CancelFunc
+	if nctx != nil {
+		ctx, cancel = context.WithTimeout(nctx, normalTimeout*10)
+	} else {
+		ctx, cancel = context.WithTimeout(context.Background(), normalTimeout*10)
+	}
+
 	conn, err := connector.DialContext(ctx, addr, grpc.WithInsecure())
-	cancel()
+	if nctx == nil {
+		cancel()
+	}
 	if err != nil {
 		errChan <- errors.WithMessage(err, "Connect failed for target "+addr)
 		return

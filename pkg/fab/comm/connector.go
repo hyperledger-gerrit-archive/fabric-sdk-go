@@ -191,8 +191,15 @@ func (cc *CachingConnector) createConn(ctx context.Context, target string, opts 
 		return cconn, nil
 	}
 
+	// create a child context with small enough timeout to force getting a response as soon as possible
+	// this will avoid failing other createConn calls with the same parent context (ie calling multiple orderers
+	// to broadcast an envelope) when one of the server failed which causes 'context deadline exceeded' for all
+	// subsequent createConn calls using the same context.
+	newCtx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
+	defer cancel()
+
 	logger.Debugf("creating connection [%s]", target)
-	conn, err := grpc.DialContext(ctx, target, opts...)
+	conn, err := grpc.DialContext(newCtx, target, opts...)
 	if err != nil {
 		return nil, errors.WithMessage(err, "dialing peer failed")
 	}
