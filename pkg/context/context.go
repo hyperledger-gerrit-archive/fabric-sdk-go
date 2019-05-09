@@ -320,6 +320,9 @@ type requestContextOpts struct {
 	parentContext reqContext.Context
 }
 
+// ChildTimeoutContextKey is the key holding the child context timeout value
+const ChildTimeoutContextKey string = "childTimeout"
+
 // NewRequest creates a request-scoped context.
 func NewRequest(client context.Client, options ...ReqContextOptions) (reqContext.Context, reqContext.CancelFunc) {
 
@@ -346,6 +349,15 @@ func NewRequest(client context.Client, options ...ReqContextOptions) (reqContext
 
 	ctx := reqContext.WithValue(parentContext, reqContextCommManager, client.InfraProvider().CommManager())
 	ctx = reqContext.WithValue(ctx, reqContextClient, client)
+
+	// orderer timeout should not expire as a parent context
+	// add a separate context key/value for child contexts (each orderer will use this timeout instead)
+	if reqCtxOpts.timeoutType == fab.OrdererResponse {
+		childTimeout := timeout
+		ctx = reqContext.WithValue(ctx, ChildTimeoutContextKey, childTimeout)
+		timeout = 10 * timeout // make ordererResponse timeout large enough for multi orderers calls
+	}
+
 	ctx, cancel := reqContext.WithTimeout(ctx, timeout)
 
 	return ctx, cancel
