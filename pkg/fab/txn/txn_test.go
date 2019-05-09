@@ -17,6 +17,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -206,6 +207,53 @@ func checkBroadcastCount(broadcastCount int, orderer1 *mocks.MockOrderer, ordere
 	if err == nil || err.Error() != "orderers not set" {
 		t.Fatal("orderers not set validation on broadcast envelope is not working as expected")
 	}
+}
+
+func TestBroadcastPayloadWithOrdererDialFailure(t *testing.T) {
+	ordererAddr := "127.0.0.1:0"
+	//Create mock orderers
+	orderer1 := mocks.NewMockGrpcOrderer(ordererAddr, nil)
+	orderer1.Start()
+	orderer2 := mocks.NewMockGrpcOrderer(ordererAddr, nil)
+	orderer2.Start()
+	orderer3 := mocks.NewMockGrpcOrderer(ordererAddr, nil)
+	orderer3.Start()
+
+	orderers := []fab.Orderer{orderer1, orderer2, orderer3}
+
+	sigEnvelope := &fab.SignedEnvelope{
+		Signature: []byte(""),
+		Payload:   []byte(""),
+	}
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
+	ctx := mocks.NewMockContext(user)
+	parentCtx, cancel := context.NewRequest(ctx, context.WithTimeout(5*time.Second)) // parentContext has 5 sec timeout
+	defer cancel()
+
+	_, err := broadcastEnvelope(parentCtx, sigEnvelope, orderers)
+	require.NoError(t, err, "BroadCastEnvelope to running orderers returned a connection error")
+
+	// stop orderer2 and try again (orderer1 and orderer3 should successfully connect)
+	orderer2.Stop()
+	_, err = broadcastEnvelope(parentCtx, sigEnvelope, orderers)
+	require.NoError(t, err, "BroadCastEnvelope to running orderer1 and orderer3 returned a connection error")
+
+	// stop orderer1 and try again (only orderer3 should successfully connect)
+	orderer1.Stop()
+	_, err = broadcastEnvelope(parentCtx, sigEnvelope, orderers)
+	require.NoError(t, err, "BroadCastEnvelope to running orderer3 returned a connection error")
+
+	// now try a new parent context using 1 nano second timeout to force 'context deadline exceeded'
+	orderer1.Start()
+	orderer2.Start()
+	parentCtx, cancel2 := context.NewRequest(ctx, context.WithTimeout(1*time.Nanosecond))
+	defer cancel2()
+	_, err = broadcastEnvelope(parentCtx, sigEnvelope, orderers)
+	require.Error(t, err, "BroadCastEnvelope to running orderers returned no error with 1 nano second context deadline")
+
+	orderer1.Stop()
+	orderer2.Stop()
+	orderer3.Stop()
 }
 
 func TestSendTransaction(t *testing.T) {
