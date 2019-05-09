@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	sdkContext "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -191,10 +192,26 @@ func (cc *CachingConnector) createConn(ctx context.Context, target string, opts 
 		return cconn, nil
 	}
 
+	var newCtx context.Context
+	var cancel context.CancelFunc
+	// if childTimeout is set then create a child context with this timeout to avoid 'context deadline exceeded'
+	// for all subsequent DialContext calls (in case of a connection failure with one of the nodes,
+	// using the same ctx instance). A new child context will be created with a shorter timeout.
+	t := ctx.Value(sdkContext.ChildTimeoutContextKey)
+
+	if t != nil {
+		logger.Debugf("connection context childTimeout value is: %v - there is a shared parent context for this connection", t)
+		newCtx, cancel = context.WithTimeout(ctx, t.(time.Duration))
+		defer cancel()
+	} else {
+		logger.Debug("connection context childTimeout is nil - there is no shared parent context for this connection")
+		newCtx = ctx
+	}
+
 	logger.Debugf("creating connection [%s]", target)
-	conn, err := grpc.DialContext(ctx, target, opts...)
+	conn, err := grpc.DialContext(newCtx, target, opts...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "dialing peer failed")
+		return nil, errors.WithMessage(err, "dialing node failed")
 	}
 
 	logger.Debugf("storing connection [%s]", target)
