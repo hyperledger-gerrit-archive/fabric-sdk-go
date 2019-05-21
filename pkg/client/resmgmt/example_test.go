@@ -408,3 +408,46 @@ func mockClientProvider() context.ClientProvider {
 func mockPeer() fab.Peer {
 	return &mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", Status: 200}
 }
+
+func ExampleClient_CreateGenesisBlock() {
+
+	c, err := New(mockClientProvider())
+	if err != nil {
+		fmt.Println("failed to create client")
+	}
+
+	response, err := c.CreateGenesisBlock(mockProfile(), "mychannel")
+	if err != nil {
+		fmt.Printf("failed to create genesis block: %s\n", err)
+	}
+
+	if response != nil {
+		fmt.Println("Created genesis block")
+	}
+
+	// Output: Created genesis block
+}
+
+func ExampleClient_InspectGenesisBlock() {
+
+	c, err := New(mockClientProvider())
+	if err != nil {
+		fmt.Println("failed to create client")
+	}
+
+	block, err := c.CreateGenesisBlock(mockProfile(), "mychannel")
+	if err != nil {
+		fmt.Printf("failed to create genesis block: %s\n", err)
+	}
+
+	response, err := c.InspectGenesisBlock(block)
+	if err != nil {
+		fmt.Printf("failed to inspect genesis block: %s\n", err)
+	}
+
+	if response != "" {
+		fmt.Println("Inspected genesis block")
+	}
+
+	// Output: Inspected genesis block
+}
