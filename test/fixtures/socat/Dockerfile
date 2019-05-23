@@ -3,10 +3,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-ARG FABRIC_BASE_IMAGE=hyperledger/fabric-baseimage
-ARG FABRIC_BASE_TAG
 
-FROM ${FABRIC_BASE_IMAGE}:${FABRIC_BASE_TAG}
+ARG BASE_IMAGE
+ARG BASE_IMAGE_TAG
+
+FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG}
 
 ENV GOPATH=/opt/gopath \
     GOROOT=/opt/go \
