@@ -3,14 +3,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-ARG FABRIC_BASE_IMAGE=hyperledger/fabric-baseimage
-ARG FABRIC_BASE_TAG
 
-FROM ${FABRIC_BASE_IMAGE}:${FABRIC_BASE_TAG}
+ARG BASE_IMAGE
+ARG BASE_IMAGE_TAG
+
+FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG}
 
 ENV GOPATH=/opt/gopath \
     GOROOT=/opt/go \
-    PATH=$PATH:/opt/go/bin:/opt/gopath/bin
+    PATH=$PATH:/opt/go/bin:/opt/gopath/bin \
+    GOVER="1.12.5"
 
 COPY test/fixtures/softhsm2/install-softhsm2.sh /tmp
 COPY scripts/_go/src/pkcs11helper /opt/workspace/pkcs11helper
