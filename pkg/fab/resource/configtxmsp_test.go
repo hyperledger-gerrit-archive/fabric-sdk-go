@@ -9,6 +9,7 @@ package resource
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func randomMspDir() string {
+func RandomDir() string {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	return "/tmp/msp/" + fmt.Sprintf("%d", rnd.Uint64())
 }
@@ -36,7 +37,10 @@ func TestGenerateMspDir(t *testing.T) {
 	err = proto.Unmarshal(cfg.Config, mspConfig)
 	require.NoError(t, err, "Error unmarshaling msp config")
 
-	dir := randomMspDir()
+	dir := RandomDir()
+	defer func() {
+		_ = os.RemoveAll(dir)
+	}()
 
 	err = GenerateMspDir(dir, cfg)
 	require.NoError(t, err, "Error generating msp dir")

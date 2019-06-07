@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 
@@ -62,6 +63,19 @@ func genesisToLocalConfig(config *genesisconfig.Profile) (*localconfig.Profile, 
 		return nil, err
 	}
 	c := &localconfig.Profile{}
+	err = json.Unmarshal(b, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func localConfigToGenesis(config *localconfig.Profile) (*genesisconfig.Profile, error) {
+	b, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+	c := &genesisconfig.Profile{}
 	err = json.Unmarshal(b, c)
 	if err != nil {
 		return nil, err
@@ -176,4 +190,13 @@ func CreateAnchorPeersUpdate(conf *genesisconfig.Profile, channelID string, asOr
 
 	return protoutil.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, nil, newConfigUpdateEnv, 0, 0)
 
+}
+
+// ProfileFromYaml constructs channel genesis profile from standard configtxgen yaml file
+func ProfileFromYaml(profile, yamlPath string) (*genesisconfig.Profile, error) {
+	config, err := localconfig.Load(strings.ToLower(profile), yamlPath)
+	if err != nil {
+		return nil, err
+	}
+	return localConfigToGenesis(config)
 }
