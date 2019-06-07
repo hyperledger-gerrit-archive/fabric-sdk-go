@@ -14,6 +14,17 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/orderer/etcdraft"
 )
 
+// TopLevel consists of the structs used by the configtxgen tool.
+type TopLevel struct {
+	Profiles      map[string]*Profile        `yaml:"Profiles"`
+	Organizations []*Organization            `yaml:"Organizations"`
+	Channel       *Profile                   `yaml:"Channel"`
+	Application   *Application               `yaml:"Application"`
+	Orderer       *Orderer                   `yaml:"Orderer"`
+	Capabilities  map[string]map[string]bool `yaml:"Capabilities"`
+	Resources     *Resources                 `yaml:"Resources"`
+}
+
 // Profile encodes orderer/application configuration combinations
 type Profile struct {
 	Consortium   string                 `yaml:"Consortium"`
