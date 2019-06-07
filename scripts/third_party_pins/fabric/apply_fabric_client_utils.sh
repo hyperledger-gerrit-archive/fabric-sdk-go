@@ -57,9 +57,12 @@ declare -a PKGS=(
     "common/tools/protolator/protoext/ordererext"
     "common/tools/protolator/protoext/peerext"
 
+    "common/viperutil"
+
     "core/comm"
     "core/middleware"
     "core/operations"
+    "core/config"
 
     "sdkpatch/logbridge"
     "sdkpatch/logbridge/httpadmin"
@@ -198,6 +201,8 @@ declare -a FILES=(
     "common/tools/protolator/protoext/peerext/proposal_response.go"
     "common/tools/protolator/protoext/peerext/transaction.go"
 
+    "common/viperutil/config_util.go"
+
     "core/middleware/chain.go"
     "core/middleware/request_id.go"
     "core/middleware/require_cert.go"
@@ -215,6 +220,7 @@ declare -a FILES=(
     "core/common/privdata/collection.go"
     "core/ledger/ledger_interface.go"
     "core/ledger/kvledger/txmgmt/version/version.go"
+    "core/config/config.go"
 
     "msp/factory.go"
     "msp/cert.go"
@@ -503,7 +509,19 @@ FILTER_FN="GetRandomIndices,RandomInt,IndexInSlice,numbericEqual,RandomUInt64"
 gofilter
 
 FILTER_FILENAME="sdkinternal/configtxgen/localconfig/config.go"
-FILTER_FN=
+sed -i -E "s/logger\.Panic\(\"Could not find profile: \", profile\)/return nil, errors.Errorf(\"Could not find profile: %v\", profile)/g" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"path\/filepath"/a "github.com\/pkg\/errors"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i -E "s/func LoadTopLevel\(configPaths \.\.\.string\) \*TopLevel \{/func LoadTopLevel(configPaths ...string) (*TopLevel, error) {/g" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i -E "s/return \&uconf/&, nil/g" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i -E "s/func Load\(profile string, configPaths \.\.\.string\) \*Profile \{/func Load(profile string, configPaths ...string) (*Profile, error) {/g" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i -E "s/return result/&, nil/g" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i -E "s/logger\.Panic\((.+), (.+)\)/return nil, errors.WithMessage(\2, \1)/g" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i -E "s/func \(ord \*Orderer\) completeInitialization\(configDir string\) \{/func (ord *Orderer) completeInitialization(configDir string) error {/g" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i -E "s/logger\.Panicf\((.+), (.+)\)/return errors.Errorf(\1, \2)/g" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "return errors.Errorf(\"unknown orderer type" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+let "START_LINE+=1"
+sed -i'' -e ${START_LINE}'a return nil' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+FILTER_FN="Load,LoadTopLevel,completeInitialization,translatePaths"
 gofilter
 
 # Split BCCSP factory into subpackages
@@ -547,7 +565,7 @@ FILTER_GEN="logger"
 gofilter
 
 FILTER_FILENAME="sdkinternal/configtxgen/localconfig/config.go"
-FILTER_GEN="TopLevel,Profile,Policy,Consortium,Application,Resources,Organization,AnchorPeer,Orderer,BatchSize,Kafka"
+FILTER_GEN="logger,configName,TopLevel,Profile,Policy,Consortium,Application,Resources,Organization,AnchorPeer,Orderer,BatchSize,Kafka,genesisDefaults"
 gofilter
 
 # Apply patching

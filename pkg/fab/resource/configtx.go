@@ -10,6 +10,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/tools/protolator/protoext/ordererext"
 
 	"github.com/golang/protobuf/proto"
 
@@ -31,7 +34,7 @@ import (
 
 // CreateGenesisBlock creates a genesis block for a channel
 func CreateGenesisBlock(config *genesisconfig.Profile, channelID string) ([]byte, error) {
-	localConfig, err := genesisToLocalConfig(config)
+	localConfig, err := genesisToLocalProfile(config)
 	if err != nil {
 		return nil, err
 	}
@@ -56,12 +59,51 @@ func CreateGenesisBlockForOrderer(config *genesisconfig.Profile, channelID strin
 	return CreateGenesisBlock(config, channelID)
 }
 
-func genesisToLocalConfig(config *genesisconfig.Profile) (*localconfig.Profile, error) {
+func genesisToLocalProfile(config *genesisconfig.Profile) (*localconfig.Profile, error) {
 	b, err := json.Marshal(config)
 	if err != nil {
 		return nil, err
 	}
 	c := &localconfig.Profile{}
+	err = json.Unmarshal(b, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func genesisToLocalTopLevel(config *genesisconfig.TopLevel) (*localconfig.TopLevel, error) {
+	b, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+	c := &localconfig.TopLevel{}
+	err = json.Unmarshal(b, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func localToGenesisProfile(config *localconfig.Profile) (*genesisconfig.Profile, error) {
+	b, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+	c := &genesisconfig.Profile{}
+	err = json.Unmarshal(b, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func localToGenesisTopLevel(config *localconfig.TopLevel) (*genesisconfig.TopLevel, error) {
+	b, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+	c := &genesisconfig.TopLevel{}
 	err = json.Unmarshal(b, c)
 	if err != nil {
 		return nil, err
@@ -91,11 +133,11 @@ func InspectBlock(data []byte) (string, error) {
 func CreateChannelCreateTx(conf, baseProfile *genesisconfig.Profile, channelID string) ([]byte, error) {
 	logger.Debug("Generating new channel configtx")
 
-	localConf, err := genesisToLocalConfig(conf)
+	localConf, err := genesisToLocalProfile(conf)
 	if err != nil {
 		return nil, err
 	}
-	localBaseProfile, err := genesisToLocalConfig(baseProfile)
+	localBaseProfile, err := genesisToLocalProfile(baseProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +182,7 @@ func CreateAnchorPeersUpdate(conf *genesisconfig.Profile, channelID string, asOr
 		return nil, fmt.Errorf("Cannot update anchor peers without an application section")
 	}
 
-	localConf, err := genesisToLocalConfig(conf)
+	localConf, err := genesisToLocalProfile(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -176,4 +218,46 @@ func CreateAnchorPeersUpdate(conf *genesisconfig.Profile, channelID string, asOr
 
 	return protoutil.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, nil, newConfigUpdateEnv, 0, 0)
 
+}
+
+// ProfileFromYaml constructs channel genesis profile from standard configtxgen yaml file
+func ProfileFromYaml(profile, yamlPath string) (*genesisconfig.Profile, error) {
+	config, err := localconfig.Load(strings.ToLower(profile), yamlPath)
+	if err != nil {
+		return nil, err
+	}
+	return localToGenesisProfile(config)
+}
+
+// TopLevelFromYaml constructs top level configuration from standard configtxgen yaml file
+func TopLevelFromYaml(yamlPath string) (*genesisconfig.TopLevel, error) {
+	config, err := localconfig.LoadTopLevel(yamlPath)
+	if err != nil {
+		return nil, err
+	}
+	return localToGenesisTopLevel(config)
+}
+
+func OrgAsJSON(conf *genesisconfig.TopLevel, orgName string) (string, error) {
+
+	localConf, err := genesisToLocalTopLevel(conf)
+	if err != nil {
+		return "", err
+	}
+
+	for _, org := range localConf.Organizations {
+		if org.Name == orgName {
+			og, err := encoder.NewOrdererOrgGroup(org)
+			if err != nil {
+				return "", errors.Wrapf(err, "bad org definition for org %s", org.Name)
+			}
+
+			var buf bytes.Buffer
+			if err := protolator.DeepMarshalJSON(&buf, &ordererext.DynamicOrdererOrgGroup{ConfigGroup: og}); err != nil {
+				return "", errors.Wrapf(err, "malformed org definition for org: %s", org.Name)
+			}
+			return buf.String(), nil
+		}
+	}
+	return "", errors.Errorf("organization %s not found", orgName)
 }
