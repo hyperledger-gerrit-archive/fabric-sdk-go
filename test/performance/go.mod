@@ -14,6 +14,6 @@ require (
 	github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric v0.0.0-20190524192706-bfae339c63bf
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.3.0
-	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
+	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
 	google.golang.org/grpc v1.19.0
 )
