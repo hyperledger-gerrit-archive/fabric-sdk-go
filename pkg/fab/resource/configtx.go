@@ -119,7 +119,7 @@ func InspectChannelCreateTx(data []byte) (string, error) {
 	logger.Debug("Parsing transaction")
 	env, err := protoutil.UnmarshalEnvelope(data)
 	if err != nil {
-		return "", fmt.Errorf("Error unmarshaling envelope: %s", err)
+		return "", fmt.Errorf("error unmarshaling envelope: %s", err)
 	}
 	var buf bytes.Buffer
 	err = protolator.DeepMarshalJSON(&buf, env)
