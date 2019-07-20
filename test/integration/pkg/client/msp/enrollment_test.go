@@ -259,7 +259,9 @@ func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientP
 
 	myOrg := ctx.IdentityConfig().Client().Organization
 
-	caConfig, ok := ctx.IdentityConfig().CAConfig(myOrg)
+	caName := ctx.EndpointConfig().NetworkConfig().Organizations[myOrg].CertificateAuthorities[0]
+
+	caConfig, ok := ctx.IdentityConfig().CAConfig(caName)
 	if !ok {
 		t.Fatal("CAConfig failed")
 	}
