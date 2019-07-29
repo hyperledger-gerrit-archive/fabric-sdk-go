@@ -1,0 +1,10 @@
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Code-Review+1: Nye Liu <nye@blockdaemon.com>
+Code-Review+2: Troy Ronda <troy@troyronda.com>
+Code-Review+1: Sudesh Shetty <sudesh.shetty@securekey.com>
+Code-Review+2: Bob Stasyszyn <bob.stasyszyn@securekey.com>
+Submitted-by: Troy Ronda <troy@troyronda.com>
+Submitted-at: Mon, 29 Jul 2019 16:57:59 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/c/fabric-sdk-go/+/32556
+Project: fabric-sdk-go
+Branch: refs/heads/master
