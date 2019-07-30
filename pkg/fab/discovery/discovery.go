@@ -54,6 +54,39 @@ type Response interface {
 	Target() string
 }
 
+//Adding ability to create a Request outside of sdk.
+func NewRequest() *discclient.Request {
+	return discclient.NewRequest()
+}
+
+//Get an array of ChaincodeCalls using cc names.
+//Can be used in request.AddPeersQuery(WithCcCall(...))
+func WithCcCall(ccNames ...string) []*discovery.ChaincodeCall {
+	var call []*discovery.ChaincodeCall
+
+	for _, ccName := range ccNames {
+		call = append(call, &discovery.ChaincodeCall{
+			Name: ccName,
+		})
+	}
+
+	return call
+}
+
+//Get an array of ChaincodeInterests based on invocations chains.
+//Can be used in request.AddEndorsersQuery(WithCcInterests(...))
+func WithCcInterests(invocationsChains ...[]*discovery.ChaincodeCall) []*discovery.ChaincodeInterest {
+	var interests []*discovery.ChaincodeInterest
+
+	for _, invocationChain := range invocationsChains {
+		interests = append(interests, &discovery.ChaincodeInterest{
+			Chaincodes: invocationChain,
+		})
+	}
+
+	return interests
+}
+
 // Send retrieves information about channel peers, endorsers, and MSP config from the
 // given set of peers. A set of successful responses is returned and/or an error
 // is returned from each of the peers that was unsuccessful (note that if more than one peer returned
