@@ -12,6 +12,7 @@ import (
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	reqContext "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	fabdiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	"github.com/pkg/errors"
 )
 
@@ -76,7 +77,7 @@ func (s *LocalService) doQueryPeers() ([]fab.Peer, error) {
 	reqCtx, cancel := reqContext.NewRequest(ctx, reqContext.WithTimeout(s.responseTimeout))
 	defer cancel()
 
-	req := discclient.NewRequest().AddLocalPeersQuery()
+	req := fabdiscovery.NewRequest().AddLocalPeersQuery()
 	responses, err := s.discoveryClient().Send(reqCtx, req, *target)
 	if err != nil {
 		return nil, errors.Wrap(err, "error calling discover service send")
