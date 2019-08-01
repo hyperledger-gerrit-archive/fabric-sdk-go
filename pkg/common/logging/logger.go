@@ -10,6 +10,7 @@ SPDX-License-Identifier: Apache-2.0
 //  1) Initialize logger
 //  2) Create new logger for specific module
 //  3) Call log info
+// TEST
 package logging
 
 import (
