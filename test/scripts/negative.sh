@@ -56,7 +56,6 @@ if [ "${TEST_CHANGED_ONLY}" = true ]; then
     PWD_ORIG=$(pwd)
     cd "${PROJECT_DIR}"
     findChangedFiles
-    cd ${PWD_ORIG}
 
     if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|go.mod( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
@@ -66,6 +65,7 @@ if [ "${TEST_CHANGED_ONLY}" = true ]; then
         appendDepPackages
         PKGS=(${DEP_PKGS[@]})
     fi
+    cd ${PWD_ORIG}
 fi
 
 RACEFLAG=""
