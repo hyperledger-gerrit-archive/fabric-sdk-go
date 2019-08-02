@@ -99,7 +99,7 @@ func ExampleWithCAInstance() {
 	// Output: msp client created with CA Instance
 }
 
-func ExampleWithSecret() {
+func ExampleEnrollWithSecret() {
 
 	ctx := mockClientProvider()
 
@@ -121,7 +121,29 @@ func ExampleWithSecret() {
 
 }
 
-func ExampleWithProfile() {
+func ExampleEnrollWithCAName() {
+
+	ctx := mockClientProvider()
+
+	// Create msp client
+	c, err := New(ctx)
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	err = c.Enroll(randomUsername(), WithSecret("enrollmentSecret"), WithCAName("sales.org1"))
+	if err != nil {
+		fmt.Printf("failed to enroll user: %s\n", err)
+		return
+	}
+	fmt.Println("enroll user is completed")
+
+	// Output: enroll user is completed
+
+}
+
+func ExampleEnrollWithProfile() {
 	ctx := mockClientProvider()
 
 	// Create msp client
@@ -141,7 +163,7 @@ func ExampleWithProfile() {
 	// Output: enroll user is completed
 }
 
-func ExampleWithType() {
+func ExampleEnrollWithType() {
 	ctx := mockClientProvider()
 
 	// Create msp client
@@ -161,7 +183,7 @@ func ExampleWithType() {
 	// Output: enroll user is completed
 }
 
-func ExampleWithLabel() {
+func ExampleEnrollWithLabel() {
 	ctx := mockClientProvider()
 
 	// Create msp client
@@ -181,7 +203,7 @@ func ExampleWithLabel() {
 	// Output: enroll user is completed
 }
 
-func ExampleWithAttributeRequests() {
+func ExampleEnrollWithAttributeRequests() {
 	ctx := mockClientProvider()
 
 	// Create msp client

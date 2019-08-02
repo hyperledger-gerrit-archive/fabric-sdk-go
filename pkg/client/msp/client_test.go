@@ -432,7 +432,7 @@ func TestGetAllIdentitiesFailure(t *testing.T) {
 
 // withOptionError is request option that generates error
 func withOptionError() RequestOption {
-	return func(ctx contextApi.Client, o *requestOptions) error {
+	return func(o *requestOptions) error {
 		return errors.New("Option Error")
 	}
 }
