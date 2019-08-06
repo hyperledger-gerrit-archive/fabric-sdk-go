@@ -1036,10 +1036,31 @@ func extractChConfigData(channelConfigReader io.Reader) ([]byte, error) {
 
 // CreateConfigSignature creates a signature for the given client, custom signers and chConfig from channelConfigPath argument
 //	return ConfigSignature will be signed internally by the SDK. It can be passed to WithConfigSignatures() option
+// Deprecated: this method is deprecated in order to use CreateConfigSignatureDataFromReader
 func (rc *Client) CreateConfigSignature(signer msp.SigningIdentity, channelConfigPath string) (*common.ConfigSignature, error) {
 	chConfig, err := readChConfigData(channelConfigPath)
 	if err != nil {
 		return nil, err
+	}
+
+	sigs, err := rc.createCfgSigFromIDs(chConfig, signer)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(sigs) != 1 {
+		return nil, errors.New("creating a config signature for 1 identity did not return 1 signature")
+	}
+
+	return sigs[0], nil
+}
+
+// CreateConfigSignatureFromReader creates a signature for the given client, custom signers and chConfig from io.Reader argument
+//	return ConfigSignature will be signed internally by the SDK. It can be passed to WithConfigSignatures() option
+func (rc *Client) CreateConfigSignatureFromReader(signer msp.SigningIdentity, channelConfig io.Reader) (*common.ConfigSignature, error) {
+	chConfig, err := extractChConfigData(channelConfig)
+	if err != nil {
+		return nil, errors.WithMessage(err, "extracting channel config failed")
 	}
 
 	sigs, err := rc.createCfgSigFromIDs(chConfig, signer)

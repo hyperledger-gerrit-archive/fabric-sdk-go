@@ -231,7 +231,11 @@ func createSignatureFromSDK(t *testing.T, dsCtx *dsClientCtx, chConfigPath strin
 	usr, err := mspClient.GetSigningIdentity(user)
 	require.NoError(t, err, "error creating a new SigningIdentity for %s", dsCtx.org)
 
-	signature, err := dsCtx.rsCl.CreateConfigSignature(usr, chConfigPath)
+	configReader, err := os.Open(chConfigPath)
+	require.NoError(t, err, "failed to create reader for the config %s", chConfigPath)
+	defer configReader.Close()
+
+	signature, err := dsCtx.rsCl.CreateConfigSignatureFromReader(usr, configReader)
 	require.NoError(t, err, "error creating a new ConfigSignature for %s", org1)
 
 	return signature
