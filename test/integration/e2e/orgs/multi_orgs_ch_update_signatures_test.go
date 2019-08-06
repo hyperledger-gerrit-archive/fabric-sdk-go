@@ -12,6 +12,8 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/pkg/errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -225,13 +227,28 @@ func getBaseChCfgFileName(chConfigPath string) string {
 	return chCfgName
 }
 
+func getConfigReader(configPath string) (io.Reader, error) {
+	configReader, err := os.Open(configPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "opening channel config file failed")
+	}
+	defer configReader.Close()
+
+	return configReader, nil
+}
+
 func createSignatureFromSDK(t *testing.T, dsCtx *dsClientCtx, chConfigPath string, user string) *common.ConfigSignature {
 	mspClient, err := mspclient.New(dsCtx.sdk.Context(), mspclient.WithOrg(dsCtx.org))
 	require.NoError(t, err, "error creating a new msp management client for %s", dsCtx.org)
 	usr, err := mspClient.GetSigningIdentity(user)
 	require.NoError(t, err, "error creating a new SigningIdentity for %s", dsCtx.org)
 
-	signature, err := dsCtx.rsCl.CreateConfigSignature(usr, chConfigPath)
+
+	configReader, err := os.Open(chConfigPath)
+	require.NoError(t, err, "failed to create reader for the config %s", chConfigPath)
+	defer configReader.Close()
+
+	signature, err := dsCtx.rsCl.CreateConfigSignatureFromReader(usr, configReader)
 	require.NoError(t, err, "error creating a new ConfigSignature for %s", org1)
 
 	return signature
