@@ -1,0 +1,9 @@
+Verified+1: Hyperledger Jobbuilder <jobbuilder@jenkins.hyperledger.org>
+Code-Review+1: Jonathan Levi (HACERA) <jonathan@hacera.com>
+Code-Review+1: Sudesh Shetty <sudesh.shetty@securekey.com>
+Code-Review+2: Aleksandar Likic <aleksandar.likic@securekey.com>
+Submitted-by: Troy Ronda <troy@troyronda.com>
+Submitted-at: Tue, 13 Aug 2019 13:23:03 +0000
+Reviewed-on: https://gerrit.hyperledger.org/r/c/fabric-sdk-go/+/32853
+Project: fabric-sdk-go
+Branch: refs/heads/master
