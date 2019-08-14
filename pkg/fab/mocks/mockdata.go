@@ -64,6 +64,7 @@ type MockConfigGroupBuilder struct {
 	ChannelCapabilities     []string
 	ApplicationCapabilities []string
 	OrdererCapabilities     []string
+	PolicyRefs              []string
 }
 
 // MockConfigBlockBuilder is used to build a mock Chain configuration block
@@ -217,14 +218,12 @@ func (b *MockConfigGroupBuilder) buildOrdererGroup() *common.ConfigGroup {
 			"Admins":          b.buildBasicConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			channelConfig.BatchSizeKey:                 b.buildBatchSizeConfigValue(),
-			channelConfig.AnchorPeersKey:               b.buildAnchorPeerConfigValue(),
-			channelConfig.ConsensusTypeKey:             b.buildConsensusTypeConfigValue(),
-			channelConfig.BatchTimeoutKey:              b.buildBatchTimeoutConfigValue(),
-			channelConfig.ChannelRestrictionsKey:       b.buildChannelRestrictionsConfigValue(),
-			channelConfig.HashingAlgorithmKey:          b.buildHashingAlgorithmConfigValue(),
-			channelConfig.BlockDataHashingStructureKey: b.buildBlockDataHashingStructureConfigValue(),
-			channelConfig.CapabilitiesKey:              b.buildCapabilitiesConfigValue(b.OrdererCapabilities),
+			channelConfig.ConsensusTypeKey:       b.buildConsensusTypeConfigValue(),
+			channelConfig.BatchSizeKey:           b.buildBatchSizeConfigValue(),
+			channelConfig.BatchTimeoutKey:        b.buildBatchTimeoutConfigValue(),
+			channelConfig.ChannelRestrictionsKey: b.buildChannelRestrictionsConfigValue(),
+			channelConfig.CapabilitiesKey:        b.buildCapabilitiesConfigValue(b.OrdererCapabilities),
+			channelConfig.KafkaBrokersKey:        b.buildKafkaBrokersConfigValue(),
 		},
 		Version:   b.Version,
 		ModPolicy: b.ModPolicy,
@@ -311,6 +310,20 @@ func (b *MockConfigGroupBuilder) buildCapabilitiesConfigValue(capabilityNames []
 		Value:     marshalOrPanic(b.buildCapabilities(capabilityNames))}
 }
 
+func (b *MockConfigGroupBuilder) buildKafkaBrokersConfigValue() *common.ConfigValue {
+	return &common.ConfigValue{
+		Version:   b.Version,
+		ModPolicy: b.ModPolicy,
+		Value:     marshalOrPanic(b.buildKafkaBrokers())}
+}
+
+func (b *MockConfigGroupBuilder) buildACLsConfigValue(policyRefs []string) *common.ConfigValue {
+	return &common.ConfigValue{
+		Version:   b.Version,
+		ModPolicy: b.ModPolicy,
+		Value:     marshalOrPanic(b.buildACLs(policyRefs))}
+}
+
 func (b *MockConfigGroupBuilder) buildBatchSize() *ab.BatchSize {
 	return &ab.BatchSize{
 		MaxMessageCount:   10,
@@ -328,7 +341,9 @@ func (b *MockConfigGroupBuilder) buildAnchorPeer() *pp.AnchorPeers {
 
 func (b *MockConfigGroupBuilder) buildConsensusType() *ab.ConsensusType {
 	return &ab.ConsensusType{
-		Type: "sample-Consensus-Type",
+		Type:             "kafka",
+		MigrationState:   ab.ConsensusType_MIG_STATE_NONE,
+		MigrationContext: 0,
 	}
 }
 
@@ -363,6 +378,23 @@ func (b *MockConfigGroupBuilder) buildCapabilities(capabilityNames []string) *co
 	}
 	return &common.Capabilities{
 		Capabilities: capabilities,
+	}
+}
+
+func (b *MockConfigGroupBuilder) buildKafkaBrokers() *ab.KafkaBrokers {
+	brokers := []string{"kafkabroker"}
+	return &ab.KafkaBrokers{
+		Brokers: brokers,
+	}
+}
+
+func (b *MockConfigGroupBuilder) buildACLs(policyRefs []string) *pp.ACLs {
+	acls := make(map[string]*pp.APIResource)
+	for _, policyRef := range policyRefs {
+		acls[policyRef] = &pp.APIResource{PolicyRef: policyRef}
+	}
+	return &pp.ACLs{
+		Acls: acls,
 	}
 }
 
@@ -430,9 +462,8 @@ func (b *MockConfigGroupBuilder) buildApplicationGroup() *common.ConfigGroup {
 			"Readers": b.buildSignatureConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			channelConfig.BatchSizeKey:    b.buildBatchSizeConfigValue(),
 			channelConfig.CapabilitiesKey: b.buildCapabilitiesConfigValue(b.ApplicationCapabilities),
-			// TODO: More
+			channelConfig.ACLsKey:         b.buildACLsConfigValue(b.PolicyRefs),
 		},
 		Version:   b.Version,
 		ModPolicy: b.ModPolicy,
