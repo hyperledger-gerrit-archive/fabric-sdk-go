@@ -217,14 +217,14 @@ func (b *MockConfigGroupBuilder) buildOrdererGroup() *common.ConfigGroup {
 			"Admins":          b.buildBasicConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			channelConfig.BatchSizeKey:                 b.buildBatchSizeConfigValue(),
-			channelConfig.AnchorPeersKey:               b.buildAnchorPeerConfigValue(),
-			channelConfig.ConsensusTypeKey:             b.buildConsensusTypeConfigValue(),
-			channelConfig.BatchTimeoutKey:              b.buildBatchTimeoutConfigValue(),
-			channelConfig.ChannelRestrictionsKey:       b.buildChannelRestrictionsConfigValue(),
-			channelConfig.HashingAlgorithmKey:          b.buildHashingAlgorithmConfigValue(),
-			channelConfig.BlockDataHashingStructureKey: b.buildBlockDataHashingStructureConfigValue(),
-			channelConfig.CapabilitiesKey:              b.buildCapabilitiesConfigValue(b.OrdererCapabilities),
+			//channelConfig.BatchSizeKey:           b.buildBatchSizeConfigValue(),
+			//channelConfig.AnchorPeersKey:         b.buildAnchorPeerConfigValue(),
+			channelConfig.ConsensusTypeKey:       b.buildConsensusTypeConfigValue(),
+			channelConfig.BatchTimeoutKey:        b.buildBatchTimeoutConfigValue(),
+			channelConfig.ChannelRestrictionsKey: b.buildChannelRestrictionsConfigValue(),
+			//channelConfig.HashingAlgorithmKey:          b.buildHashingAlgorithmConfigValue(),
+			//channelConfig.BlockDataHashingStructureKey: b.buildBlockDataHashingStructureConfigValue(),
+			channelConfig.CapabilitiesKey: b.buildCapabilitiesConfigValue(b.OrdererCapabilities),
 		},
 		Version:   b.Version,
 		ModPolicy: b.ModPolicy,
@@ -255,19 +255,19 @@ func (b *MockConfigGroupBuilder) buildMSPConfigValue(name string) *common.Config
 		Value:     marshalOrPanic(b.buildMSPConfig(name))}
 }
 
-func (b *MockConfigGroupBuilder) buildBatchSizeConfigValue() *common.ConfigValue {
-	return &common.ConfigValue{
-		Version:   b.Version,
-		ModPolicy: b.ModPolicy,
-		Value:     marshalOrPanic(b.buildBatchSize())}
-}
-
-func (b *MockConfigGroupBuilder) buildAnchorPeerConfigValue() *common.ConfigValue {
-	return &common.ConfigValue{
-		Version:   b.Version,
-		ModPolicy: b.ModPolicy,
-		Value:     marshalOrPanic(b.buildAnchorPeer())}
-}
+//func (b *MockConfigGroupBuilder) buildBatchSizeConfigValue() *common.ConfigValue {
+//	return &common.ConfigValue{
+//		Version:   b.Version,
+//		ModPolicy: b.ModPolicy,
+//		Value:     marshalOrPanic(b.buildBatchSize())}
+//}
+//
+//func (b *MockConfigGroupBuilder) buildAnchorPeerConfigValue() *common.ConfigValue {
+//	return &common.ConfigValue{
+//		Version:   b.Version,
+//		ModPolicy: b.ModPolicy,
+//		Value:     marshalOrPanic(b.buildAnchorPeer())}
+//}
 
 func (b *MockConfigGroupBuilder) buildConsensusTypeConfigValue() *common.ConfigValue {
 	return &common.ConfigValue{
@@ -290,19 +290,19 @@ func (b *MockConfigGroupBuilder) buildChannelRestrictionsConfigValue() *common.C
 		Value:     marshalOrPanic(b.buildChannelRestrictions())}
 }
 
-func (b *MockConfigGroupBuilder) buildHashingAlgorithmConfigValue() *common.ConfigValue {
-	return &common.ConfigValue{
-		Version:   b.Version,
-		ModPolicy: b.ModPolicy,
-		Value:     marshalOrPanic(b.buildHashingAlgorithm())}
-}
-
-func (b *MockConfigGroupBuilder) buildBlockDataHashingStructureConfigValue() *common.ConfigValue {
-	return &common.ConfigValue{
-		Version:   b.Version,
-		ModPolicy: b.ModPolicy,
-		Value:     marshalOrPanic(b.buildBlockDataHashingStructure())}
-}
+//func (b *MockConfigGroupBuilder) buildHashingAlgorithmConfigValue() *common.ConfigValue {
+//	return &common.ConfigValue{
+//		Version:   b.Version,
+//		ModPolicy: b.ModPolicy,
+//		Value:     marshalOrPanic(b.buildHashingAlgorithm())}
+//}
+//
+//func (b *MockConfigGroupBuilder) buildBlockDataHashingStructureConfigValue() *common.ConfigValue {
+//	return &common.ConfigValue{
+//		Version:   b.Version,
+//		ModPolicy: b.ModPolicy,
+//		Value:     marshalOrPanic(b.buildBlockDataHashingStructure())}
+//}
 
 func (b *MockConfigGroupBuilder) buildCapabilitiesConfigValue(capabilityNames []string) *common.ConfigValue {
 	return &common.ConfigValue{
@@ -311,20 +311,20 @@ func (b *MockConfigGroupBuilder) buildCapabilitiesConfigValue(capabilityNames []
 		Value:     marshalOrPanic(b.buildCapabilities(capabilityNames))}
 }
 
-func (b *MockConfigGroupBuilder) buildBatchSize() *ab.BatchSize {
-	return &ab.BatchSize{
-		MaxMessageCount:   10,
-		AbsoluteMaxBytes:  103809024,
-		PreferredMaxBytes: 524288,
-	}
-}
-
-func (b *MockConfigGroupBuilder) buildAnchorPeer() *pp.AnchorPeers {
-	ap := pp.AnchorPeer{Host: "sample-host", Port: 22}
-	return &pp.AnchorPeers{
-		AnchorPeers: []*pp.AnchorPeer{&ap},
-	}
-}
+//func (b *MockConfigGroupBuilder) buildBatchSize() *ab.BatchSize {
+//	return &ab.BatchSize{
+//		MaxMessageCount:   10,
+//		AbsoluteMaxBytes:  103809024,
+//		PreferredMaxBytes: 524288,
+//	}
+//}
+//
+//func (b *MockConfigGroupBuilder) buildAnchorPeer() *pp.AnchorPeers {
+//	ap := pp.AnchorPeer{Host: "sample-host", Port: 22}
+//	return &pp.AnchorPeers{
+//		AnchorPeers: []*pp.AnchorPeer{&ap},
+//	}
+//}
 
 func (b *MockConfigGroupBuilder) buildConsensusType() *ab.ConsensusType {
 	return &ab.ConsensusType{
@@ -344,17 +344,17 @@ func (b *MockConfigGroupBuilder) buildChannelRestrictions() *ab.ChannelRestricti
 	}
 }
 
-func (b *MockConfigGroupBuilder) buildHashingAlgorithm() *common.HashingAlgorithm {
-	return &common.HashingAlgorithm{
-		Name: "SHA2",
-	}
-}
-
-func (b *MockConfigGroupBuilder) buildBlockDataHashingStructure() *common.BlockDataHashingStructure {
-	return &common.BlockDataHashingStructure{
-		Width: 64,
-	}
-}
+//func (b *MockConfigGroupBuilder) buildHashingAlgorithm() *common.HashingAlgorithm {
+//	return &common.HashingAlgorithm{
+//		Name: "SHA2",
+//	}
+//}
+//
+//func (b *MockConfigGroupBuilder) buildBlockDataHashingStructure() *common.BlockDataHashingStructure {
+//	return &common.BlockDataHashingStructure{
+//		Width: 64,
+//	}
+//}
 
 func (b *MockConfigGroupBuilder) buildCapabilities(capabilityNames []string) *common.Capabilities {
 	capabilities := make(map[string]*common.Capability)
@@ -430,7 +430,7 @@ func (b *MockConfigGroupBuilder) buildApplicationGroup() *common.ConfigGroup {
 			"Readers": b.buildSignatureConfigPolicy(),
 		},
 		Values: map[string]*common.ConfigValue{
-			channelConfig.BatchSizeKey:    b.buildBatchSizeConfigValue(),
+			//channelConfig.BatchSizeKey:    b.buildBatchSizeConfigValue(),
 			channelConfig.CapabilitiesKey: b.buildCapabilitiesConfigValue(b.ApplicationCapabilities),
 			// TODO: More
 		},
