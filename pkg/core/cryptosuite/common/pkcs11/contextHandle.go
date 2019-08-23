@@ -8,14 +8,14 @@ package pkcs11
 
 import (
 	"fmt"
-
 	"sync"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cachebridge"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
-	"github.com/miekg/pkcs11"
+	mPkcs11 "github.com/miekg/pkcs11"
 	"github.com/pkg/errors"
 )
 
@@ -36,6 +36,7 @@ func ReloadPKCS11ContextHandle(lib, label, pin string, opts ...Options) (*Contex
 
 //LoadContextAndLogin loads Context handle and performs login
 func LoadContextAndLogin(lib, pin, label string) (*ContextHandle, error) {
+	logger.Debugf("Loading context and performing login for [%s-%s]", lib, label)
 	pkcs11Context, err := LoadPKCS11ContextHandle(lib, label, pin)
 	if err != nil {
 		return nil, err
@@ -57,46 +58,70 @@ func LoadContextAndLogin(lib, pin, label string) (*ContextHandle, error) {
 	return pkcs11Context, err
 }
 
-//ContextHandle encapsulate basic pkcs11.Ctx operations and manages sessions
+//ContextHandle encapsulate basic mPkcs11.Ctx operations and manages sessions
 type ContextHandle struct {
-	ctx                *pkcs11.Ctx
+	ctx                *mPkcs11.Ctx
 	slot               uint
 	pin                string
 	lib                string
 	label              string
-	sessions           chan pkcs11.SessionHandle
+	sessions           chan mPkcs11.SessionHandle
 	opts               ctxOpts
 	reloadNotification chan struct{}
 	lock               sync.RWMutex
 }
 
-// NotifyCtxReload registers a channel to get notification when underlying pkcs11.Ctx is recreated
+// NotifyCtxReload registers a channel to get notification when underlying mPkcs11.Ctx is recreated
 func (handle *ContextHandle) NotifyCtxReload(ch chan struct{}) {
 	handle.reloadNotification = ch
 }
 
 //OpenSession opens a session between an application and a token.
-func (handle *ContextHandle) OpenSession() (pkcs11.SessionHandle, error) {
+func (handle *ContextHandle) OpenSession() (mPkcs11.SessionHandle, error) {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
-	var session pkcs11.SessionHandle
+	var session mPkcs11.SessionHandle
 	var err error
-	for i := 0; i < handle.opts.openSessionRetry; i++ {
-		session, err = handle.ctx.OpenSession(handle.slot, pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
-		if err != nil {
-			logger.Warnf("OpenSession failed, retrying [%s]\n", err)
-		} else {
-			logger.Debug("OpenSession succeeded")
-			break
-		}
+	session, err = handle.ctx.OpenSession(handle.slot, mPkcs11.CKF_SERIAL_SESSION|mPkcs11.CKF_RW_SESSION)
+	if err != nil {
+		logger.Warnf("*OpenSession failed [%s]\n", err)
 	}
+	logger.Debug("*OpenSession succeeded")
 	return session, err
 }
 
+//func (handle *ContextHandle) OpenSession() (mPkcs11.SessionHandle, error) {
+//
+//	var session mPkcs11.SessionHandle
+//	var err error
+//	for i := 0; i < handle.opts.openSessionRetryAttempts; i++ {
+//		handle.lock.RLock()
+//		session, err = handle.ctx.OpenSession(handle.slot, mPkcs11.CKF_SERIAL_SESSION|mPkcs11.CKF_RW_SESSION)
+//		if err != nil {
+//			logger.Warnf("**Failed to OpenSession, cause [%v], but retrying after [%v], attempt [%d] \n", err, handle.opts.openSessionRetryInterval, i+1)
+//			//time.Sleep(handle.opts.openSessionRetryInterval)
+//
+//			handle.lock.RUnlock()
+//			session = handle.recoverSession(err)
+//			if session > 0 {
+//				logger.Debug("Able to recover session from error[%v], session %+v, attempt [%d]", err, session, i+1)
+//				return session, nil
+//			} else {
+//				logger.Debug("Unable to recover session from error[%v], session %+v, attempt [%d], retrying now", err, session, i+1)
+//			}
+//		} else {
+//			handle.lock.RUnlock()
+//			logger.Debug("OpenSession succeeded, session %+v", session)
+//			return session, nil
+//		}
+//	}
+//	return session, err
+//}
+
 // Login logs a user into a token
-func (handle *ContextHandle) Login(session pkcs11.SessionHandle) error {
+func (handle *ContextHandle) Login(session mPkcs11.SessionHandle) error {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -104,16 +129,16 @@ func (handle *ContextHandle) Login(session pkcs11.SessionHandle) error {
 	if handle.pin == "" {
 		return errors.New("No PIN set")
 	}
-	err := handle.ctx.Login(session, pkcs11.CKU_USER, handle.pin)
-	if err != nil && err != pkcs11.Error(pkcs11.CKR_USER_ALREADY_LOGGED_IN) {
+	err := handle.ctx.Login(session, mPkcs11.CKU_USER, handle.pin)
+	if err != nil && err != mPkcs11.Error(mPkcs11.CKR_USER_ALREADY_LOGGED_IN) {
 		return errors.Errorf("Login failed [%s]", err)
 	}
 	return nil
 }
 
 //ReturnSession returns session back into the session pool
-//if pool is pull or session is invalid then discards session
-func (handle *ContextHandle) ReturnSession(session pkcs11.SessionHandle) {
+//if pool is full or session is invalid then discards session
+func (handle *ContextHandle) ReturnSession(session mPkcs11.SessionHandle) {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -125,8 +150,11 @@ func (handle *ContextHandle) ReturnSession(session pkcs11.SessionHandle) {
 		if e != nil {
 			logger.Warn("unable to close session:", e)
 		}
+		cachebridge.ClearSession(fmt.Sprintf("%d", session))
 		return
 	}
+
+	logger.Debugf("Returning session : %d", session)
 
 	select {
 	case handle.sessions <- session:
@@ -134,6 +162,7 @@ func (handle *ContextHandle) ReturnSession(session pkcs11.SessionHandle) {
 	default:
 		// have plenty of sessions in cache, dropping
 		e = handle.ctx.CloseSession(session)
+		cachebridge.ClearSession(fmt.Sprintf("%d", session))
 		if e != nil {
 			logger.Warn("unable to close session: ", e)
 		}
@@ -143,30 +172,74 @@ func (handle *ContextHandle) ReturnSession(session pkcs11.SessionHandle) {
 //GetSession returns session from session pool
 //if pool is empty or completely in use, creates new session
 //if new session is invalid recreates one after reloading ctx and re-login
-func (handle *ContextHandle) GetSession() (session pkcs11.SessionHandle) {
+func (handle *ContextHandle) GetSession() (session mPkcs11.SessionHandle) {
+	id := time.Now()
+	logger.Debug("Sept5.7 getting read lock for , id[%v]", id)
 	handle.lock.RLock()
+	logger.Debug("Sept5.7 got read lock for , id[%v]", id)
+
 	select {
 	case session = <-handle.sessions:
 		logger.Debugf("Reusing existing pkcs11 session %+v on slot %d\n", session, handle.slot)
+		handle.lock.RUnlock()
 
 	default:
+		logger.Debug("Sept5.7 opening a new session since cache is empty/full, id[%v]", id)
 
 		// cache is empty (or completely in use), create a new session
 		s, err := handle.OpenSession()
+		handle.lock.RUnlock()
+
 		if err != nil {
-			handle.lock.RUnlock()
-			panic(fmt.Errorf("OpenSession failed [%s]", err))
+			handle.lock.Lock()
+			logger.Debugf("** Failed to open session, will try %d times before giving up, error[%v]", handle.opts.openSessionRetryAttempts, err)
+
+			for i := 0; i < handle.opts.openSessionRetryAttempts; i++ {
+				logger.Debugf(" **** sleeping for [%v] before trying attempt[%d] id[%v]", handle.opts.openSessionRetryInterval, i+1, id)
+				//try to relogin
+				time.Sleep(handle.opts.openSessionRetryInterval)
+				logger.Debugf(" **** attempt[%d]", i+1)
+
+				logger.Debugf("Trying to re-login, attempt[%d], for error[%v] id[%v]", i+1, err, id)
+				newSession, err := handle.softReLogin()
+				logger.Debugf("Re-login attempted, attempt[%d], will try to open session again, error [%s], id[%v]", i+1, err, id)
+
+				if err != nil {
+					logger.Debugf("Re-login failed, attempt[%d], trying again, err [%s], id[%v]", i+1, err, id)
+					if i < handle.opts.openSessionRetryAttempts-1 {
+						logger.Debugf(" ---------------- ATTEMPTc %d ------------", (i + 1))
+						continue
+					} else {
+						logger.Debugf("** Failed to open session, exhausted all %d attempts, giving up now, id[%v]", handle.opts.openSessionRetryAttempts, id)
+						handle.lock.Unlock()
+						panic(fmt.Errorf("OpenSession failed [%s] : [%v]", err, id))
+					}
+				} else {
+					logger.Debugf("Re-login succeeded, attempt[%d],returning session [%d], id[%v]", i+1, newSession, id)
+					session = newSession
+					logger.Debugf("Created new pkcs11 session %+v on slot %d, attempt [%d]", session, handle.slot, i+1)
+					logger.Debugf("Clearing cache for new session [%d], attempt [%d]", session, i+1)
+					cachebridge.ClearSession(fmt.Sprintf("%d", session))
+					handle.lock.Unlock()
+					break
+				}
+				logger.Debugf(" ---------------- ATTEMPT %d ------------", (i + 1))
+			}
+
 		}
-		logger.Debugf("Created new pkcs11 session %+v on slot %d\n", s, handle.slot)
+
+		logger.Debugf("Created new pkcs11 session %+v on slot %d", s, handle.slot)
 		session = s
+		logger.Debugf("Clearing cache for new session [%d]", s)
 		cachebridge.ClearSession(fmt.Sprintf("%d", session))
 	}
-	handle.lock.RUnlock()
+
+	logger.Debugf("- Validating session now for session [%d]", session)
 	return handle.validateSession(session)
 }
 
 // GetAttributeValue obtains the value of one or more object attributes.
-func (handle *ContextHandle) GetAttributeValue(session pkcs11.SessionHandle, objectHandle pkcs11.ObjectHandle, attrs []*pkcs11.Attribute) ([]*pkcs11.Attribute, error) {
+func (handle *ContextHandle) GetAttributeValue(session mPkcs11.SessionHandle, objectHandle mPkcs11.ObjectHandle, attrs []*mPkcs11.Attribute) ([]*mPkcs11.Attribute, error) {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -175,7 +248,7 @@ func (handle *ContextHandle) GetAttributeValue(session pkcs11.SessionHandle, obj
 }
 
 // SetAttributeValue modifies the value of one or more object attributes
-func (handle *ContextHandle) SetAttributeValue(session pkcs11.SessionHandle, objectHandle pkcs11.ObjectHandle, attrs []*pkcs11.Attribute) error {
+func (handle *ContextHandle) SetAttributeValue(session mPkcs11.SessionHandle, objectHandle mPkcs11.ObjectHandle, attrs []*mPkcs11.Attribute) error {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -184,7 +257,7 @@ func (handle *ContextHandle) SetAttributeValue(session pkcs11.SessionHandle, obj
 }
 
 // GenerateKeyPair generates a public-key/private-key pair creating new key objects.
-func (handle *ContextHandle) GenerateKeyPair(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, public, private []*pkcs11.Attribute) (pkcs11.ObjectHandle, pkcs11.ObjectHandle, error) {
+func (handle *ContextHandle) GenerateKeyPair(session mPkcs11.SessionHandle, m []*mPkcs11.Mechanism, public, private []*mPkcs11.Attribute) (mPkcs11.ObjectHandle, mPkcs11.ObjectHandle, error) {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -193,7 +266,7 @@ func (handle *ContextHandle) GenerateKeyPair(session pkcs11.SessionHandle, m []*
 }
 
 //GenerateKey generates a secret key, creating a new key object.
-func (handle *ContextHandle) GenerateKey(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, temp []*pkcs11.Attribute) (pkcs11.ObjectHandle, error) {
+func (handle *ContextHandle) GenerateKey(session mPkcs11.SessionHandle, m []*mPkcs11.Mechanism, temp []*mPkcs11.Attribute) (mPkcs11.ObjectHandle, error) {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -202,7 +275,7 @@ func (handle *ContextHandle) GenerateKey(session pkcs11.SessionHandle, m []*pkcs
 }
 
 // FindObjectsInit initializes a search for token and session objects that match a template.
-func (handle *ContextHandle) FindObjectsInit(session pkcs11.SessionHandle, temp []*pkcs11.Attribute) error {
+func (handle *ContextHandle) FindObjectsInit(session mPkcs11.SessionHandle, temp []*mPkcs11.Attribute) error {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -212,7 +285,7 @@ func (handle *ContextHandle) FindObjectsInit(session pkcs11.SessionHandle, temp 
 
 // FindObjects continues a search for token and session objects that match a template, obtaining additional object
 // handles. The returned boolean indicates if the list would have been larger than max.
-func (handle *ContextHandle) FindObjects(session pkcs11.SessionHandle, max int) ([]pkcs11.ObjectHandle, bool, error) {
+func (handle *ContextHandle) FindObjects(session mPkcs11.SessionHandle, max int) ([]mPkcs11.ObjectHandle, bool, error) {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -221,7 +294,7 @@ func (handle *ContextHandle) FindObjects(session pkcs11.SessionHandle, max int) 
 }
 
 //FindObjectsFinal finishes a search for token and session objects.
-func (handle *ContextHandle) FindObjectsFinal(session pkcs11.SessionHandle) error {
+func (handle *ContextHandle) FindObjectsFinal(session mPkcs11.SessionHandle) error {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -230,7 +303,7 @@ func (handle *ContextHandle) FindObjectsFinal(session pkcs11.SessionHandle) erro
 }
 
 //Encrypt encrypts single-part data.
-func (handle *ContextHandle) Encrypt(session pkcs11.SessionHandle, message []byte) ([]byte, error) {
+func (handle *ContextHandle) Encrypt(session mPkcs11.SessionHandle, message []byte) ([]byte, error) {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -239,7 +312,7 @@ func (handle *ContextHandle) Encrypt(session pkcs11.SessionHandle, message []byt
 }
 
 //EncryptInit initializes an encryption operation.
-func (handle *ContextHandle) EncryptInit(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, o pkcs11.ObjectHandle) error {
+func (handle *ContextHandle) EncryptInit(session mPkcs11.SessionHandle, m []*mPkcs11.Mechanism, o mPkcs11.ObjectHandle) error {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -248,7 +321,7 @@ func (handle *ContextHandle) EncryptInit(session pkcs11.SessionHandle, m []*pkcs
 }
 
 //DecryptInit initializes a decryption operation.
-func (handle *ContextHandle) DecryptInit(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, o pkcs11.ObjectHandle) error {
+func (handle *ContextHandle) DecryptInit(session mPkcs11.SessionHandle, m []*mPkcs11.Mechanism, o mPkcs11.ObjectHandle) error {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -257,7 +330,7 @@ func (handle *ContextHandle) DecryptInit(session pkcs11.SessionHandle, m []*pkcs
 }
 
 //Decrypt decrypts encrypted data in a single part.
-func (handle *ContextHandle) Decrypt(session pkcs11.SessionHandle, cypher []byte) ([]byte, error) {
+func (handle *ContextHandle) Decrypt(session mPkcs11.SessionHandle, cypher []byte) ([]byte, error) {
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
@@ -268,7 +341,7 @@ func (handle *ContextHandle) Decrypt(session pkcs11.SessionHandle, cypher []byte
 // SignInit initializes a signature (private key encryption)
 // operation, where the signature is (will be) an appendix to
 // the data, and plaintext cannot be recovered from the signature.
-func (handle *ContextHandle) SignInit(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, o pkcs11.ObjectHandle) error {
+func (handle *ContextHandle) SignInit(session mPkcs11.SessionHandle, m []*mPkcs11.Mechanism, o mPkcs11.ObjectHandle) error {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
@@ -277,7 +350,7 @@ func (handle *ContextHandle) SignInit(session pkcs11.SessionHandle, m []*pkcs11.
 
 // Sign signs (encrypts with private key) data in a single part, where the signature
 // is (will be) an appendix to the data, and plaintext cannot be recovered from the signature.
-func (handle *ContextHandle) Sign(session pkcs11.SessionHandle, message []byte) ([]byte, error) {
+func (handle *ContextHandle) Sign(session mPkcs11.SessionHandle, message []byte) ([]byte, error) {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
@@ -287,7 +360,7 @@ func (handle *ContextHandle) Sign(session pkcs11.SessionHandle, message []byte) 
 // VerifyInit initializes a verification operation, where the
 // signature is an appendix to the data, and plaintext cannot
 // be recovered from the signature (e.g. DSA).
-func (handle *ContextHandle) VerifyInit(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, key pkcs11.ObjectHandle) error {
+func (handle *ContextHandle) VerifyInit(session mPkcs11.SessionHandle, m []*mPkcs11.Mechanism, key mPkcs11.ObjectHandle) error {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
@@ -297,7 +370,7 @@ func (handle *ContextHandle) VerifyInit(session pkcs11.SessionHandle, m []*pkcs1
 // Verify verifies a signature in a single-part operation,
 // where the signature is an appendix to the data, and plaintext
 // cannot be recovered from the signature.
-func (handle *ContextHandle) Verify(session pkcs11.SessionHandle, data []byte, signature []byte) error {
+func (handle *ContextHandle) Verify(session mPkcs11.SessionHandle, data []byte, signature []byte) error {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
@@ -305,7 +378,7 @@ func (handle *ContextHandle) Verify(session pkcs11.SessionHandle, data []byte, s
 }
 
 // CreateObject creates a new object.
-func (handle *ContextHandle) CreateObject(session pkcs11.SessionHandle, temp []*pkcs11.Attribute) (pkcs11.ObjectHandle, error) {
+func (handle *ContextHandle) CreateObject(session mPkcs11.SessionHandle, temp []*mPkcs11.Attribute) (mPkcs11.ObjectHandle, error) {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
@@ -313,7 +386,7 @@ func (handle *ContextHandle) CreateObject(session pkcs11.SessionHandle, temp []*
 }
 
 // CopyObject creates a copy of an object.
-func (handle *ContextHandle) CopyObject(sh pkcs11.SessionHandle, o pkcs11.ObjectHandle, temp []*pkcs11.Attribute) (pkcs11.ObjectHandle, error) {
+func (handle *ContextHandle) CopyObject(sh mPkcs11.SessionHandle, o mPkcs11.ObjectHandle, temp []*mPkcs11.Attribute) (mPkcs11.ObjectHandle, error) {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
@@ -321,7 +394,7 @@ func (handle *ContextHandle) CopyObject(sh pkcs11.SessionHandle, o pkcs11.Object
 }
 
 // DestroyObject destroys an object.
-func (handle *ContextHandle) DestroyObject(sh pkcs11.SessionHandle, oh pkcs11.ObjectHandle) error {
+func (handle *ContextHandle) DestroyObject(sh mPkcs11.SessionHandle, oh mPkcs11.ObjectHandle) error {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
@@ -329,7 +402,7 @@ func (handle *ContextHandle) DestroyObject(sh pkcs11.SessionHandle, oh pkcs11.Ob
 }
 
 //FindKeyPairFromSKI finds key pair by SKI
-func (handle *ContextHandle) FindKeyPairFromSKI(session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
+func (handle *ContextHandle) FindKeyPairFromSKI(session mPkcs11.SessionHandle, ski []byte, keyType bool) (*mPkcs11.ObjectHandle, error) {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
@@ -339,7 +412,7 @@ func (handle *ContextHandle) FindKeyPairFromSKI(session pkcs11.SessionHandle, sk
 //validateSession validates given session
 //if session is invalid recreates one after reloading ctx and re-login
 //care should be taken since handle.lock should be read locked before calling this function
-func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle) pkcs11.SessionHandle {
+func (handle *ContextHandle) validateSession(currentSession mPkcs11.SessionHandle) mPkcs11.SessionHandle {
 
 	handle.lock.RLock()
 
@@ -347,75 +420,189 @@ func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle
 
 	switch e {
 	case errSlotIDChanged,
-		pkcs11.Error(pkcs11.CKR_OBJECT_HANDLE_INVALID),
-		pkcs11.Error(pkcs11.CKR_SESSION_HANDLE_INVALID),
-		pkcs11.Error(pkcs11.CKR_SESSION_CLOSED),
-		pkcs11.Error(pkcs11.CKR_TOKEN_NOT_PRESENT),
-		pkcs11.Error(pkcs11.CKR_DEVICE_ERROR),
-		pkcs11.Error(pkcs11.CKR_GENERAL_ERROR),
-		pkcs11.Error(pkcs11.CKR_USER_NOT_LOGGED_IN):
+		mPkcs11.Error(mPkcs11.CKR_OBJECT_HANDLE_INVALID),
+		mPkcs11.Error(mPkcs11.CKR_SESSION_HANDLE_INVALID),
+		mPkcs11.Error(mPkcs11.CKR_SESSION_CLOSED),
+		mPkcs11.Error(mPkcs11.CKR_TOKEN_NOT_PRESENT),
+		mPkcs11.Error(mPkcs11.CKR_DEVICE_ERROR),
+		mPkcs11.Error(mPkcs11.CKR_GENERAL_ERROR),
+		mPkcs11.Error(mPkcs11.CKR_USER_NOT_LOGGED_IN):
 
-		logger.Warnf("Found error condition [%s], attempting to recreate pkcs11 context and re-login....", e)
+		logger.Warnf("Found error condition [%s], attempting to recreate pkcs11 context and re-login....(DISABLED)", e)
 
 		handle.lock.RUnlock()
-		handle.lock.Lock()
-		defer handle.lock.Unlock()
 
-		handle.disposePKCS11Ctx()
+		//return handle.reLogin()
+		return currentSession
 
-		//create new context
-		newCtx := handle.createNewPKCS11Ctx()
-		if newCtx == nil {
-			logger.Warn("Failed to recreate new pkcs11 context for given library")
-			return 0
-		}
-
-		//find slot
-		slot, found := handle.findSlot(newCtx)
-		if !found {
-			logger.Warnf("Unable to find slot for label :%s", handle.label)
-			return 0
-		}
-		logger.Debug("got the slot ", slot)
-
-		//open new session for given slot
-		newSession, err := createNewSession(newCtx, slot)
-		if err != nil {
-			logger.Fatalf("OpenSession [%s]\n", err)
-			return 0
-		}
-		logger.Debugf("Recreated new pkcs11 session %+v on slot %d\n", newSession, slot)
-
-		//login with new session
-		err = newCtx.Login(newSession, pkcs11.CKU_USER, handle.pin)
-		if err != nil && err != pkcs11.Error(pkcs11.CKR_USER_ALREADY_LOGGED_IN) {
-			logger.Warnf("Unable to login with new session :%s", newSession)
-			return 0
-		}
-
-		handle.sendNotification()
-
-		handle.ctx = newCtx
-		handle.slot = slot
-		handle.sessions = make(chan pkcs11.SessionHandle, handle.opts.sessionCacheSize)
-
-		logger.Infof("Able to login with recreated session successfully")
-		return newSession
-
-	case pkcs11.Error(pkcs11.CKR_DEVICE_MEMORY),
-		pkcs11.Error(pkcs11.CKR_DEVICE_REMOVED):
+	case mPkcs11.Error(mPkcs11.CKR_DEVICE_MEMORY),
+		mPkcs11.Error(mPkcs11.CKR_DEVICE_REMOVED):
 		handle.lock.RUnlock()
 		panic(fmt.Sprintf("PKCS11 Session failure: [%s]", e))
 
 	default:
+		logger.Debugf("Valid session found [%d], returning ", currentSession)
 		handle.lock.RUnlock()
 		// default should be a valid session or valid error, return session as it is
 		return currentSession
 	}
 }
 
+//
+////recoverSession try to recover given session
+////if session is invalid recreates one after reloading ctx and re-login
+////care should be taken since handle.lock should be read locked before calling this function
+////TODO still experimental, not final logic
+//func (handle *ContextHandle) recoverSession(e error) mPkcs11.SessionHandle {
+//
+//	handle.lock.RLock()
+//
+//	switch e {
+//	case errSlotIDChanged,
+//		mPkcs11.Error(mPkcs11.CKR_OBJECT_HANDLE_INVALID),
+//		mPkcs11.Error(mPkcs11.CKR_SESSION_HANDLE_INVALID),
+//		mPkcs11.Error(mPkcs11.CKR_SESSION_CLOSED),
+//		mPkcs11.Error(mPkcs11.CKR_TOKEN_NOT_PRESENT),
+//		mPkcs11.Error(mPkcs11.CKR_DEVICE_ERROR),
+//		mPkcs11.Error(mPkcs11.CKR_GENERAL_ERROR),
+//		mPkcs11.Error(mPkcs11.CKR_USER_NOT_LOGGED_IN):
+//
+//		logger.Warnf("[recoverSession] Found error condition [%s], attempting to recreate pkcs11 context and re-login....", e)
+//
+//		handle.lock.RUnlock()
+//
+//		return handle.reLogin()
+//
+//	default:
+//		handle.lock.RUnlock()
+//		// default should be a valid session or valid error, return session as it is
+//		return 0
+//	}
+//}
+
+//reLogin creates new context, opens new session and re-logins
+func (handle *ContextHandle) softReLogin() (mPkcs11.SessionHandle, error) {
+
+	logger.Debugf("softReLogin, getting write lock")
+
+	logger.Debugf("softReLogin, got write lock")
+
+	logger.Debugf("softReLogin, Disposing pkcs11 ctx for [%s, %s]", handle.lib, handle.label)
+
+	//ignore error on close all sessions
+	err := handle.ctx.CloseAllSessions(handle.slot)
+	if err != nil {
+		logger.Warnf("softReLogin, Unable to close session", err)
+		//return 0, err
+	}
+
+	//Initialize context
+	err = handle.ctx.Finalize()
+	if err != nil {
+		logger.Warnf("softReLogin, unable to finalize pkcs11 ctx for [%s, %s] : %s", handle.lib, handle.label, err)
+		//return 0, err
+	}
+
+	logger.Debugf("softReLogin, Destroying ctx for [%s, %s]", handle.lib, handle.label)
+
+	//Destroy context
+	handle.ctx.Destroy()
+
+	logger.Debugf("softReLogin, creating new ctx for [%s, %s]", handle.lib, handle.label)
+
+	//create new context
+	newCtx := handle.createNewPKCS11Ctx()
+	if newCtx == nil {
+		logger.Warn("Failed to recreate new pkcs11 context for given library")
+		return 0, errors.New("Failed to recreate new pkcs11 context for given library")
+	}
+
+	logger.Debug("softReLogin, finding new slot ")
+
+	//find slot
+	slot, found := handle.findSlot(newCtx)
+	if !found {
+		logger.Warnf("Unable to find slot for label :%s", handle.label)
+		return 0, fmt.Errorf("Unable to find slot for label :%s", handle.label)
+	}
+
+	logger.Debug("softReLogin, got the slot ", slot)
+
+	//open new session for given slot
+	newSession, err := createNewSession(newCtx, slot)
+	if err != nil {
+		logger.Fatalf("OpenSession [%s]\n", err)
+		return 0, err
+	}
+	logger.Infof("softReLogin, Recreated new pkcs11 session %+v on slot %d, attempting to login now", newSession, slot)
+
+	//login with new session
+	err = newCtx.Login(newSession, mPkcs11.CKU_USER, handle.pin)
+	if err != nil && err != mPkcs11.Error(mPkcs11.CKR_USER_ALREADY_LOGGED_IN) {
+		logger.Warnf("Unable to login with new session :%s", newSession)
+		return 0, err
+	}
+
+	handle.sendNotification()
+
+	handle.ctx = newCtx
+	handle.slot = slot
+	handle.sessions = make(chan mPkcs11.SessionHandle, handle.opts.sessionCacheSize)
+
+	logger.Infof("Able to login with recreated session [%+v] successfully", newSession)
+	return newSession, nil
+}
+
+//reLogin creates new context, opens new session and re-logins
+func (handle *ContextHandle) reLogin() mPkcs11.SessionHandle {
+
+	handle.lock.Lock()
+	defer handle.lock.Unlock()
+
+	handle.disposePKCS11Ctx()
+
+	//create new context
+	newCtx := handle.createNewPKCS11Ctx()
+	if newCtx == nil {
+		logger.Warn("Failed to recreate new pkcs11 context for given library")
+		return 0
+	}
+
+	//find slot
+	slot, found := handle.findSlot(newCtx)
+	if !found {
+		logger.Warnf("Unable to find slot for label :%s", handle.label)
+		return 0
+	}
+	logger.Debug("got the slot ", slot)
+
+	//open new session for given slot
+	newSession, err := createNewSession(newCtx, slot)
+	if err != nil {
+		logger.Fatalf("OpenSession [%s]\n", err)
+		return 0
+	}
+	logger.Infof("Recreated new pkcs11 session %+v on slot %d, attempting to login now", newSession, slot)
+
+	//login with new session
+	err = newCtx.Login(newSession, mPkcs11.CKU_USER, handle.pin)
+	if err != nil && err != mPkcs11.Error(mPkcs11.CKR_USER_ALREADY_LOGGED_IN) {
+		logger.Warnf("Unable to login with new session :%s", newSession)
+		return 0
+	}
+
+	handle.sendNotification()
+
+	handle.ctx = newCtx
+	handle.slot = slot
+	handle.sessions = make(chan mPkcs11.SessionHandle, handle.opts.sessionCacheSize)
+
+	logger.Infof("Able to login with recreated session [%+v] successfully", newSession)
+	return newSession
+}
+
 //detectErrorCondition checks if given session handle has errors
-func (handle *ContextHandle) detectErrorCondition(currentSession pkcs11.SessionHandle) error {
+func (handle *ContextHandle) detectErrorCondition(currentSession mPkcs11.SessionHandle) error {
 	var e error
 	slot, ok := handle.findSlot(handle.ctx)
 	if !ok || slot != handle.slot {
@@ -444,8 +631,11 @@ func (handle *ContextHandle) sendNotification() {
 	}
 }
 
-//disposePKCS11Ctx disposes pkcs11.Ctx object
+//disposePKCS11Ctx disposes mPkcs11.Ctx object
 func (handle *ContextHandle) disposePKCS11Ctx() {
+
+	logger.Debugf("Disposing pkcs11 ctx for [%s, %s]", handle.lib, handle.label)
+
 	//ignore error on close all sessions
 	err := handle.ctx.CloseAllSessions(handle.slot)
 	if err != nil {
@@ -465,9 +655,9 @@ func (handle *ContextHandle) disposePKCS11Ctx() {
 	handle.ctx.Destroy()
 }
 
-//createNewPKCS11Ctx creates new pkcs11.Ctx
-func (handle *ContextHandle) createNewPKCS11Ctx() *pkcs11.Ctx {
-	newCtx := pkcs11.New(handle.lib)
+//createNewPKCS11Ctx creates new mPkcs11.Ctx
+func (handle *ContextHandle) createNewPKCS11Ctx() *mPkcs11.Ctx {
+	newCtx := mPkcs11.New(handle.lib)
 	if newCtx == nil {
 		logger.Warn("Failed to recreate new context for given library")
 		return nil
@@ -476,7 +666,7 @@ func (handle *ContextHandle) createNewPKCS11Ctx() *pkcs11.Ctx {
 	//initialize new context
 	err := newCtx.Initialize()
 	if err != nil {
-		if err != pkcs11.Error(pkcs11.CKR_CRYPTOKI_ALREADY_INITIALIZED) {
+		if err != mPkcs11.Error(mPkcs11.CKR_CRYPTOKI_ALREADY_INITIALIZED) {
 			logger.Warn("Failed to initialize context:", err)
 			return nil
 		}
@@ -486,7 +676,7 @@ func (handle *ContextHandle) createNewPKCS11Ctx() *pkcs11.Ctx {
 }
 
 //findSlot finds slot for given pkcs11 ctx and label
-func (handle *ContextHandle) findSlot(ctx *pkcs11.Ctx) (uint, bool) {
+func (handle *ContextHandle) findSlot(ctx *mPkcs11.Ctx) (uint, bool) {
 
 	var found bool
 	var slot uint
@@ -515,13 +705,13 @@ func (handle *ContextHandle) findSlot(ctx *pkcs11.Ctx) (uint, bool) {
 	return slot, found
 }
 
-func createNewSession(ctx *pkcs11.Ctx, slot uint) (pkcs11.SessionHandle, error) {
-	var newSession pkcs11.SessionHandle
+func createNewSession(ctx *mPkcs11.Ctx, slot uint) (mPkcs11.SessionHandle, error) {
+	var newSession mPkcs11.SessionHandle
 	var err error
 	for i := 0; i < 10; i++ {
-		newSession, err = ctx.OpenSession(slot, pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
+		newSession, err = ctx.OpenSession(slot, mPkcs11.CKF_SERIAL_SESSION|mPkcs11.CKF_RW_SESSION)
 		if err != nil {
-			logger.Warnf("OpenSession failed, retrying [%s]\n", err)
+			logger.Warnf("*** OpenSession failed, retrying [%s]\n", err)
 		} else {
 			return newSession, nil
 		}
@@ -539,7 +729,7 @@ type pkcs11CtxCacheKey struct {
 
 //String return string value for pkcs11CtxCacheKey
 func (key *pkcs11CtxCacheKey) String() string {
-	return fmt.Sprintf("%x_%s_%s_%d_%d", key.lib, key.label, key.pin, key.opts.sessionCacheSize, key.opts.openSessionRetry)
+	return fmt.Sprintf("%x_%s_%s_%d_%d", key.lib, key.label, key.pin, key.opts.sessionCacheSize, key.opts.openSessionRetryAttempts)
 }
 
 //getInstance loads ContextHandle instance from cache
@@ -578,6 +768,7 @@ func newCtxCache() *lazycache.Cache {
 func finalizer() lazyref.Finalizer {
 	return func(v interface{}) {
 		if handle, ok := v.(*ContextHandle); ok {
+			logger.Debugf("Finalizing pkcs11 ctx for [%s, %s]", handle.lib, handle.label)
 			err := handle.ctx.CloseAllSessions(handle.slot)
 			if err != nil {
 				logger.Warnf("unable to close all sessions in finalizer for [%s, %s] : %s", handle.lib, handle.label, err)
@@ -603,13 +794,13 @@ func loadLibInitializer() lazycache.EntryInitializer {
 			return &ContextHandle{}, errors.New("No PKCS11 library default")
 		}
 
-		ctx := pkcs11.New(ctxKey.lib)
+		ctx := mPkcs11.New(ctxKey.lib)
 		if ctx == nil {
 			return &ContextHandle{}, errors.Errorf("Instantiate failed [%s]", ctxKey.lib)
 		}
 
 		err := ctx.Initialize()
-		if err != nil && err != pkcs11.Error(pkcs11.CKR_CRYPTOKI_ALREADY_INITIALIZED) {
+		if err != nil && err != mPkcs11.Error(mPkcs11.CKR_CRYPTOKI_ALREADY_INITIALIZED) {
 			logger.Warn("Failed to initialize context:", err)
 			return &ContextHandle{}, errors.WithMessage(err, "Failed to initialize pkcs11 ctx")
 		}
@@ -634,7 +825,7 @@ func loadLibInitializer() lazycache.EntryInitializer {
 		if !found {
 			return &ContextHandle{}, errors.Errorf("Could not find token with label %s", ctxKey.label)
 		}
-		sessions := make(chan pkcs11.SessionHandle, ctxKey.opts.sessionCacheSize)
+		sessions := make(chan mPkcs11.SessionHandle, ctxKey.opts.sessionCacheSize)
 		return &ContextHandle{ctx: ctx, slot: slot, pin: ctxKey.pin, lib: ctxKey.lib, label: ctxKey.label, sessions: sessions, opts: ctxKey.opts}, nil
 	}
 }
