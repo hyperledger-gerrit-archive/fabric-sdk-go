@@ -236,7 +236,7 @@ func TestContextHandleInstance(t *testing.T) {
 func TestContextHandleOpts(t *testing.T) {
 
 	//get context handler
-	handle, err := LoadPKCS11ContextHandle(lib, label, pin, WithOpenSessionRetry(10), WithSessionCacheSize(2))
+	handle, err := LoadPKCS11ContextHandle(lib, label, pin, WithOpenSessionRetry(10, 10*time.Second), WithSessionCacheSize(2))
 	assert.NoError(t, err)
 	assert.NotNil(t, handle)
 	assert.NotNil(t, handle.ctx)
