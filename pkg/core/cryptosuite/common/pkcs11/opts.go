@@ -6,17 +6,22 @@ SPDX-License-Identifier: Apache-2.0
 
 package pkcs11
 
+import "time"
+
 const (
-	defaultSessionCacheSize = 10
-	defaultOpenSessionRetry = 10
+	defaultSessionCacheSize         = 10
+	defaultOpenSessionRetryAttempts = 10
+	defaultOpenSessionRetryInterval = 10 * time.Second
 )
 
 //ctxOpts options for conext handler
 type ctxOpts struct {
 	//sessionCacheSize size of session cache pool
 	sessionCacheSize int
-	//openSessionRetry number of retry for open session logic
-	openSessionRetry int
+	//openSessionRetry number of retry attempts for open session logic
+	openSessionRetryAttempts int
+	//openSessionRetryInterval time interval to wait before retrying to open session
+	openSessionRetryInterval time.Duration
 }
 
 //Options for PKCS11 ContextHandle
@@ -32,8 +37,12 @@ func getCtxOpts(opts ...Options) ctxOpts {
 		ctxOpts.sessionCacheSize = defaultSessionCacheSize
 	}
 
-	if ctxOpts.openSessionRetry == 0 {
-		ctxOpts.openSessionRetry = defaultOpenSessionRetry
+	if ctxOpts.openSessionRetryAttempts == 0 {
+		ctxOpts.openSessionRetryAttempts = defaultOpenSessionRetryAttempts
+	}
+
+	if ctxOpts.openSessionRetryInterval == 0 {
+		ctxOpts.openSessionRetryInterval = defaultOpenSessionRetryInterval
 	}
 
 	return ctxOpts
@@ -47,8 +56,9 @@ func WithSessionCacheSize(size int) Options {
 }
 
 //WithOpenSessionRetry number of retry for open session logic
-func WithOpenSessionRetry(count int) Options {
+func WithOpenSessionRetry(count int, interval time.Duration) Options {
 	return func(o *ctxOpts) {
-		o.openSessionRetry = count
+		o.openSessionRetryAttempts = count
+		o.openSessionRetryInterval = interval
 	}
 }
