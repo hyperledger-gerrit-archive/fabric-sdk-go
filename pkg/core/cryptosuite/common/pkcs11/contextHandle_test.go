@@ -11,6 +11,9 @@ import (
 
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+
 	"os"
 	"strings"
 
@@ -27,6 +30,10 @@ const (
 )
 
 var lib string
+
+func TestSample(t *testing.T) {
+
+}
 
 func TestContextHandleFeatures(t *testing.T) {
 
@@ -236,7 +243,7 @@ func TestContextHandleInstance(t *testing.T) {
 func TestContextHandleOpts(t *testing.T) {
 
 	//get context handler
-	handle, err := LoadPKCS11ContextHandle(lib, label, pin, WithOpenSessionRetry(10), WithSessionCacheSize(2))
+	handle, err := LoadPKCS11ContextHandle(lib, label, pin, WithOpenSessionRetry(10, 10*time.Second), WithSessionCacheSize(2))
 	assert.NoError(t, err)
 	assert.NotNil(t, handle)
 	assert.NotNil(t, handle.ctx)
@@ -291,8 +298,83 @@ func TestContextHandleCommonInstance(t *testing.T) {
 	}
 }
 
+func TestSessionHandle(t *testing.T) {
+	logging.SetLevel("fabsdk/core", logbridge.DEBUG)
+	handle, err := LoadPKCS11ContextHandle(lib, label, pin)
+	assert.NoError(t, err)
+	assert.NotNil(t, handle)
+	assert.NotNil(t, handle.ctx)
+
+	//get session
+	session := handle.GetSession()
+	logger.Debugf("GOT SESSION [%d]", session)
+
+	//spoil pin
+	pinBackup := handle.pin
+	slotBackup := handle.slot
+	logger.Debugf("BACKED UP PIN [%d], SLOT [%d]", pinBackup, slotBackup)
+	handle.pin = "11111111111"
+	handle.slot = 8888888
+
+	//get session shud fail to try to recover
+	logger.Debugf("TRY RESILIENCE")
+	session = handle.GetSession()
+	logger.Debugf("GOT SESSION [%d]", session)
+
+	if session == 0 {
+		logger.Debugf("PASSED")
+	} else {
+		logger.Debugf("FAILED")
+	}
+}
+
+func TestResilience(t *testing.T) {
+
+	logging.SetLevel("fabsdk/core", logbridge.DEBUG)
+	handle, err := LoadPKCS11ContextHandle(lib, label, pin)
+	assert.NoError(t, err)
+	assert.NotNil(t, handle)
+	assert.NotNil(t, handle.ctx)
+
+	//get session
+	session := handle.GetSession()
+	logger.Debugf("GOT SESSION [%d]", session)
+
+	//spoil pin
+	pinBackup := handle.pin
+	slotBackup := handle.slot
+	logger.Debugf("BACKED UP PIN [%d], SLOT [%d]", pinBackup, slotBackup)
+	handle.pin = "11111111111"
+	handle.slot = 8888888
+
+	done := make(chan bool)
+	go func() {
+		//get session shud fail to try to recover
+		logger.Debugf("TRY RESILIENCE")
+		session = handle.GetSession()
+		logger.Debugf("GOT SESSION [%d]", session)
+		done <- true
+	}()
+
+	time.Sleep(45 * time.Second)
+	logger.Debugf(" \n\n\n====================")
+	handle.pin = pinBackup
+	handle.slot = slotBackup
+	logger.Debugf(" FIXED SLOT AND PIN, SHUD PASS")
+	logger.Debugf("====================\n\n\n")
+
+	select {
+	case <-done:
+		logger.Debugf(" TEST COMPLETED")
+
+	case <-time.After(130 * time.Second):
+		panic("TEST DIDNT FINISH")
+	}
+}
+
 func TestContextRefreshOnInvalidSession(t *testing.T) {
 
+	logging.SetLevel("fabsdk/core", logbridge.DEBUG)
 	handle, err := LoadPKCS11ContextHandle(lib, label, pin)
 	assert.NoError(t, err)
 	assert.NotNil(t, handle)
