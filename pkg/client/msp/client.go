@@ -13,6 +13,48 @@ SPDX-License-Identifier: Apache-2.0
 //  2) Create msp client
 //  3) Register user
 //  4) Enroll user
+//
+// Certificate and Key Management
+//
+// From the Fabric CA point of view, a Fabric CA client (an application
+// which manages Fabric user registration/enrollment/etc) first registers
+// a new user by calling the Fabric CA registration API. The resulting
+// user name and enrollment secret are passed out of band to the new user.
+// The user then needs to enroll with the CA by creating a key pair,
+// then creating a CSR, and finally enrolling with the CA by calling
+// the CA enrollment API. The result of the enrollment is a certificate
+// signed by the CA which the client provides as its identity when
+// interacting with Fabric nodes (peers and orderers). The Go SDK can help
+// by providing partial or full support for client certificate and key
+// management.
+//
+// The MSP client of the SDK can do both the new user registration,
+// as well as the enrollment. During enrollment, the SDK accepts
+// the username and the enrollment secret (from registration), and first
+// creates a key pair. The private key is stored in the Key Store, an
+// the public key is used to create a CSR. The SDK than calls the Fabric CA
+// to enroll the user. The resulting certificate is returned to the caller.
+// It is also stored in the User Store, for future lookup by the username
+// (enrollment ID). The default User Store is a simple file store.
+// An SDK client can provide its own implementation of the User Store
+// interface at the time of the SDK instantiation.
+//
+// For crypto operations, the SDK by default delegates to fabric BCCSP library.
+// The SDK can be configured with either "SW" (software) or "pkcs11"
+// implementation of the BCCSP crypto interfaces. The "SW" uses a simple
+// file store implementation of the Key Store interface for storing private keys,
+// while "pkcs11" uses HSM. When making calls to fabric nodes, an SDK client
+// needs to provide its identity. It can be done either by providing only
+// a username (in which case the SDK looks up the certificate and the private key
+// from its stores), or by providing the certificate and the private key.
+// The latter allows the SDK client to have its own key management independent
+// from the SDK.
+//
+// See also the relevant integration tests:
+// https://github.com/hyperledger/fabric-sdk-go/blob/master/test/integration/pkg/client/msp/enrollment_test.go
+// https://github.com/hyperledger/fabric-sdk-go/blob/master/test/integration/pkg/client/msp/identity_test.go,
+// https://github.com/hyperledger/fabric-sdk-go/blob/master/test/integration/pkg/client/msp/user_data_mgmt_test.go
+//
 package msp
 
 import (
