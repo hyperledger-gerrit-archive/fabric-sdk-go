@@ -97,7 +97,7 @@ func (r *Runner) Initialize() {
 	r.testSetup = &integration.BaseSetupImpl{
 		ChannelID:         r.ChannelID,
 		OrgID:             r.Org1Name,
-		ChannelConfigFile: integration.GetChannelConfigPath(r.ChannelID + ".tx"),
+		ChannelConfigFile: integration.GetChannelConfigTxPath(r.ChannelID + ".tx"),
 	}
 
 	sdk, err := fabsdk.New(integration.ConfigBackend)

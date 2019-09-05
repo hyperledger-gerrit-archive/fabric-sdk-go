@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -19,7 +20,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
-	"github.com/hyperledger/fabric-protos-go/common"
 )
 
 func Example() {
@@ -39,7 +39,7 @@ func Example() {
 	defer r.Close()
 
 	// Create new channel 'mychannel'
-	_, err = c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r})
+	_, err = c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigTxReader: r})
 	if err != nil {
 		fmt.Printf("failed to save channel: %s\n", err)
 	}
@@ -201,7 +201,7 @@ func ExampleClient_SaveChannel() {
 	}
 	defer r.Close()
 
-	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r})
+	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigTxReader: r})
 	if err != nil {
 		fmt.Printf("failed to save channel: %s\n", err)
 	}
@@ -229,7 +229,7 @@ func ExampleClient_SaveChannel_withOrdererEndpoint() {
 	}
 	defer r.Close()
 
-	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererEndpoint("example.com"))
+	resp, err := c.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigTxReader: r}, WithOrdererEndpoint("example.com"))
 	if err != nil {
 		fmt.Printf("failed to save channel: %s\n", err)
 	}
@@ -392,8 +392,10 @@ func mockClientProvider() context.ClientProvider {
 
 	// Create mock orderer with simple mock block
 	orderer := mocks.NewMockOrderer("", nil)
-	orderer.EnqueueForSendDeliver(mocks.NewSimpleMockBlock())
-	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.EnqueueForSendDeliver(
+		mocks.NewSimpleMockBlock(),
+		common.Status_SUCCESS,
+	)
 	orderer.CloseQueue()
 
 	setupCustomOrderer(ctx, orderer)
