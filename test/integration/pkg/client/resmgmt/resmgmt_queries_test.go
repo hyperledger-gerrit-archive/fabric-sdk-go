@@ -9,6 +9,8 @@ package resmgmt
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -41,6 +43,7 @@ func TestResMgmtClientQueries(t *testing.T) {
 
 	testQueryChannels(t, testSetup.ChannelID, target, client)
 
+	testUpdateChannelConfig(t, testSetup.ChannelID, client)
 }
 
 func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, target string, client *resmgmt.Client) {
@@ -131,6 +134,29 @@ func testQueryConfigFromOrderer(t *testing.T, channelID string, client *resmgmt.
 		t.Fatal("QueryConfigBlockFromOrderer should have failed for invalid orderer")
 	}
 
+}
+
+func testUpdateChannelConfig(t *testing.T, channelID string, client *resmgmt.Client) {
+	block, err := client.QueryConfigBlockFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatalf("QueryConfigBlockFromOrderer returned error: %s", err)
+	}
+	newMaxMessageCount, err := test.ModifyMaxMessageCount(block)
+	if err != nil {
+		t.Fatalf("error modifying config block", err)
+	}
+	_, err = client.SaveChannel(resmgmt.SaveChannelRequest{ChannelID: "mychannel", ChannelConfigBlock: block}, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatalf("error saving channel", err)
+	}
+	nextConfigBlock, err := client.QueryConfigBlockFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatalf("QueryConfigBlockFromOrderer returned error: %s", err)
+	}
+	err = test.VerifyMaxMessageCount(nextConfigBlock, newMaxMessageCount)
+	if err != nil {
+		t.Fatalf("VerifyMaxMessageCount returned error: %s", err)
+	}
 }
 
 func contains(list []string, value string) bool {
