@@ -19,10 +19,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-protos-go/common"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -39,8 +43,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/fabpvdr"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
-	"github.com/hyperledger/fabric-protos-go/common"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -73,8 +75,10 @@ func TestJoinChannelFail(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
-	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.EnqueueForSendDeliver(
+		fcmocks.NewSimpleMockBlock(),
+		common.Status_SUCCESS,
+	)
 	orderer.CloseQueue()
 
 	setupCustomOrderer(ctx, orderer)
@@ -109,8 +113,10 @@ func TestJoinChannelSuccess(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
-	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.EnqueueForSendDeliver(
+		fcmocks.NewSimpleMockBlock(),
+		common.Status_SUCCESS,
+	)
 	orderer.CloseQueue()
 
 	setupCustomOrderer(ctx, orderer)
@@ -145,8 +151,10 @@ func TestJoinChannelWithFilter(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
-	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.EnqueueForSendDeliver(
+		fcmocks.NewSimpleMockBlock(),
+		common.Status_SUCCESS,
+	)
 	orderer.CloseQueue()
 	setupCustomOrderer(ctx, orderer)
 
@@ -234,8 +242,10 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	// Create mock orderer with simple mock block
 	orderer := fcmocks.NewMockOrderer("", nil)
-	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
-	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.EnqueueForSendDeliver(
+		fcmocks.NewSimpleMockBlock(),
+		common.Status_SUCCESS,
+	)
 	orderer.CloseQueue()
 	setupCustomOrderer(ctx, orderer)
 
@@ -272,8 +282,10 @@ func TestJoinChannelWithOptsRequiredParameters(t *testing.T) {
 
 	//Some cleanup before further test
 	orderer = fcmocks.NewMockOrderer("", nil)
-	orderer.EnqueueForSendDeliver(fcmocks.NewSimpleMockBlock())
-	orderer.EnqueueForSendDeliver(common.Status_SUCCESS)
+	orderer.EnqueueForSendDeliver(
+		fcmocks.NewSimpleMockBlock(),
+		common.Status_SUCCESS,
+	)
 	orderer.CloseQueue()
 
 	ctx = setupTestContext("test", "Org1MSP")
@@ -1063,7 +1075,68 @@ func getNetworkConfigWithoutOrderer(t *testing.T) fab.EndpointConfig {
 	return config
 }
 
-func TestSaveChannelSuccess(t *testing.T) {
+//originalConfigBlock, err := cc.QueryConfigBlockFromOrderer("mychannel", WithOrderer(orderer))
+//assert.Nil(t, err, "retrieving current channel config failed")
+
+func TestSaveChannelWithConfigBlockSuccess(t *testing.T) {
+	ctx := setupTestContext("test", "Org1MSP")
+
+	// Create mock orderer with simple mock block
+	orderer := fcmocks.NewMockOrderer("", nil)
+	//defer orderer.CloseQueue()
+
+	setupCustomOrderer(ctx, orderer)
+	cc := setupResMgmtClient(t, ctx)
+
+	_, err := cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigBlock: &common.Block{Header: &common.BlockHeader{}}})
+	assert.NotNil(t, err, "Should have failed to extract configuration")
+	assert.Contains(t, err.Error(), "invalid block")
+
+	// Test valid Save Channel request using config block (success)
+	originalConfiglBlockBytes, err := ioutil.ReadFile(filepath.Join("testdata", "original.block"))
+	assert.Nil(t, err, "opening original.block file failed")
+	originalConfigBlock := &common.Block{}
+	assert.Nil(t, proto.Unmarshal(originalConfiglBlockBytes, originalConfigBlock), "opening updated.block file failed")
+
+	orderer.EnqueueForSendDeliver(
+		// The first call to orderer returns the very last block
+		// For testing, we can put here any valid block.
+		originalConfigBlock,
+		common.Status_SUCCESS,
+	)
+	orderer.EnqueueForSendDeliver(
+		// The next call returns the last configuration block,
+		// which is the input to config update tx calculation
+		originalConfigBlock,
+		common.Status_SUCCESS,
+	)
+	resp, err := cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigBlock: originalConfigBlock}, WithOrderer(orderer))
+	assert.NotNil(t, err, "Should have failed for unchanged configuration")
+	assert.Contains(t, err.Error(), "no differences detected between original and updated config")
+
+	// Prepare new configuration
+	modifiedConfigBlock := &common.Block{}
+	assert.Nil(t, proto.Unmarshal(originalConfiglBlockBytes, modifiedConfigBlock), "opening updated.block file failed")
+	newMaxMessageCount, err := test.ModifyMaxMessageCount(modifiedConfigBlock)
+	assert.Nil(t, err, "error modifying config block")
+	assert.Nil(t, test.VerifyMaxMessageCount(modifiedConfigBlock, newMaxMessageCount), "error verifying modified config block")
+
+	orderer.EnqueueForSendDeliver(
+		originalConfigBlock,
+		common.Status_SUCCESS,
+	)
+	orderer.EnqueueForSendDeliver(
+		originalConfigBlock,
+		common.Status_SUCCESS,
+	)
+	resp, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigBlock: modifiedConfigBlock}, WithOrderer(orderer))
+	assert.Nil(t, err, "error should be nil")
+	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
+
+	orderer.CloseQueue()
+}
+
+func TestSaveChannelWithConfigSuccess(t *testing.T) {
 
 	mb := fcmocks.MockBroadcastServer{}
 	addr := mb.Start("127.0.0.1:0")
@@ -1132,12 +1205,12 @@ func TestSaveChannelSuccess(t *testing.T) {
 	assert.NotNil(t, err, "Should have failed to sign configuration")
 	assert.Contains(t, err.Error(), "reading channel config file failed")
 
-	// Test valid Save Channel request (success)
+	// Test valid Save Channel request using config block (success)
 	resp, err := cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r}, WithOrdererEndpoint("example.com"))
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
 
-	// Test valid Save Channel request (success / filename)
+	// Test valid Save Channel request using channel config tx from file (success)
 	resp, err = cc.SaveChannel(SaveChannelRequest{ChannelID: "mychannel", ChannelConfigPath: channelConfigPath}, WithOrdererEndpoint("example.com"))
 	assert.Nil(t, err, "error should be nil")
 	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
