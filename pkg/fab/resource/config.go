@@ -86,8 +86,8 @@ func GetConfigSignatureData(creator identitySerializer, config []byte) (signatur
 	return
 }
 
-// ExtractChannelConfig extracts the protobuf 'ConfigUpdate' object out of the 'ConfigEnvelope'.
-func ExtractChannelConfig(configEnvelope []byte) ([]byte, error) {
+// ExtractConfigUpdate extracts the protobuf 'ConfigUpdate' object out of the 'ConfigEnvelope'.
+func ExtractConfigUpdate(configEnvelope []byte) ([]byte, error) {
 
 	envelope := &common.Envelope{}
 	err := proto.Unmarshal(configEnvelope, envelope)
