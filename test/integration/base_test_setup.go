@@ -154,7 +154,7 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	}()
 
 	// Create channel for tests
-	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfig: r, SigningIdentities: []msp.SigningIdentity{adminIdentity}}
+	req := resmgmt.SaveChannelRequest{ChannelID: setup.ChannelID, ChannelConfigTx: r, SigningIdentities: []msp.SigningIdentity{adminIdentity}}
 	if err = InitializeChannel(sdk, setup.OrgID, req, targets); err != nil {
 		return errors.WithMessage(err, "failed to initialize channel")
 	}
@@ -168,8 +168,8 @@ func GetDeployPath() string {
 	return filepath.Join(metadata.GetProjectPath(), ccPath)
 }
 
-// GetChannelConfigPath returns the path to the named channel config file
-func GetChannelConfigPath(filename string) string {
+// GetChannelConfigTxPath returns the path to the named channel config file
+func GetChannelConfigTxPath(filename string) string {
 	return filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, filename)
 }
 
@@ -218,9 +218,9 @@ func CreateChannelAndUpdateAnchorPeers(t *testing.T, sdk *fabsdk.FabricSDK, chan
 	}
 
 	req := resmgmt.SaveChannelRequest{
-		ChannelID:         channelID,
-		ChannelConfigPath: GetChannelConfigPath(channelConfigFile),
-		SigningIdentities: signingIdentities,
+		ChannelID:           channelID,
+		ChannelConfigTxPath: GetChannelConfigTxPath(channelConfigFile),
+		SigningIdentities:   signingIdentities,
 	}
 	_, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	if err != nil {
@@ -231,9 +231,9 @@ func CreateChannelAndUpdateAnchorPeers(t *testing.T, sdk *fabsdk.FabricSDK, chan
 
 	for _, orgCtx := range orgsContext {
 		req := resmgmt.SaveChannelRequest{
-			ChannelID:         channelID,
-			ChannelConfigPath: GetChannelConfigPath(orgCtx.AnchorPeerConfigFile),
-			SigningIdentities: []msp.SigningIdentity{orgCtx.SigningIdentity},
+			ChannelID:           channelID,
+			ChannelConfigTxPath: GetChannelConfigTxPath(orgCtx.AnchorPeerConfigFile),
+			SigningIdentities:   []msp.SigningIdentity{orgCtx.SigningIdentity},
 		}
 		if _, err := orgCtx.ResMgmt.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
 			return err
