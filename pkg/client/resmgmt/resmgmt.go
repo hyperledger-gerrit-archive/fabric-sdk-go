@@ -20,12 +20,17 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	"bytes"
 	reqContext "context"
 	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protoutil"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxlator/update"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/common"
@@ -107,12 +112,13 @@ type requestOptions struct {
 	Signatures []*common.ConfigSignature
 }
 
-//SaveChannelRequest holds parameters for save channel request
+// SaveChannelRequest holds parameters for save channel request.
 type SaveChannelRequest struct {
-	ChannelID         string
-	ChannelConfig     io.Reader             // ChannelConfig data source
-	ChannelConfigPath string                // Convenience option to use the named file as ChannelConfig reader
-	SigningIdentities []msp.SigningIdentity // Users that sign channel configuration
+	ChannelID           string
+	ChannelConfigBlock  *common.Block         // Updated channel config block. If present, takes precedence over ChannelConfig
+	ChannelConfigTx     io.Reader             // ChannelConfig Tx data source
+	ChannelConfigTxPath string                // Convenience option to use the named file as ChannelConfig Tx reader
+	SigningIdentities   []msp.SigningIdentity // Users that sign channel configuration
 }
 
 // SaveChannelResponse contains response parameters for save channel
@@ -917,30 +923,30 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 		return SaveChannelResponse{}, err
 	}
 
-	if req.ChannelConfigPath != "" {
-		configReader, err1 := os.Open(req.ChannelConfigPath)
+	if req.ChannelConfigTxPath != "" {
+		configReader, err1 := os.Open(req.ChannelConfigTxPath)
+		defer loggedClose(configReader)
 		if err1 != nil {
 			return SaveChannelResponse{}, errors.Wrapf(err1, "opening channel config file failed")
 		}
-		defer loggedClose(configReader)
-		req.ChannelConfig = configReader
+		req.ChannelConfigTx = configReader
 	}
 
 	err = rc.validateSaveChannelRequest(req)
 	if err != nil {
-		return SaveChannelResponse{}, errors.WithMessage(err, "reading channel config file failed")
+		return SaveChannelResponse{}, err
 	}
 
 	logger.Debugf("saving channel: %s", req.ChannelID)
 
-	chConfig, err := extractChConfigData(req.ChannelConfig)
-	if err != nil {
-		return SaveChannelResponse{}, errors.WithMessage(err, "extracting channel config from ConfigTx failed")
-	}
-
 	orderer, err := rc.requestOrderer(&opts, req.ChannelID)
 	if err != nil {
 		return SaveChannelResponse{}, errors.WithMessage(err, "failed to find orderer for request")
+	}
+
+	chConfig, err := rc.prepareChConfigTx(req, orderer)
+	if err != nil {
+		return SaveChannelResponse{}, errors.WithMessage(err, "prepare channel ConfigTx failed")
 	}
 
 	var configSignatures []*common.ConfigSignature
@@ -971,12 +977,106 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	return SaveChannelResponse{TransactionID: txID}, nil
 }
 
+func (rc *Client) prepareChConfigTx(req SaveChannelRequest, orderer fab.Orderer) ([]byte, error) {
+	if req.ChannelConfigBlock != nil {
+		b, err := rc.calculateChConfigTx(req, orderer)
+		if err != nil {
+			return nil, errors.Errorf("failed to calculate channel config transaction: %v", err)
+		}
+		reader, err := rc.createConfigEnvelopeReader(req.ChannelConfigBlock.Data.Data[0], b)
+		if err != nil {
+			return nil, errors.Errorf("failed to create config envelope reader: %v", err)
+		}
+		req.ChannelConfigTx = reader
+	}
+	return extractChConfigTx(req.ChannelConfigTx)
+}
+
+func (rc *Client) createConfigEnvelopeReader(blockData []byte, configUpdateBytes []byte) (io.Reader, error) {
+	envelope := &common.Envelope{}
+	if err := proto.Unmarshal(blockData, envelope); err != nil {
+		return nil, err
+	}
+
+	payload := &common.Payload{}
+	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
+		return nil, err
+	}
+
+	payload.Data = configUpdateBytes
+	payloadBytes, err := proto.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	envelope.Payload = payloadBytes
+	envelopeBytes, err := proto.Marshal(envelope)
+	if err != nil {
+		return nil, err
+	}
+
+	reader := bytes.NewReader(envelopeBytes)
+	return reader, nil
+}
+
+func (rc *Client) calculateChConfigTx(req SaveChannelRequest, orderer fab.Orderer) ([]byte, error) {
+	updatedConfig, err := extractConfigFromBlock(req.ChannelConfigBlock)
+	if err != nil {
+		return nil, errors.WithMessage(err, "extracting config from updated block failed")
+	}
+	block, err := rc.QueryConfigBlockFromOrderer(req.ChannelID, WithOrderer(orderer))
+	if err != nil {
+		return nil, errors.WithMessage(err, "retrieving current channel config failed")
+	}
+	if block.Header.Number != req.ChannelConfigBlock.Header.Number {
+		return nil, errors.New("block number mismatch")
+	}
+	currentConfig, err := extractConfigFromBlock(block)
+	if err != nil {
+		return nil, errors.WithMessage(err, "extracting config from the latest block failed")
+	}
+	configUpdate, err := update.Compute(currentConfig, updatedConfig)
+	if err != nil {
+		return nil, errors.WithMessage(err, "config update computation failed")
+	}
+	configUpdate.ChannelId = req.ChannelID
+	configUpdateEnv := &common.ConfigUpdateEnvelope{
+		ConfigUpdate: protoutil.MarshalOrPanic(configUpdate),
+	}
+	configUpdateBytes, err := proto.Marshal(configUpdateEnv)
+	if err != nil {
+		return nil, errors.WithMessage(err, "marshalling config update failed")
+	}
+	return configUpdateBytes, nil
+}
+
 func (rc *Client) validateSaveChannelRequest(req SaveChannelRequest) error {
 
-	if req.ChannelID == "" || req.ChannelConfig == nil {
+	if req.ChannelID == "" || (req.ChannelConfigBlock == nil && req.ChannelConfigTx == nil) {
 		return errors.New("must provide channel ID and channel config")
 	}
 	return nil
+}
+
+func extractConfigFromBlock(block *common.Block) (*common.Config, error) {
+	if block == nil || block.Data == nil || len(block.Data.Data) == 0 {
+		return nil, errors.New("invalid block")
+	}
+	blockPayload := block.Data.Data[0]
+
+	envelope := &common.Envelope{}
+	if err := proto.Unmarshal(blockPayload, envelope); err != nil {
+		return nil, err
+	}
+	payload := &common.Payload{}
+	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
+		return nil, err
+	}
+
+	cfgEnv := &common.ConfigEnvelope{}
+	if err := proto.Unmarshal(payload.Data, cfgEnv); err != nil {
+		return nil, err
+	}
+	return cfgEnv.Config, nil
 }
 
 func (rc *Client) getConfigSignatures(req SaveChannelRequest, chConfig []byte) ([]*common.ConfigSignature, error) {
@@ -999,7 +1099,7 @@ func (rc *Client) getConfigSignatures(req SaveChannelRequest, chConfig []byte) (
 	return rc.createCfgSigFromIDs(chConfig, signers...)
 }
 
-func extractChConfigData(channelConfigReader io.Reader) ([]byte, error) {
+func extractChConfigTx(channelConfigReader io.Reader) ([]byte, error) {
 	if channelConfigReader == nil {
 		return nil, errors.New("must provide a non empty channel config file")
 	}
@@ -1036,7 +1136,7 @@ func (rc *Client) CreateConfigSignature(signer msp.SigningIdentity, channelConfi
 // CreateConfigSignatureFromReader creates a signature for the given client, custom signers and chConfig from io.Reader argument
 //	return ConfigSignature will be signed internally by the SDK. It can be passed to WithConfigSignatures() option
 func (rc *Client) CreateConfigSignatureFromReader(signer msp.SigningIdentity, channelConfig io.Reader) (*common.ConfigSignature, error) {
-	chConfig, err := extractChConfigData(channelConfig)
+	chConfig, err := extractChConfigTx(channelConfig)
 	if err != nil {
 		return nil, errors.WithMessage(err, "extracting channel config failed")
 	}
@@ -1078,7 +1178,7 @@ func (rc *Client) CreateConfigSignatureData(signer msp.SigningIdentity, channelC
 //  3. assign its Signature field with the generated signature of 'signatureHeaderData.signingBytes' from the external tool
 //  Then use WithConfigSignatures() option to pass this new instance for channel updates
 func (rc *Client) CreateConfigSignatureDataFromReader(signer msp.SigningIdentity, channelConfig io.Reader) (signatureHeaderData resource.ConfigSignatureData, e error) {
-	chConfig, err := extractChConfigData(channelConfig)
+	chConfig, err := extractChConfigTx(channelConfig)
 	if err != nil {
 		e = errors.WithMessage(err, "extracting channel config failed")
 		return

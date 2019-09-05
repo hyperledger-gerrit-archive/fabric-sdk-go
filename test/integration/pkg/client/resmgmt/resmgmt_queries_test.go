@@ -8,6 +8,9 @@ package resmgmt
 
 import (
 	"testing"
+	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -41,6 +44,13 @@ func TestResMgmtClientQueries(t *testing.T) {
 
 	testQueryChannels(t, testSetup.ChannelID, target, client)
 
+	ordererAdminClientContext := sdk.Context(fabsdk.WithUser(ordererOrgAdminUser), fabsdk.WithOrg(ordererOrgName))
+	ordererAdminClient, err := resmgmt.New(ordererAdminClientContext)
+	if err != nil {
+		t.Fatalf("Failed to create new resource management client: %s", err)
+	}
+
+	testUpdateChannelConfig(t, testSetup.ChannelID, ordererAdminClient)
 }
 
 func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, target string, client *resmgmt.Client) {
@@ -131,6 +141,30 @@ func testQueryConfigFromOrderer(t *testing.T, channelID string, client *resmgmt.
 		t.Fatal("QueryConfigBlockFromOrderer should have failed for invalid orderer")
 	}
 
+}
+
+func testUpdateChannelConfig(t *testing.T, channelID string, client *resmgmt.Client) {
+	block, err := client.QueryConfigBlockFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatalf("QueryConfigBlockFromOrderer returned error: %s", err)
+	}
+	newMaxMessageCount, err := test.ModifyMaxMessageCount(block)
+	if err != nil {
+		t.Fatalf("error modifying config block: %s", err)
+	}
+	_, err = client.SaveChannel(resmgmt.SaveChannelRequest{ChannelID: "mychannel", ChannelConfigBlock: block}, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatalf("error saving channel: %s", err)
+	}
+	time.Sleep(time.Second * 10)
+	nextConfigBlock, err := client.QueryConfigBlockFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatalf("QueryConfigBlockFromOrderer returned error: %s", err)
+	}
+	err = test.VerifyMaxMessageCount(nextConfigBlock, newMaxMessageCount)
+	if err != nil {
+		t.Fatalf("VerifyMaxMessageCount returned error: %s", err)
+	}
 }
 
 func contains(list []string, value string) bool {
