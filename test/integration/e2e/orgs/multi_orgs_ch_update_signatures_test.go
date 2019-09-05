@@ -19,6 +19,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
@@ -37,7 +38,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,9 +96,9 @@ func e2eCreateAndQueryChannel(t *testing.T, ordererClCtx, org1ClCtx, org2ClCtx *
 	}()
 
 	t.Logf("created tempDir for %s signatures: %s", channelID, sigDir)
-	chConfigPath := integration.GetChannelConfigPath(fmt.Sprintf("%s.tx", channelID))
-	chConfigOrg1MSPPath := integration.GetChannelConfigPath(fmt.Sprintf("%s%sMSPanchors.tx", channelID, org1))
-	chConfigOrg2MSPPath := integration.GetChannelConfigPath(fmt.Sprintf("%s%sMSPanchors.tx", channelID, org2))
+	chConfigPath := integration.GetChannelConfigTxPath(fmt.Sprintf("%s.tx", channelID))
+	chConfigOrg1MSPPath := integration.GetChannelConfigTxPath(fmt.Sprintf("%s%sMSPanchors.tx", channelID, org1))
+	chConfigOrg2MSPPath := integration.GetChannelConfigTxPath(fmt.Sprintf("%s%sMSPanchors.tx", channelID, org2))
 	isSDKSigning := channelID == dsChannelSDK
 	sigs := generateSignatures(t, org1ClCtx, org2ClCtx, chConfigPath, chConfigOrg1MSPPath, chConfigOrg2MSPPath, sigDir, isSDKSigning)
 	saveChannel(t, ordererClCtx, org1ClCtx, org2ClCtx, channelID, chConfigPath, chConfigOrg1MSPPath, chConfigOrg2MSPPath, sigs, true)
@@ -157,7 +157,7 @@ func generateSignatures(t *testing.T, org1ClCtx, org2ClCtx *dsClientCtx, chConfi
 
 func saveChannel(t *testing.T, ordererClCtx, org1ClCtx, org2ClCtx *dsClientCtx, channelID, chConfigPath, chConfigOrg1MSPPath, chConfigOrg2MSPPath string, sigs chCfgSignatures, isGenesis bool) {
 	// create channel on the orderer
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfigPath: chConfigPath}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfigTxPath: chConfigPath}
 	txID, err := ordererClCtx.rsCl.SaveChannel(req, resmgmt.WithConfigSignatures(sigs.org1DsChannelCfgSig, sigs.org2DsChannelCfgSig), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.NoError(t, err, "error creating channel %s signatures for %s", channelID, ordererOrgName)
 	require.NotEmpty(t, txID, "transaction ID should be populated for Channel create for %s", ordererOrgName)
@@ -166,7 +166,7 @@ func saveChannel(t *testing.T, ordererClCtx, org1ClCtx, org2ClCtx *dsClientCtx, 
 	lastConfigBlock = integration.WaitForOrdererConfigUpdate(t, org1ClCtx.rsCl, channelID, isGenesis, lastConfigBlock)
 
 	// create channel on anchor peer of org1
-	req.ChannelConfigPath = chConfigOrg1MSPPath
+	req.ChannelConfigTxPath = chConfigOrg1MSPPath
 	txID, err = org1ClCtx.rsCl.SaveChannel(req, resmgmt.WithConfigSignatures(sigs.org1MSPDsChannelCfgSig), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.NoError(t, err, "error creating channel %s for anchor peer of %s", channelID, org1)
 	require.NotEmpty(t, txID, "transaction ID should be populated for Channel create for anchor peer of %s", org1)
@@ -174,7 +174,7 @@ func saveChannel(t *testing.T, ordererClCtx, org1ClCtx, org2ClCtx *dsClientCtx, 
 	lastConfigBlock = integration.WaitForOrdererConfigUpdate(t, org1ClCtx.rsCl, channelID, false, lastConfigBlock)
 
 	// create channel on anchor peer of org2
-	req.ChannelConfigPath = chConfigOrg2MSPPath
+	req.ChannelConfigTxPath = chConfigOrg2MSPPath
 	txID, err = org2ClCtx.rsCl.SaveChannel(req, resmgmt.WithConfigSignatures(sigs.org2MSPDsChannelCfgSig), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.NoError(t, err, "error creating channel %s for anchor peer of %s", channelID, org2)
 	require.NotEmpty(t, txID, "transaction ID should be populated for Channel create for anchor peer of %s", org2)
