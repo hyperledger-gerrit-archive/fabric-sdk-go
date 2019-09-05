@@ -20,7 +20,7 @@ func TestExtractChannelConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = ExtractChannelConfig(configTx)
+	_, err = ExtractConfigUpdate(configTx)
 	if err != nil {
 		t.Fatal(err)
 	}
