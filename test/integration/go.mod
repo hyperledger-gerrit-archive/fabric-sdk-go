@@ -7,6 +7,7 @@ module github.com/hyperledger/fabric-sdk-go/test/integration
 replace github.com/hyperledger/fabric-sdk-go => ../../
 
 require (
+	github.com/gogo/protobuf v1.1.1
 	github.com/golang/protobuf v1.3.2
 	github.com/hyperledger/fabric-protos-go v0.0.0-20190823190507-26c33c998676
 	github.com/hyperledger/fabric-sdk-go v0.0.0-00010101000000-000000000000
