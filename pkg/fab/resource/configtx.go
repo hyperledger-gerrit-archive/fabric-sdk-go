@@ -12,19 +12,17 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/tools/protolator"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protoutil"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxgen/encoder"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxlator/update"
-	"github.com/pkg/errors"
-
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxgen/localconfig"
-
 	"github.com/hyperledger/fabric-protos-go/common"
 	cb "github.com/hyperledger/fabric-protos-go/common"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/tools/protolator"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/tools/protolator/protoext/commonext"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protoutil"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxgen/encoder"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxgen/localconfig"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxlator/update"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/genesisconfig"
+	"github.com/pkg/errors"
 )
 
 // See https://github.com/hyperledger/fabric/blob/be235fd3a236f792a525353d9f9586c8b0d4a61a/cmd/configtxgen/main.go
@@ -176,4 +174,64 @@ func CreateAnchorPeersUpdate(conf *genesisconfig.Profile, channelID string, asOr
 
 	return protoutil.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, nil, newConfigUpdateEnv, 0, 0)
 
+}
+
+// TopLevelFromYaml constructs top level configuration from standard configtxgen yaml file
+func TopLevelFromYaml(yamlPath string) (*genesisconfig.TopLevel, error) {
+	config, err := localconfig.LoadTopLevel(yamlPath)
+	if err != nil {
+		return nil, err
+	}
+	return localToGenesisTopLevel(config)
+}
+
+// OrgAsJSON returns a JSON string of the specified organization's definition
+func OrgAsJSON(conf *genesisconfig.TopLevel, orgName string) (string, error) {
+
+	localConf, err := genesisToLocalTopLevel(conf)
+	if err != nil {
+		return "", err
+	}
+
+	for _, org := range localConf.Organizations {
+		if org.Name == orgName {
+			og, err := encoder.NewConsortiumOrgGroup(org)
+			if err != nil {
+				return "", errors.Wrapf(err, "bad org definition for org %s", org.Name)
+			}
+
+			var buf bytes.Buffer
+			if err := protolator.DeepMarshalJSON(&buf, &commonext.DynamicConsortiumOrgGroup{ConfigGroup: og}); err != nil {
+				return "", errors.Wrapf(err, "malformed org definition for org: %s", org.Name)
+			}
+			return buf.String(), nil
+		}
+	}
+	return "", errors.Errorf("organization %s not found", orgName)
+}
+
+func genesisToLocalTopLevel(config *genesisconfig.TopLevel) (*localconfig.TopLevel, error) {
+	b, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+	c := &localconfig.TopLevel{}
+	err = json.Unmarshal(b, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func localToGenesisTopLevel(config *localconfig.TopLevel) (*genesisconfig.TopLevel, error) {
+	b, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+	c := &genesisconfig.TopLevel{}
+	err = json.Unmarshal(b, c)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

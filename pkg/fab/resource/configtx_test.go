@@ -7,17 +7,53 @@ SPDX-License-Identifier: Apache-2.0
 package resource
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
-
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-protos-go/msp"
+	mspcfg "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/genesisconfig"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // Mock profiles are based on https://github.com/hyperledger/fabric/blob/v2.0.0-alpha/sampleconfig/configtx.yaml
+
+var yamlPath = "testdata"
+
+const mspDir = "./testdata/msp"
+
+func TestMain(m *testing.M) {
+	err := genMspDir(mspDir)
+	if err != nil {
+		fmt.Printf("Error generating msp dir: %v\n", err)
+	}
+	defer func() {
+		_ = os.RemoveAll(mspDir)
+	}()
+
+	m.Run()
+}
+
+func genMspDir(dir string) error {
+	ordererMspDir := filepath.Join(metadata.GetProjectPath(), "test/fixtures/fabric/v1/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp")
+	cfg, err := mspcfg.GetVerifyingMspConfig(ordererMspDir, "mymspid", "bccsp")
+	if err != nil {
+		return fmt.Errorf("Error generating msp config from dir: %v\n", err)
+	}
+	mspConfig := &msp.FabricMSPConfig{}
+	err = proto.Unmarshal(cfg.Config, mspConfig)
+	if err != nil {
+		return fmt.Errorf("Error unmarshaling msp config: %v\n", err)
+	}
+
+	return GenerateMspDir(dir, cfg)
+}
 
 func channelCapabilities() map[string]bool {
 	return map[string]bool{
@@ -312,4 +348,24 @@ func TestBadAnchorPeersUpdates(t *testing.T) {
 	config.Application.Organizations[0] = &genesisconfig.Organization{Name: "FakeOrg", ID: "FakeOrg"}
 	_, err = CreateAnchorPeersUpdate(config, "foo", "SampleOrg")
 	require.Error(t, err, "Bad anchorPeerUpdate request - fake org")
+}
+
+func TestOrgAsJSON(t *testing.T) {
+	config, err := TopLevelFromYaml(yamlPath)
+	require.NoError(t, err, "Failed to create profile configuration")
+
+	sampleOrgJson, err := OrgAsJSON(config, "SampleOrg")
+	assert.NoError(t, err, "Good org to print")
+	assert.NotEmpty(t, sampleOrgJson)
+
+	sampleOrgJson, err = OrgAsJSON(config, "SampleOrg.wrong")
+	assert.Error(t, err, "Bad org name")
+	assert.Regexp(t, "organization [^ ]* not found", err.Error())
+	require.Empty(t, sampleOrgJson)
+
+	config.Organizations[0] = &genesisconfig.Organization{Name: "FakeOrg", ID: "FakeOrg"}
+	sampleOrgJson, err = OrgAsJSON(config, "FakeOrg")
+	assert.Error(t, err, "Fake org")
+	assert.Regexp(t, "bad org definition", err.Error())
+	require.Empty(t, sampleOrgJson)
 }

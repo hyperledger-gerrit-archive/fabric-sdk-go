@@ -6,10 +6,10 @@ module github.com/hyperledger/fabric-sdk-go
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
+	github.com/Shopify/sarama v1.23.1
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/cloudflare/cfssl v0.0.0-20180223231731-4e2dcbde5004
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-kit/kit v0.8.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
@@ -17,7 +17,9 @@ require (
 	github.com/golang/mock v1.2.0
 	github.com/golang/protobuf v1.3.2
 	github.com/google/certificate-transparency-go v0.0.0-20180222191210-5ab67e519c93 // indirect
+	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
+	github.com/hyperledger/fabric v1.4.3 // indirect
 	github.com/hyperledger/fabric-lib-go v1.0.0
 	github.com/hyperledger/fabric-protos-go v0.0.0-20190821180310-6b6ac9042dfd
 	github.com/kr/pretty v0.1.0 // indirect
@@ -26,6 +28,7 @@ require (
 	github.com/miekg/pkcs11 v0.0.0-20190329070431-55f3fac3af27
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238
 	github.com/onsi/gomega v1.4.2 // indirect
+	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/pelletier/go-toml v1.1.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.8.0
@@ -38,8 +41,11 @@ require (
 	github.com/spf13/pflag v1.0.1 // indirect
 	github.com/spf13/viper v1.0.2
 	github.com/stretchr/testify v1.3.0
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-	golang.org/x/net v0.0.0-20190311183353-d8887717615a
+	github.com/sykesm/zap-logfmt v0.0.2 // indirect
+	go.uber.org/zap v1.10.0 // indirect
+	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5
+	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
+	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20190327125643-d831d65fe17d // indirect
 	google.golang.org/grpc v1.23.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
