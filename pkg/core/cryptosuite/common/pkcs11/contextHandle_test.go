@@ -492,6 +492,106 @@ func TestContextHandlerConcurrency(t *testing.T) {
 	assert.Equal(t, concurrency, testsReturned)
 }
 
+func TestSessionHandle(t *testing.T) {
+
+	handle, err := LoadPKCS11ContextHandle(lib, label, pin)
+	assert.NoError(t, err)
+	assert.NotNil(t, handle)
+	assert.NotNil(t, handle.ctx)
+
+	//get session
+	session := handle.GetSession()
+	err = handle.isEmpty(session)
+	assert.NoError(t, err)
+
+	//tamper pin, so that get session should fail
+	pinBackup := handle.pin
+	slotBackup := handle.slot
+	resetPinAndSlot := func() {
+		handle.pin = pinBackup
+		handle.slot = slotBackup
+	}
+
+	handle.pin = "1111"
+	handle.slot = 8888
+
+	//get session should fail
+	session = handle.GetSession()
+	err = handle.isEmpty(session)
+	assert.Error(t, err)
+
+	//try again
+	session = handle.GetSession()
+	err = handle.isEmpty(session)
+	assert.Error(t, err)
+
+	//recover tampered pin and slot
+	resetPinAndSlot()
+
+	//try again
+	session = handle.GetSession()
+	err = handle.isEmpty(session)
+	assert.NoError(t, err)
+}
+
+func TestGetSessionResilience(t *testing.T) {
+
+	handle, err := LoadPKCS11ContextHandle(lib, label, pin)
+	assert.NoError(t, err)
+	assert.NotNil(t, handle)
+	assert.NotNil(t, handle.ctx)
+
+	//get session
+	session := handle.GetSession()
+	err = handle.isEmpty(session)
+	assert.NoError(t, err)
+
+	//tamper pin, so that get session should fail
+	pinBackup := handle.pin
+	slotBackup := handle.slot
+	resetPinAndSlot := func() {
+		handle.pin = pinBackup
+		handle.slot = slotBackup
+	}
+
+	handle.pin = "1111"
+	handle.slot = 8888
+
+	//make sure get session should fail
+	session = handle.GetSession()
+	err = handle.isEmpty(session)
+	assert.Error(t, err)
+
+	const retry = 5
+	interval := 200 * time.Millisecond
+	done := make(chan bool)
+
+	// launch get session with retry
+	go func() {
+		for i := 0; i < retry; i++ {
+			session = handle.GetSession()
+			if err := handle.isEmpty(session); err == nil {
+				done <- true
+				break
+			}
+			time.Sleep(interval)
+			continue
+		}
+	}()
+
+	time.Sleep(500 * time.Millisecond)
+
+	go resetPinAndSlot()
+
+	select {
+	case <-done:
+		t.Log("session recovered")
+	case <-time.After(ctxReloadTimeout):
+		t.Fatal("couldn't recover session")
+	}
+
+}
+
 func TestMain(m *testing.M) {
 
 	possibilities := strings.Split(allLibs, ",")
